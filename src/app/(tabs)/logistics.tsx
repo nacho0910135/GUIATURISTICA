@@ -38,7 +38,7 @@ export default function LogisticsScreen() {
   const [subtotal, setSubtotal] = useState('10000');
   const [offlinePack, setOfflinePack] = useState(getOfflinePack);
 
-  const featured = useQuery({ queryKey: ['logistics', 'featured-destinations'], queryFn: getFeaturedDestinations, staleTime: 24 * 60 * 60 * 1000 });
+  const featured = useQuery({ queryKey: ['logistics', 'featured-destinations-v2'], queryFn: getFeaturedDestinations, staleTime: 24 * 60 * 60 * 1000 });
   const recommendation = useMutation({
     mutationFn: () => recommendDestinations({ ...coordinates, hours, category, maxBudget }),
     onError: (reason) => Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : copy(language, 'No se pudo calcular la ruta.', 'Could not calculate the route.')),

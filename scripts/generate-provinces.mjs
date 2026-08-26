@@ -1,8 +1,9 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const sourceDirectory = process.argv[2];
 const tolerance = Number(process.argv[3] ?? 0.01);
+const districtTolerance = Number(process.argv[4] ?? 0.0015);
 
 if (!sourceDirectory) {
   throw new Error('Uso: node scripts/generate-provinces.mjs <directorio-geojson> [tolerancia]');
@@ -38,7 +39,7 @@ function simplifyLine(points, squaredTolerance) {
   ];
 }
 
-function simplifyRing(sourceRing) {
+function simplifyRing(sourceRing, ringTolerance = tolerance) {
   const ring = sourceRing[0][0] === sourceRing.at(-1)[0] && sourceRing[0][1] === sourceRing.at(-1)[1]
     ? sourceRing.slice(0, -1)
     : sourceRing;
@@ -52,8 +53,8 @@ function simplifyRing(sourceRing) {
       splitIndex = index;
     }
   }
-  const firstArc = simplifyLine(ring.slice(0, splitIndex + 1), tolerance ** 2);
-  const secondArc = simplifyLine([...ring.slice(splitIndex), ring[0]], tolerance ** 2);
+  const firstArc = simplifyLine(ring.slice(0, splitIndex + 1), ringTolerance ** 2);
+  const secondArc = simplifyLine([...ring.slice(splitIndex), ring[0]], ringTolerance ** 2);
   const simplified = [...firstArc.slice(0, -1), ...secondArc];
   return simplified.length >= 4 ? simplified : sourceRing;
 }
@@ -116,3 +117,39 @@ await writeFile(destination, `${JSON.stringify({
 }, null, 2)}\n`);
 
 console.log(`Generadas ${provinces.length} provincias: ${sourcePoints} → ${outputPoints} puntos (${destination})`);
+
+const districtFiles = (await readdir(sourceDirectory)).filter((name) => /^\d{5}\.geojson$/.test(name));
+const districts = [];
+let districtSourcePoints = 0;
+let districtOutputPoints = 0;
+
+for (const fileName of districtFiles) {
+  const feature = JSON.parse(await readFile(path.join(sourceDirectory, fileName), 'utf8'));
+  const code = feature.properties.Codigo;
+  const coordinates = feature.geometry.coordinates.map((polygon) => polygon.filter((ring) => ring.length >= 4).map((ring) => {
+    districtSourcePoints += ring.length;
+    const simplified = simplifyRing(ring, districtTolerance);
+    districtOutputPoints += simplified.length;
+    return simplified;
+  })).filter((polygon) => polygon.length);
+  districts.push({
+    type: 'Feature',
+    id: code,
+    properties: {
+      code,
+      provinceCode: code[0],
+      province: titleCase(feature.properties.Provincia),
+      canton: titleCase(feature.properties.Canton),
+      district: titleCase(feature.properties.Distrito),
+    },
+    geometry: { type: 'MultiPolygon', coordinates },
+  });
+}
+
+if (districts.length !== 473 || districts.some((district) => !district.geometry.coordinates.length)) {
+  throw new Error(`La fuente produjo ${districts.length} distritos; se esperaban 473.`);
+}
+
+const districtDestination = path.resolve('src/data/districts.json');
+await writeFile(districtDestination, `${JSON.stringify({ type: 'FeatureCollection', features: districts })}\n`);
+console.log(`Generados ${districts.length} distritos: ${districtSourcePoints} → ${districtOutputPoints} puntos (${districtDestination})`);

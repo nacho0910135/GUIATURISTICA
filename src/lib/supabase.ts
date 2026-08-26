@@ -3,8 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
-export const SUPABASE_URL = 'https://dxqezvkguswleoisxikz.supabase.co';
-export const SUPABASE_ANON_KEY = 'sb_publishable_4YjkMWzHSFnxb4eCe4ukkw_j-yaPhd6';
+export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY.');
+}
 
 const webStorage = {
   getItem: (key: string) => typeof window === 'undefined' ? null : AsyncStorage.getItem(key),

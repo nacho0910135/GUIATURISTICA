@@ -1,5 +1,4 @@
 import * as Linking from 'expo-linking';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { offlineStorage } from '@/lib/query-storage';
@@ -63,7 +62,7 @@ const destinationFields = 'id,name,province,category,latitude,longitude,has_high
 
 export async function getFeaturedDestinations(): Promise<Destination[]> {
   const names = ['Parque Nacional Marino Ballena', 'Parque Nacional Manuel Antonio', 'Parque Nacional Marino Las Baulas (Playa Grande)'];
-  const { data, error } = await supabase.from('destinations').select(destinationFields).in('name', names).eq('status', 'Activo');
+  const { data, error } = await supabase.from('destinations').select(destinationFields).in('name', names);
   if (error) throw error;
   return (data ?? []).map(normalizeDestination);
 }
@@ -129,6 +128,7 @@ export async function openNavigation(latitude: number, longitude: number) {
 
 export async function scheduleFerryReminder(route: FerryRoute, minutes = route.arrivalMinutes) {
   if (Platform.OS === 'web') throw new Error('NATIVE_ONLY');
+  const Notifications = await import('expo-notifications');
   const permission = await Notifications.requestPermissionsAsync();
   if (!permission.granted) throw new Error('PERMISSION_DENIED');
   if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('ferries', { name: 'Ferris', importance: Notifications.AndroidImportance.HIGH });
