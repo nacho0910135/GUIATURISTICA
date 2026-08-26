@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "Descubriendo CR",
+    "slug": "descubriendo-cr",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "descubriendocr",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "cr.descubriendo.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "waze"
+        ]
+      }
+    },
+    "android": {
+      "package": "cr.descubriendo.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#053326",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f7fbf8",
+          "image": "./assets/brand/frog-flag.png",
+          "imageWidth": 190,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#02251b",
+            "image": "./assets/brand/frog-flag.png"
+          }
+        }
+      ],
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Descubriendo CR accede a tus fotos para compartir avistamientos de fauna.",
+          "cameraPermission": "Descubriendo CR usa la cámara para fotografiar fauna de forma responsable.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Descubriendo CR usa tu ubicación para recomendar destinos cercanos y calcular rutas."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "ferries"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
