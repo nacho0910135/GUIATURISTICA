@@ -5,15 +5,15 @@ import type { ColorValue } from 'react-native';
 import { GlobalHeader } from '@/components/global-header';
 import { useApp } from '@/providers/app-provider';
 
-export default function TabsLayout() {
-  const { t } = useApp();
-  const icon = (name: keyof typeof MaterialCommunityIcons.glyphMap) => {
-    const TabIcon = ({ color, focused }: { color: ColorValue; focused: boolean }) => (
+const icon = (name: keyof typeof MaterialCommunityIcons.glyphMap) =>
+  function TabIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
+    return (
       <MaterialCommunityIcons name={name} color={focused ? '#ffffff' : color} size={23} style={focused ? { backgroundColor: '#087443', borderRadius: 22, padding: 8 } : undefined} />
     );
-    TabIcon.displayName = `TabIcon(${name})`;
-    return TabIcon;
   };
+
+export default function TabsLayout() {
+  const { t } = useApp();
 
   return (
     <Tabs

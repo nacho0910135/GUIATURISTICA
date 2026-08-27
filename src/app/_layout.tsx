@@ -38,6 +38,7 @@ export default function RootLayout() {
                 options={{ animation: 'slide_from_bottom', presentation: 'transparentModal' }}
               />
               <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
             </Stack>
           </View>
           {showSplash ? <AnimatedSplash onFinish={() => setShowSplash(false)} /> : null}

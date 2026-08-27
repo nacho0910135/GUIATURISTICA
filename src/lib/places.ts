@@ -7,17 +7,16 @@ export type MapPlace = {
   category: string;
   latitude: number;
   longitude: number;
+  cover_image_url: string | null;
+  status: string;
 };
 
-export type MapBounds = { minLat: number; minLng: number; maxLat: number; maxLng: number };
-
-export async function getPlacesInBounds(bounds: MapBounds): Promise<MapPlace[]> {
-  const { data, error } = await supabase.rpc('places_in_bounds', {
-    min_lat: bounds.minLat,
-    min_lng: bounds.minLng,
-    max_lat: bounds.maxLat,
-    max_lng: bounds.maxLng,
-  });
+export async function getPlacesForProvince(province: string): Promise<MapPlace[]> {
+  const { data, error } = await supabase
+    .from('destinations')
+    .select('id,name,province,category,latitude,longitude,cover_image_url,status')
+    .eq('province', province)
+    .order('name');
   if (error) throw error;
-  return (data ?? []) as MapPlace[];
+  return (data ?? []).map((place) => ({ ...place, latitude: Number(place.latitude), longitude: Number(place.longitude) })) as MapPlace[];
 }

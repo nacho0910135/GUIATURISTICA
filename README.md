@@ -22,7 +22,7 @@ Las funciones nativas de Mapbox, MMKV y AdMob requieren un development build; Ex
 
 ## Contratos de Supabase
 
-El header consulta la fila más reciente de `system_exchange_rates` usando `rate_buy`, `rate_sell`, `updated_at` y `source`; muestra `rate_buy` para la conversión USD → CRC. El mapa consume el RPC PostGIS `places_in_bounds(min_lat, min_lng, max_lat, max_lng)`, que debe devolver `id`, `name`, `province`, `category`, `latitude` y `longitude`. Si cualquiera de los dos contratos aún no existe o no está expuesto a `anon`, la UI conserva datos de referencia para que la exploración guest-first siga funcionando.
+El header consulta la fila más reciente de `system_exchange_rates` usando `rate_buy`, `rate_sell`, `updated_at` y `source`; muestra `rate_buy` para la conversión USD → CRC. El catálogo provincial consulta `destinations` por igualdad exacta de `province` y muestra sus imágenes publicadas. Si la consulta falla, la interfaz muestra el error real y no sustituye la base con destinos de ejemplo.
 
 Todas las tablas públicas deben tener RLS habilitado. Las lecturas anónimas deben limitarse a contenido publicado; likes, comentarios, fotos, follows y favoritos deben usar políticas con propiedad por `auth.uid()`.
 

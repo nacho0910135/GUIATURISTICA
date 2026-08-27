@@ -34,7 +34,7 @@ export default function ExploreScreen() {
   return (
     <ScrollView className="flex-1 bg-white" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full" style={{ maxWidth: 1180, paddingHorizontal: wide ? 20 : 0 }}>
-        <MapCanvas activityFilter={category} />
+        <MapCanvas />
       </View>
 
       <View className="-mt-7 w-full rounded-t-[30px] bg-white pb-2 pt-6" style={{ maxWidth: 1180 }}>
@@ -52,10 +52,11 @@ export default function ExploreScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
+                aria-pressed={selected}
                 className={`overflow-hidden rounded-[22px] border bg-white ${selected ? 'border-forest-600' : 'border-[#e5ebe7]'}`}
                 key={activity.title.es}
                 onPress={() => setCategory(selected ? '' : activity.category)}
-                style={{ shadowColor: '#123c2c', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.1, shadowRadius: 12, width: cardWidth }}
+                style={{ boxShadow: '0 5px 12px rgba(18, 60, 44, 0.1)', width: cardWidth }}
               >
                 <View>
                   <Image contentFit="cover" source={activity.image} style={{ height: wide ? 150 : 112, width: '100%' }} transition={180} />
@@ -73,6 +74,8 @@ export default function ExploreScreen() {
         </ScrollView>
 
         <Pressable
+          accessibilityLabel={t('roadAlert')}
+          accessibilityRole="button"
           className="mx-5 mt-6 flex-row items-center rounded-[22px] bg-coral-50 p-4"
           onPress={() => requireAuth(t('roadAlert'))}
           style={{ borderColor: '#ffe1dd', borderWidth: 1 }}
