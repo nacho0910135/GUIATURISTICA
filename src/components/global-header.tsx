@@ -1,7 +1,8 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useApp } from '@/providers/app-provider';
@@ -11,12 +12,29 @@ export function GlobalHeader() {
   const { exchangeRate, language, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
+  const [blink] = useState(() => new Animated.Value(0));
   const formattedRate = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(exchangeRate);
+
+  useEffect(() => {
+    const animation = Animated.loop(Animated.sequence([
+      Animated.delay(2000),
+      Animated.timing(blink, { duration: 0, toValue: 1, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.delay(2000),
+      Animated.timing(blink, { duration: 0, toValue: 0, useNativeDriver: Platform.OS !== 'web' }),
+    ]));
+    animation.start();
+    return () => animation.stop();
+  }, [blink]);
 
   return <SafeAreaView edges={['top']} className="border-b border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface">
     <View className="mx-auto w-full max-w-content gap-2 px-4 py-2 md:flex-row md:items-center md:justify-between md:px-6 md:py-3">
       <Pressable accessibilityLabel={language === 'es' ? 'Ir a Explorar' : 'Go to Explore'} accessibilityRole="link" className="min-h-11 flex-row items-center" onPress={() => router.replace('/explore')}>
-        <View className="h-11 w-11 overflow-hidden rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><Image contentFit="contain" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: 52, width: 52 }} /></View>
+        <View className="h-11 w-11 overflow-hidden rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+          <Image contentFit="contain" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: 52, width: 52 }} />
+          <Animated.View style={{ height: 52, left: 0, opacity: blink, pointerEvents: 'none', position: 'absolute', top: 0, width: 52 }}>
+            <Image contentFit="contain" source={require('@/assets/brand/frog-logo-blink.png')} style={{ height: '100%', width: '100%' }} />
+          </Animated.View>
+        </View>
         <Text className="ml-3 text-xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">Descubriendo <Text className="text-ui-primary dark:text-ui-dark-primary">CR</Text></Text>
       </Pressable>
       <View className="flex-row items-center justify-between gap-2 md:justify-end">

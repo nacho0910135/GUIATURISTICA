@@ -54,16 +54,16 @@ export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
       ]}
     >
       <View className="items-center px-8">
-        <Animated.View className="relative h-[375px] w-[250px]" style={mascotStyle}>
+        <Animated.View className="relative h-[188px] w-[125px]" style={mascotStyle}>
           <Image
             source={require('@/assets/brand/frog-flag.png')}
             contentFit="contain"
-            style={{ height: 375, width: 250 }}
+            style={{ height: 188, width: 125 }}
           />
-          <Animated.View className="absolute left-[33px] top-[77px] h-8 w-12 rounded-full bg-frog-500" style={eyelidStyle} />
-          <Animated.View className="absolute left-[101px] top-[65px] h-8 w-12 rounded-full bg-frog-500" style={eyelidStyle} />
+          <Animated.View className="absolute left-[17px] top-[39px] h-4 w-6 rounded-full bg-frog-500" style={eyelidStyle} />
+          <Animated.View className="absolute left-[51px] top-[33px] h-4 w-6 rounded-full bg-frog-500" style={eyelidStyle} />
         </Animated.View>
-        <Text className="-mt-6 text-center text-4xl font-black tracking-tight" style={{ color: colors.text }}>
+        <Text className="mt-2 text-center text-4xl font-black tracking-tight" style={{ color: colors.text }}>
           Descubriendo CR
         </Text>
         <Text className="mt-3 text-center text-base font-semibold" style={{ color: colors.textMuted }}>
