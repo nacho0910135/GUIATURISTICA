@@ -51,7 +51,7 @@ export async function getAdminDashboard() {
     supabase.from('creator_suggestions').select('*,user:users(username,full_name)').order('created_at', { ascending: false }).limit(50),
     supabase.from('destinations').select('id,name,province').order('name').limit(100),
     supabase.from('destination_photos').select('*').order('sort_order'),
-    supabase.from('traveler_posts').select('id,body,created_at,user:users(username,full_name)').order('created_at', { ascending: false }).limit(50),
+    supabase.from('traveler_posts').select('id,body,created_at,user:users!traveler_posts_user_id_fkey(username,full_name)').order('created_at', { ascending: false }).limit(50),
   ]);
   const error = suggestions.error ?? destinations.error ?? photos.error ?? posts.error;
   if (error) throw error;

@@ -82,7 +82,7 @@ export function MapCanvas() {
   useEffect(() => { (mapRef.current?.getSource('province-weather') as GeoJSONSource | undefined)?.setData(weatherShape); }, [weatherShape]);
 
   return (
-    <View className="relative overflow-hidden bg-[#087fa1]" style={{ borderColor: '#56c7e9', borderRadius: wide ? 28 : 0, borderWidth: 2, boxShadow: '0 10px 28px rgba(7, 72, 94, 0.28)', height: wide ? 530 : 460 }}>
+    <View className="relative overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#56c7e9', borderRadius: wide ? 28 : 0, borderWidth: 2, boxShadow: '0 10px 28px rgba(7, 72, 94, 0.28)', height: wide ? 530 : 460 }}>
       <div ref={mapContainer} style={{ height: '100%', inset: 0, position: 'absolute', width: '100%' }} />
       {!mapReady ? <View className="absolute inset-0 items-center justify-center bg-[#dff4f4]"><MaterialCommunityIcons name={mapError ? 'map-marker-off-outline' : 'map-search-outline'} color="#087443" size={34} /><Text className="mt-2 px-8 text-center font-bold text-forest-700">{mapError ? (language === 'es' ? 'No se pudo cargar Mapbox. Revisá el token o la conexión.' : 'Mapbox could not load. Check the token or connection.') : (language === 'es' ? 'Cargando mapa de Costa Rica…' : 'Loading Costa Rica map…')}</Text></View> : null}
     </View>

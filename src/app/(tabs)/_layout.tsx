@@ -4,26 +4,27 @@ import { Platform, type ColorValue } from 'react-native';
 
 import { GlobalHeader } from '@/components/global-header';
 import { useApp } from '@/providers/app-provider';
+import { useAppTheme } from '@/theme/theme-provider';
 
 const icon = (name: keyof typeof MaterialCommunityIcons.glyphMap) =>
   function TabIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
     return (
-      <MaterialCommunityIcons name={name} color={focused ? '#ffffff' : color} size={23} style={focused ? { backgroundColor: '#087443', borderRadius: 22, padding: 8 } : undefined} />
+      <MaterialCommunityIcons name={name} color={color} size={24} />
     );
   };
 
-const friendsIcon = ({ focused }: { color: ColorValue; focused: boolean }) => (
+const friendsIcon = ({ color, focused }: { color: ColorValue; focused: boolean }) => (
   <MaterialCommunityIcons
     name="account-group"
-    color="white"
-    size={29}
+    color={focused ? 'white' : color}
+    size={25}
     style={{
-      backgroundColor: focused ? '#087443' : '#13a95b',
-      borderColor: '#ffffff',
+      backgroundColor: focused ? '#0077A8' : 'transparent',
+      borderColor: focused ? '#ffffff' : 'transparent',
       borderRadius: 30,
       borderWidth: 4,
-      padding: 11,
-      transform: [{ translateY: -9 }],
+      padding: focused ? 10 : 0,
+      transform: [{ translateY: focused ? -7 : 0 }],
       ...Platform.select({
         web: { boxShadow: '0 3px 10px rgba(6, 47, 35, 0.24)' },
         default: { elevation: 6, shadowColor: '#062f23', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.24, shadowRadius: 5 },
@@ -34,21 +35,22 @@ const friendsIcon = ({ focused }: { color: ColorValue; focused: boolean }) => (
 
 export default function TabsLayout() {
   const { t } = useApp();
+  const { colors } = useAppTheme();
 
   return (
     <Tabs
       initialRouteName="explore"
       screenOptions={{
         header: () => <GlobalHeader />,
-        tabBarActiveTintColor: '#087443',
-        tabBarInactiveTintColor: '#65736d',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700', marginTop: 3 },
-        tabBarStyle: { alignSelf: 'center', backgroundColor: '#ffffff', borderTopColor: '#e4eee8', height: 78, maxWidth: 1180, paddingBottom: 9, paddingTop: 7, width: '100%' },
+        tabBarStyle: { alignSelf: 'center', backgroundColor: colors.surface, borderTopColor: colors.border, height: 72, maxWidth: 1120, paddingBottom: 8, paddingTop: 6, width: '100%' },
       }}
     >
       <Tabs.Screen name="explore" options={{ title: t('explore'), tabBarIcon: icon('compass') }} />
       <Tabs.Screen name="fauna" options={{ title: t('fauna'), tabBarIcon: icon('paw-outline') }} />
-      <Tabs.Screen name="friends" options={{ title: 'Amigos', tabBarIcon: friendsIcon, tabBarLabelStyle: { color: '#087443', fontSize: 11, fontWeight: '900' } }} />
+      <Tabs.Screen name="friends" options={{ title: 'Amigos', tabBarIcon: friendsIcon, tabBarActiveTintColor: colors.secondary, tabBarLabelStyle: { fontSize: 11, fontWeight: '800' } }} />
       <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline') }} />
       <Tabs.Screen name="logistics" options={{ title: t('logistics'), tabBarIcon: icon('truck-outline') }} />
       <Tabs.Screen name="profile" options={{ title: t('profile'), tabBarIcon: icon('account-circle-outline') }} />

@@ -56,7 +56,7 @@ export function MapCanvas() {
   };
 
   return (
-    <View className="overflow-hidden bg-[#087fa1]" style={{ borderColor: '#56c7e9', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 530 : 460 }}>
+    <View className="overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#56c7e9', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 530 : 460 }}>
       <MapView attributionPosition={{ bottom: 8, right: 8 }} compassEnabled={false} logoPosition={{ bottom: 8, left: 8 }} onDidFinishLoadingMap={() => { setMapReady(true); setMapError(false); }} onMapLoadingError={() => setMapError(true)} scaleBarEnabled={false} style={{ height: '100%', width: '100%' }} styleURL="mapbox://styles/mapbox/outdoors-v12">
         <Camera centerCoordinate={[-84.12, 9.88]} zoomLevel={wide ? 7.05 : 6.35} minZoomLevel={5.7} maxZoomLevel={10} />
         <ShapeSource id="cr-provinces" shape={provinceShape} onPress={(event) => openProvince(event.features[0]?.properties?.name as string | undefined)}>

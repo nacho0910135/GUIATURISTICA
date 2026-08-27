@@ -11,7 +11,7 @@ export type TravelerReply = { id: string; post_id: string; parent_reply_id: stri
 
 export async function getTravelerWall(userId?: string) {
   const [posts, replies, reactions, follows] = await Promise.all([
-    supabase.from('traveler_posts').select('*, user:users(id,username,full_name,avatar_url)').order('created_at', { ascending: false }).limit(40),
+    supabase.from('traveler_posts').select('*, user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url)').order('created_at', { ascending: false }).limit(40),
     supabase.from('traveler_replies').select('*, user:users(id,username,full_name,avatar_url)').order('created_at').limit(200),
     supabase.from('traveler_reactions').select('post_id,user_id,reaction'),
     userId ? supabase.from('user_follows').select('followed_id').eq('follower_id', userId) : Promise.resolve({ data: [], error: null }),

@@ -1,6 +1,6 @@
 import '@/global.css';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { Stack } from 'expo-router';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
@@ -13,6 +13,7 @@ import { useColorScheme } from 'nativewind';
 import { AnimatedSplash } from '@/components/animated-splash';
 import { AppProvider } from '@/providers/app-provider';
 import { QUERY_CACHE_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
+import { AppThemeProvider } from '@/theme/theme-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,10 +27,10 @@ export default function RootLayout() {
         <title>Descubriendo CR</title>
         <meta name="description" content="Explorá Costa Rica, su biodiversidad, comercios y rutas." />
       </Head>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <AppThemeProvider>
         <PersistQueryClientProvider client={queryClient} persistOptions={{ maxAge: QUERY_CACHE_MAX_AGE, persister: queryPersister }}>
           <AppProvider>
-          <View className="flex-1 bg-mint-50 dark:bg-forest-950" onLayout={() => SplashScreen.hide()}>
+          <View className="flex-1 bg-ui-background dark:bg-ui-dark-background" onLayout={() => SplashScreen.hide()}>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="(tabs)" />
@@ -42,7 +43,7 @@ export default function RootLayout() {
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           </AppProvider>
         </PersistQueryClientProvider>
-      </ThemeProvider>
+      </AppThemeProvider>
     </GestureHandlerRootView>
   );
 }

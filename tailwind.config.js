@@ -1,17 +1,21 @@
+const tokens = require('./src/theme/tokens.json');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
-  darkMode: 'media',
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        forest: { 50: '#f1f8f4', 500: '#16714c', 600: '#0b5b3c', 700: '#084d36', 800: '#063f30', 900: '#053326', 950: '#02251b' },
-        frog: { 100: '#dff8e8', 200: '#b9f3d0', 300: '#78dfa1', 400: '#37c774', 500: '#13a95b' },
-        mint: { 50: '#f7fbf8', 100: '#edf7f1', 200: '#dceee5', 300: '#c3e1d2', 600: '#75a291' },
-        coral: { 50: '#fff5f3', 200: '#ffd0cb', 500: '#ff5d52', 600: '#d94c43' },
-        caribbean: { 500: '#159ed1', 600: '#087db4' },
+        forest: tokens.colors.neutral, caribbean: tokens.colors.caribbean, sand: tokens.colors.sand, neutral: tokens.colors.neutral,
+        frog: { 100: tokens.colors.forest[100], 200: tokens.colors.forest[200], 300: tokens.colors.forest[300], 400: tokens.colors.forest[400], 500: tokens.colors.forest[500] },
+        mint: { 50: tokens.colors.neutral[50], 100: tokens.colors.neutral[100], 200: tokens.colors.neutral[200], 300: tokens.colors.neutral[300], 600: tokens.colors.neutral[500] },
+        coral: { 50: '#FFF5F3', 200: '#FFD0CB', 500: tokens.colors.status.danger, 600: '#A92E2E' },
+        ui: { primary: tokens.colors.light.primary, 'primary-pressed': tokens.colors.light.primaryPressed, 'primary-soft': tokens.colors.light.primarySoft, secondary: tokens.colors.light.secondary, background: tokens.colors.light.background, surface: tokens.colors.light.surface, muted: tokens.colors.light.surfaceMuted, text: tokens.colors.light.text, 'text-muted': tokens.colors.light.textMuted, border: tokens.colors.light.border, danger: tokens.colors.light.danger, dark: { primary: tokens.colors.dark.primary, 'primary-pressed': tokens.colors.dark.primaryPressed, 'primary-soft': tokens.colors.dark.primarySoft, secondary: tokens.colors.dark.secondary, background: tokens.colors.dark.background, surface: tokens.colors.dark.surface, muted: tokens.colors.dark.surfaceMuted, text: tokens.colors.dark.text, 'text-muted': tokens.colors.dark.textMuted, border: tokens.colors.dark.border, danger: tokens.colors.dark.danger } },
       },
+      borderRadius: { card: `${tokens.radius.card}px`, control: `${tokens.radius.md}px`, modal: `${tokens.radius.modal}px` },
+      maxWidth: { content: `${tokens.layout.contentMaxWidth}px`, feed: `${tokens.layout.feedMaxWidth}px` },
     },
   },
   plugins: [],

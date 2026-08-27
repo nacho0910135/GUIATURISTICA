@@ -1,81 +1,41 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Animated, Platform, Pressable, Text, type TextStyle, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useApp } from '@/providers/app-provider';
-
-const outlinedText = Platform.select<TextStyle>({
-  web: { textShadow: '-1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white, 1px 1px 0 white' } as unknown as TextStyle,
-  default: { textShadowColor: 'white', textShadowOffset: { height: 0, width: 0 }, textShadowRadius: 2 },
-});
+import { useAppTheme } from '@/theme/theme-provider';
 
 export function GlobalHeader() {
-  const { language, setVisitorType, visitorType } = useApp();
+  const { exchangeRate, language, setVisitorType, visitorType } = useApp();
+  const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
-  const [blink] = useState(() => new Animated.Value(0));
+  const formattedRate = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(exchangeRate);
 
-  useEffect(() => {
-    const animation = Animated.loop(Animated.sequence([
-      Animated.delay(2000),
-      Animated.timing(blink, { duration: 0, toValue: 1, useNativeDriver: Platform.OS !== 'web' }),
-      Animated.delay(2000),
-      Animated.timing(blink, { duration: 0, toValue: 0, useNativeDriver: Platform.OS !== 'web' }),
-    ]));
-    animation.start();
-    return () => animation.stop();
-  }, [blink]);
-
-  return (
-    <SafeAreaView edges={['top']} className="overflow-hidden bg-[#002b7f]">
-      <View className="absolute inset-0">
-        <View className="flex-1 bg-[#002b7f]" />
-        <View className="flex-1 bg-white" />
-        <View className="flex-[2] bg-[#ce1126]" />
-        <View className="flex-1 bg-white" />
-        <View className="flex-1 bg-[#002b7f]" />
-      </View>
-      <View className="w-full self-center px-5 pb-4 pt-3" style={{ maxWidth: 1180 }}>
-        <View className="flex-row items-center justify-between">
-          <Pressable
-            accessibilityLabel={language === 'es' ? 'Ir a Explorar' : 'Go to Explore'}
-            accessibilityRole="link"
-            className="flex-row items-center gap-2"
-            onPress={() => router.replace('/explore')}
-          >
-            <View className="h-16 w-24">
-              <Image
-                contentFit="contain"
-                source={require('@/assets/brand/frog-logo-open.png')}
-                style={{ height: 108, left: -6, position: 'absolute', top: 0, width: 108 }}
-              />
-              <Animated.View
-                style={{ height: 108, left: -6, opacity: blink, pointerEvents: 'none', position: 'absolute', top: 0, width: 108 }}
-              >
-                <Image contentFit="contain" source={require('@/assets/brand/frog-logo-blink.png')} style={{ height: '100%', width: '100%' }} />
-              </Animated.View>
-            </View>
-            <Text className="tracking-tight">
-              <Text className="text-xl font-black text-black md:text-2xl" style={outlinedText}>Descubriendo</Text>
-              <Text className="text-xl font-black text-[#707070] md:text-2xl" style={outlinedText}> CR</Text>
-            </Text>
-          </Pressable>
-          <View className="flex-row overflow-hidden rounded-xl border border-[#002b7f] bg-white/90">
-            {(['tico', 'foreigner'] as const).map((item) => (
-              <Pressable
-                accessibilityLabel={item === 'tico' ? 'Modo Tico' : 'Foreigner mode'}
-                accessibilityRole="button"
-                className={visitorType === item ? 'bg-[#002b7f] px-3 py-2' : 'px-3 py-2'}
-                key={item}
-                onPress={() => setVisitorType(item)}
-              >
-                <Text className={visitorType === item ? 'text-xs font-extrabold text-white' : 'text-xs font-bold text-[#002b7f]'}>{item === 'tico' ? 'Tico' : 'Foreigner'}</Text>
-              </Pressable>
-            ))}
-          </View>
+  return <SafeAreaView edges={['top']} className="border-b border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface">
+    <View className="mx-auto w-full max-w-content gap-2 px-4 py-2 md:flex-row md:items-center md:justify-between md:px-6 md:py-3">
+      <Pressable accessibilityLabel={language === 'es' ? 'Ir a Explorar' : 'Go to Explore'} accessibilityRole="link" className="min-h-11 flex-row items-center" onPress={() => router.replace('/explore')}>
+        <View className="h-11 w-11 overflow-hidden rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><Image contentFit="contain" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: 52, width: 52 }} /></View>
+        <Text className="ml-3 text-xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">Descubriendo <Text className="text-ui-primary dark:text-ui-dark-primary">CR</Text></Text>
+      </Pressable>
+      <View className="flex-row items-center justify-between gap-2 md:justify-end">
+        <View accessibilityLabel={language === 'es' ? `Un dólar equivale a ${formattedRate} colones` : `One dollar equals ${formattedRate} colones`} className="min-h-10 flex-row items-center rounded-control border border-ui-border bg-ui-background px-3 dark:border-ui-dark-border dark:bg-ui-dark-background">
+          <MaterialCommunityIcons name="swap-horizontal" size={16} color={colors.secondary} />
+          <Text className="ml-1.5 text-[11px] font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">$1</Text>
+          <Text className="ml-1 text-xs font-extrabold text-ui-text dark:text-ui-dark-text">₡{formattedRate}</Text>
         </View>
+        <Pressable
+          accessibilityLabel={mode === 'dark' ? (language === 'es' ? 'Cambiar a tema claro' : 'Switch to light theme') : (language === 'es' ? 'Cambiar a tema oscuro' : 'Switch to dark theme')}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: mode === 'dark' }}
+          className="h-10 w-10 items-center justify-center rounded-control border border-ui-border bg-ui-background active:opacity-70 dark:border-ui-dark-border dark:bg-ui-dark-background"
+          onPress={toggleMode}
+        >
+          <MaterialCommunityIcons name={mode === 'dark' ? 'weather-night' : 'weather-sunny'} size={20} color={mode === 'dark' ? colors.secondary : '#B96708'} />
+        </Pressable>
+        <View className="flex-row rounded-control border border-ui-border bg-ui-muted p-1 dark:border-ui-dark-border dark:bg-ui-dark-muted">{(['tico', 'foreigner'] as const).map((item) => <Pressable accessibilityRole="button" className={visitorType === item ? 'min-h-9 justify-center rounded-lg bg-ui-primary px-3 dark:bg-ui-dark-primary' : 'min-h-9 justify-center px-3'} key={item} onPress={() => setVisitorType(item)}><Text className={visitorType === item ? 'text-xs font-bold text-white dark:text-ui-dark-background' : 'text-xs font-semibold text-ui-text-muted dark:text-ui-dark-text-muted'}>{item === 'tico' ? 'Tico' : 'Foreigner'}</Text></Pressable>)}</View>
       </View>
-    </SafeAreaView>
-  );
+    </View>
+  </SafeAreaView>;
 }

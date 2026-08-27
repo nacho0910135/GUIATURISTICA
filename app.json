@@ -49,7 +49,7 @@
           "imageWidth": 190,
           "resizeMode": "contain",
           "dark": {
-            "backgroundColor": "#02251b",
+            "backgroundColor": "#0B0F12",
             "image": "./assets/brand/frog-flag.png"
           }
         }

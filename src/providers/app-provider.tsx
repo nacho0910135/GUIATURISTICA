@@ -1,9 +1,9 @@
 import type { Session } from '@supabase/supabase-js';
-import { useColorScheme } from 'nativewind';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
+import { useAppTheme } from '@/theme/theme-provider';
 
 type Currency = 'USD' | 'CRC';
 export type VisitorType = 'tico' | 'foreigner';
@@ -38,7 +38,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 const FALLBACK_USD_CRC = 503.84;
 
 export function AppProvider({ children }: PropsWithChildren) {
-  const { colorScheme } = useColorScheme();
+  const { mode } = useAppTheme();
   const [visitorType, setVisitorType] = useState<VisitorType>('tico');
   const language: Language = visitorType === 'tico' ? 'es' : 'en';
   const currency: Currency = visitorType === 'tico' ? 'CRC' : 'USD';
@@ -95,9 +95,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   const requireAuth = useCallback((_intent: string) => true, []);
 
   const value = useMemo<AppContextValue>(() => ({
-    language, currency, visitorType, exchangeRate, session, authReady, isDark: colorScheme === 'dark', t,
+    language, currency, visitorType, exchangeRate, session, authReady, isDark: mode === 'dark', t,
     setVisitorType, formatPrice, requireAuth, isAdmin, signInAdmin, signOutAdmin,
-  }), [language, currency, visitorType, exchangeRate, session, authReady, colorScheme, t, formatPrice, requireAuth, isAdmin, signInAdmin, signOutAdmin]);
+  }), [language, currency, visitorType, exchangeRate, session, authReady, mode, t, formatPrice, requireAuth, isAdmin, signInAdmin, signOutAdmin]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

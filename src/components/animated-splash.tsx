@@ -12,12 +12,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { useApp } from '@/providers/app-provider';
+import { useAppTheme } from '@/theme/theme-provider';
 
 let startupSoundPlayed = false;
 
 export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
-  const { isDark } = useApp();
+  const { colors, mode } = useAppTheme();
   const player = useAudioPlayer(require('@/assets/audio/frog-croak.mp3'));
   const opacity = useSharedValue(1);
   const scale = useSharedValue(0.88);
@@ -46,10 +46,10 @@ export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
 
   return (
     <Animated.View
-      className="absolute inset-0 z-50 items-center justify-center bg-mint-50 dark:bg-forest-950"
+      className="absolute inset-0 z-50 items-center justify-center"
       style={[
         StyleSheet.absoluteFill,
-        { backgroundColor: isDark ? '#02251b' : '#f7fbf8', elevation: 9999, zIndex: 9999 },
+        { backgroundColor: colors.background, elevation: 9999, zIndex: 9999 },
         containerStyle,
       ]}
     >
@@ -63,13 +63,13 @@ export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
           <Animated.View className="absolute left-[33px] top-[77px] h-8 w-12 rounded-full bg-frog-500" style={eyelidStyle} />
           <Animated.View className="absolute left-[101px] top-[65px] h-8 w-12 rounded-full bg-frog-500" style={eyelidStyle} />
         </Animated.View>
-        <Text className="-mt-6 text-center text-4xl font-black tracking-tight text-forest-900 dark:text-white">
+        <Text className="-mt-6 text-center text-4xl font-black tracking-tight" style={{ color: colors.text }}>
           Descubriendo CR
         </Text>
-        <Text className="mt-3 text-center text-base font-semibold text-forest-600 dark:text-mint-200">
-          {isDark ? 'Pura vida, de noche y de día' : 'Costa Rica, más cerca que nunca'}
+        <Text className="mt-3 text-center text-base font-semibold" style={{ color: colors.textMuted }}>
+          {mode === 'dark' ? 'Pura vida, de noche y de día' : 'Costa Rica, más cerca que nunca'}
         </Text>
-        <View className="mt-8 h-1.5 w-20 overflow-hidden rounded-full bg-mint-200 dark:bg-forest-700">
+        <View className="mt-8 h-1.5 w-20 overflow-hidden rounded-full" style={{ backgroundColor: colors.surfaceMuted }}>
           <Animated.View className="h-full w-full rounded-full bg-coral-500" style={{ transformOrigin: 'left' }} />
         </View>
       </View>
