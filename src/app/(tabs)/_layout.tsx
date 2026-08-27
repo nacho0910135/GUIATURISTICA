@@ -28,6 +28,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="explore" options={{ title: t('explore'), tabBarIcon: icon('compass') }} />
       <Tabs.Screen name="fauna" options={{ title: t('fauna'), tabBarIcon: icon('paw-outline') }} />
+      <Tabs.Screen name="friends" options={{ title: 'Amigos', tabBarIcon: icon('account-group') }} />
       <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline') }} />
       <Tabs.Screen name="logistics" options={{ title: t('logistics'), tabBarIcon: icon('truck-outline') }} />
       <Tabs.Screen name="profile" options={{ title: t('profile'), tabBarIcon: icon('account-circle-outline') }} />
