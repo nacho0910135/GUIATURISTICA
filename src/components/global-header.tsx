@@ -1,4 +1,3 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -13,7 +12,7 @@ const outlinedText = Platform.select<TextStyle>({
 });
 
 export function GlobalHeader() {
-  const { currency, exchangeRate, language, setCurrency, setLanguage } = useApp();
+  const { language, setVisitorType, visitorType } = useApp();
   const router = useRouter();
   const [blink] = useState(() => new Animated.Value(0));
 
@@ -63,36 +62,15 @@ export function GlobalHeader() {
             </Text>
           </Pressable>
           <View className="flex-row overflow-hidden rounded-xl border border-[#002b7f] bg-white/90">
-            {(['es', 'en'] as const).map((item) => (
+            {(['tico', 'foreigner'] as const).map((item) => (
               <Pressable
-                accessibilityLabel={`${language === 'es' ? 'Cambiar idioma a' : 'Switch language to'} ${item.toUpperCase()}`}
+                accessibilityLabel={item === 'tico' ? 'Modo Tico' : 'Foreigner mode'}
                 accessibilityRole="button"
-                className={language === item ? 'bg-[#002b7f] px-3 py-2' : 'px-3 py-2'}
+                className={visitorType === item ? 'bg-[#002b7f] px-3 py-2' : 'px-3 py-2'}
                 key={item}
-                onPress={() => setLanguage(item)}
+                onPress={() => setVisitorType(item)}
               >
-                <Text className={language === item ? 'text-xs font-extrabold text-white' : 'text-xs font-bold text-[#002b7f]'}>{item.toUpperCase()}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-        <View className="mt-2 flex-row items-center justify-end gap-2">
-          <View className="flex-row items-center gap-2 rounded-2xl border border-[#002b7f] bg-white px-3 py-2" style={{ boxShadow: '0 1px 3px rgba(18, 60, 44, 0.12)' }}>
-            <MaterialCommunityIcons name="swap-horizontal" size={18} color="#087443" />
-            <Text className="text-sm font-semibold text-forest-700">1 USD = ₡{exchangeRate.toFixed(2)}</Text>
-          </View>
-          <View className="flex-row overflow-hidden rounded-xl border border-[#002b7f] bg-white/90">
-            {(['USD', 'CRC'] as const).map((item) => (
-              <Pressable
-                accessibilityLabel={`${language === 'es' ? 'Usar moneda' : 'Use currency'} ${item}`}
-                accessibilityRole="button"
-                className={currency === item ? 'bg-[#002b7f] px-4 py-2' : 'px-4 py-2'}
-                key={item}
-                onPress={() => setCurrency(item)}
-              >
-                <Text className={currency === item ? 'font-black text-white' : 'font-bold text-[#002b7f]'}>
-                  {item === 'USD' ? '$' : '₡'}
-                </Text>
+                <Text className={visitorType === item ? 'text-xs font-extrabold text-white' : 'text-xs font-bold text-[#002b7f]'}>{item === 'tico' ? 'Tico' : 'Foreigner'}</Text>
               </Pressable>
             ))}
           </View>

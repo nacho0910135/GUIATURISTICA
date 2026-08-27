@@ -21,7 +21,7 @@ export type Destination = {
   dist_meters?: number;
 };
 
-export type Weather = { temperature: number; description: string; icon: string; humidity: number };
+export type Weather = { temperature: number; temperatureUnit: 'C' | 'F'; description: string; icon: string; humidity: number };
 export type Tide = { nextHigh?: { date: string; height: number }; alert: boolean };
 
 export type FerryRoute = {
@@ -70,11 +70,11 @@ export async function getFeaturedDestinations(): Promise<Destination[]> {
 export async function getWeather(destination: Pick<Destination, 'latitude' | 'longitude'>, language: 'es' | 'en'): Promise<Weather> {
   const key = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY;
   if (!key) throw new Error('OPENWEATHER_KEY_MISSING');
-  const params = new URLSearchParams({ lat: String(destination.latitude), lon: String(destination.longitude), appid: key, units: 'metric', lang: language });
+  const params = new URLSearchParams({ lat: String(destination.latitude), lon: String(destination.longitude), appid: key, units: language === 'es' ? 'metric' : 'imperial', lang: language });
   const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?${params}`);
   if (!response.ok) throw new Error(`OpenWeather ${response.status}`);
   const body = await response.json() as { main: { temp: number; humidity: number }; weather?: { description: string; icon: string }[] };
-  return { temperature: Math.round(body.main.temp), humidity: body.main.humidity, description: body.weather?.[0]?.description ?? '', icon: body.weather?.[0]?.icon ?? '01d' };
+  return { temperature: Math.round(body.main.temp), temperatureUnit: language === 'es' ? 'C' : 'F', humidity: body.main.humidity, description: body.weather?.[0]?.description ?? '', icon: body.weather?.[0]?.icon ?? '01d' };
 }
 
 export async function getTides(destination: Pick<Destination, 'latitude' | 'longitude' | 'has_high_tides_risk'>): Promise<Tide> {

@@ -1,9 +1,8 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
-import type { ComponentProps } from 'react';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import {
   addFaunaComment,
@@ -17,36 +16,10 @@ import {
 import { useApp } from '@/providers/app-provider';
 
 type FaunaHome = Awaited<ReturnType<typeof getFaunaHome>>;
-type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
-
-const catalogSections: {
-  icon: IconName;
-  title: { es: string; en: string };
-  subtitle: { es: string; en: string };
-  includes: (species: FaunaSpecies) => boolean;
-}[] = [
-  {
-    icon: 'binoculars',
-    title: { es: 'Observable en tours', en: 'Observable on tours' },
-    subtitle: { es: '7 especies que podés descubrir responsablemente', en: '7 species you can discover responsibly' },
-    includes: (species) => species.tour_observable,
-  },
-  {
-    icon: 'shield-outline',
-    title: { es: 'Fauna endémica', en: 'Endemic wildlife' },
-    subtitle: { es: 'Sólo existe aquí. Su ubicación está protegida.', en: 'Found only here. Their location is protected.' },
-    includes: (species) => species.is_endemic,
-  },
-  {
-    icon: 'star-circle-outline',
-    title: { es: 'Símbolos nacionales', en: 'National symbols' },
-    subtitle: { es: 'Especies que representan nuestra identidad', en: 'Species that represent our identity' },
-    includes: (species) => species.is_national_symbol,
-  },
-];
 
 export default function FaunaScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { language, requireAuth, session } = useApp();
   const userId = session?.user.id;
   const [home, setHome] = useState<FaunaHome>();
@@ -54,6 +27,7 @@ export default function FaunaScreen() {
   const [busy, setBusy] = useState<string>();
   const [commenting, setCommenting] = useState<string>();
   const [comment, setComment] = useState('');
+  const wide = width >= 900;
 
   const load = useCallback(async () => {
     try {
@@ -140,50 +114,13 @@ export default function FaunaScreen() {
         </View>
       ) : null}
 
-      {home ? catalogSections.map((section) => {
-        const species = home.species.filter(section.includes);
-        return (
-          <View className="mt-7" key={section.title.es}>
-            <View className="flex-row items-center px-5">
-              <View className="h-10 w-10 items-center justify-center rounded-2xl bg-frog-100 dark:bg-forest-800">
-                <MaterialCommunityIcons name={section.icon} size={22} color="#087443" />
-              </View>
-              <View className="ml-3 flex-1">
-                <Text className="text-xl font-black text-forest-950 dark:text-white">{section.title[language]}</Text>
-                <Text className="mt-0.5 text-xs text-forest-500 dark:text-mint-300">{section.subtitle[language]}</Text>
-              </View>
-            </View>
-            <ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>
-              {species.map((item) => (
-                <Pressable
-                  accessibilityRole="button"
-                  className="w-52 overflow-hidden rounded-3xl border border-mint-200 bg-white dark:border-forest-700 dark:bg-forest-900"
-                  key={item.id}
-                  onPress={() => router.push({ pathname: '/(aux)/species', params: { id: item.id } })}
-                >
-                  {item.image_url ? (
-                    <Image source={{ uri: item.image_url }} contentFit="cover" style={{ height: 128, width: '100%' }} transition={180} />
-                  ) : (
-                    <View className="h-32 items-center justify-center bg-frog-100 dark:bg-forest-800">
-                      <MaterialCommunityIcons name={section.icon} size={44} color="#087443" />
-                    </View>
-                  )}
-                  <View className="p-4">
-                    <Text className="text-base font-black text-forest-950 dark:text-white">
-                      {language === 'es' ? item.common_name_es : item.common_name_en}
-                    </Text>
-                    <Text className="mt-1 text-xs italic text-forest-500 dark:text-mint-300">{item.scientific_name}</Text>
-                    <View className="mt-3 flex-row items-center">
-                      {item.location_protected ? <MaterialCommunityIcons name="shield-lock" size={16} color="#ff5d52" /> : null}
-                      <Text className="ml-1 text-xs font-bold text-forest-700 dark:text-frog-300">{getVulnerabilityLabel(item.vulnerability_status, language)}</Text>
-                    </View>
-                  </View>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        );
-      }) : null}
+      {home ? <View className="px-5 pt-6">
+        <View className="rounded-[30px] bg-[#075c49] p-6 md:p-8">
+          <View className="flex-row items-center justify-between"><View className="flex-1"><Text className="text-2xl font-black text-white">{language === 'es' ? 'Tu Life List de Costa Rica' : 'Your Costa Rica Life List'}</Text><Text className="mt-2 leading-6 text-mint-100">{language === 'es' ? `Has registrado ${home.seenSpeciesIds.size} de ${home.species.length} especies del catálogo.` : `You have recorded ${home.seenSpeciesIds.size} of ${home.species.length} catalog species.`}</Text></View><View className="ml-4 rounded-2xl border border-white/20 bg-white/10 px-5 py-4"><Text className="text-2xl font-black text-[#ffd43b]">{home.seenSpeciesIds.size} / {home.species.length}</Text></View></View>
+          <View className="mt-5 h-2 overflow-hidden rounded-full bg-white/15"><View className="h-full rounded-full bg-[#ffd43b]" style={{ width: `${home.species.length ? home.seenSpeciesIds.size / home.species.length * 100 : 0}%` }} /></View>
+        </View>
+        <View className="mt-5 flex-row flex-wrap gap-3">{home.species.map((item) => { const seen = home.seenSpeciesIds.has(item.id); return <View className={seen ? 'overflow-hidden rounded-3xl border border-[#00b981] bg-[#17332f] p-4' : 'overflow-hidden rounded-3xl border border-[#2e394e] bg-[#192235] p-4'} key={item.id} style={{ width: wide ? '32%' : '100%' }}><Pressable accessibilityRole="button" className="flex-row items-center" onPress={() => router.push({ pathname: '/(aux)/species', params: { id: item.id } })}>{item.image_url ? <Image source={{ uri: item.image_url }} contentFit="cover" style={{ borderRadius: 14, height: 64, width: 64 }} transition={180} /> : <View className="h-16 w-16 items-center justify-center rounded-2xl bg-forest-800"><MaterialCommunityIcons name="paw" size={30} color="#78dfa1" /></View>}<View className="ml-4 flex-1"><Text className={seen ? 'font-black text-white' : 'font-black text-[#b9c0ce]'}>{language === 'es' ? item.common_name_es : item.common_name_en}</Text><Text className="mt-1 text-xs italic text-[#78869e]">{item.scientific_name}</Text><Text className="mt-2 text-[10px] font-black uppercase text-[#78dfa1]">{item.is_national_symbol ? 'CR Símbolo' : item.tour_observable ? (language === 'es' ? 'Observable en tour' : 'Tour observable') : getVulnerabilityLabel(item.vulnerability_status, language)}</Text></View><View className={seen ? 'h-10 w-10 items-center justify-center rounded-full bg-[#00b981]' : 'h-10 w-10 items-center justify-center rounded-full border border-[#39455b]'}>{seen ? <MaterialCommunityIcons name="check" size={23} color="white" /> : null}</View></Pressable><Pressable accessibilityRole="button" className="mt-4 flex-row items-center justify-center rounded-xl bg-white/5 py-3" onPress={() => router.push({ pathname: '/(aux)/species', params: { id: item.id, share: '1' } })}><MaterialCommunityIcons name="camera-plus-outline" size={20} color="#78dfa1" /><Text className="ml-2 text-xs font-black text-white">{language === 'es' ? 'Compartir foto' : 'Share photo'}</Text></Pressable></View>; })}</View>
+      </View> : null}
 
       {home ? (
         <View className="mt-8">
@@ -213,8 +150,8 @@ export default function FaunaScreen() {
         <View className="mt-9 px-5">
           <View className="flex-row items-end justify-between">
             <View>
-              <Text className="text-2xl font-black text-forest-950 dark:text-white">{language === 'es' ? 'Álbum colaborativo' : 'Collaborative album'}</Text>
-              <Text className="mt-1 text-sm text-forest-500 dark:text-mint-300">{language === 'es' ? 'Fotos compartidas por la comunidad' : 'Photos shared by the community'}</Text>
+              <Text className="text-2xl font-black text-forest-950 dark:text-white">{language === 'es' ? 'Amigos Viajeros' : 'Travel Friends'}</Text>
+              <Text className="mt-1 text-sm text-forest-500 dark:text-mint-300">{language === 'es' ? 'El muro para compartir fotos, experiencias y conversaciones de viaje' : 'The wall for sharing photos, experiences and travel conversations'}</Text>
             </View>
             <MaterialCommunityIcons name="image-multiple-outline" size={29} color="#087443" />
           </View>
@@ -222,8 +159,8 @@ export default function FaunaScreen() {
           {!home.photos.length ? (
             <View className="mt-5 items-center rounded-3xl border border-dashed border-mint-300 bg-white p-7 dark:border-forest-600 dark:bg-forest-900">
               <MaterialCommunityIcons name="camera-plus-outline" size={42} color="#13a95b" />
-              <Text className="mt-3 text-center font-black text-forest-950 dark:text-white">{language === 'es' ? 'El álbum está esperando su primera foto' : 'The album is waiting for its first photo'}</Text>
-              <Text className="mt-2 text-center text-sm leading-5 text-forest-500 dark:text-mint-300">{language === 'es' ? 'Abrí una especie para tomar o elegir una foto.' : 'Open a species to take or choose a photo.'}</Text>
+              <Text className="mt-3 text-center font-black text-forest-950 dark:text-white">{language === 'es' ? 'Amigos Viajeros espera su primera historia' : 'Travel Friends is waiting for its first story'}</Text>
+              <Text className="mt-2 text-center text-sm leading-5 text-forest-500 dark:text-mint-300">{language === 'es' ? 'Abrí cualquier animal, compartí una foto y comenzá una conversación.' : 'Open any animal, share a photo and start a conversation.'}</Text>
             </View>
           ) : home.photos.map((photo) => (
             <AlbumPhoto

@@ -1,9 +1,8 @@
 const TEST_ANDROID_APP_ID = 'ca-app-pub-3940256099942544~3347511713';
 const TEST_IOS_APP_ID = 'ca-app-pub-3940256099942544~1458002511';
 
-module.exports = ({ config }) => ({
-  ...config,
-  plugins: config.plugins.map((plugin) => {
+module.exports = ({ config }) => {
+  const plugins = config.plugins.map((plugin) => {
     const name = Array.isArray(plugin) ? plugin[0] : plugin;
     if (name !== 'react-native-google-mobile-ads') return plugin;
     return [
@@ -14,5 +13,7 @@ module.exports = ({ config }) => ({
         delayAppMeasurementInit: true,
       },
     ];
-  }),
-});
+  });
+  plugins.push(['expo-audio', { microphonePermission: false, recordAudioAndroid: false }]);
+  return { ...config, plugins };
+};

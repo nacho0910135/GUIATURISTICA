@@ -67,8 +67,14 @@ export function getVulnerabilityLabel(status: string | null, language: 'es' | 'e
   return language === 'es' ? status : (vulnerabilityLabels[status] ?? status);
 }
 
+export async function getVerifiedSanctuaries(): Promise<FaunaSanctuary[]> {
+  const { data, error } = await supabase.from('fauna_sanctuaries').select('*').eq('verified', true).order('name');
+  if (error) throw error;
+  return (data ?? []) as FaunaSanctuary[];
+}
+
 export async function getFaunaHome(userId?: string) {
-  const [species, sanctuaries, photos, comments, likes, follows] = await Promise.all([
+  const [species, sanctuaries, photos, comments, likes, follows, sightings] = await Promise.all([
     supabase.from('fauna_species_public').select('*').order('common_name_es'),
     supabase.from('fauna_sanctuaries').select('*').eq('verified', true).order('name'),
     supabase.from('fauna_photos').select('*').order('created_at', { ascending: false }).limit(24),
@@ -79,8 +85,11 @@ export async function getFaunaHome(userId?: string) {
     userId
       ? supabase.from('user_follows').select('followed_id').eq('follower_id', userId)
       : Promise.resolve({ data: [], error: null }),
+    userId
+      ? supabase.from('user_fauna_sightings').select('fauna_id').eq('user_id', userId).gt('sightings_count', 0)
+      : Promise.resolve({ data: [], error: null }),
   ]);
-  const error = species.error ?? sanctuaries.error ?? photos.error ?? comments.error ?? likes.error ?? follows.error;
+  const error = species.error ?? sanctuaries.error ?? photos.error ?? comments.error ?? likes.error ?? follows.error ?? sightings.error;
   if (error) throw error;
   return {
     species: (species.data ?? []) as FaunaSpecies[],
@@ -89,6 +98,7 @@ export async function getFaunaHome(userId?: string) {
     comments: (comments.data ?? []) as FaunaComment[],
     likedPhotoIds: new Set((likes.data ?? []).map((row) => row.target_id as string)),
     followedUserIds: new Set((follows.data ?? []).map((row) => row.followed_id as string)),
+    seenSpeciesIds: new Set((sightings.data ?? []).map((row) => row.fauna_id as string)),
   };
 }
 

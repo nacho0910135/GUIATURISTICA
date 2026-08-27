@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
+import { useAudioPlayer } from 'expo-audio';
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -13,14 +14,21 @@ import Animated, {
 
 import { useApp } from '@/providers/app-provider';
 
+let startupSoundPlayed = false;
+
 export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   const { isDark } = useApp();
+  const player = useAudioPlayer(require('@/assets/audio/frog-croak.mp3'));
   const opacity = useSharedValue(1);
   const scale = useSharedValue(0.88);
   const sway = useSharedValue(-1.5);
   const blink = useSharedValue(0);
 
   useEffect(() => {
+    if (Platform.OS !== 'web' && !startupSoundPlayed) {
+      startupSoundPlayed = true;
+      player.play();
+    }
     scale.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.back(1.2)) });
     sway.value = withRepeat(withSequence(withTiming(1.5, { duration: 520 }), withTiming(-1.5, { duration: 520 })), -1);
     blink.value = withRepeat(
@@ -30,7 +38,7 @@ export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
     opacity.value = withDelay(1700, withTiming(0, { duration: 300, easing: Easing.inOut(Easing.quad) }));
     const timer = setTimeout(onFinish, 2000);
     return () => clearTimeout(timer);
-  }, [blink, onFinish, opacity, scale, sway]);
+  }, [blink, onFinish, opacity, player, scale, sway]);
 
   const containerStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const mascotStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }, { rotate: `${sway.value}deg` }] }));

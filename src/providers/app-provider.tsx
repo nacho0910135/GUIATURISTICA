@@ -9,18 +9,19 @@ import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 
 type Currency = 'USD' | 'CRC';
+export type VisitorType = 'tico' | 'foreigner';
 type AuthMode = 'signin' | 'signup';
 
 type AppContextValue = {
   language: Language;
   currency: Currency;
+  visitorType: VisitorType;
   exchangeRate: number;
   session: Session | null;
   authReady: boolean;
   isDark: boolean;
   t: (key: CopyKey) => string;
-  setLanguage: (value: Language) => void;
-  setCurrency: (value: Currency) => void;
+  setVisitorType: (value: VisitorType) => void;
   formatPrice: (crcAmount: number) => string;
   requireAuth: (intent: string) => boolean;
   authenticate: (mode: AuthMode, email: string, password: string) => Promise<string | null>;
@@ -34,8 +35,9 @@ const FALLBACK_USD_CRC = 503.84;
 export function AppProvider({ children }: PropsWithChildren) {
   const router = useRouter();
   const { colorScheme } = useColorScheme();
-  const [language, setLanguage] = useState<Language>('es');
-  const [currency, setCurrency] = useState<Currency>('CRC');
+  const [visitorType, setVisitorType] = useState<VisitorType>('tico');
+  const language: Language = visitorType === 'tico' ? 'es' : 'en';
+  const currency: Currency = visitorType === 'tico' ? 'CRC' : 'USD';
   const [exchangeRate, setExchangeRate] = useState(FALLBACK_USD_CRC);
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -115,9 +117,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   const signOut = useCallback(async () => { await supabase.auth.signOut(); }, []);
 
   const value = useMemo<AppContextValue>(() => ({
-    language, currency, exchangeRate, session, authReady, isDark: colorScheme === 'dark', t,
-    setLanguage, setCurrency, formatPrice, requireAuth, authenticate, signInWithGoogle, signOut,
-  }), [language, currency, exchangeRate, session, authReady, colorScheme, t, formatPrice, requireAuth, authenticate, signInWithGoogle, signOut]);
+    language, currency, visitorType, exchangeRate, session, authReady, isDark: colorScheme === 'dark', t,
+    setVisitorType, formatPrice, requireAuth, authenticate, signInWithGoogle, signOut,
+  }), [language, currency, visitorType, exchangeRate, session, authReady, colorScheme, t, formatPrice, requireAuth, authenticate, signInWithGoogle, signOut]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
