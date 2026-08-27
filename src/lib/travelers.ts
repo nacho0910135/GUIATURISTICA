@@ -4,29 +4,27 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase';
 
 export type TravelerProfile = { id: string; username: string | null; full_name: string | null; avatar_url: string | null };
-export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; created_at: string; user?: TravelerProfile };
-export type TravelerReply = { id: string; post_id: string; user_id: string; body: string; created_at: string; user?: TravelerProfile };
+export type SharedLocation = { latitude: number; longitude: number };
+export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; latitude: number | null; longitude: number | null; created_at: string; user?: TravelerProfile };
+export type ReactionType = 'like' | 'love' | 'laugh' | 'angry' | 'wow' | 'sad';
+export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
 
 export async function getTravelerWall(userId?: string) {
-  const [posts, replies, likes, follows] = await Promise.all([
+  const [posts, replies, reactions, follows] = await Promise.all([
     supabase.from('traveler_posts').select('*, user:users(id,username,full_name,avatar_url)').order('created_at', { ascending: false }).limit(40),
     supabase.from('traveler_replies').select('*, user:users(id,username,full_name,avatar_url)').order('created_at').limit(200),
-    userId ? supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'traveler_post') : Promise.resolve({ data: [], error: null }),
+    supabase.from('traveler_reactions').select('post_id,user_id,reaction'),
     userId ? supabase.from('user_follows').select('followed_id').eq('follower_id', userId) : Promise.resolve({ data: [], error: null }),
   ]);
-  const error = posts.error ?? replies.error ?? likes.error ?? follows.error;
+  const error = posts.error ?? replies.error ?? reactions.error ?? follows.error;
   if (error) throw error;
-  const postIds = (posts.data ?? []).map((post) => post.id as string);
-  const { data: allLikes, error: likesError } = postIds.length
-    ? await supabase.from('likes').select('target_id').eq('target_type', 'traveler_post').in('target_id', postIds)
-    : { data: [], error: null };
-  if (likesError) throw likesError;
+  const reactionRows = (reactions.data ?? []) as { post_id: string; user_id: string; reaction: ReactionType }[];
   return {
     posts: (posts.data ?? []) as TravelerPost[],
     replies: (replies.data ?? []) as TravelerReply[],
-    likedPostIds: new Set((likes.data ?? []).map((row) => row.target_id as string)),
+    myReactions: reactionRows.reduce<Record<string, ReactionType>>((mine, row) => { if (row.user_id === userId) mine[row.post_id] = row.reaction; return mine; }, {}),
     followedUserIds: new Set((follows.data ?? []).map((row) => row.followed_id as string)),
-    likeCounts: (allLikes ?? []).reduce<Record<string, number>>((counts, row) => { counts[row.target_id] = (counts[row.target_id] ?? 0) + 1; return counts; }, {}),
+    reactionCounts: reactionRows.reduce<Record<string, Record<ReactionType, number>>>((counts, row) => { const post = counts[row.post_id] ??= {} as Record<ReactionType, number>; post[row.reaction] = (post[row.reaction] ?? 0) + 1; return counts; }, {}),
   };
 }
 
@@ -42,21 +40,27 @@ async function uploadPostImage(userId: string, asset: ImagePickerAsset) {
   return supabase.storage.from('traveler-posts').getPublicUrl(path).data.publicUrl;
 }
 
-export async function createTravelerPost(userId: string, body: string, asset?: ImagePickerAsset) {
+export async function createTravelerPost(userId: string, body: string, asset?: ImagePickerAsset, location?: SharedLocation) {
   const imageUrl = asset ? await uploadPostImage(userId, asset) : null;
-  const { error } = await supabase.from('traveler_posts').insert({ user_id: userId, body: body.trim(), image_url: imageUrl });
+  const { error } = await supabase.from('traveler_posts').insert({
+    user_id: userId,
+    body: body.trim(),
+    image_url: imageUrl,
+    latitude: location?.latitude ?? null,
+    longitude: location?.longitude ?? null,
+  });
   if (error) throw error;
 }
 
-export async function addTravelerReply(postId: string, userId: string, body: string) {
-  const { error } = await supabase.from('traveler_replies').insert({ post_id: postId, user_id: userId, body: body.trim() });
+export async function addTravelerReply(postId: string, userId: string, body: string, parentReplyId?: string) {
+  const { error } = await supabase.from('traveler_replies').insert({ post_id: postId, user_id: userId, body: body.trim(), parent_reply_id: parentReplyId ?? null });
   if (error) throw error;
 }
 
-export async function toggleTravelerLike(postId: string, userId: string, liked: boolean) {
-  const query = liked
-    ? supabase.from('likes').delete().eq('user_id', userId).eq('target_type', 'traveler_post').eq('target_id', postId)
-    : supabase.from('likes').insert({ user_id: userId, target_type: 'traveler_post', target_id: postId });
+export async function setTravelerReaction(postId: string, userId: string, reaction: ReactionType, current?: ReactionType) {
+  const query = current === reaction
+    ? supabase.from('traveler_reactions').delete().eq('user_id', userId).eq('post_id', postId)
+    : supabase.from('traveler_reactions').upsert({ user_id: userId, post_id: postId, reaction });
   const { error } = await query;
   if (error) throw error;
 }

@@ -33,12 +33,9 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="(aux)/auth-modal"
-                options={{ animation: 'slide_from_bottom', presentation: 'transparentModal' }}
-              />
               <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="(aux)/traveler-profile" options={{ animation: 'slide_from_right' }} />
             </Stack>
           </View>
           {showSplash ? <AnimatedSplash onFinish={() => setShowSplash(false)} /> : null}

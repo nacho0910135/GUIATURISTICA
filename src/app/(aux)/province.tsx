@@ -21,6 +21,7 @@ function imageFor(category: string) {
 }
 
 function imageSource(place: MapPlace) {
+  if (place.photos[0]) return { uri: place.photos[0] };
   return place.image_verified && place.cover_image_url ? { uri: place.cover_image_url } : imageFor(place.category);
 }
 
@@ -188,6 +189,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
               </View>
               <View className="absolute bottom-0 left-0 right-0 bg-black/55 px-6 pb-6 pt-14"><View className="flex-row items-center gap-2"><View className="rounded-lg bg-[#00b981] px-3 py-2"><Text className="font-black text-white">{place.category}</Text></View>{place.average_rating ? <View className="rounded-lg bg-[#ffac16] px-3 py-2"><Text className="font-black text-white">★ {place.average_rating.toFixed(1)} ({place.reviews_count})</Text></View> : null}</View><Text className="mt-3 text-3xl font-black text-white md:text-4xl">{place.name}</Text></View>
             </View>
+            {place.photos.length > 1 ? <ScrollView horizontal contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingTop: 20 }} showsHorizontalScrollIndicator={false}>{place.photos.map((url, index) => <Image contentFit="cover" key={url} source={{ uri: url }} style={{ borderRadius: 16, height: 100, width: 145 }} accessibilityLabel={`Foto ${index + 1} de ${place.name}`} />)}</ScrollView> : null}
             <View className="gap-6 p-5 md:p-8">
               <View className="flex-row rounded-3xl border border-white/10 bg-[#302e2b] py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={place.difficulty || (language === 'es' ? 'Consultar' : 'Check')} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-white/10 bg-[#302e2b] p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-white">{weather.data.description}</Text><Text className="mt-1 text-[#aaa49e]">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-white">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}

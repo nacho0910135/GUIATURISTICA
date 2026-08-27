@@ -1,31 +1,42 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useFocusEffect } from 'expo-router';
+import * as Location from 'expo-location';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { addTravelerReply, createTravelerPost, getTravelerWall, toggleTravelerFollow, toggleTravelerLike, type TravelerPost } from '@/lib/travelers';
+import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, toggleTravelerFollow, type ReactionType, type TravelerPost } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
 type Wall = Awaited<ReturnType<typeof getTravelerWall>>;
 
 const displayName = (post: TravelerPost) => post.user?.full_name || post.user?.username || `Viajero ${post.user_id.slice(0, 5)}`;
+const reactions: { type: ReactionType; emoji: string; label: string }[] = [
+  { type: 'like', emoji: '👍', label: 'Me gusta' }, { type: 'love', emoji: '❤️', label: 'Me encanta' },
+  { type: 'laugh', emoji: '😂', label: 'Me divierte' }, { type: 'wow', emoji: '😮', label: 'Me asombra' },
+  { type: 'angry', emoji: '😡', label: 'Me enoja' }, { type: 'sad', emoji: '🤢', label: 'Me disgusta' },
+];
 
 export default function FriendsScreen() {
+  const router = useRouter();
   const { language, requireAuth, session } = useApp();
+  const userId = session?.user.id;
   const [wall, setWall] = useState<Wall>();
   const [body, setBody] = useState('');
   const [asset, setAsset] = useState<ImagePicker.ImagePickerAsset>();
+  const [location, setLocation] = useState<{ latitude: number; longitude: number }>();
   const [replying, setReplying] = useState<string>();
   const [reply, setReply] = useState('');
+  const [parentReplyId, setParentReplyId] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [publishError, setPublishError] = useState<string>();
 
   const load = useCallback(async () => {
-    try { setError(undefined); setWall(await getTravelerWall(session?.user.id)); }
+    try { setError(undefined); setWall(await getTravelerWall(userId)); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo cargar Amigos Viajeros.'); }
-  }, [session?.user.id]);
+  }, [userId]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
@@ -37,32 +48,58 @@ export default function FriendsScreen() {
     if (!result.canceled) setAsset(result.assets[0]);
   };
 
+  const chooseLocation = async () => {
+    if (location) return setLocation(undefined);
+    const permission = await Location.requestForegroundPermissionsAsync();
+    if (!permission.granted) {
+      setPublishError(language === 'es' ? 'Necesitamos permiso para compartir tu ubicación.' : 'Location permission is required.');
+      return;
+    }
+    try {
+      setBusy(true);
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setLocation({ latitude: current.coords.latitude, longitude: current.coords.longitude });
+      setPublishError(undefined);
+    } catch (reason) {
+      setPublishError(reason instanceof Error ? reason.message : 'No se pudo obtener la ubicación.');
+    } finally { setBusy(false); }
+  };
+
   const publish = async () => {
-    if (!requireAuth(language === 'es' ? 'Crear una publicación' : 'Create a post') || !session || (!body.trim() && !asset)) return;
+    if (!requireAuth(language === 'es' ? 'Crear una publicación' : 'Create a post') || !session || (!body.trim() && !asset && !location)) return;
     setBusy(true);
-    try { await createTravelerPost(session.user.id, body, asset); setBody(''); setAsset(undefined); await load(); }
-    catch (reason) { Alert.alert('Amigos Viajeros', reason instanceof Error ? reason.message : 'No se pudo publicar.'); }
+    setPublishError(undefined);
+    try { await createTravelerPost(session.user.id, body, asset, location); setBody(''); setAsset(undefined); setLocation(undefined); await load(); }
+    catch (reason) { setPublishError(reason instanceof Error ? reason.message : 'No se pudo publicar.'); }
     finally { setBusy(false); }
   };
 
   const respond = async (postId: string) => {
     if (!requireAuth(language === 'es' ? 'Responder una publicación' : 'Reply to a post') || !session || !reply.trim()) return;
     setBusy(true);
-    try { await addTravelerReply(postId, session.user.id, reply); setReply(''); await load(); }
+    try { await addTravelerReply(postId, session.user.id, reply, parentReplyId); setReply(''); setParentReplyId(undefined); await load(); }
     catch (reason) { Alert.alert('Amigos Viajeros', reason instanceof Error ? reason.message : 'No se pudo responder.'); }
     finally { setBusy(false); }
   };
 
-  const like = async (postId: string) => {
+  const react = async (postId: string, reaction: ReactionType) => {
     if (!requireAuth(language === 'es' ? 'Dar me gusta' : 'Like a post') || !session || !wall) return;
-    await toggleTravelerLike(postId, session.user.id, wall.likedPostIds.has(postId));
-    await load();
+    try {
+      await setTravelerReaction(postId, session.user.id, reaction, wall.myReactions[postId]);
+      await load();
+    } catch (reason) {
+      Alert.alert('Amigos Viajeros', reason instanceof Error ? reason.message : 'No se pudo actualizar el me gusta.');
+    }
   };
 
   const follow = async (userId: string) => {
     if (!requireAuth(language === 'es' ? 'Seguir a un viajero' : 'Follow a traveler') || !session || !wall) return;
-    await toggleTravelerFollow(session.user.id, userId, wall.followedUserIds.has(userId));
-    await load();
+    try {
+      await toggleTravelerFollow(session.user.id, userId, wall.followedUserIds.has(userId));
+      await load();
+    } catch (reason) {
+      Alert.alert('Amigos Viajeros', reason instanceof Error ? reason.message : 'No se pudo actualizar el seguimiento.');
+    }
   };
 
   return (
@@ -90,9 +127,11 @@ export default function FriendsScreen() {
             />
           </View>
           {asset ? <View className="mt-3 overflow-hidden rounded-2xl"><Image source={{ uri: asset.uri }} contentFit="cover" style={{ height: 220, width: '100%' }} /><Pressable className="absolute right-3 top-3 h-9 w-9 items-center justify-center rounded-full bg-black/60" onPress={() => setAsset(undefined)}><MaterialCommunityIcons name="close" size={20} color="white" /></Pressable></View> : null}
+          {location ? <View className="mt-3 flex-row items-center rounded-2xl bg-mint-100 p-3 dark:bg-forest-800"><MaterialCommunityIcons name="map-marker" size={24} color="#087443" /><Text className="ml-2 flex-1 font-bold text-forest-800 dark:text-mint-100">{language === 'es' ? 'Ubicación lista para compartir' : 'Location ready to share'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Quitar ubicación' : 'Remove location'} onPress={() => setLocation(undefined)}><MaterialCommunityIcons name="close" size={20} color="#315f4e" /></Pressable></View> : null}
+          {publishError ? <Text className="mt-3 rounded-xl bg-red-50 p-3 font-bold text-red-600">{publishError}</Text> : null}
           <View className="mt-3 flex-row items-center justify-between border-t border-[#e5e8e7] pt-3">
-            <Pressable accessibilityRole="button" className="flex-row items-center rounded-xl px-3 py-2" onPress={() => void choosePhoto()}><MaterialCommunityIcons name="image-multiple" size={27} color="#18b65b" /><Text className="ml-2 font-bold text-forest-700 dark:text-mint-100">{language === 'es' ? 'Foto' : 'Photo'}</Text></Pressable>
-            <Pressable accessibilityRole="button" className="rounded-xl bg-frog-500 px-6 py-3 disabled:opacity-40" disabled={busy || (!body.trim() && !asset)} onPress={() => void publish()}><Text className="font-black text-white">{language === 'es' ? 'Publicar' : 'Post'}</Text></Pressable>
+            <View className="flex-row"><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl px-3 py-2" onPress={() => void choosePhoto()}><MaterialCommunityIcons name="image-multiple" size={27} color="#18b65b" /><Text className="ml-2 font-bold text-forest-700 dark:text-mint-100">{language === 'es' ? 'Foto' : 'Photo'}</Text></Pressable><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl px-3 py-2" onPress={() => void chooseLocation()}><MaterialCommunityIcons name="map-marker-outline" size={27} color="#e05a47" /><Text className="ml-1 font-bold text-forest-700 dark:text-mint-100">{language === 'es' ? 'Ubicación' : 'Location'}</Text></Pressable></View>
+            <Pressable accessibilityRole="button" className="rounded-xl bg-frog-500 px-6 py-3 disabled:opacity-40" disabled={busy || (!body.trim() && !asset && !location)} onPress={() => void publish()}>{busy ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar' : 'Post'}</Text>}</Pressable>
           </View>
         </View>
 
@@ -107,17 +146,18 @@ export default function FriendsScreen() {
             <View className="p-5">
               <View className="flex-row items-center">
                 {post.user?.avatar_url ? <Image source={{ uri: post.user.avatar_url }} style={{ borderRadius: 23, height: 46, width: 46 }} /> : <View className="h-11 w-11 items-center justify-center rounded-full bg-mint-200"><MaterialCommunityIcons name="account" size={24} color="#087443" /></View>}
-                <View className="ml-3 flex-1"><Text className="font-black text-forest-950 dark:text-white">{displayName(post)}</Text><Text className="mt-1 text-xs text-forest-500 dark:text-mint-300">{new Date(post.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></View>
-                {!own ? <Pressable onPress={() => void follow(post.user_id)}><Text className="font-black text-frog-600">{wall.followedUserIds.has(post.user_id) ? (language === 'es' ? 'Siguiendo' : 'Following') : (language === 'es' ? 'Seguir' : 'Follow')}</Text></Pressable> : null}
+                <Pressable className="ml-3 flex-1" onPress={() => router.push({ pathname: '/(aux)/traveler-profile', params: { id: post.user_id } })}><Text className="font-black text-forest-950 dark:text-white">{displayName(post)}</Text><Text className="mt-1 text-xs text-forest-500 dark:text-mint-300">{new Date(post.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></Pressable>
+                {!own ? <Pressable className="ml-2 rounded-full bg-mint-100 px-3 py-2 dark:bg-forest-800" onPress={() => void follow(post.user_id)}><Text className="font-black text-frog-600">{wall.followedUserIds.has(post.user_id) ? (language === 'es' ? 'Siguiendo' : 'Following') : (language === 'es' ? 'Seguir' : 'Follow')}</Text></Pressable> : null}
               </View>
               {post.body ? <Text className="mt-4 text-base leading-6 text-forest-800 dark:text-mint-100">{post.body}</Text> : null}
             </View>
             {post.image_url ? <Image source={{ uri: post.image_url }} contentFit="cover" style={{ aspectRatio: 1.35, width: '100%' }} /> : null}
-            <View className="flex-row border-t border-[#e5e8e7] px-5 py-3">
-              <Pressable className="mr-7 flex-row items-center" onPress={() => void like(post.id)}><MaterialCommunityIcons name={wall.likedPostIds.has(post.id) ? 'heart' : 'heart-outline'} size={23} color="#ff4f6d" /><Text className="ml-2 font-bold text-forest-600 dark:text-mint-200">{wall.likeCounts[post.id] ?? 0}</Text></Pressable>
-              <Pressable className="flex-row items-center" onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); }}><MaterialCommunityIcons name="comment-outline" size={23} color="#087443" /><Text className="ml-2 font-bold text-forest-600 dark:text-mint-200">{language === 'es' ? `Responder · ${postReplies.length}` : `Reply · ${postReplies.length}`}</Text></Pressable>
+            {post.latitude != null && post.longitude != null ? <Pressable className="mx-5 mb-4 flex-row items-center rounded-2xl bg-mint-100 p-4 dark:bg-forest-800" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}`)}><MaterialCommunityIcons name="map-marker-radius" size={25} color="#087443" /><View className="ml-3 flex-1"><Text className="font-black text-forest-900 dark:text-white">{language === 'es' ? 'Ver ubicación compartida' : 'View shared location'}</Text><Text className="mt-1 text-xs text-forest-500 dark:text-mint-300">{post.latitude.toFixed(5)}, {post.longitude.toFixed(5)}</Text></View><MaterialCommunityIcons name="open-in-new" size={20} color="#087443" /></Pressable> : null}
+            <View className="border-t border-[#e5e8e7] px-5 py-3">
+              <View className="flex-row flex-wrap gap-2">{reactions.map((item) => <Pressable accessibilityLabel={item.label} className={wall.myReactions[post.id] === item.type ? 'rounded-full bg-mint-200 px-3 py-2 dark:bg-forest-700' : 'rounded-full bg-[#f3f5f4] px-3 py-2 dark:bg-forest-800'} key={item.type} onPress={() => void react(post.id, item.type)}><Text className="text-base">{item.emoji} {wall.reactionCounts[post.id]?.[item.type] ?? 0}</Text></Pressable>)}</View>
+              <Pressable className="mt-3 flex-row items-center" onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><MaterialCommunityIcons name="comment-outline" size={23} color="#087443" /><Text className="ml-2 font-bold text-forest-600 dark:text-mint-200">{language === 'es' ? `Responder · ${postReplies.length}` : `Reply · ${postReplies.length}`}</Text></Pressable>
             </View>
-            {replying === post.id ? <View className="border-t border-[#e5e8e7] bg-[#f7f9f8] p-4 dark:bg-forest-800">{postReplies.map((item) => <View className="mb-3 rounded-2xl bg-white p-3 dark:bg-forest-900" key={item.id}><Text className="text-xs font-black text-forest-700 dark:text-frog-300">{item.user?.full_name || item.user?.username || `Viajero ${item.user_id.slice(0, 5)}`}</Text><Text className="mt-1 text-forest-800 dark:text-mint-100">{item.body}</Text></View>)}<View className="flex-row items-end"><TextInput className="mr-2 flex-1 rounded-2xl bg-white px-4 py-3 text-forest-950 dark:bg-forest-900 dark:text-white" maxLength={1000} multiline onChangeText={setReply} placeholder={language === 'es' ? 'Escribí una respuesta…' : 'Write a reply…'} placeholderTextColor="#73807b" value={reply} /><Pressable className="h-11 w-11 items-center justify-center rounded-full bg-frog-500 disabled:opacity-40" disabled={busy || !reply.trim()} onPress={() => void respond(post.id)}><MaterialCommunityIcons name="send" size={20} color="white" /></Pressable></View></View> : null}
+            {replying === post.id ? <View className="border-t border-[#e5e8e7] bg-[#f7f9f8] p-4 dark:bg-forest-800">{postReplies.map((item) => <View className={item.parent_reply_id ? 'mb-3 ml-7 rounded-2xl border-l-4 border-frog-300 bg-white p-3 dark:bg-forest-900' : 'mb-3 rounded-2xl bg-white p-3 dark:bg-forest-900'} key={item.id}><Text className="text-xs font-black text-forest-700 dark:text-frog-300">{item.user?.full_name || item.user?.username || `Viajero ${item.user_id.slice(0, 5)}`}</Text><Text className="mt-1 text-forest-800 dark:text-mint-100">{item.body}</Text><Pressable className="mt-2 self-start" onPress={() => { setParentReplyId(item.id); setReply(''); }}><Text className="text-xs font-black text-frog-600">{language === 'es' ? 'Responder comentario' : 'Reply to comment'}</Text></Pressable></View>)}{parentReplyId ? <View className="mb-2 flex-row items-center"><Text className="flex-1 text-xs font-bold text-forest-500">{language === 'es' ? 'Respondiendo a un comentario' : 'Replying to a comment'}</Text><Pressable onPress={() => setParentReplyId(undefined)}><Text className="font-black text-coral-600">×</Text></Pressable></View> : null}<View className="flex-row items-end"><TextInput className="mr-2 flex-1 rounded-2xl bg-white px-4 py-3 text-forest-950 dark:bg-forest-900 dark:text-white" maxLength={1000} multiline onChangeText={setReply} placeholder={language === 'es' ? 'Escribí una respuesta…' : 'Write a reply…'} placeholderTextColor="#73807b" value={reply} /><Pressable className="h-11 w-11 items-center justify-center rounded-full bg-frog-500 disabled:opacity-40" disabled={busy || !reply.trim()} onPress={() => void respond(post.id)}><MaterialCommunityIcons name="send" size={20} color="white" /></Pressable></View></View> : null}
           </View>;
         })}
       </View>

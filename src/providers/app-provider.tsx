@@ -1,7 +1,4 @@
 import type { Session } from '@supabase/supabase-js';
-import * as Linking from 'expo-linking';
-import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useColorScheme } from 'nativewind';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
@@ -10,7 +7,15 @@ import { supabase } from '@/lib/supabase';
 
 type Currency = 'USD' | 'CRC';
 export type VisitorType = 'tico' | 'foreigner';
-type AuthMode = 'signin' | 'signup';
+export const GUEST_USER_ID = '00000000-0000-4000-8000-000000000001';
+
+const GUEST_SESSION = {
+  access_token: '', refresh_token: '', expires_in: 0, token_type: 'bearer',
+  user: {
+    id: GUEST_USER_ID, aud: 'anon', created_at: new Date(0).toISOString(),
+    app_metadata: {}, user_metadata: { full_name: 'Invitado' },
+  },
+} as Session;
 
 type AppContextValue = {
   language: Language;
@@ -24,31 +29,39 @@ type AppContextValue = {
   setVisitorType: (value: VisitorType) => void;
   formatPrice: (crcAmount: number) => string;
   requireAuth: (intent: string) => boolean;
-  authenticate: (mode: AuthMode, email: string, password: string) => Promise<string | null>;
-  signInWithGoogle: () => Promise<string | null>;
-  signOut: () => Promise<void>;
+  isAdmin: boolean;
+  signInAdmin: (email: string, password: string) => Promise<void>;
+  signOutAdmin: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
 const FALLBACK_USD_CRC = 503.84;
 
 export function AppProvider({ children }: PropsWithChildren) {
-  const router = useRouter();
   const { colorScheme } = useColorScheme();
   const [visitorType, setVisitorType] = useState<VisitorType>('tico');
   const language: Language = visitorType === 'tico' ? 'es' : 'en';
   const currency: Currency = visitorType === 'tico' ? 'CRC' : 'USD';
   const [exchangeRate, setExchangeRate] = useState(FALLBACK_USD_CRC);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+  const [adminSession, setAdminSession] = useState<Session | null>(null);
+  const session = adminSession ?? GUEST_SESSION;
+  const authReady = true;
+  const isAdmin = Boolean(adminSession);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setAuthReady(true);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
-    return () => data.subscription.unsubscribe();
+  const signInAdmin = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (error) throw error;
+    const { data: profile, error: profileError } = await supabase.from('users').select('role').eq('id', data.user.id).single();
+    if (profileError || profile?.role !== 'admin') {
+      await supabase.auth.signOut();
+      throw new Error('Esta cuenta no tiene permisos de administrador.');
+    }
+    setAdminSession(data.session);
+  }, []);
+
+  const signOutAdmin = useCallback(async () => {
+    await supabase.auth.signOut();
+    setAdminSession(null);
   }, []);
 
   useEffect(() => {
@@ -79,47 +92,12 @@ export function AppProvider({ children }: PropsWithChildren) {
     [currency, exchangeRate, language],
   );
 
-  const requireAuth = useCallback(
-    (intent: string) => {
-      if (session) return true;
-      router.push({ pathname: '/(aux)/auth-modal', params: { intent } });
-      return false;
-    },
-    [router, session],
-  );
-
-  const authenticate = useCallback(async (mode: AuthMode, email: string, password: string) => {
-    const result = mode === 'signin'
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
-    return result.error?.message ?? null;
-  }, []);
-
-  const signInWithGoogle = useCallback(async () => {
-    const redirectTo = Linking.createURL('auth/callback');
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo, skipBrowserRedirect: true },
-    });
-    if (error || !data.url) return error?.message ?? 'No se pudo iniciar Google OAuth.';
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') return result.type === 'cancel' ? null : 'No se completó la autenticación.';
-
-    const callbackUrl = new URL(result.url.replace('#', '?'));
-    const code = callbackUrl.searchParams.get('code');
-    if (code) return (await supabase.auth.exchangeCodeForSession(code)).error?.message ?? null;
-    const accessToken = callbackUrl.searchParams.get('access_token');
-    const refreshToken = callbackUrl.searchParams.get('refresh_token');
-    if (!accessToken || !refreshToken) return 'La respuesta de Google no incluyó una sesión válida.';
-    return (await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })).error?.message ?? null;
-  }, []);
-
-  const signOut = useCallback(async () => { await supabase.auth.signOut(); }, []);
+  const requireAuth = useCallback((_intent: string) => true, []);
 
   const value = useMemo<AppContextValue>(() => ({
     language, currency, visitorType, exchangeRate, session, authReady, isDark: colorScheme === 'dark', t,
-    setVisitorType, formatPrice, requireAuth, authenticate, signInWithGoogle, signOut,
-  }), [language, currency, visitorType, exchangeRate, session, authReady, colorScheme, t, formatPrice, requireAuth, authenticate, signInWithGoogle, signOut]);
+    setVisitorType, formatPrice, requireAuth, isAdmin, signInAdmin, signOutAdmin,
+  }), [language, currency, visitorType, exchangeRate, session, authReady, colorScheme, t, formatPrice, requireAuth, isAdmin, signInAdmin, signOutAdmin]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

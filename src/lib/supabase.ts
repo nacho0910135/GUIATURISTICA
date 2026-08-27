@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
@@ -10,17 +9,10 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY.');
 }
 
-const webStorage = {
-  getItem: (key: string) => typeof window === 'undefined' ? null : AsyncStorage.getItem(key),
-  setItem: (key: string, value: string) => typeof window === 'undefined' ? undefined : AsyncStorage.setItem(key, value),
-  removeItem: (key: string) => typeof window === 'undefined' ? undefined : AsyncStorage.removeItem(key),
-};
-
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: Platform.OS === 'web' ? webStorage : AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
+    autoRefreshToken: false,
+    persistSession: false,
     detectSessionInUrl: false,
   },
 });

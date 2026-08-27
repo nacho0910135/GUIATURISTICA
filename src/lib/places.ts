@@ -31,6 +31,7 @@ export type MapPlace = {
   reviews_count: number;
   average_rating: number;
   liked: boolean;
+  photos: string[];
 };
 
 export type DestinationReview = {
@@ -74,7 +75,7 @@ export async function getPlacesForCategory(category: string, userId?: string): P
 async function getPlaces(filter: 'province' | 'category', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,status,source_url,source_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales)');
+    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,status,source_url,source_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order)');
   query = filter === 'province' ? query.eq('province', value) : query.ilike('category', `%${value}%`);
   const { data, error } = await query.order('name');
   if (error) throw error;
@@ -106,6 +107,7 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
       reviews_count: ratings.length,
       average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : 0,
       liked: likedIds.has(place.id),
+      photos: (place.destination_photos ?? []).sort((a, b) => a.sort_order - b.sort_order).map((photo) => photo.image_url),
     };
   }) as MapPlace[];
 }
