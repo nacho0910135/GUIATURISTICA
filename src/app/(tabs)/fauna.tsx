@@ -2,10 +2,10 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
-import { getFaunaHome, getVulnerabilityLabel, markFaunaSeen } from '@/lib/fauna';
 import { ThemedNotice } from '@/components/themed-notice';
+import { addFaunaSpecies, getFaunaHome, getVulnerabilityLabel, markFaunaSeen } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -14,13 +14,15 @@ type FaunaHome = Awaited<ReturnType<typeof getFaunaHome>>;
 export default function FaunaScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { language, session } = useApp();
+  const { language, requireAuth, session } = useApp();
   const { colors } = useAppTheme();
   const userId = session?.user.id;
   const [home, setHome] = useState<FaunaHome>();
   const [error, setError] = useState<string>();
   const [markingId, setMarkingId] = useState<string>();
   const [seenNotice, setSeenNotice] = useState<string>();
+  const [addedSpecies, setAddedSpecies] = useState<string>();
+  const [proposalOpen, setProposalOpen] = useState(false);
   const columns = width >= 1200 ? 4 : width >= 700 ? 2 : 1;
 
   const load = useCallback(async () => {
@@ -78,6 +80,7 @@ export default function FaunaScreen() {
             {language === 'es' ? 'Las ubicaciones sensibles se muestran sólo por provincia.' : 'Sensitive locations are shown only at province level.'}
           </Text>
         </View>
+        <Pressable accessibilityRole="button" className="mt-4 flex-row items-center justify-center rounded-control bg-ui-primary px-5 py-4 dark:bg-ui-dark-primary" onPress={() => { if (requireAuth(language === 'es' ? 'Agregar un animal' : 'Add an animal')) setProposalOpen(true); }}><MaterialCommunityIcons name="plus-circle-outline" size={23} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text></Pressable>
       </View>
 
       {!home && !error ? <ActivityIndicator className="mt-12" color="#13a95b" size="large" /> : null}
@@ -152,7 +155,39 @@ export default function FaunaScreen() {
       ) : null}
 
       <ThemedNotice button={language === 'es' ? 'Entendido' : 'Got it'} message={language === 'es' ? `Añadiste ${seenNotice ?? 'este animal'} como avistado a tu colección.` : `You added ${seenNotice ?? 'this animal'} as a sighting to your collection.`} onClose={() => setSeenNotice(undefined)} title={language === 'es' ? '¡Nuevo avistamiento!' : 'New sighting!'} visible={Boolean(seenNotice)} />
+      <ThemedNotice button={language === 'es' ? 'Entendido' : 'Got it'} message={language === 'es' ? `${addedSpecies ?? 'El animal'} ya está disponible para toda la comunidad.` : `${addedSpecies ?? 'The animal'} is now available to everyone.`} onClose={() => setAddedSpecies(undefined)} title={language === 'es' ? '¡Animal agregado!' : 'Animal added!'} visible={Boolean(addedSpecies)} />
+      <FaunaProposalModal language={language} onClose={() => setProposalOpen(false)} onPublished={(name) => { setProposalOpen(false); setAddedSpecies(name); void load(); }} open={proposalOpen} userId={session?.user.id} />
 
     </ScrollView>
   );
+}
+
+function FaunaProposalModal({ language, onClose, onPublished, open, userId }: { language: 'es' | 'en'; onClose: () => void; onPublished: (name: string) => void; open: boolean; userId?: string }) {
+  const [commonName, setCommonName] = useState('');
+  const [scientificName, setScientificName] = useState('');
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [habitat, setHabitat] = useState('');
+  const [province, setProvince] = useState('');
+  const [sending, setSending] = useState(false);
+  const submit = async () => {
+    if (!userId || commonName.trim().length < 2 || scientificName.trim().length < 3 || category.trim().length < 2) return Alert.alert('Fauna CR', language === 'es' ? 'Completá el nombre común, nombre científico y categoría.' : 'Complete the common name, scientific name, and category.');
+    setSending(true);
+    try {
+      await addFaunaSpecies({ commonName, scientificName, category, description, habitat, province, userId });
+      onPublished(commonName.trim());
+      setCommonName(''); setScientificName(''); setCategory(''); setDescription(''); setHabitat(''); setProvince('');
+    } catch (reason) {
+      Alert.alert('Fauna CR', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo agregar el animal.' : 'Could not add the animal.'));
+    } finally { setSending(false); }
+  };
+  const fields = [
+    { label: language === 'es' ? 'Nombre común' : 'Common name', value: commonName, onChangeText: setCommonName, placeholder: language === 'es' ? 'Ej: Zorro gris' : 'Example: Gray fox' },
+    { label: language === 'es' ? 'Nombre científico' : 'Scientific name', value: scientificName, onChangeText: setScientificName, placeholder: 'Ej: Urocyon cinereoargenteus' },
+    { label: language === 'es' ? 'Categoría' : 'Category', value: category, onChangeText: setCategory, placeholder: language === 'es' ? 'Ej: Mamífero' : 'Example: Mammal' },
+    { label: language === 'es' ? 'Provincia donde se observa' : 'Province where observed', value: province, onChangeText: setProvince, placeholder: language === 'es' ? 'Ej: Guanacaste' : 'Example: Guanacaste' },
+    { label: language === 'es' ? 'Hábitat' : 'Habitat', value: habitat, onChangeText: setHabitat, placeholder: language === 'es' ? 'Bosque seco, humedal…' : 'Dry forest, wetland…' },
+    { label: language === 'es' ? 'Descripción' : 'Description', value: description, onChangeText: setDescription, placeholder: language === 'es' ? 'Cómo reconocerlo…' : 'How to identify it…', multiline: true },
+  ];
+  return <Modal animationType="slide" onRequestClose={onClose} transparent visible={open}><View className="flex-1 items-center justify-center bg-black/60 p-4"><View className="max-h-[92%] w-full max-w-2xl overflow-hidden rounded-modal bg-ui-surface dark:bg-ui-dark-surface"><View className="flex-row items-center border-b border-ui-border p-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="paw" size={27} color="#0B6B4F" /><Text className="ml-3 flex-1 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} onPress={onClose}><MaterialCommunityIcons name="close" size={26} color="#68737A" /></Pressable></View><ScrollView contentContainerStyle={{ gap: 15, padding: 20 }}>{fields.map((field) => <View key={field.label}><Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{field.label}</Text><TextInput className="rounded-control border border-ui-border bg-ui-muted px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline={field.multiline} onChangeText={field.onChangeText} placeholder={field.placeholder} placeholderTextColor="#68737A" style={field.multiline ? { minHeight: 90, textAlignVertical: 'top' } : undefined} value={field.value} /></View>)}<View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'El animal se publicará para todos. Después podrás abrir su ficha y compartir fotografías reales.' : 'The animal will be published for everyone. You can then open its profile and share real photos.'}</Text></View><Pressable className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>{sending ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar para todos' : 'Publish for everyone'}</Text>}</Pressable></ScrollView></View></View></Modal>;
 }

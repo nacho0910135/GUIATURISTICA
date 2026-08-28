@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
+import * as Location from 'expo-location';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
@@ -47,6 +48,10 @@ export function AppProvider({ children }: PropsWithChildren) {
   const session = adminSession ?? GUEST_SESSION;
   const authReady = true;
   const isAdmin = Boolean(adminSession);
+
+  useEffect(() => {
+    void Location.requestForegroundPermissionsAsync().catch(() => undefined);
+  }, []);
 
   const signInAdmin = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });

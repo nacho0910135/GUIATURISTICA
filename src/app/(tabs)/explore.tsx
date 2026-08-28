@@ -1,6 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
@@ -21,22 +20,23 @@ type Activity = {
   category: string;
   icon: IconName;
   color: string;
-  image: number;
   premium?: boolean;
 };
 
 const activities: Activity[] = [
-  { title: { es: 'Playas', en: 'Beaches' }, subtitle: { es: 'Relajate', en: 'Unwind' }, category: 'Playa', icon: 'waves', color: '#159ed1', image: require('@/assets/destinations/beach.jpg') },
-  { title: { es: 'Cataratas', en: 'Waterfalls' }, subtitle: { es: 'Naturaleza', en: 'Nature' }, category: 'Catarata', icon: 'leaf', color: '#087443', image: require('@/assets/destinations/waterfall.jpg') },
-  { title: { es: 'Volcanes', en: 'Volcanoes' }, subtitle: { es: 'Aventura', en: 'Adventure' }, category: 'Volcán', icon: 'image-filter-hdr', color: '#087443', image: require('@/assets/destinations/volcano.jpg') },
-  { title: { es: 'Parques Nacionales', en: 'National Parks' }, subtitle: { es: 'Naturaleza protegida', en: 'Protected nature' }, category: 'Parque Nacional', icon: 'pine-tree', color: '#087443', image: require('@/assets/destinations/volcano.jpg') },
-  { title: { es: 'Cultura', en: 'Culture' }, subtitle: { es: 'Descubrí', en: 'Discover' }, category: 'Cultura', icon: 'bank-outline', color: '#ff5d52', image: require('@/assets/destinations/culture.jpg') },
-  { title: { es: 'Ríos', en: 'Rivers' }, subtitle: { es: 'Refrescate', en: 'Refresh' }, category: 'Río', icon: 'waves', color: '#159ed1', image: require('@/assets/destinations/waterfall.jpg') },
-  { title: { es: 'Miradores', en: 'Viewpoints' }, subtitle: { es: 'Admirá', en: 'Take it in' }, category: 'Mirador', icon: 'binoculars', color: '#087443', image: require('@/assets/destinations/volcano.jpg') },
-  { title: { es: 'Termales', en: 'Hot springs' }, subtitle: { es: 'Relajate', en: 'Unwind' }, category: 'Termales', icon: 'hot-tub', color: '#ff8f52', image: require('@/assets/destinations/waterfall.jpg') },
-  { title: { es: 'Santuarios de animales', en: 'Animal Sanctuaries' }, subtitle: { es: 'Centros verificados', en: 'Verified centers' }, category: 'Santuarios de animales', icon: 'paw', color: '#087443', image: require('@/assets/destinations/waterfall.jpg') },
-  { title: { es: 'Experiencia Gastronómica', en: 'Food Experiences' }, subtitle: { es: 'Selección premium', en: 'Premium selection' }, category: 'Experiencia Gastronómica', icon: 'silverware-fork-knife', color: '#d69e2e', image: require('@/assets/destinations/culture.jpg'), premium: true },
-  { title: { es: 'Bares / Discotecas', en: 'Bars / Nightclubs' }, subtitle: { es: 'Selección premium', en: 'Premium selection' }, category: 'Bares / Discotecas', icon: 'glass-cocktail', color: '#7c4dff', image: require('@/assets/destinations/culture.jpg'), premium: true },
+  { title: { es: 'Playas', en: 'Beaches' }, subtitle: { es: 'Relajate', en: 'Unwind' }, category: 'Playa', icon: 'waves', color: '#159ed1' },
+  { title: { es: 'Cataratas', en: 'Waterfalls' }, subtitle: { es: 'Naturaleza', en: 'Nature' }, category: 'Catarata', icon: 'leaf', color: '#087443' },
+  { title: { es: 'Volcanes', en: 'Volcanoes' }, subtitle: { es: 'Aventura', en: 'Adventure' }, category: 'Volcán', icon: 'image-filter-hdr', color: '#087443' },
+  { title: { es: 'Parques Nacionales', en: 'National Parks' }, subtitle: { es: 'Naturaleza protegida', en: 'Protected nature' }, category: 'Parque Nacional', icon: 'pine-tree', color: '#087443' },
+  { title: { es: 'Cultura', en: 'Culture' }, subtitle: { es: 'Descubrí', en: 'Discover' }, category: 'Cultura', icon: 'bank-outline', color: '#ff5d52' },
+  { title: { es: 'Ríos', en: 'Rivers' }, subtitle: { es: 'Refrescate', en: 'Refresh' }, category: 'Río', icon: 'waves', color: '#159ed1' },
+  { title: { es: 'Miradores', en: 'Viewpoints' }, subtitle: { es: 'Admirá', en: 'Take it in' }, category: 'Mirador', icon: 'binoculars', color: '#087443' },
+  { title: { es: 'Termales', en: 'Hot springs' }, subtitle: { es: 'Relajate', en: 'Unwind' }, category: 'Termales', icon: 'hot-tub', color: '#ff8f52' },
+  { title: { es: 'Senderismo', en: 'Hiking' }, subtitle: { es: 'Caminá y explorá', en: 'Walk and explore' }, category: 'Senderismo', icon: 'hiking', color: '#8b5e34' },
+  { title: { es: 'Pozas / Lagos', en: 'Pools / Lakes' }, subtitle: { es: 'Agua natural', en: 'Natural water' }, category: 'Pozas / Lagos', icon: 'water', color: '#159ed1' },
+  { title: { es: 'Santuarios de animales', en: 'Animal Sanctuaries' }, subtitle: { es: 'Centros verificados', en: 'Verified centers' }, category: 'Santuarios de animales', icon: 'paw', color: '#087443' },
+  { title: { es: 'Experiencia Gastronómica', en: 'Food Experiences' }, subtitle: { es: 'Selección premium', en: 'Premium selection' }, category: 'Experiencia Gastronómica', icon: 'silverware-fork-knife', color: '#d69e2e', premium: true },
+  { title: { es: 'Bares / Discotecas', en: 'Bars / Nightclubs' }, subtitle: { es: 'Selección premium', en: 'Premium selection' }, category: 'Bares / Discotecas', icon: 'glass-cocktail', color: '#7c4dff', premium: true },
 ];
 
 export default function ExploreScreen() {
@@ -49,9 +49,8 @@ export default function ExploreScreen() {
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number }>();
   const [proposalOpen, setProposalOpen] = useState(false);
   const wide = width >= 900;
-  const cardWidth = wide ? 250 : 142;
   const places = useQuery({ queryKey: ['explore-places'], queryFn: getExplorePlaces, staleTime: 10 * 60 * 1000 });
-  const sanctuaries = useQuery({ queryKey: ['verified-sanctuaries'], queryFn: getVerifiedSanctuaries, enabled: category === 'Santuarios de animales', staleTime: 30 * 60 * 1000 });
+  const sanctuaries = useQuery({ queryKey: ['verified-sanctuaries'], queryFn: getVerifiedSanctuaries, staleTime: 30 * 60 * 1000 });
   const visiblePlaces = useMemo(() => {
     const term = search.trim().toLocaleLowerCase(language === 'es' ? 'es' : 'en');
     const filtered = term ? (places.data ?? []).filter((place) => `${place.name} ${place.province} ${place.category} ${place.description ?? ''}`.toLocaleLowerCase().includes(term)) : coordinates ? [...(places.data ?? [])] : [];
@@ -86,34 +85,37 @@ export default function ExploreScreen() {
           </Pressable>
         </View>
 
-        <ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>
+        <View className="mt-4 flex-row flex-wrap px-3">
           {activities.map((activity) => {
             const selected = activity.category === category;
+            const matchingPlaces = (places.data ?? []).filter((place) => matchesActivityCategory(place.category, activity.category));
+            const count = activity.category === 'Santuarios de animales'
+              ? (sanctuaries.data?.length ?? 0) + matchingPlaces.filter((place) => place.community).length
+              : matchingPlaces.length;
+            const countPending = places.isPending || (activity.category === 'Santuarios de animales' && sanctuaries.isPending);
             return (
               <Pressable
+                accessibilityLabel={`${activity.title[language]}, ${countPending ? (language === 'es' ? 'cargando cantidad' : 'loading count') : `${count} ${language === 'es' ? 'sitios' : 'places'}`}`}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 aria-pressed={selected}
-                className={`overflow-hidden rounded-card border bg-ui-surface dark:bg-ui-dark-surface ${selected ? 'border-ui-primary dark:border-ui-dark-primary' : 'border-ui-border dark:border-ui-dark-border'}`}
+                className="items-center px-1 py-3"
                 key={activity.title.es}
                 onPress={() => activity.category === 'Santuarios de animales' ? setCategory(selected ? '' : activity.category) : router.push({ pathname: '/(aux)/province', params: { category: activity.category } })}
-                style={{ boxShadow: '0 5px 12px rgba(18, 60, 44, 0.1)', width: cardWidth }}
+                style={{ width: '33.3333%' }}
               >
-                <View>
-                  <Image contentFit="cover" source={activity.image} style={{ height: wide ? 150 : 112, width: '100%' }} transition={180} />
-                  {activity.premium ? <View className="absolute right-2 top-2 flex-row items-center rounded-full bg-[#d69e2e] px-2 py-1"><MaterialCommunityIcons name="crown" size={13} color="white" /><Text className="ml-1 text-[10px] font-black text-white">PREMIUM</Text></View> : null}
-                  <View className="absolute -bottom-5 left-3 h-11 w-11 items-center justify-center rounded-full border-2 border-white" style={{ backgroundColor: activity.color }}>
-                    <MaterialCommunityIcons name={activity.icon} size={22} color="white" />
+                <View className="items-center justify-center rounded-full" style={{ backgroundColor: selected ? activity.color : `${activity.color}20`, height: wide ? 80 : 64, width: wide ? 80 : 64 }}>
+                  <MaterialCommunityIcons name={activity.icon} size={wide ? 42 : 34} color={selected ? 'white' : activity.color} />
+                  {activity.premium ? <View className="absolute -right-1 -top-1 h-6 w-6 items-center justify-center rounded-full bg-[#d69e2e]"><MaterialCommunityIcons name="crown" size={13} color="white" /></View> : null}
+                  <View className="absolute -bottom-1 -right-1 h-6 min-w-6 items-center justify-center rounded-full border-2 border-ui-background px-1 dark:border-ui-dark-background" style={{ backgroundColor: activity.color }}>
+                    <Text className="text-[10px] font-black text-white">{countPending ? '…' : count}</Text>
                   </View>
                 </View>
-                <View className="px-3 pb-3 pt-7">
-                  <Text className="text-base font-black text-ui-text dark:text-ui-dark-text">{activity.title[language]}</Text>
-                  <Text className="mt-0.5 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{activity.subtitle[language]}</Text>
-                </View>
+                <Text className="mt-2 text-center text-sm font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{activity.title[language]}</Text>
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
 
         {category === 'Santuarios de animales' ? <View className="mx-5 mt-5 gap-3">{sanctuaries.isPending ? <ActivityIndicator color="#0B6B4F" /> : sanctuaries.data?.map((sanctuary) => <View className="rounded-card border border-ui-border bg-ui-surface p-5 dark:border-ui-dark-border dark:bg-ui-dark-surface" key={sanctuary.id}><View className="flex-row items-center"><View className="flex-row items-center rounded-full bg-ui-primary px-3 py-2 dark:bg-ui-dark-primary"><MaterialCommunityIcons name="shield-check" size={18} color="white" /><Text className="ml-2 text-xs font-black text-white">{language === 'es' ? 'Verificado' : 'Verified'}</Text></View></View><Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">{sanctuary.name}</Text><Text className="mt-2 font-bold text-ui-primary dark:text-ui-dark-primary">{sanctuary.location_name} · {sanctuary.province}</Text><Text className="mt-3 leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? sanctuary.description_es : sanctuary.description_en}</Text></View>)}</View> : null}
 
@@ -142,23 +144,45 @@ function distanceKm(from: { latitude: number; longitude: number }, to: { latitud
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function matchesActivityCategory(placeCategory: string, activityCategory: string) {
+  const normalizedPlace = normalizeCategory(placeCategory);
+  if (activityCategory === 'Pozas / Lagos') return ['poza', 'lago', 'laguna'].some((term) => normalizedPlace.includes(term));
+  return normalizedPlace.includes(normalizeCategory(activityCategory));
+}
+
+function normalizeCategory(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 function PlaceResult({ formatPrice, language, origin, place }: { formatPrice: (value: number) => string; language: 'es' | 'en'; origin?: { latitude: number; longitude: number }; place: ExplorePlace }) {
   return <Pressable accessibilityRole="button" className="flex-row items-center rounded-control border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={() => void openNavigation(place.latitude, place.longitude)}><View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="map-marker" size={25} color="#0B6B4F" /></View><View className="ml-3 flex-1"><View className="flex-row items-center"><Text className="flex-shrink text-base font-black text-ui-text dark:text-ui-dark-text">{place.name}</Text>{place.community ? <Text className="ml-2 rounded-full bg-ui-primary-soft px-2 py-1 text-[10px] font-black text-ui-primary dark:bg-ui-dark-primary-soft dark:text-ui-dark-primary">{language === 'es' ? 'COMUNIDAD' : 'COMMUNITY'}</Text> : null}</View><Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{place.province} · {place.category} · {place.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check price') : formatPrice(place.price_national_crc)}</Text></View>{origin ? <Text className="font-black text-ui-secondary dark:text-ui-dark-secondary">{distanceKm(origin, place).toFixed(1)} km</Text> : <MaterialCommunityIcons name="navigation-variant" size={23} color="#0077A8" />}</Pressable>;
 }
 
 function ProposalModal({ language, onClose, onPublished, open, session }: { language: 'es' | 'en'; onClose: () => void; onPublished: () => void; open: boolean; session: ReturnType<typeof useApp>['session'] }) {
-  const [name, setName] = useState(''); const [province, setProvince] = useState('San José'); const [category, setCategory] = useState('Naturaleza'); const [district, setDistrict] = useState(''); const [price, setPrice] = useState('0'); const [difficulty, setDifficulty] = useState('Moderada'); const [description, setDescription] = useState(''); const [sending, setSending] = useState(false);
+  const [name, setName] = useState(''); const [province, setProvince] = useState('San José'); const [categories, setCategories] = useState<string[]>([]); const [district, setDistrict] = useState(''); const [price, setPrice] = useState('0'); const [difficulty, setDifficulty] = useState('Moderada'); const [description, setDescription] = useState(''); const [sending, setSending] = useState(false);
   const submit = async () => {
     if (!session || name.trim().length < 3 || description.trim().length < 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Agregá un nombre y una descripción de al menos 10 caracteres.' : 'Add a name and a description of at least 10 characters.');
+    if (categories.length < 1 || categories.length > 2) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná una o dos categorías.' : 'Select one or two categories.');
     const permission = await Location.requestForegroundPermissionsAsync();
     if (!permission.granted) return Alert.alert('Descubriendo CR', language === 'es' ? 'Necesitamos el GPS para guardar la ubicación real del sitio.' : 'GPS permission is required to save the real location.');
     setSending(true);
-    try { const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }); await publishCommunityPlace({ user_id: session.user.id, name: name.trim(), province, category, district: district.trim() || undefined, description: description.trim(), difficulty, price_national_crc: Math.max(0, Number(price.replace(',', '.')) || 0), latitude: position.coords.latitude, longitude: position.coords.longitude }); onPublished(); onClose(); setName(''); setDescription(''); }
+    try { const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }); await publishCommunityPlace({ user_id: session.user.id, name: name.trim(), province, category: categories.join(' / '), district: district.trim() || undefined, description: description.trim(), difficulty, price_national_crc: Math.max(0, Number(price.replace(',', '.')) || 0), latitude: position.coords.latitude, longitude: position.coords.longitude }); onPublished(); onClose(); setName(''); setDescription(''); setCategories([]); }
     catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo publicar.' : 'Could not publish.'); }
     finally { setSending(false); }
   };
-  return <Modal animationType="slide" onRequestClose={onClose} transparent visible={open}><View className="flex-1 items-center justify-center bg-black/60 p-4"><View className="max-h-[92%] w-full max-w-2xl overflow-hidden rounded-modal bg-ui-surface dark:bg-ui-dark-surface"><View className="flex-row items-center border-b border-ui-border p-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="plus-circle-outline" size={27} color="#0B6B4F" /><Text className="ml-3 flex-1 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Publicar un nuevo lugar' : 'Publish a new place'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} onPress={onClose}><MaterialCommunityIcons name="close" size={26} color="#68737A" /></Pressable></View><ScrollView contentContainerStyle={{ gap: 16, padding: 20 }}><Field label={language === 'es' ? 'Nombre del lugar' : 'Place name'} onChange={setName} placeholder="Ej: Poza Azul" value={name} /><ChoiceField label={language === 'es' ? 'Provincia' : 'Province'} onChange={setProvince} options={provinces.map((item) => item.name)} value={province} /><ChoiceField label={language === 'es' ? 'Categoría' : 'Category'} onChange={setCategory} options={['Naturaleza','Parque Nacional','Catarata','Río','Mirador','Termales','Playa','Cultura','Aventura']} value={category} /><Field label={language === 'es' ? 'Cantón / Pueblo' : 'Town / District'} onChange={setDistrict} placeholder={language === 'es' ? 'Ej: Bajos del Toro' : 'Example: Bajos del Toro'} value={district} /><Field keyboard label={language === 'es' ? 'Precio de entrada (₡)' : 'Entry price (CRC)'} onChange={setPrice} placeholder="0" value={price} /><ChoiceField label={language === 'es' ? 'Dificultad física' : 'Difficulty'} onChange={setDifficulty} options={['Fácil','Moderada','Difícil']} value={difficulty} /><Field label={language === 'es' ? 'Descripción y cómo llegar' : 'Description and directions'} multiline onChange={setDescription} placeholder={language === 'es' ? 'Describí el sitio y cómo llegar…' : 'Describe the place and how to get there…'} value={description} /><View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Se publicará inmediatamente con tu ubicación GPS actual y aparecerá como aporte de la comunidad.' : 'It will publish immediately using your current GPS location and appear as a community contribution.'}</Text></View><Pressable accessibilityRole="button" className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>{sending ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar ahora' : 'Publish now'}</Text>}</Pressable></ScrollView></View></View></Modal>;
+  return <Modal animationType="slide" onRequestClose={onClose} transparent visible={open}><View className="flex-1 items-center justify-center bg-black/60 p-4"><View className="max-h-[92%] w-full max-w-2xl overflow-hidden rounded-modal bg-ui-surface dark:bg-ui-dark-surface"><View className="flex-row items-center border-b border-ui-border p-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="plus-circle-outline" size={27} color="#0B6B4F" /><Text className="ml-3 flex-1 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Publicar un nuevo lugar' : 'Publish a new place'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} onPress={onClose}><MaterialCommunityIcons name="close" size={26} color="#68737A" /></Pressable></View><ScrollView contentContainerStyle={{ gap: 16, padding: 20 }}><Field label={language === 'es' ? 'Nombre del lugar' : 'Place name'} onChange={setName} placeholder="Ej: Poza Azul" value={name} /><ChoiceField label={language === 'es' ? 'Provincia' : 'Province'} onChange={setProvince} options={provinces.map((item) => item.name)} value={province} /><CategoryChoiceField language={language} onChange={setCategories} value={categories} /><Field label={language === 'es' ? 'Cantón / Pueblo' : 'Town / District'} onChange={setDistrict} placeholder={language === 'es' ? 'Ej: Bajos del Toro' : 'Example: Bajos del Toro'} value={district} /><Field keyboard label={language === 'es' ? 'Precio de entrada (₡)' : 'Entry price (CRC)'} onChange={setPrice} placeholder="0" value={price} /><ChoiceField label={language === 'es' ? 'Dificultad física' : 'Difficulty'} onChange={setDifficulty} options={['Fácil','Moderada','Difícil']} value={difficulty} /><Field label={language === 'es' ? 'Descripción y cómo llegar' : 'Description and directions'} multiline onChange={setDescription} placeholder={language === 'es' ? 'Describí el sitio y cómo llegar…' : 'Describe the place and how to get there…'} value={description} /><View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Se publicará inmediatamente con tu ubicación GPS actual y aparecerá como aporte de la comunidad.' : 'It will publish immediately using your current GPS location and appear as a community contribution.'}</Text></View><Pressable accessibilityRole="button" className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>{sending ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar ahora' : 'Publish now'}</Text>}</Pressable></ScrollView></View></View></Modal>;
 }
 
 function Field({ keyboard, label, multiline, onChange, placeholder, value }: { keyboard?: boolean; label: string; multiline?: boolean; onChange: (value: string) => void; placeholder: string; value: string }) { return <View><Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{label}</Text><TextInput className="rounded-control border border-ui-border bg-ui-muted px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType={keyboard ? 'decimal-pad' : 'default'} multiline={multiline} onChangeText={onChange} placeholder={placeholder} placeholderTextColor="#68737A" style={multiline ? { minHeight: 90, textAlignVertical: 'top' } : undefined} value={value} /></View>; }
 function ChoiceField({ label, onChange, options, value }: { label: string; onChange: (value: string) => void; options: string[]; value: string }) { return <View><Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{label}</Text><ScrollView horizontal contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>{options.map((option) => <Pressable className={value === option ? 'rounded-full bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary' : 'rounded-full bg-ui-muted px-4 py-3 dark:bg-ui-dark-muted'} key={option} onPress={() => onChange(option)}><Text className={value === option ? 'font-black text-white' : 'font-bold text-ui-text dark:text-ui-dark-text'}>{option}</Text></Pressable>)}</ScrollView></View>; }
+
+const destinationCategoryOptions = ['Parque Nacional', 'Volcán', 'Catarata', 'Río', 'Mirador', 'Termales', 'Senderismo', 'Pozas / Lagos', 'Playa', 'Cultura', 'Santuarios de animales'];
+
+function CategoryChoiceField({ language, onChange, value }: { language: 'es' | 'en'; onChange: (value: string[]) => void; value: string[] }) {
+  const toggle = (option: string) => {
+    if (value.includes(option)) return onChange(value.filter((item) => item !== option));
+    if (value.length === 2) return Alert.alert('Descubriendo CR', language === 'es' ? 'Podés seleccionar un máximo de dos categorías.' : 'You can select up to two categories.');
+    onChange([...value, option]);
+  };
+  return <View><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Categorías' : 'Categories'}</Text><Text className="mb-2 mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Elegí una o dos.' : 'Choose one or two.'}</Text><ScrollView horizontal contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>{destinationCategoryOptions.map((option) => { const selected = value.includes(option); return <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} className={selected ? 'rounded-full bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary' : 'rounded-full bg-ui-muted px-4 py-3 dark:bg-ui-dark-muted'} key={option} onPress={() => toggle(option)}><Text className={selected ? 'font-black text-white' : 'font-bold text-ui-text dark:text-ui-dark-text'}>{option}</Text></Pressable>; })}</ScrollView></View>;
+}

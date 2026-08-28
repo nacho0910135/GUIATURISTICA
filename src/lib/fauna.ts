@@ -96,6 +96,28 @@ export async function getFaunaSpecies(id: string) {
   return data as FaunaSpecies;
 }
 
+export async function addFaunaSpecies(input: { commonName: string; scientificName: string; category: string; description: string; habitat: string; province: string; userId: string }) {
+  const shared = {
+    common_name_es: input.commonName.trim(),
+    common_name_en: input.commonName.trim(),
+    scientific_name: input.scientificName.trim(),
+    category: input.category.trim(),
+    description: input.description.trim() || null,
+    description_en: input.description.trim() || null,
+    habitat: input.habitat.trim() || null,
+    habitat_en: input.habitat.trim() || null,
+    province: input.province.trim() || null,
+    vulnerability_status: 'Sin evaluar',
+    tour_observable: false,
+    is_endemic: false,
+    is_national_symbol: false,
+    created_by: input.userId,
+    community_submitted: true,
+  };
+  const { error } = await supabase.from('fauna_species').insert(shared);
+  if (error) throw error;
+}
+
 export async function getFaunaPhotos(speciesId: string) {
   const { data, error } = await supabase.from('fauna_photos').select('*').eq('fauna_id', speciesId).order('created_at', { ascending: false });
   if (error) throw error;

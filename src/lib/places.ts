@@ -12,6 +12,9 @@ export type MapPlace = {
   longitude: number;
   cover_image_url: string | null;
   image_verified: boolean;
+  image_attribution: string | null;
+  image_license: string | null;
+  image_source_url: string | null;
   status: string;
   region: string | null;
   description: string | null;
@@ -32,6 +35,7 @@ export type MapPlace = {
   average_rating: number;
   liked: boolean;
   photos: string[];
+  community_photos: string[];
 };
 
 export type DestinationReview = {
@@ -75,15 +79,17 @@ export async function getPlacesForCategory(category: string, userId?: string): P
 async function getPlaces(filter: 'province' | 'category', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,status,source_url,source_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order)');
-  query = filter === 'province' ? query.eq('province', value) : query.ilike('category', `%${value}%`);
+    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos(image_url,created_at)');
+  if (filter === 'province') query = query.eq('province', value);
+  else if (value === 'Pozas / Lagos') query = query.or('category.ilike.%Poza%,category.ilike.%Lago%,category.ilike.%Laguna%');
+  else query = query.ilike('category', `%${value}%`);
   const { data, error } = await query.order('name');
   if (error) throw error;
   const ids = (data ?? []).map((place) => place.id);
   if (!ids.length) return [];
   const [likes, reviews, mine] = await Promise.all([
     supabase.from('likes').select('target_id').eq('target_type', 'destination').in('target_id', ids),
-    supabase.from('reviews').select('target_id,rating').eq('target_type', 'destination').in('target_id', ids),
+    supabase.from('reviews').select('target_id,rating,photos').eq('target_type', 'destination').in('target_id', ids),
     userId
       ? supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'destination').in('target_id', ids)
       : Promise.resolve({ data: [], error: null }),
@@ -94,6 +100,11 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
   return (data ?? []).map((place) => {
     const rules = Array.isArray(place.normativas_destinos) ? place.normativas_destinos[0] : place.normativas_destinos;
     const ratings = (reviews.data ?? []).filter((row) => row.target_id === place.id).map((row) => Number(row.rating));
+    const reviewPhotos = (reviews.data ?? []).filter((review) => review.target_id === place.id).flatMap((review) => review.photos ?? []);
+    const communityPhotos = [
+      ...(place.destination_user_photos ?? []).sort((a, b) => a.created_at.localeCompare(b.created_at)).map((photo) => photo.image_url),
+      ...reviewPhotos,
+    ];
     return {
       ...place,
       latitude: Number(place.latitude),
@@ -107,7 +118,11 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
       reviews_count: ratings.length,
       average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : 0,
       liked: likedIds.has(place.id),
-      photos: (place.destination_photos ?? []).sort((a, b) => a.sort_order - b.sort_order).map((photo) => photo.image_url),
+      community_photos: communityPhotos,
+      photos: [
+        ...(place.destination_photos ?? []).sort((a, b) => a.sort_order - b.sort_order).map((photo) => photo.image_url),
+        ...communityPhotos,
+      ],
     };
   }) as MapPlace[];
 }
@@ -154,4 +169,23 @@ export async function addDestinationReview(destinationId: string, userId: string
     if (photoPath) await supabase.storage.from('review-photos').remove([photoPath]);
     throw error;
   }
+}
+
+export async function addDestinationPhoto(destinationId: string, userId: string, photo: ImagePickerAsset) {
+  const context = ImageManipulator.manipulate(photo.uri);
+  context.resize({ width: Math.min(photo.width || 1600, 1600), height: null });
+  const rendered = await context.renderAsync();
+  const sanitized = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
+  const bytes = await fetch(sanitized.uri).then((response) => response.arrayBuffer());
+  if (bytes.byteLength > 6 * 1024 * 1024) throw new Error('La imagen supera el límite de 6 MB.');
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+  const upload = await supabase.storage.from('destination-user-photos').upload(path, bytes, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+  if (upload.error) throw upload.error;
+  const imageUrl = supabase.storage.from('destination-user-photos').getPublicUrl(path).data.publicUrl;
+  const { error } = await supabase.from('destination_user_photos').insert({ destination_id: destinationId, user_id: userId, image_url: imageUrl });
+  if (error) {
+    await supabase.storage.from('destination-user-photos').remove([path]);
+    throw error;
+  }
+  return imageUrl;
 }

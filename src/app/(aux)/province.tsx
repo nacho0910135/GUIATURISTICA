@@ -5,24 +5,25 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { ferryRoutes, getWeather, openNavigation, WEATHER_STALE_TIME } from '@/lib/logistics';
-import { addDestinationReview, getDestinationReviews, getPlacesForCategory, getPlacesForProvince, type MapPlace, toggleDestinationLike } from '@/lib/places';
+import { addDestinationPhoto, addDestinationReview, getDestinationReviews, getPlacesForCategory, getPlacesForProvince, type MapPlace, toggleDestinationLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 
-function imageFor(category: string) {
-  const value = category.toLowerCase();
-  if (value.includes('playa') || value.includes('isla')) return require('@/assets/destinations/beach.jpg');
-  if (value.includes('cultura') || value.includes('arqueolog') || value.includes('religioso')) return require('@/assets/destinations/culture.jpg');
-  if (value.includes('volc') || value.includes('aventura')) return require('@/assets/destinations/volcano.jpg');
-  return require('@/assets/destinations/waterfall.jpg');
+function imageSource(place: MapPlace) {
+  if (place.image_verified && place.cover_image_url) return { uri: place.cover_image_url };
+  return place.photos[0] ? { uri: place.photos[0] } : undefined;
 }
 
-function imageSource(place: MapPlace) {
-  if (place.photos[0]) return { uri: place.photos[0] };
-  return place.image_verified && place.cover_image_url ? { uri: place.cover_image_url } : imageFor(place.category);
+function DestinationImage({ height, place }: { height: number; place: MapPlace }) {
+  const source = imageSource(place);
+  return source ? <Image contentFit="cover" source={source} style={{ height, width: '100%' }} transition={180} /> : <View className="items-center justify-center bg-ui-muted dark:bg-ui-dark-muted" style={{ height }}><MaterialCommunityIcons name="image-off-outline" size={42} color="#68737A" /></View>;
+}
+
+function usesVerifiedCover(place: MapPlace) {
+  return place.image_verified && Boolean(place.cover_image_url);
 }
 
 function needsPaqueraFerry(place: MapPlace) {
@@ -70,7 +71,7 @@ export default function ProvinceCatalogScreen() {
   const scopeTitle = rawCategory || province.name;
   const scopeKey = rawCategory ? `category-${rawCategory}` : `province-${province.code}`;
   const places = useQuery({
-    queryKey: ['places', scopeKey, session?.user.id],
+    queryKey: ['places', 'v2', scopeKey, session?.user.id],
     queryFn: () => rawCategory ? getPlacesForCategory(rawCategory, session?.user.id) : getPlacesForProvince(province.name, session?.user.id),
     staleTime: 10 * 60 * 1000,
   });
@@ -90,7 +91,7 @@ export default function ProvinceCatalogScreen() {
     if (!requireAuth(language === 'es' ? 'Dar me gusta a un destino' : 'Like a destination') || !session) return;
     try {
       await toggleDestinationLike(place.id, session.user.id, place.liked);
-      await queryClient.invalidateQueries({ queryKey: ['places', scopeKey] });
+      await queryClient.invalidateQueries({ queryKey: ['places'] });
       setSelected((current) => current?.id === place.id ? { ...current, liked: !current.liked, likes_count: current.likes_count + (current.liked ? -1 : 1) } : current);
     } catch (reason) {
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : 'No se pudo actualizar el like.');
@@ -117,9 +118,10 @@ export default function ProvinceCatalogScreen() {
         renderItem={({ item }) => (
           <View className="overflow-hidden rounded-[30px] border border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface">
             <View className="relative">
-              <Image contentFit="cover" source={imageSource(item)} style={{ height: 240, width: '100%' }} transition={180} />
+              <DestinationImage height={240} place={item} />
               <View className="absolute inset-0 bg-black/15" />
               <View className="absolute left-5 top-5 rounded-full bg-black/55 px-4 py-2"><Text className="font-black text-white">{item.province}</Text></View>
+              {usesVerifiedCover(item) && item.image_attribution ? <View className="absolute right-4 top-4 max-w-[55%] rounded-lg bg-black/65 px-3 py-2"><Text className="text-right text-[10px] font-bold text-white" numberOfLines={1}>Foto: {item.image_attribution}</Text></View> : null}
               <View className="absolute bottom-4 left-5 rounded-full bg-ui-primary dark:bg-ui-dark-primary px-4 py-2"><Text className="font-black text-white">{tourismRegion(item)}</Text></View>
               <View className="absolute bottom-4 right-5 rounded-full bg-black/60 px-4 py-2"><Text className="font-black text-white">{item.difficulty || 'Consultar'}</Text></View>
             </View>
@@ -151,7 +153,11 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
   const [comment, setComment] = useState('');
   const [rating, setRating] = useState(5);
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset>();
+  const [communityPhotos, setCommunityPhotos] = useState<string[]>(place?.community_photos ?? []);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const { width } = useWindowDimensions();
   const [sending, setSending] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const reviews = useQuery({ queryKey: ['destination-reviews', place?.id], queryFn: () => getDestinationReviews(place!.id), enabled: Boolean(place && commentsOpen) });
   const weather = useQuery({ queryKey: ['weather', 'destination', place?.id, language], queryFn: () => getWeather(place!, language), enabled: Boolean(place), staleTime: WEATHER_STALE_TIME });
   if (!place) return null;
@@ -169,18 +175,31 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
     try {
       await addDestinationReview(place.id, session.user.id, rating, comment, photo);
       setComment(''); setPhoto(undefined); setRating(5);
-      await Promise.all([queryClient.invalidateQueries({ queryKey: ['destination-reviews', place.id] }), queryClient.invalidateQueries({ queryKey: ['places', 'province'] })]);
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ['destination-reviews', place.id] }), queryClient.invalidateQueries({ queryKey: ['places'] })]);
     } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : 'No se pudo publicar el comentario.'); }
     finally { setSending(false); }
   };
+  const addPhoto = async () => {
+    if (uploadingPhoto || !requireAuth(language === 'es' ? 'Subir una foto del sitio' : 'Upload a site photo') || !session) return;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.9, exif: false });
+    if (result.canceled) return;
+    setUploadingPhoto(true);
+    try {
+      const imageUrl = await addDestinationPhoto(place.id, session.user.id, result.assets[0]);
+      setCommunityPhotos((current) => [...current, imageUrl]);
+      await queryClient.invalidateQueries({ queryKey: ['places'] });
+    } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo subir la foto.' : 'Could not upload the photo.')); }
+    finally { setUploadingPhoto(false); }
+  };
 
   return (
-    <Modal animationType="fade" onRequestClose={onClose} transparent visible>
+    <>
+      <Modal animationType="fade" onRequestClose={onClose} transparent visible>
       <View className="flex-1 items-center justify-center bg-black/75 p-3 md:p-8">
         <View className="max-h-full w-full max-w-5xl overflow-hidden rounded-[30px] bg-ui-surface dark:bg-ui-dark-surface">
           <ScrollView showsVerticalScrollIndicator={false}>
             <View className="relative">
-              <Image contentFit="cover" source={imageSource(place)} style={{ height: 340, width: '100%' }} />
+              <DestinationImage height={340} place={place} />
               <View className="absolute inset-0 bg-black/20" />
               <View className="absolute left-5 top-5 rounded-full bg-black/55 px-4 py-2"><Text className="font-black text-white">{place.province} · {tourismRegion(place)}</Text></View>
               <View className="absolute right-4 top-4 flex-row gap-2">
@@ -189,7 +208,8 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
               </View>
               <View className="absolute bottom-0 left-0 right-0 bg-black/55 px-6 pb-6 pt-14"><View className="flex-row items-center gap-2"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-3 py-2"><Text className="font-black text-white">{place.category}</Text></View>{place.average_rating ? <View className="rounded-lg bg-[#ffac16] px-3 py-2"><Text className="font-black text-white">★ {place.average_rating.toFixed(1)} ({place.reviews_count})</Text></View> : null}</View><Text className="mt-3 text-3xl font-black text-white md:text-4xl">{place.name}</Text></View>
             </View>
-            {place.photos.length > 1 ? <ScrollView horizontal contentContainerStyle={{ gap: 10, paddingHorizontal: 20, paddingTop: 20 }} showsHorizontalScrollIndicator={false}>{place.photos.map((url, index) => <Image contentFit="cover" key={url} source={{ uri: url }} style={{ borderRadius: 16, height: 100, width: 145 }} accessibilityLabel={`Foto ${index + 1} de ${place.name}`} />)}</ScrollView> : null}
+            {usesVerifiedCover(place) && place.image_source_url ? <Pressable className="self-end px-5 pt-3" onPress={() => void Linking.openURL(place.image_source_url!)}><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">Foto: {place.image_attribution || 'Wikimedia Commons'} · {place.image_license || 'Ver licencia'}</Text></Pressable> : null}
+            <View className="pt-5"><View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <ActivityIndicator color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>{communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((url, index) => <Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} key={`${url}-${index}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}</View>
             <View className="gap-6 p-5 md:p-8">
               <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={place.difficulty || (language === 'es' ? 'Consultar' : 'Check')} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-white">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-white">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
@@ -213,7 +233,14 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
           <View className="flex-row items-center justify-between border-t border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface p-4"><Pressable className="flex-row items-center rounded-2xl border border-white/15 px-5 py-3" onPress={() => void onLike(place)}><MaterialCommunityIcons name={place.liked ? 'heart' : 'heart-outline'} size={24} color={place.liked ? '#ff557d' : 'white'} /><Text className="ml-2 font-black text-white">{place.likes_count}</Text></Pressable><Pressable className="rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-7 py-3" onPress={onClose}><Text className="font-black text-white">{language === 'es' ? 'Cerrar ficha' : 'Close'}</Text></Pressable></View>
         </View>
       </View>
-    </Modal>
+      </Modal>
+      <Modal animationType="fade" onRequestClose={() => setSelectedPhotoIndex(null)} statusBarTranslucent transparent visible={selectedPhotoIndex !== null}>
+        <View className="flex-1 bg-black">
+          <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{communityPhotos.map((url, index) => <View className="flex-1 items-center justify-center" key={`${url}-${index}`} style={{ width }}><Image accessibilityLabel={`Fotografía ${index + 1} de ${place.name}`} contentFit="contain" source={{ uri: url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
+          <Pressable accessibilityLabel={language === 'es' ? 'Cerrar fotografías' : 'Close photos'} className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/65" onPress={() => setSelectedPhotoIndex(null)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
+        </View>
+      </Modal>
+    </>
   );
 }
 
