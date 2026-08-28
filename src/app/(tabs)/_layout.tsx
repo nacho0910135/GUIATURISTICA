@@ -57,6 +57,7 @@ export default function TabsLayout() {
         name="explore"
         options={{ title: t('explore'), tabBarIcon: icon('compass') }}
       />
+      <Tabs.Screen name="catalog" options={{ headerShown: false, href: null }} />
       <Tabs.Screen name="fauna" options={{ title: t('fauna'), tabBarIcon: icon('paw-outline') }} />
       <Tabs.Screen name="friends" options={{ title: 'Comunidad', tabBarIcon: friendsIcon, tabBarActiveTintColor: colors.secondary, tabBarLabelStyle: { fontSize: 11, fontWeight: '800' } }} />
       <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('hospital-box-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />

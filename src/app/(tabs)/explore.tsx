@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { MapCanvas } from '@/components/explore/map-canvas';
+import { type Destination, getDestinationAlert, getFeaturedDestinations, getLiveRoadAlerts, getTides, getWeather, type RoadTrafficAlert, TIDES_STALE_TIME, WEATHER_STALE_TIME } from '@/lib/logistics';
 import { getExplorePlaces, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
@@ -34,6 +35,8 @@ const activities: Activity[] = [
   { title: { es: 'Senderismo', en: 'Hiking' }, subtitle: { es: 'Caminá y explorá', en: 'Walk and explore' }, category: 'Senderismo', icon: 'hiking', color: '#8b5e34' },
   { title: { es: 'Pozas / Lagos', en: 'Pools / Lakes' }, subtitle: { es: 'Agua natural', en: 'Natural water' }, category: 'Pozas / Lagos', icon: 'water', color: '#159ed1' },
   { title: { es: 'Santuarios de animales', en: 'Animal Sanctuaries' }, subtitle: { es: 'Centros verificados', en: 'Verified centers' }, category: 'Santuarios de animales', icon: 'paw', color: '#087443' },
+  { title: { es: 'Reservas naturales', en: 'Nature Reserves' }, subtitle: { es: 'Bosques protegidos', en: 'Protected forests' }, category: 'Reservas naturales y forestales', icon: 'forest', color: '#236b3d' },
+  { title: { es: 'Refugios silvestres', en: 'Wildlife Refuges' }, subtitle: { es: 'Hábitats protegidos', en: 'Protected habitats' }, category: 'Refugios de vida silvestre', icon: 'bird', color: '#3f7f5f' },
   { title: { es: 'Experiencia Gastronómica', en: 'Food Experiences' }, subtitle: { es: 'Selección premium', en: 'Premium selection' }, category: 'Experiencia Gastronómica', icon: 'silverware-fork-knife', color: '#d69e2e', premium: true },
   { title: { es: 'Bares / Discotecas', en: 'Bars / Nightclubs' }, subtitle: { es: 'Selección premium', en: 'Premium selection' }, category: 'Bares / Discotecas', icon: 'glass-cocktail', color: '#7c4dff', premium: true },
 ];
@@ -49,6 +52,8 @@ export default function ExploreScreen() {
   const [proposalOpen, setProposalOpen] = useState(false);
   const wide = width >= 900;
   const places = useQuery({ queryKey: ['explore-places'], queryFn: getExplorePlaces, staleTime: 10 * 60 * 1000 });
+  const featuredWeather = useQuery({ queryKey: ['logistics', 'featured-destinations-v2'], queryFn: getFeaturedDestinations, staleTime: 24 * 60 * 60 * 1000 });
+  const roadAlerts = useQuery({ queryKey: ['mapbox-road-alerts', language], queryFn: () => getLiveRoadAlerts(language), refetchInterval: 8 * 60 * 1000, staleTime: 8 * 60 * 1000 });
   const followed = useQuery({ queryKey: ['followed-travelers', session?.user.id], queryFn: () => getFollowedTravelerIds(session?.user.id), staleTime: 60 * 1000 });
   const resetExplore = useCallback(() => {
     setSearch('');
@@ -95,6 +100,7 @@ export default function ExploreScreen() {
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180 }}>
+        <Text className="mb-1.5 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Busca un sitio por nombre' : 'Search for a place by name'}</Text>
         <View className="flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="magnify" size={23} color="#68737A" /><TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Buscar playas, cataratas, miradores, volcanes o senderos…' : 'Search beaches, waterfalls, viewpoints, volcanoes or trails…'} placeholderTextColor="#68737A" value={search} /></View>
         <Pressable
           accessibilityRole="button"
@@ -107,10 +113,14 @@ export default function ExploreScreen() {
           <Text className="ml-2 text-center text-sm font-black text-white">{language === 'es' ? 'Descubrir destinos turísticos cercanos' : 'Discover nearby tourist destinations'}</Text>
         </Pressable>
         {coordinates ? <Text className="mt-3 text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ordenados del más cercano al más lejano.' : 'Sorted from nearest to farthest.'}</Text> : null}
-        {search || coordinates ? <View className="mt-4 gap-3">{places.isPending ? <ActivityIndicator color="#0B6B4F" /> : visiblePlaces.slice(0, 20).map((place) => <PlaceResult followed={Boolean(place.contributor_id && followed.data?.has(place.contributor_id))} formatPrice={formatPrice} key={`${place.community ? 'community' : 'official'}-${place.id}`} language={language} onFollow={async () => { if (!place.contributor_id || !requireAuth(language === 'es' ? 'Seguir a un viajero' : 'Follow a traveler') || !session) return; try { await toggleTravelerFollow(session.user.id, place.contributor_id, Boolean(followed.data?.has(place.contributor_id))); await queryClient.invalidateQueries({ queryKey: ['followed-travelers', session.user.id] }); } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo actualizar el seguimiento.' : 'Could not update follow.'); } }} onPress={() => router.push({ pathname: '/(aux)/province', params: { category: place.category, destinationId: place.id } })} origin={coordinates} ownContribution={place.contributor_id === session?.user.id} place={place} />)}{!places.isPending && !visiblePlaces.length ? <Text className="py-6 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con esa búsqueda.' : 'No places matched your search.'}</Text> : null}</View> : null}
+        {search || coordinates ? <View className="mt-4 gap-3">{places.isPending ? <ActivityIndicator color="#0B6B4F" /> : visiblePlaces.slice(0, 20).map((place) => <PlaceResult followed={Boolean(place.contributor_id && followed.data?.has(place.contributor_id))} formatPrice={formatPrice} key={`${place.community ? 'community' : 'official'}-${place.id}`} language={language} onFollow={async () => { if (!place.contributor_id || !requireAuth(language === 'es' ? 'Seguir a un viajero' : 'Follow a traveler') || !session) return; try { await toggleTravelerFollow(session.user.id, place.contributor_id, Boolean(followed.data?.has(place.contributor_id))); await queryClient.invalidateQueries({ queryKey: ['followed-travelers', session.user.id] }); } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo actualizar el seguimiento.' : 'Could not update follow.'); } }} onPress={() => router.push({ pathname: '/(tabs)/catalog', params: { category: place.category, destinationId: place.id } })} origin={coordinates} ownContribution={place.contributor_id === session?.user.id} place={place} />)}{!places.isPending && !visiblePlaces.length ? <Text className="py-6 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con esa búsqueda.' : 'No places matched your search.'}</Text> : null}</View> : null}
       </View>
 
       <View className="w-full" style={{ maxWidth: 1180, paddingHorizontal: wide ? 20 : 0 }}>
+        <View className="bg-ui-background px-5 pb-2 dark:bg-ui-dark-background">
+          <Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Mapa interactivo de CR' : 'Interactive map of Costa Rica'}</Text>
+          <Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Presioná una provincia para acceder a los destinos.' : 'Tap a province to see its destinations.'}</Text>
+        </View>
         <MapCanvas />
       </View>
 
@@ -134,7 +144,7 @@ export default function ExploreScreen() {
                 accessibilityRole="button"
                 className="items-center px-1 py-3"
                 key={activity.title.es}
-                onPress={() => router.push({ pathname: '/(aux)/province', params: { category: activity.category } })}
+                onPress={() => router.push({ pathname: '/(tabs)/catalog', params: { category: activity.category } })}
                 style={{ width: '33.3333%' }}
               >
                 <View className="items-center justify-center rounded-full" style={{ backgroundColor: `${activity.color}20`, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
@@ -150,21 +160,31 @@ export default function ExploreScreen() {
           })}
         </View>
 
-        <Pressable
-          accessibilityLabel={t('roadAlert')}
-          accessibilityRole="button"
-          className="mx-5 mt-6 flex-row items-center rounded-[22px] bg-coral-50 p-4"
-          onPress={() => requireAuth(t('roadAlert'))}
-          style={{ borderColor: '#ffe1dd', borderWidth: 1 }}
-        >
-          <View className="h-12 w-12 items-center justify-center rounded-full bg-coral-500"><MaterialCommunityIcons name="car-brake-alert" size={24} color="white" /></View>
-          <View className="ml-4 flex-1"><Text className="font-black text-coral-600">{t('roadAlert')}</Text><Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{t('roadMessage')}</Text></View>
-          <MaterialCommunityIcons name="chevron-right" size={26} color="#ff5d52" />
-        </Pressable>
+        <View className="mt-6 flex-row items-center px-7"><View className="h-9 w-9 items-center justify-center rounded-xl bg-caribbean-500/15"><MaterialCommunityIcons name="weather-partly-cloudy" size={21} color="#0077A8" /></View><Text className="ml-3 flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Clima y mareas por destino' : 'Weather and tides by destination'}</Text></View>
+        {featuredWeather.isPending ? <ActivityIndicator className="mt-6" color="#159ed1" /> : null}
+        {featuredWeather.isError ? <Text className="mx-7 mt-4 font-bold text-coral-600">{language === 'es' ? 'No se pudo cargar el clima.' : 'Weather could not be loaded.'}</Text> : null}
+        <View className="mt-3 gap-3 px-12 md:px-16">
+          {(featuredWeather.data ?? []).map((destination) => <WeatherDestinationAlert destination={destination} key={destination.id} language={language} onPress={() => router.push({ pathname: '/(tabs)/catalog', params: { category: destination.category, destinationId: destination.id } })} />)}
+        </View>
+        <Text className="mx-7 mt-2 text-[10px] leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Clima: caché 30 min · Mareas: caché 3 h.' : 'Weather: 30 min cache · Tides: 3 h cache.'}</Text>
+
+        <View className="mx-7 mt-6 rounded-[24px] border border-[#ffac16]/40 bg-ui-surface p-4 dark:bg-ui-dark-surface"><View className="flex-row items-center"><MaterialCommunityIcons name="alert-outline" size={27} color="#d97706" /><View className="ml-3 flex-1"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Alertas viales actuales' : 'Current road alerts'}</Text><Text className="mt-0.5 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">Mapbox Traffic · {roadAlerts.data ? new Date(roadAlerts.data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (language === 'es' ? 'actualizando…' : 'updating…')}</Text></View></View>{roadAlerts.isPending ? <ActivityIndicator className="my-6" color="#d97706" /> : null}{roadAlerts.isError ? <Text className="mt-4 font-bold text-coral-600">{language === 'es' ? 'No se pudo consultar Mapbox Traffic.' : 'Mapbox Traffic could not be reached.'}</Text> : null}<View className="mt-3 gap-3">{roadAlerts.data?.alerts.map((alert) => <RoadAlertRow alert={alert} key={alert.id} />)}</View><Text className="mt-3 text-[10px] leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Datos de congestión, cierres e incidentes de Mapbox. Actualización aproximada cada 8 minutos.' : 'Congestion, closure, and incident data from Mapbox. Updated approximately every 8 minutes.'}</Text></View>
       </View>
       <ProposalModal language={language} onClose={() => setProposalOpen(false)} onPublished={() => void queryClient.invalidateQueries({ queryKey: ['explore-places'] })} open={proposalOpen} session={session} />
     </ScrollView>
   );
+}
+
+function WeatherDestinationAlert({ destination, language, onPress }: { destination: Destination; language: 'es' | 'en'; onPress: () => void }) {
+  const weather = useQuery({ queryKey: ['weather', destination.latitude.toFixed(3), destination.longitude.toFixed(3), language], queryFn: () => getWeather(destination, language), staleTime: WEATHER_STALE_TIME });
+  const tides = useQuery({ queryKey: ['tides', destination.latitude.toFixed(3), destination.longitude.toFixed(3)], queryFn: () => getTides(destination), staleTime: TIDES_STALE_TIME, enabled: destination.has_high_tides_risk });
+  const alert = getDestinationAlert(weather.data, tides.data, language, destination.has_high_tides_risk);
+  return <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir alerta de' : 'Open alert for'} ${destination.name}`} accessibilityRole="button" className={`rounded-[18px] border p-4 active:opacity-80 ${alert.level === 'warning' ? 'border-coral-500 bg-coral-50 dark:bg-coral-500/15' : 'border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface'}`} onPress={onPress} style={{ alignSelf: 'center', maxWidth: 448, width: '82%' }}><View className="flex-row items-center"><MaterialCommunityIcons name={alert.level === 'warning' ? 'alert-circle' : 'weather-partly-cloudy'} size={22} color={alert.level === 'warning' ? '#ff5d52' : '#0077A8'} /><View className="ml-3 flex-1"><Text className="text-sm font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{destination.name}</Text><Text className={`mt-1 text-xs font-black ${alert.level === 'warning' ? 'text-coral-600' : 'text-ui-secondary dark:text-ui-dark-secondary'}`}>{alert.title}</Text><Text className="mt-1 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{alert.detail}</Text></View><MaterialCommunityIcons name="chevron-right" size={21} color="#68737A" /></View></Pressable>;
+}
+
+function RoadAlertRow({ alert }: { alert: RoadTrafficAlert }) {
+  const colors = alert.status === 'closed' ? ['#7f1d1d', '#fee2e2'] : alert.status === 'heavy' ? ['#b45309', '#fff7ed'] : alert.status === 'moderate' ? ['#a16207', '#fefce8'] : ['#047857', '#ecfdf5'];
+  return <View className="rounded-2xl border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted"><View className="flex-row items-start"><View className="flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{alert.name}</Text><Text className="mt-2 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{alert.detail}</Text></View><View className="ml-3 rounded-xl px-3 py-2" style={{ backgroundColor: colors[1] }}><Text className="text-xs font-black" style={{ color: colors[0] }}>{alert.statusLabel}</Text></View></View></View>;
 }
 
 function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }) {

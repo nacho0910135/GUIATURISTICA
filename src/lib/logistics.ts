@@ -23,6 +23,8 @@ export type Destination = {
 
 export type Weather = { temperature: number; temperatureUnit: 'C' | 'F'; description: string; icon: string; humidity: number };
 export type Tide = { nextHigh?: { date: string; height: number }; alert: boolean };
+export type DestinationAlert = { detail: string; level: 'info' | 'warning'; title: string };
+export type RoadTrafficAlert = { detail: string; id: string; name: string; status: 'closed' | 'heavy' | 'moderate' | 'clear'; statusLabel: string };
 
 export type FerryRoute = {
   id: string;
@@ -67,6 +69,46 @@ export async function getFeaturedDestinations(): Promise<Destination[]> {
   return (data ?? []).map(normalizeDestination);
 }
 
+const ROAD_CORRIDORS = [
+  { id: 'route-32', name: 'Ruta 32 (San José - Guápiles)', from: [-84.07486, 9.932607], to: [-83.78975, 10.21547] },
+  { id: 'route-2', name: 'Ruta 2 (Cartago - San Isidro)', from: [-83.91655, 9.864186], to: [-83.70457, 9.371303] },
+  { id: 'route-27', name: 'Ruta 27 (San José - Caldera)', from: [-84.07486, 9.932607], to: [-84.70942, 9.924575] },
+] as const;
+
+export async function getLiveRoadAlerts(language: 'es' | 'en'): Promise<{ alerts: RoadTrafficAlert[]; updatedAt: string }> {
+  const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
+  if (!token) throw new Error('MAPBOX_TOKEN_MISSING');
+  const alerts = await Promise.all(ROAD_CORRIDORS.map(async (corridor): Promise<RoadTrafficAlert> => {
+    const coordinates = `${corridor.from.join(',')};${corridor.to.join(',')}`;
+    const params = new URLSearchParams({ access_token: token, annotations: 'congestion,closure', geometries: 'geojson', language, overview: 'full' });
+    const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordinates}?${params}`);
+    if (!response.ok) throw new Error(`Mapbox Traffic ${response.status}`);
+    const body = await response.json() as { code: string; routes?: { legs?: { annotation?: { congestion?: string[] }; closures?: unknown[]; duration: number; incidents?: { closed?: boolean; description?: string; impact?: string; long_description?: string; type?: string }[] }[] }[] };
+    const leg = body.routes?.[0]?.legs?.[0];
+    if (body.code !== 'Ok' || !leg) throw new Error(`Mapbox Traffic ${body.code}`);
+    const incident = leg.incidents?.[0];
+    const congestion = leg.annotation?.congestion ?? [];
+    const heavySegments = congestion.filter((level) => level === 'heavy' || level === 'severe').length;
+    const moderateSegments = congestion.filter((level) => level === 'moderate').length;
+    const knownSegments = congestion.filter((level) => level !== 'unknown').length;
+    const minutes = Math.max(1, Math.round(leg.duration / 60));
+    if (incident?.closed || leg.closures?.length) return { id: corridor.id, name: corridor.name, status: 'closed', statusLabel: language === 'es' ? 'Cierre reportado' : 'Closure reported', detail: incident?.long_description || incident?.description || (language === 'es' ? `Mapbox reporta un cierre en el recorrido · ${minutes} min estimados.` : `Mapbox reports a closure along the route · ${minutes} min estimated.`) };
+    if (incident) return { id: corridor.id, name: corridor.name, status: incident.impact === 'critical' || incident.impact === 'major' ? 'heavy' : 'moderate', statusLabel: incidentLabel(incident.type, language), detail: incident.long_description || incident.description || (language === 'es' ? `Incidente reportado por Mapbox · ${minutes} min estimados.` : `Incident reported by Mapbox · ${minutes} min estimated.`) };
+    const heavyPercent = knownSegments ? Math.round(heavySegments / knownSegments * 100) : 0;
+    const moderatePercent = knownSegments ? Math.round(moderateSegments / knownSegments * 100) : 0;
+    if (heavySegments) return { id: corridor.id, name: corridor.name, status: 'heavy', statusLabel: language === 'es' ? 'Congestión intensa' : 'Heavy congestion', detail: language === 'es' ? `${heavyPercent}% de los tramos medidos con congestión pesada o severa · ${minutes} min estimados.` : `${heavyPercent}% of measured segments have heavy or severe congestion · ${minutes} min estimated.` };
+    if (moderateSegments) return { id: corridor.id, name: corridor.name, status: 'moderate', statusLabel: language === 'es' ? 'Congestión moderada' : 'Moderate congestion', detail: language === 'es' ? `${moderatePercent}% de los tramos medidos con congestión moderada · ${minutes} min estimados.` : `${moderatePercent}% of measured segments have moderate congestion · ${minutes} min estimated.` };
+    return { id: corridor.id, name: corridor.name, status: 'clear', statusLabel: language === 'es' ? 'Sin incidentes reportados' : 'No incidents reported', detail: language === 'es' ? `Mapbox no reporta incidentes ni cierres en este recorrido · ${minutes} min estimados.` : `Mapbox reports no incidents or closures along this route · ${minutes} min estimated.` };
+  }));
+  return { alerts, updatedAt: new Date().toISOString() };
+}
+
+function incidentLabel(type: string | undefined, language: 'es' | 'en') {
+  const labels: Record<string, [string, string]> = { accident: ['Accidente reportado', 'Accident reported'], congestion: ['Congestión reportada', 'Congestion reported'], construction: ['Obras reportadas', 'Construction reported'], disabled_vehicle: ['Vehículo detenido', 'Disabled vehicle'], lane_restriction: ['Carril restringido', 'Lane restriction'], planned_event: ['Evento planificado', 'Planned event'], road_closure: ['Cierre reportado', 'Closure reported'], road_hazard: ['Peligro en carretera', 'Road hazard'], weather: ['Afectación por clima', 'Weather impact'] };
+  const label = labels[type ?? ''];
+  return label ? label[language === 'es' ? 0 : 1] : (language === 'es' ? 'Incidente reportado' : 'Incident reported');
+}
+
 export async function getWeather(destination: Pick<Destination, 'latitude' | 'longitude'>, language: 'es' | 'en'): Promise<Weather> {
   const key = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY;
   if (!key) throw new Error('OPENWEATHER_KEY_MISSING');
@@ -91,6 +133,20 @@ export async function getTides(destination: Pick<Destination, 'latitude' | 'long
     nextHigh: high ? { date: high.date, height: high.height } : undefined,
     alert: Boolean(destination.has_high_tides_risk && high && high.dt * 1000 - now <= 3 * 60 * 60 * 1000),
   };
+}
+
+export function getDestinationAlert(weather: Weather | undefined, tide: Tide | undefined, language: 'es' | 'en', hasHighTidesRisk = false): DestinationAlert {
+  if (tide?.nextHigh) {
+    const time = new Date(tide.nextHigh.date).toLocaleTimeString(language === 'es' ? 'es-CR' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+    const height = tide.nextHigh.height.toFixed(1);
+    return tide.alert
+      ? { level: 'warning', title: language === 'es' ? 'Marea alta próxima' : 'High tide approaching', detail: language === 'es' ? `Pleamar de ${height} m a las ${time}. Evitá zonas bajas y cruces costeros.` : `${height} m high tide at ${time}. Avoid low areas and coastal crossings.` }
+      : { level: 'info', title: language === 'es' ? 'Próxima pleamar' : 'Next high tide', detail: language === 'es' ? `Marea alta estimada de ${height} m a las ${time}.` : `Estimated ${height} m high tide at ${time}.` };
+  }
+  if (hasHighTidesRisk) return { level: 'warning', title: language === 'es' ? 'Riesgo de marea alta' : 'High-tide risk', detail: language === 'es' ? 'Zona con pasos costeros sensibles a la pleamar. Revisá la marea antes de ingresar y evitá cruces con el agua en ascenso.' : 'Coastal crossings in this area are sensitive to high tide. Check tide times before entering and avoid crossings as water rises.' };
+  if (!weather) return { level: 'info', title: language === 'es' ? 'Consultando condiciones' : 'Checking conditions', detail: language === 'es' ? 'Actualizando clima y mareas del destino.' : 'Updating weather and tide conditions.' };
+  const severeWeather = /torment|thunder|lluvia fuerte|heavy rain/i.test(weather.description);
+  return { level: severeWeather ? 'warning' : 'info', title: severeWeather ? (language === 'es' ? 'Condiciones adversas' : 'Adverse conditions') : (language === 'es' ? 'Condiciones actuales' : 'Current conditions'), detail: `${weather.temperature}°${weather.temperatureUnit} · ${weather.description} · ${language === 'es' ? 'humedad' : 'humidity'} ${weather.humidity}%` };
 }
 
 export async function recommendDestinations(input: { latitude: number; longitude: number; hours: number; category: string; maxBudget: number }) {

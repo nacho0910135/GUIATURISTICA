@@ -7,7 +7,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
-import { ferryRoutes, getWeather, openNavigation, WEATHER_STALE_TIME } from '@/lib/logistics';
+import { ferryRoutes, getDestinationAlert, getTides, getWeather, openNavigation, TIDES_STALE_TIME, WEATHER_STALE_TIME } from '@/lib/logistics';
 import { addDestinationPhoto, addDestinationReview, getDestinationReviews, getPlacesForCategory, getPlacesForProvince, type MapPlace, type ValidationAuthority, toggleDestinationLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
@@ -137,7 +137,7 @@ export default function ProvinceCatalogScreen() {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? 'No se pudieron cargar los sitios desde Supabase.' : 'Aún no hay sitios publicados para esta provincia.'}</Text>}
         renderItem={({ item }) => (
-          <View className="overflow-hidden rounded-[30px] border border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface">
+          <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}`} accessibilityRole="button" className="overflow-hidden rounded-[30px] border border-ui-border bg-ui-surface active:opacity-90 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={() => setSelected(item)}>
             <View className="relative">
               <DestinationImage height={240} place={item} />
               <View className="absolute inset-0 bg-black/15" />
@@ -155,12 +155,12 @@ export default function ProvinceCatalogScreen() {
               <View className="mt-5 flex-row items-end justify-between">
                 <View><Text className="text-xs font-bold uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Tarifa Tico' : 'Foreigner price'}</Text><Text className="mt-1 text-xl font-black text-ui-primary dark:text-ui-dark-primary">{visitorType === 'tico' ? (item.price_national_crc == null ? 'Consultar' : item.price_national_crc === 0 ? 'Gratis' : formatPrice(item.price_national_crc)) : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`)}</Text></View>
                 <View className="flex-row items-center gap-3">
-                  <Pressable accessibilityLabel="Me gusta" className="flex-row items-center rounded-full px-3 py-3" onPress={() => void like(item)}><MaterialCommunityIcons name={item.liked ? 'heart' : 'heart-outline'} size={24} color={item.liked ? '#ff557d' : '#a8a29c'} /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{item.likes_count}</Text></Pressable>
-                  <Pressable accessibilityRole="button" className="rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-6 py-3" onPress={() => setSelected(item)}><Text className="font-black text-white">{language === 'es' ? 'Ver' : 'View'}</Text></Pressable>
+                  <Pressable accessibilityLabel="Me gusta" className="flex-row items-center rounded-full px-3 py-3" onPress={(event) => { event.stopPropagation(); void like(item); }}><MaterialCommunityIcons name={item.liked ? 'heart' : 'heart-outline'} size={24} color={item.liked ? '#ff557d' : '#a8a29c'} /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{item.likes_count}</Text></Pressable>
+                  <View className="rounded-2xl bg-ui-primary px-6 py-3 dark:bg-ui-dark-primary"><Text className="font-black text-white">{language === 'es' ? 'Ver' : 'View'}</Text></View>
                 </View>
               </View>
             </View>
-          </View>
+          </Pressable>
         )}
       />
       <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={() => setSelected(undefined)} onLike={like} place={selected} />
@@ -183,7 +183,9 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const reviews = useQuery({ queryKey: ['destination-reviews', place?.id], queryFn: () => getDestinationReviews(place!.id), enabled: Boolean(place && commentsOpen) });
   const weather = useQuery({ queryKey: ['weather', 'destination', place?.id, language], queryFn: () => getWeather(place!, language), enabled: Boolean(place), staleTime: WEATHER_STALE_TIME });
+  const tides = useQuery({ queryKey: ['tides', place?.latitude.toFixed(3), place?.longitude.toFixed(3)], queryFn: () => getTides(place!), enabled: Boolean(place?.has_high_tides_risk), staleTime: TIDES_STALE_TIME });
   if (!place) return null;
+  const destinationAlert = getDestinationAlert(weather.data, tides.data, language, place.has_high_tides_risk);
   const ferry = needsPaqueraFerry(place) ? ferryRoutes[0] : undefined;
   const visitPrice = visitorType === 'tico' ? (place.price_national_crc == null ? 'Consultar' : place.price_national_crc === 0 ? 'Gratis' : formatPrice(place.price_national_crc)) : (place.price_foreigner_usd == null ? 'Check price' : place.price_foreigner_usd === 0 ? 'Free' : `$${place.price_foreigner_usd.toFixed(2)}`);
 
@@ -238,7 +240,8 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
               <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{place.description || (language === 'es' ? 'Información en proceso de verificación.' : 'Information is being verified.')}</Text></View>
               <View className="rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5">
-                <InfoRow icon="clock-outline" label={language === 'es' ? 'Horario' : 'Hours'} value={place.schedule || (language === 'es' ? 'Consultar fuente oficial' : 'Check official source')} />
+                <View className={`mb-5 rounded-2xl border p-4 ${destinationAlert.level === 'warning' ? 'border-coral-500 bg-coral-50 dark:bg-coral-500/15' : 'border-ui-secondary/40 bg-ui-surface dark:bg-ui-dark-surface'}`}><View className="flex-row items-start"><MaterialCommunityIcons name={destinationAlert.level === 'warning' ? 'alert-circle' : 'weather-partly-cloudy'} size={24} color={destinationAlert.level === 'warning' ? '#ff5d52' : '#0077A8'} /><View className="ml-3 flex-1"><Text className={`font-black ${destinationAlert.level === 'warning' ? 'text-coral-600' : 'text-ui-secondary dark:text-ui-dark-secondary'}`}>{destinationAlert.title}</Text><Text className="mt-1 leading-5 text-ui-text dark:text-ui-dark-text">{destinationAlert.detail}</Text></View></View></View>
+                <InfoRow icon="clock-outline" label={language === 'es' ? 'Horario' : 'Hours'} value={place.schedule === 'Todo el día' && language === 'en' ? 'All day' : place.schedule || (language === 'es' ? 'Consultar fuente oficial' : 'Check official source')} />
                 <InfoRow icon="calendar-remove-outline" label={language === 'es' ? 'Cierre' : 'Closed'} value={place.closed_day || (language === 'es' ? 'Sin dato verificado' : 'No verified data')} />
                 <InfoRow icon="cash-multiple" label={language === 'es' ? 'Tu tarifa' : 'Your price'} value={visitPrice} />
                 {place.notes ? <InfoRow icon="information-outline" label={language === 'es' ? 'Importante' : 'Important'} value={place.notes} /> : null}

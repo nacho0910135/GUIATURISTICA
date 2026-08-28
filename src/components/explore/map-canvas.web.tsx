@@ -83,7 +83,7 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
         }
         const feature = map.queryRenderedFeatures(event.point, { layers: ['province-weather-icons', 'province-weather-labels', 'province-fills'] })[0];
         const name = feature?.properties?.name as string | undefined;
-        if (name) router.push({ pathname: '/(aux)/province', params: { province: name } });
+        if (name) router.push({ pathname: '/(tabs)/catalog', params: { province: name } });
       };
       map.on('click', handleMapClick);
       map.on('mouseenter', 'province-fills', () => { map.getCanvas().style.cursor = 'pointer'; });

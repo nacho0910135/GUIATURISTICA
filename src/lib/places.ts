@@ -74,6 +74,15 @@ type SanctuaryVisitDetails = {
 };
 
 const SANCTUARY_CATEGORY = 'Santuarios de animales';
+const RESERVE_CATEGORY = 'Reservas naturales y forestales';
+const REFUGE_CATEGORY = 'Refugios de vida silvestre';
+const RESERVE_IDS = new Set(['8104fe85-a950-405b-b901-3706932f25cb', 'f1f8bc1a-b426-41b5-81ad-c8f3475e1eb4', '8ceceb72-6890-4fac-9f02-d5fe7aad5211', 'c4449fdb-0f4c-49b4-9389-504edecacafc']);
+const REFUGE_IDS = new Set(['5c3003af-a0be-409d-aeb4-8d3a700cc352', '62300b89-072f-429e-bbe9-401f147933cf', 'da01f59f-0045-4aa2-b4ea-79ef67f4b8fd', 'd599ee5d-2dbe-4886-9cd9-f3dbb48271c4', '7cc91f6c-81a4-475b-8f76-640d84bbe216', '4d287a05-ab6a-4172-930f-1ae7280a3a6d']);
+
+function classifiedCategory(place: { category: string; id: string }) {
+  const protectedCategory = RESERVE_IDS.has(place.id) ? RESERVE_CATEGORY : REFUGE_IDS.has(place.id) ? REFUGE_CATEGORY : null;
+  return protectedCategory && !place.category.includes(protectedCategory) ? `${protectedCategory} / ${place.category}` : place.category;
+}
 const VERIFIED_SANCTUARY_LOCATIONS: Record<string, SanctuaryVisitDetails> = {
   'af1a4249-acd9-4e0f-9772-f08eda57a711': {
     aliases: ['Rescate Wildlife Rescue Center', 'ZooAve'],
@@ -204,7 +213,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   if (contributors.error) throw contributors.error;
   const contributorNames = new Map((contributors.data ?? []).map((profile) => [profile.id, profile.full_name || profile.username]));
   const officialPlaces = [
-    ...(official.data ?? []).map((place) => ({ ...place, community: false, contributor_id: null, contributor_name: null })),
+    ...(official.data ?? []).map((place) => ({ ...place, category: classifiedCategory(place), community: false, contributor_id: null, contributor_name: null })),
     ...(community.data ?? []).map((place) => ({ ...place, community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[] })),
   ]
     .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
@@ -240,6 +249,8 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
     .from('destinations')
     .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos(image_url,created_at)');
   if (filter === 'province') query = query.eq('province', value);
+  else if (value === RESERVE_CATEGORY) query = query.in('id', [...RESERVE_IDS]);
+  else if (value === REFUGE_CATEGORY) query = query.in('id', [...REFUGE_IDS]);
   else if (value === 'Pozas / Lagos') query = query.or('category.ilike.%Poza%,category.ilike.%Lago%,category.ilike.%Laguna%');
   else query = query.ilike('category', `%${value}%`);
   const { data, error } = await query.order('name');
@@ -258,6 +269,7 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
   const likedIds = new Set((mine.data ?? []).map((row) => row.target_id));
   return (data ?? []).map((place) => {
     const rules = Array.isArray(place.normativas_destinos) ? place.normativas_destinos[0] : place.normativas_destinos;
+    const hasOfficialSchedule = ((place.validated_by ?? []) as ValidationAuthority[]).some((authority) => authority === 'SINAC' || authority === 'ICT');
     const ratings = (reviews.data ?? []).filter((row) => row.target_id === place.id).map((row) => Number(row.rating));
     const reviewPhotos = (reviews.data ?? []).filter((review) => review.target_id === place.id).flatMap((review) => review.photos ?? []);
     const communityPhotos = [
@@ -266,12 +278,13 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
     ];
     return {
       ...place,
+      category: classifiedCategory(place),
       latitude: Number(place.latitude),
       longitude: Number(place.longitude),
       price_national_crc: place.price_national_crc == null ? null : Number(place.price_national_crc),
       price_foreigner_usd: place.price_foreigner_usd == null ? null : Number(place.price_foreigner_usd),
-      schedule: rules?.horario_ingreso ?? null,
-      closed_day: rules?.dia_cierre ?? null,
+      schedule: hasOfficialSchedule && rules?.horario_ingreso ? rules.horario_ingreso : 'Todo el día',
+      closed_day: hasOfficialSchedule ? rules?.dia_cierre ?? null : null,
       notes: rules?.observaciones_especiales ?? null,
       likes_count: (likes.data ?? []).filter((row) => row.target_id === place.id).length,
       reviews_count: ratings.length,
