@@ -25,6 +25,9 @@ export type AssistanceService = {
   latitude: number;
   longitude: number;
   distance_km: number;
+  business_verified_at: string | null;
+  business_verification_evidence_url: string | null;
+  business_updated_at: string | null;
 };
 
 type ServiceRow = Omit<AssistanceService, 'phone' | 'latitude' | 'longitude' | 'distance_km'> & {
@@ -36,7 +39,7 @@ export async function getAssistanceDirectory(categoryId: AssistanceCategoryId, o
   const category = ASSISTANCE_CATEGORIES.find((item) => item.id === categoryId) ?? ASSISTANCE_CATEGORIES[0];
   const { data, error } = await supabase
     .from('commercial_services')
-    .select('id,main_category,subcategory,title,description,phone_whatsapp,external_url,location')
+    .select('id,main_category,subcategory,title,description,phone_whatsapp,external_url,location,business_verified_at,business_verification_evidence_url,business_updated_at')
     .in('main_category', [...category.values])
     .limit(1000);
   if (error) throw error;
@@ -53,6 +56,9 @@ export async function getAssistanceDirectory(categoryId: AssistanceCategoryId, o
         description: service.description,
         phone: service.phone_whatsapp,
         external_url: service.external_url,
+        business_verified_at: service.business_verified_at,
+        business_verification_evidence_url: service.business_verification_evidence_url,
+        business_updated_at: service.business_updated_at,
         latitude,
         longitude,
         distance_km: distanceKm(origin, { latitude, longitude }),

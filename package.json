@@ -58,6 +58,7 @@
     "check:fauna": "node scripts/check-fauna-safety.mjs",
     "check:logistics": "node scripts/check-logistics.mjs",
     "check:assistance": "node --env-file=.env.local scripts/check-assistance.mjs",
+    "check:trust": "node scripts/check-trust-metadata.mjs",
     "check:map": "node scripts/check-map-geojson.mjs",
     "build:android:aab": "eas build --platform android --profile production",
     "build:android:apk": "eas build --platform android --profile preview",

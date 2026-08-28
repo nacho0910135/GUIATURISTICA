@@ -29,6 +29,8 @@ export type MapPlace = {
   has_high_tides_risk: boolean;
   source_url: string | null;
   source_checked_at: string | null;
+  verification_evidence_url: string | null;
+  verification_checked_at: string | null;
   validated_by: ValidationAuthority[];
   schedule: string | null;
   closed_day: string | null;
@@ -52,7 +54,7 @@ export type DestinationReview = {
   avatar_url: string | null;
 };
 
-export type ExplorePlace = Pick<MapPlace, 'id' | 'name' | 'province' | 'category' | 'description' | 'difficulty' | 'price_national_crc' | 'latitude' | 'longitude' | 'validated_by'> & { community: boolean; contributor_id: string | null; contributor_name: string | null };
+export type ExplorePlace = Pick<MapPlace, 'id' | 'name' | 'province' | 'category' | 'description' | 'difficulty' | 'price_national_crc' | 'latitude' | 'longitude' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at'> & { community: boolean; contributor_id: string | null; contributor_name: string | null };
 
 type VerifiedSanctuaryRow = {
   id: string;
@@ -153,7 +155,9 @@ function toExploreSanctuary(row: VerifiedSanctuaryRow): ExplorePlace | null {
     price_national_crc: null,
     latitude: details.latitude,
     longitude: details.longitude,
-    validated_by: ['SINAC'],
+    validated_by: [],
+    verification_evidence_url: null,
+    verification_checked_at: null,
     community: false,
     contributor_id: null,
     contributor_name: null,
@@ -187,7 +191,9 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
     has_high_tides_risk: false,
     source_url: details.sourceUrl,
     source_checked_at: null,
-    validated_by: ['SINAC'],
+    validated_by: [],
+    verification_evidence_url: null,
+    verification_checked_at: null,
     schedule: null,
     closed_day: null,
     notes: row.location_name ? `Ubicación: ${row.location_name}.` : null,
@@ -202,7 +208,7 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
 
 export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   const [official, community, sanctuaries] = await Promise.all([
-    supabase.from('destinations').select('id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,validated_by').eq('status', 'Activo'),
+    supabase.from('destinations').select('id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,validated_by,verification_evidence_url,verification_checked_at').eq('status', 'Activo'),
     supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude').eq('status', 'published'),
     supabase.from('fauna_sanctuaries').select('id,name,province,location_name,description_es,description_en,verified').eq('verified', true).order('name'),
   ]);
@@ -214,7 +220,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   const contributorNames = new Map((contributors.data ?? []).map((profile) => [profile.id, profile.full_name || profile.username]));
   const officialPlaces = [
     ...(official.data ?? []).map((place) => ({ ...place, category: classifiedCategory(place), community: false, contributor_id: null, contributor_name: null })),
-    ...(community.data ?? []).map((place) => ({ ...place, community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[] })),
+    ...(community.data ?? []).map((place) => ({ ...place, community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[], verification_evidence_url: null, verification_checked_at: null })),
   ]
     .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
     .map((place) => ({ ...place, latitude: Number(place.latitude), longitude: Number(place.longitude), price_national_crc: place.price_national_crc == null ? null : Number(place.price_national_crc) })) as ExplorePlace[];
@@ -225,7 +231,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   return [...officialPlaces, ...sanctuaryPlaces];
 }
 
-export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'validated_by'> & { user_id: string; district?: string }) {
+export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at'> & { user_id: string; district?: string }) {
   const { error } = await supabase.from('destination_suggestions').insert({ ...input, status: 'published' });
   if (error) throw error;
 }
@@ -247,7 +253,7 @@ export async function getPlacesForCategory(category: string, userId?: string): P
 async function getPlaces(filter: 'province' | 'category', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos(image_url,created_at)');
+    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos(image_url,created_at)');
   if (filter === 'province') query = query.eq('province', value);
   else if (value === RESERVE_CATEGORY) query = query.in('id', [...RESERVE_IDS]);
   else if (value === REFUGE_CATEGORY) query = query.in('id', [...REFUGE_IDS]);
@@ -269,7 +275,7 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
   const likedIds = new Set((mine.data ?? []).map((row) => row.target_id));
   return (data ?? []).map((place) => {
     const rules = Array.isArray(place.normativas_destinos) ? place.normativas_destinos[0] : place.normativas_destinos;
-    const hasOfficialSchedule = ((place.validated_by ?? []) as ValidationAuthority[]).some((authority) => authority === 'SINAC' || authority === 'ICT');
+    const hasOfficialSchedule = Boolean(place.verification_evidence_url && place.verification_checked_at && ((place.validated_by ?? []) as ValidationAuthority[]).length);
     const ratings = (reviews.data ?? []).filter((row) => row.target_id === place.id).map((row) => Number(row.rating));
     const reviewPhotos = (reviews.data ?? []).filter((review) => review.target_id === place.id).flatMap((review) => review.photos ?? []);
     const communityPhotos = [

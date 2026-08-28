@@ -26,6 +26,8 @@ function ServiceCard({ service }: { service: AssistanceService }) {
         <View className="ml-3 flex-1">
           <Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{service.title}</Text>
           <Text className="mt-1 font-bold text-ui-primary dark:text-ui-dark-primary">{service.distance_km.toFixed(1)} km</Text>
+          <View className="mt-2 flex-row flex-wrap gap-2">{service.business_verified_at && service.business_verification_evidence_url ? <Text className="rounded-full bg-ui-primary px-2 py-1 text-[10px] font-black text-white">{language === 'es' ? 'NEGOCIO VERIFICADO' : 'VERIFIED BUSINESS'}</Text> : <Text className="rounded-full bg-ui-muted px-2 py-1 text-[10px] font-black text-ui-text-muted dark:bg-white/10 dark:text-ui-dark-text-muted">{language === 'es' ? 'INFORMACIÓN COMERCIAL' : 'COMMERCIAL INFORMATION'}</Text>}{service.business_updated_at ? <Text className="rounded-full bg-ui-secondary px-2 py-1 text-[10px] font-black text-white">{language === 'es' ? 'INFORMACIÓN ACTUALIZADA POR EL NEGOCIO' : 'UPDATED BY THE BUSINESS'}</Text> : null}</View>
+          {service.business_verified_at ? <Text className="mt-1 text-[10px] font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Última verificación' : 'Last verified'}: {new Date(service.business_verified_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text> : null}
         </View>
       </View>
       {service.description ? <Text className="mt-3 leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{service.description}</Text> : null}
