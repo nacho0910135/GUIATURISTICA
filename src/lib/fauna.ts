@@ -163,7 +163,7 @@ export async function addFaunaComment(photoId: string, userId: string, body: str
 
 export async function uploadFaunaPhoto(speciesId: string, userId: string, asset: ImagePickerAsset) {
   const context = ImageManipulator.manipulate(asset.uri);
-  context.resize({ width: Math.min(asset.width || 1600, 1600), height: null });
+  context.resize({ width: Math.min(asset.width || 1600, 1600) });
   const rendered = await context.renderAsync();
   const sanitized = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
   const bytes = await fetch(sanitized.uri).then((response) => response.arrayBuffer());

@@ -3,14 +3,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, AppState, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { ferryRoutes, getWeather, openNavigation, WEATHER_STALE_TIME } from '@/lib/logistics';
-import { addDestinationPhoto, addDestinationReview, getDestinationReviews, getPlacesForCategory, getPlacesForProvince, type MapPlace, toggleDestinationLike } from '@/lib/places';
+import { addDestinationPhoto, addDestinationReview, getDestinationReviews, getPlacesForCategory, getPlacesForProvince, type MapPlace, type ValidationAuthority, toggleDestinationLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
+import { useAppTheme } from '@/theme/theme-provider';
 
 function imageSource(place: MapPlace) {
   if (place.image_verified && place.cover_image_url) return { uri: place.cover_image_url };
@@ -24,6 +25,12 @@ function DestinationImage({ height, place }: { height: number; place: MapPlace }
 
 function usesVerifiedCover(place: MapPlace) {
   return place.image_verified && Boolean(place.cover_image_url);
+}
+
+function ValidationBadge({ authorities = [], language }: { authorities?: ValidationAuthority[]; language: 'es' | 'en' }) {
+  if (!authorities.length) return null;
+  const label = `${language === 'es' ? 'Validado por' : 'Validated by'} ${authorities.join(' + ')}`;
+  return <View accessibilityLabel={label} className="flex-row items-center self-start rounded-full bg-[#0B6B4F] px-3 py-1.5"><MaterialCommunityIcons name="shield-check" size={15} color="white" /><Text className="ml-1.5 text-[11px] font-black text-white">{label}</Text></View>;
 }
 
 function needsPaqueraFerry(place: MapPlace) {
@@ -42,7 +49,6 @@ function tourismRegion(place: MapPlace) {
   return place.province;
 }
 
-const SAN_JOSE = { latitude: 9.932, longitude: -84.08 };
 type Coordinates = { latitude: number; longitude: number };
 
 function distanceKm(from: Coordinates, to: Coordinates) {
@@ -53,19 +59,13 @@ function distanceKm(from: Coordinates, to: Coordinates) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function travelTimeFromSanJose(place: MapPlace) {
-  // ponytail: estimate only; replace with a routing API when exact live traffic matters.
-  const hours = distanceKm(SAN_JOSE, place) * 1.35 / 52 + (needsPaqueraFerry(place) ? 1.8 : 0);
-  return Math.max(0.3, hours).toFixed(1);
-}
-
 export default function ProvinceCatalogScreen() {
-  const { category: rawCategory, province: rawProvince } = useLocalSearchParams<{ category?: string; province?: string }>();
+  const { category: rawCategory, destinationId, province: rawProvince } = useLocalSearchParams<{ category?: string; destinationId?: string; province?: string }>();
   const { formatPrice, language, requireAuth, session, setVisitorType, visitorType } = useApp();
+  const { colors } = useAppTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<MapPlace>();
-  const [sortBy, setSortBy] = useState<'rating' | 'nearby'>('rating');
   const [userLocation, setUserLocation] = useState<Coordinates>();
   const province = provinces.find((item) => item.name === rawProvince) ?? provinces[0];
   const scopeTitle = rawCategory || province.name;
@@ -75,17 +75,39 @@ export default function ProvinceCatalogScreen() {
     queryFn: () => rawCategory ? getPlacesForCategory(rawCategory, session?.user.id) : getPlacesForProvince(province.name, session?.user.id),
     staleTime: 10 * 60 * 1000,
   });
-  const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => sortBy === 'nearby' && userLocation
+  useFocusEffect(useCallback(() => {
+    const refresh = () => void queryClient.refetchQueries({ queryKey: ['places'], type: 'active' });
+    refresh();
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refresh();
+    });
+    return () => subscription.remove();
+  }, [queryClient]));
+  useEffect(() => {
+    if (!destinationId || !places.data) return;
+    const match = places.data.find((place) => place.id === destinationId);
+    if (match) setSelected(match);
+  }, [destinationId, places.data]);
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        let permission = await Location.getForegroundPermissionsAsync();
+        if (!permission.granted) permission = await Location.requestForegroundPermissionsAsync();
+        if (!permission.granted) return;
+        const cached = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60 * 1000, requiredAccuracy: 5000 });
+        if (active && cached) setUserLocation(cached.coords);
+        const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (active) setUserLocation(current.coords);
+      } catch {
+        // Keep the catalog usable if the device location is unavailable.
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+  const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => userLocation
     ? distanceKm(userLocation, a) - distanceKm(userLocation, b)
-    : b.average_rating - a.average_rating || b.reviews_count - a.reviews_count), [places.data, sortBy, userLocation]);
-
-  const sortNearby = async () => {
-    const permission = await Location.requestForegroundPermissionsAsync();
-    if (!permission.granted) return Alert.alert('Descubriendo CR', language === 'es' ? 'Necesitamos permiso de ubicación para ordenar por cercanía.' : 'Location permission is required to sort by proximity.');
-    const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    setUserLocation(position.coords);
-    setSortBy('nearby');
-  };
+    : 0), [places.data, userLocation]);
 
   const like = async (place: MapPlace) => {
     if (!requireAuth(language === 'es' ? 'Dar me gusta a un destino' : 'Like a destination') || !session) return;
@@ -102,19 +124,18 @@ export default function ProvinceCatalogScreen() {
     <View className="flex-1 bg-ui-background dark:bg-ui-dark-background">
       <View className="bg-ui-surface dark:bg-ui-dark-surface px-5 pb-6 pt-12">
         <View className="mx-auto w-full max-w-5xl flex-row items-center">
-          <Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-white/10" onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
+          <Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted dark:bg-white/10" onPress={() => router.back()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
           </Pressable>
-          <View className="ml-4 flex-1"><Text className="text-3xl font-black text-white">{scopeTitle}</Text><Text className="mt-1 text-[#a8b0aa]">{rawCategory ? (language === 'es' ? 'Todo Costa Rica' : 'Across Costa Rica') : (language === 'es' ? 'Lugares para descubrir' : 'Places to discover')}</Text></View>
-          <View className="flex-row overflow-hidden rounded-xl border border-white/30">{(['tico', 'foreigner'] as const).map((item) => <Pressable accessibilityLabel={item === 'tico' ? 'Modo Tico' : 'Foreigner mode'} accessibilityRole="button" className={visitorType === item ? 'bg-white px-3 py-2' : 'px-3 py-2'} key={item} onPress={() => setVisitorType(item)}><Text className={visitorType === item ? 'text-xs font-black text-[#002b7f]' : 'text-xs font-bold text-white'}>{item === 'tico' ? 'Tico' : 'Foreigner'}</Text></Pressable>)}</View>
+          <View className="ml-4 flex-1"><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{scopeTitle}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{rawCategory ? (language === 'es' ? 'Todo Costa Rica' : 'Across Costa Rica') : (language === 'es' ? 'Lugares para descubrir' : 'Places to discover')}</Text></View>
+          <View className="flex-row overflow-hidden rounded-xl border border-ui-border dark:border-white/30">{(['tico', 'foreigner'] as const).map((item) => <Pressable accessibilityLabel={item === 'tico' ? 'Modo Tico' : 'Foreigner mode'} accessibilityRole="button" className={visitorType === item ? 'bg-white px-3 py-2' : 'px-3 py-2'} key={item} onPress={() => setVisitorType(item)}><Text className={visitorType === item ? 'text-xs font-black text-[#002b7f]' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{item === 'tico' ? 'Tico' : 'Foreigner'}</Text></Pressable>)}</View>
         </View>
       </View>
-      <View className="border-b border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface px-5 pb-5"><View className="mx-auto w-full max-w-5xl flex-row gap-3"><Pressable accessibilityRole="button" className={sortBy === 'rating' ? 'flex-1 flex-row items-center justify-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-4 py-3' : 'flex-1 flex-row items-center justify-center rounded-2xl border border-white/15 px-4 py-3'} onPress={() => setSortBy('rating')}><MaterialCommunityIcons name="star" size={20} color={sortBy === 'rating' ? 'white' : '#ffac16'} /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Mejor calificados' : 'Top rated'}</Text></Pressable><Pressable accessibilityRole="button" className={sortBy === 'nearby' ? 'flex-1 flex-row items-center justify-center rounded-2xl bg-ui-secondary dark:bg-ui-dark-secondary px-4 py-3' : 'flex-1 flex-row items-center justify-center rounded-2xl border border-white/15 px-4 py-3'} onPress={() => void sortNearby()}><MaterialCommunityIcons name="crosshairs-gps" size={20} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Más cercanos' : 'Nearest'}</Text></Pressable></View></View>
       <FlatList
         contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 48, width: '100%', maxWidth: 1040, alignSelf: 'center' }}
         data={sortedPlaces}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-[#b8b4af]">{places.isError ? 'No se pudieron cargar los sitios desde Supabase.' : 'Aún no hay sitios publicados para esta provincia.'}</Text>}
+        ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? 'No se pudieron cargar los sitios desde Supabase.' : 'Aún no hay sitios publicados para esta provincia.'}</Text>}
         renderItem={({ item }) => (
           <View className="overflow-hidden rounded-[30px] border border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface">
             <View className="relative">
@@ -126,12 +147,13 @@ export default function ProvinceCatalogScreen() {
               <View className="absolute bottom-4 right-5 rounded-full bg-black/60 px-4 py-2"><Text className="font-black text-white">{item.difficulty || 'Consultar'}</Text></View>
             </View>
             <View className="p-6">
-              <Text className="text-2xl font-black text-white">{item.name}</Text>
+              <Text className="text-2xl font-black text-ui-text dark:text-ui-dark-text">{item.name}</Text>
+              {item.validated_by?.length ? <View className="mt-3"><ValidationBadge authorities={item.validated_by} language={language} /></View> : null}
               <Text className="mt-2 text-base leading-6 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={2}>{item.description || 'Información en proceso de verificación.'}</Text>
-              <View className="mt-4 flex-row flex-wrap gap-2"><View className="flex-row items-center rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft px-3 py-2"><MaterialCommunityIcons name="clock-outline" size={18} color="#a9c8ff" /><Text className="ml-2 font-black text-[#dce8ff]">~{travelTimeFromSanJose(item)}h {language === 'es' ? 'desde SJ' : 'from SJ'}</Text></View><View className="flex-row items-center rounded-xl bg-white/5 px-3 py-2"><MaterialCommunityIcons name="star" size={18} color="#ffac16" /><Text className="ml-2 font-black text-white">{item.average_rating ? item.average_rating.toFixed(1) : '—'} / 5</Text></View></View>
-              <View className="mt-5 h-px bg-white/10" />
+              <View className="mt-4 flex-row flex-wrap gap-2"><View className="flex-row items-center rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft px-3 py-2"><MaterialCommunityIcons name="map-marker-distance" size={18} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{userLocation ? `${distanceKm(userLocation, item).toFixed(1)} km ${language === 'es' ? 'de vos' : 'away'}` : (language === 'es' ? 'Calculando distancia…' : 'Calculating distance…')}</Text></View><View className="flex-row items-center rounded-xl bg-ui-muted dark:bg-white/5 px-3 py-2"><MaterialCommunityIcons name="star" size={18} color="#ffac16" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{item.average_rating ? item.average_rating.toFixed(1) : '—'} / 5</Text></View></View>
+              <View className="mt-5 h-px bg-ui-border dark:bg-white/10" />
               <View className="mt-5 flex-row items-end justify-between">
-                <View><Text className="text-xs font-bold uppercase tracking-wider text-[#9a958f]">{language === 'es' ? 'Tarifa Tico' : 'Foreigner price'}</Text><Text className="mt-1 text-xl font-black text-ui-primary dark:text-ui-dark-primary">{visitorType === 'tico' ? (item.price_national_crc == null ? 'Consultar' : item.price_national_crc === 0 ? 'Gratis' : formatPrice(item.price_national_crc)) : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`)}</Text></View>
+                <View><Text className="text-xs font-bold uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Tarifa Tico' : 'Foreigner price'}</Text><Text className="mt-1 text-xl font-black text-ui-primary dark:text-ui-dark-primary">{visitorType === 'tico' ? (item.price_national_crc == null ? 'Consultar' : item.price_national_crc === 0 ? 'Gratis' : formatPrice(item.price_national_crc)) : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`)}</Text></View>
                 <View className="flex-row items-center gap-3">
                   <Pressable accessibilityLabel="Me gusta" className="flex-row items-center rounded-full px-3 py-3" onPress={() => void like(item)}><MaterialCommunityIcons name={item.liked ? 'heart' : 'heart-outline'} size={24} color={item.liked ? '#ff557d' : '#a8a29c'} /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{item.likes_count}</Text></Pressable>
                   <Pressable accessibilityRole="button" className="rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-6 py-3" onPress={() => setSelected(item)}><Text className="font-black text-white">{language === 'es' ? 'Ver' : 'View'}</Text></Pressable>
@@ -148,6 +170,7 @@ export default function ProvinceCatalogScreen() {
 
 function DestinationModal({ language, onClose, onLike, place }: { language: 'es' | 'en'; onClose: () => void; onLike: (place: MapPlace) => Promise<void>; place?: MapPlace }) {
   const { formatPrice, requireAuth, session, visitorType } = useApp();
+  const { colors } = useAppTheme();
   const queryClient = useQueryClient();
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comment, setComment] = useState('');
@@ -206,14 +229,14 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
                 <Pressable className="h-12 w-12 items-center justify-center rounded-full bg-black/55" onPress={() => void Share.share({ message: `${place.name}${place.source_url ? `\n${place.source_url}` : ''}` })}><MaterialCommunityIcons name="share-variant-outline" size={23} color="white" /></Pressable>
                 <Pressable accessibilityLabel="Cerrar" className="h-12 w-12 items-center justify-center rounded-full bg-black/55" onPress={onClose}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
               </View>
-              <View className="absolute bottom-0 left-0 right-0 bg-black/55 px-6 pb-6 pt-14"><View className="flex-row items-center gap-2"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-3 py-2"><Text className="font-black text-white">{place.category}</Text></View>{place.average_rating ? <View className="rounded-lg bg-[#ffac16] px-3 py-2"><Text className="font-black text-white">★ {place.average_rating.toFixed(1)} ({place.reviews_count})</Text></View> : null}</View><Text className="mt-3 text-3xl font-black text-white md:text-4xl">{place.name}</Text></View>
+              <View className="absolute bottom-0 left-0 right-0 bg-black/55 px-6 pb-6 pt-14"><View className="flex-row flex-wrap items-center gap-2"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-3 py-2"><Text className="font-black text-white">{place.category}</Text></View>{place.average_rating ? <View className="rounded-lg bg-[#ffac16] px-3 py-2"><Text className="font-black text-white">★ {place.average_rating.toFixed(1)} ({place.reviews_count})</Text></View> : null}<ValidationBadge authorities={place.validated_by} language={language} /></View><Text className="mt-3 text-3xl font-black text-white md:text-4xl">{place.name}</Text></View>
             </View>
             {usesVerifiedCover(place) && place.image_source_url ? <Pressable className="self-end px-5 pt-3" onPress={() => void Linking.openURL(place.image_source_url!)}><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">Foto: {place.image_attribution || 'Wikimedia Commons'} · {place.image_license || 'Ver licencia'}</Text></Pressable> : null}
             <View className="pt-5"><View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <ActivityIndicator color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>{communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((url, index) => <Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} key={`${url}-${index}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}</View>
             <View className="gap-6 p-5 md:p-8">
               <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={place.difficulty || (language === 'es' ? 'Consultar' : 'Check')} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
-              {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-white">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-white">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
-              <View><Text className="text-lg font-black uppercase tracking-wider text-[#b8b3ad]">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{place.description || (language === 'es' ? 'Información en proceso de verificación.' : 'Information is being verified.')}</Text></View>
+              {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
+              <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{place.description || (language === 'es' ? 'Información en proceso de verificación.' : 'Information is being verified.')}</Text></View>
               <View className="rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5">
                 <InfoRow icon="clock-outline" label={language === 'es' ? 'Horario' : 'Hours'} value={place.schedule || (language === 'es' ? 'Consultar fuente oficial' : 'Check official source')} />
                 <InfoRow icon="calendar-remove-outline" label={language === 'es' ? 'Cierre' : 'Closed'} value={place.closed_day || (language === 'es' ? 'Sin dato verificado' : 'No verified data')} />
@@ -222,15 +245,15 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
                 <View className="mt-5 flex-row flex-wrap gap-3 border-t border-ui-border dark:border-ui-dark-border pt-5">
                   <Pressable className="flex-row items-center rounded-2xl bg-ui-secondary dark:bg-ui-dark-secondary px-5 py-3" onPress={() => void openNavigation(place.latitude, place.longitude)}><MaterialCommunityIcons name="waze" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Ir con Waze' : 'Open in Waze'}</Text></Pressable>
                   {place.requires_sinac_booking && place.sinac_booking_url ? <Pressable className="flex-row items-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" onPress={() => void Linking.openURL(place.sinac_booking_url!)}><MaterialCommunityIcons name="ticket-confirmation-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Reservar en SINAC' : 'Book with SINAC'}</Text></Pressable> : null}
-                  {place.source_url ? <Pressable className="flex-row items-center rounded-2xl border border-white/20 px-5 py-3" onPress={() => void Linking.openURL(place.source_url!)}><MaterialCommunityIcons name="shield-check-outline" size={21} color="#00e5a7" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Fuente oficial' : 'Official source'}</Text></Pressable> : null}
+                  {place.source_url ? <Pressable className="flex-row items-center rounded-2xl border border-ui-border dark:border-white/20 px-5 py-3" onPress={() => void Linking.openURL(place.source_url!)}><MaterialCommunityIcons name="shield-check-outline" size={21} color="#00e5a7" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fuente oficial' : 'Official source'}</Text></Pressable> : null}
                 </View>
               </View>
-              {ferry ? <View className="rounded-3xl border border-[#00b981]/50 bg-ui-primary-soft dark:bg-ui-dark-primary-soft p-5"><View className="flex-row items-center"><MaterialCommunityIcons name="ferry" size={30} color="#00e5a7" /><View className="ml-3"><Text className="text-lg font-black text-white">{language === 'es' ? 'Ferri recomendado' : 'Recommended ferry'}</Text><Text className="text-[#8cebcf]">{ferry.route} · {ferry.operator}</Text></View></View><Text className="mt-4 font-bold text-white">{language === 'es' ? 'Adulto' : 'Adult'} {formatPrice(ferry.adultFare)} · {language === 'es' ? 'Vehículo' : 'Vehicle'} {formatPrice(ferry.vehicleFare)} + {language === 'es' ? 'IVA' : 'VAT'}</Text><Text className="mt-2 leading-6 text-[#b7d8ce]">{language === 'es' ? 'Salidas' : 'Departures'}: {ferry.departures.join(' · ')}</Text><Pressable className="mt-4 self-start rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" onPress={() => void Linking.openURL(ferry.ticketUrl)}><Text className="font-black text-white">{language === 'es' ? 'Ver horarios y comprar' : 'View schedule and buy'}</Text></Pressable></View> : null}
-              <Pressable className="flex-row items-center justify-between rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5" onPress={() => setCommentsOpen((open) => !open)}><View className="flex-row items-center"><MaterialCommunityIcons name="comment-text-multiple-outline" size={24} color="#00e5a7" /><Text className="ml-3 text-lg font-black text-white">{commentsOpen ? (language === 'es' ? 'Ocultar comentarios' : 'Hide comments') : `${language === 'es' ? 'Ver comentarios' : 'View comments'} (${place.reviews_count})`}</Text></View><MaterialCommunityIcons name={commentsOpen ? 'chevron-up' : 'chevron-down'} size={25} color="#aaa49e" /></Pressable>
+              {ferry ? <View className="rounded-3xl border border-[#00b981]/50 bg-ui-primary-soft dark:bg-ui-dark-primary-soft p-5"><View className="flex-row items-center"><MaterialCommunityIcons name="ferry" size={30} color="#00a77c" /><View className="ml-3"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ferri recomendado' : 'Recommended ferry'}</Text><Text className="text-ui-secondary dark:text-ui-dark-secondary">{ferry.route} · {ferry.operator}</Text></View></View><Text className="mt-4 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Adulto' : 'Adult'} {formatPrice(ferry.adultFare)} · {language === 'es' ? 'Vehículo' : 'Vehicle'} {formatPrice(ferry.vehicleFare)} + {language === 'es' ? 'IVA' : 'VAT'}</Text><Text className="mt-2 leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Salidas' : 'Departures'}: {ferry.departures.join(' · ')}</Text><Pressable className="mt-4 self-start rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" onPress={() => void Linking.openURL(ferry.ticketUrl)}><Text className="font-black text-white">{language === 'es' ? 'Ver horarios y comprar' : 'View schedule and buy'}</Text></Pressable></View> : null}
+              <Pressable className="flex-row items-center justify-between rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5" onPress={() => setCommentsOpen((open) => !open)}><View className="flex-row items-center"><MaterialCommunityIcons name="comment-text-multiple-outline" size={24} color="#00e5a7" /><Text className="ml-3 text-lg font-black text-ui-text dark:text-ui-dark-text">{commentsOpen ? (language === 'es' ? 'Ocultar comentarios' : 'Hide comments') : `${language === 'es' ? 'Ver comentarios' : 'View comments'} (${place.reviews_count})`}</Text></View><MaterialCommunityIcons name={commentsOpen ? 'chevron-up' : 'chevron-down'} size={25} color="#aaa49e" /></Pressable>
               {commentsOpen ? <CommentsPanel comment={comment} language={language} onComment={setComment} onPhoto={pickPhoto} onRating={setRating} onSend={sendReview} photo={photo} rating={rating} reviews={reviews.data} sending={sending} /> : null}
             </View>
           </ScrollView>
-          <View className="flex-row items-center justify-between border-t border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface p-4"><Pressable className="flex-row items-center rounded-2xl border border-white/15 px-5 py-3" onPress={() => void onLike(place)}><MaterialCommunityIcons name={place.liked ? 'heart' : 'heart-outline'} size={24} color={place.liked ? '#ff557d' : 'white'} /><Text className="ml-2 font-black text-white">{place.likes_count}</Text></Pressable><Pressable className="rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-7 py-3" onPress={onClose}><Text className="font-black text-white">{language === 'es' ? 'Cerrar ficha' : 'Close'}</Text></Pressable></View>
+          <View className="flex-row items-center justify-between border-t border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface p-4"><Pressable className="flex-row items-center rounded-2xl border border-ui-border dark:border-white/15 px-5 py-3" onPress={() => void onLike(place)}><MaterialCommunityIcons name={place.liked ? 'heart' : 'heart-outline'} size={24} color={place.liked ? '#ff557d' : colors.text} /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{place.likes_count}</Text></Pressable><Pressable className="rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-7 py-3" onPress={onClose}><Text className="font-black text-white">{language === 'es' ? 'Cerrar ficha' : 'Close'}</Text></Pressable></View>
         </View>
       </View>
       </Modal>
@@ -245,13 +268,13 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
 }
 
 function CommentsPanel({ comment, language, onComment, onPhoto, onRating, onSend, photo, rating, reviews, sending }: { comment: string; language: 'es' | 'en'; onComment: (value: string) => void; onPhoto: () => Promise<void>; onRating: (value: number) => void; onSend: () => Promise<void>; photo?: ImagePicker.ImagePickerAsset; rating: number; reviews?: Awaited<ReturnType<typeof getDestinationReviews>>; sending: boolean }) {
-  return <View className="gap-4"><View className="rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><View className="flex-row gap-1">{[1,2,3,4,5].map((star) => <Pressable key={star} onPress={() => onRating(star)}><MaterialCommunityIcons name={star <= rating ? 'star' : 'star-outline'} size={27} color="#ffac16" /></Pressable>)}</View><TextInput className="mt-4 min-h-24 rounded-2xl bg-ui-surface dark:bg-ui-dark-surface px-4 py-3 text-white" maxLength={800} multiline onChangeText={onComment} placeholder={language === 'es' ? 'Compartí tu experiencia…' : 'Share your experience…'} placeholderTextColor="#827d77" textAlignVertical="top" value={comment} />{photo ? <Image source={{ uri: photo.uri }} contentFit="cover" style={{ borderRadius: 16, height: 150, marginTop: 12, width: 200 }} /> : null}<View className="mt-4 flex-row justify-between"><Pressable className="flex-row items-center rounded-2xl border border-white/15 px-4 py-3" onPress={() => void onPhoto()}><MaterialCommunityIcons name="camera-plus-outline" size={21} color="#00e5a7" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Foto' : 'Photo'}</Text></Pressable><Pressable className="rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" disabled={sending || (!comment.trim() && !photo)} onPress={() => void onSend()}><Text className="font-black text-white">{sending ? (language === 'es' ? 'Publicando…' : 'Posting…') : (language === 'es' ? 'Publicar' : 'Post')}</Text></Pressable></View></View>{reviews?.map((review) => <View className="rounded-3xl bg-ui-muted dark:bg-ui-dark-muted p-5" key={review.id}><View className="flex-row items-center">{review.avatar_url ? <Image source={{ uri: review.avatar_url }} contentFit="cover" style={{ borderRadius: 22, height: 44, width: 44 }} /> : <View className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary"><Text className="font-black text-white">{review.author_name.slice(0,1)}</Text></View>}<View className="ml-3 flex-1"><Text className="font-black text-white">{review.author_name}</Text><Text className="text-[#ffac16]">{'★'.repeat(review.rating)}</Text></View><Text className="text-xs text-[#8f8983]">{new Date(review.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></View>{review.comment ? <Text className="mt-4 text-base leading-6 text-ui-text dark:text-ui-dark-text">{review.comment}</Text> : null}{review.photos?.[0] ? <Image source={{ uri: review.photos[0] }} contentFit="cover" style={{ borderRadius: 18, height: 220, marginTop: 14, width: '100%' }} /> : null}</View>)}</View>;
+  return <View className="gap-4"><View className="rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><View className="flex-row gap-1">{[1,2,3,4,5].map((star) => <Pressable key={star} onPress={() => onRating(star)}><MaterialCommunityIcons name={star <= rating ? 'star' : 'star-outline'} size={27} color="#ffac16" /></Pressable>)}</View><TextInput className="mt-4 min-h-24 rounded-2xl bg-ui-surface dark:bg-ui-dark-surface px-4 py-3 text-ui-text dark:text-ui-dark-text" maxLength={800} multiline onChangeText={onComment} placeholder={language === 'es' ? 'Compartí tu experiencia…' : 'Share your experience…'} placeholderTextColor="#827d77" textAlignVertical="top" value={comment} />{photo ? <Image source={{ uri: photo.uri }} contentFit="cover" style={{ borderRadius: 16, height: 150, marginTop: 12, width: 200 }} /> : null}<View className="mt-4 flex-row justify-between"><Pressable className="flex-row items-center rounded-2xl border border-ui-border dark:border-white/15 px-4 py-3" onPress={() => void onPhoto()}><MaterialCommunityIcons name="camera-plus-outline" size={21} color="#00a77c" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Foto' : 'Photo'}</Text></Pressable><Pressable className="rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" disabled={sending || (!comment.trim() && !photo)} onPress={() => void onSend()}><Text className="font-black text-white">{sending ? (language === 'es' ? 'Publicando…' : 'Posting…') : (language === 'es' ? 'Publicar' : 'Post')}</Text></Pressable></View></View>{reviews?.map((review) => <View className="rounded-3xl bg-ui-muted dark:bg-ui-dark-muted p-5" key={review.id}><View className="flex-row items-center">{review.avatar_url ? <Image source={{ uri: review.avatar_url }} contentFit="cover" style={{ borderRadius: 22, height: 44, width: 44 }} /> : <View className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary"><Text className="font-black text-white">{review.author_name.slice(0,1)}</Text></View>}<View className="ml-3 flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{review.author_name}</Text><Text className="text-[#ffac16]">{'★'.repeat(review.rating)}</Text></View><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{new Date(review.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></View>{review.comment ? <Text className="mt-4 text-base leading-6 text-ui-text dark:text-ui-dark-text">{review.comment}</Text> : null}{review.photos?.[0] ? <Image source={{ uri: review.photos[0] }} contentFit="cover" style={{ borderRadius: 18, height: 220, marginTop: 14, width: '100%' }} /> : null}</View>)}</View>;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
-  return <View className="flex-1 items-center border-r border-ui-border dark:border-ui-dark-border px-2 last:border-r-0"><Text className="text-center text-xs font-bold text-[#9d9892]">{label}</Text><Text className="mt-2 text-center text-lg font-black text-white">{value}</Text></View>;
+  return <View className="flex-1 items-center border-r border-ui-border dark:border-ui-dark-border px-2 last:border-r-0"><Text className="text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{label}</Text><Text className="mt-2 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{value}</Text></View>;
 }
 
 function InfoRow({ icon, label, value }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; value: string }) {
-  return <View className="mb-4 flex-row items-start last:mb-0"><MaterialCommunityIcons name={icon} size={22} color="#00e5a7" /><View className="ml-3 flex-1"><Text className="text-xs font-bold uppercase tracking-wider text-[#8f8983]">{label}</Text><Text className="mt-1 leading-6 text-white">{value}</Text></View></View>;
+  return <View className="mb-4 flex-row items-start last:mb-0"><MaterialCommunityIcons name={icon} size={22} color="#00a77c" /><View className="ml-3 flex-1"><Text className="text-xs font-bold uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{label}</Text><Text className="mt-1 leading-6 text-ui-text dark:text-ui-dark-text">{value}</Text></View></View>;
 }

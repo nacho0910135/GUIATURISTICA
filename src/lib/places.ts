@@ -3,6 +3,8 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import { supabase } from '@/lib/supabase';
 
+export type ValidationAuthority = 'ICT' | 'SINAC';
+
 export type MapPlace = {
   id: string;
   name: string;
@@ -27,6 +29,7 @@ export type MapPlace = {
   has_high_tides_risk: boolean;
   source_url: string | null;
   source_checked_at: string | null;
+  validated_by: ValidationAuthority[];
   schedule: string | null;
   closed_day: string | null;
   notes: string | null;
@@ -49,21 +52,171 @@ export type DestinationReview = {
   avatar_url: string | null;
 };
 
-export type ExplorePlace = Pick<MapPlace, 'id' | 'name' | 'province' | 'category' | 'description' | 'difficulty' | 'price_national_crc' | 'latitude' | 'longitude'> & { community: boolean };
+export type ExplorePlace = Pick<MapPlace, 'id' | 'name' | 'province' | 'category' | 'description' | 'difficulty' | 'price_national_crc' | 'latitude' | 'longitude' | 'validated_by'> & { community: boolean; contributor_id: string | null; contributor_name: string | null };
 
-export async function getExplorePlaces(): Promise<ExplorePlace[]> {
-  const [official, community] = await Promise.all([
-    supabase.from('destinations').select('id,name,province,category,description,difficulty,price_national_crc,latitude,longitude').eq('status', 'Activo'),
-    supabase.from('destination_suggestions').select('id,name,province,category,description,difficulty,price_national_crc,latitude,longitude').eq('status', 'published'),
-  ]);
-  const error = official.error ?? community.error;
-  if (error) throw error;
-  return [...(official.data ?? []).map((place) => ({ ...place, community: false })), ...(community.data ?? []).map((place) => ({ ...place, community: true }))]
-    .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
-    .map((place) => ({ ...place, latitude: Number(place.latitude), longitude: Number(place.longitude), price_national_crc: place.price_national_crc == null ? null : Number(place.price_national_crc) })) as ExplorePlace[];
+type VerifiedSanctuaryRow = {
+  id: string;
+  name: string;
+  province: string;
+  location_name: string | null;
+  description_es: string;
+  description_en: string;
+  verified: boolean;
+};
+
+type SanctuaryVisitDetails = {
+  aliases: string[];
+  latitude: number;
+  longitude: number;
+  region: string;
+  sourceUrl: string;
+  feeType: string;
+};
+
+const SANCTUARY_CATEGORY = 'Santuarios de animales';
+const VERIFIED_SANCTUARY_LOCATIONS: Record<string, SanctuaryVisitDetails> = {
+  'af1a4249-acd9-4e0f-9772-f08eda57a711': {
+    aliases: ['Rescate Wildlife Rescue Center', 'ZooAve'],
+    latitude: 10.01317,
+    longitude: -84.27396,
+    region: 'Valle Central',
+    sourceUrl: 'https://rescatewildlife.org/directions/',
+    feeType: 'Consultar',
+  },
+  '6d5cf5b0-e476-48a9-a7cf-3eef14da8ea4': {
+    aliases: ['Jaguar Rescue Center'],
+    latitude: 9.642069,
+    longitude: -82.723528,
+    region: 'Caribe',
+    sourceUrl: 'https://www.jaguarrescue.foundation/en-us/HowtoGetHere',
+    feeType: 'Consultar',
+  },
+  '77a523cc-8d91-402a-99d3-0c3222792363': {
+    aliases: ['Toucan Rescue Ranch'],
+    latitude: 10.025806,
+    longitude: -84.035139,
+    region: 'Valle Central',
+    sourceUrl: 'https://toucanrescueranch.org/es/faq/',
+    feeType: 'De Pago',
+  },
+  '27d97872-625e-43d8-9215-572b59da47be': {
+    aliases: ['Ponderosa Adventure Park'],
+    latitude: 10.54978,
+    longitude: -85.4,
+    region: 'Guanacaste',
+    sourceUrl: 'https://ponderosaadventurepark.com/',
+    feeType: 'De Pago',
+  },
+};
+
+function normalizedName(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community'> & { user_id: string; district?: string }) {
+function getSanctuaryVisitDetails(row: VerifiedSanctuaryRow) {
+  return VERIFIED_SANCTUARY_LOCATIONS[row.id] ?? Object.values(VERIFIED_SANCTUARY_LOCATIONS).find((details) => details.aliases.some((alias) => normalizedName(alias) === normalizedName(row.name)));
+}
+
+function getSanctuaryDisplayName(row: VerifiedSanctuaryRow) {
+  return normalizedName(row.name) === 'rescate wildlife rescue center' ? 'Rescate Wildlife Rescue Center (ZooAve)' : row.name;
+}
+
+async function getVerifiedSanctuaryRows(): Promise<VerifiedSanctuaryRow[]> {
+  const { data, error } = await supabase
+    .from('fauna_sanctuaries')
+    .select('id,name,province,location_name,description_es,description_en,verified')
+    .eq('verified', true)
+    .order('name');
+  if (error) throw error;
+  return (data ?? []) as VerifiedSanctuaryRow[];
+}
+
+function toExploreSanctuary(row: VerifiedSanctuaryRow): ExplorePlace | null {
+  const details = getSanctuaryVisitDetails(row);
+  if (!details) return null;
+  return {
+    id: row.id,
+    name: getSanctuaryDisplayName(row),
+    province: row.province,
+    category: SANCTUARY_CATEGORY,
+    description: row.description_es || row.description_en || null,
+    difficulty: 'Fácil',
+    price_national_crc: null,
+    latitude: details.latitude,
+    longitude: details.longitude,
+    validated_by: ['SINAC'],
+    community: false,
+    contributor_id: null,
+    contributor_name: null,
+  };
+}
+
+function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
+  const details = getSanctuaryVisitDetails(row);
+  if (!details) return null;
+  return {
+    id: row.id,
+    name: getSanctuaryDisplayName(row),
+    province: row.province,
+    category: SANCTUARY_CATEGORY,
+    latitude: details.latitude,
+    longitude: details.longitude,
+    cover_image_url: null,
+    image_verified: false,
+    image_attribution: null,
+    image_license: null,
+    image_source_url: null,
+    status: 'Activo',
+    region: details.region,
+    description: row.description_es || row.description_en || null,
+    difficulty: 'Fácil',
+    price_national_crc: null,
+    price_foreigner_usd: null,
+    fee_type: details.feeType,
+    requires_sinac_booking: false,
+    sinac_booking_url: null,
+    has_high_tides_risk: false,
+    source_url: details.sourceUrl,
+    source_checked_at: null,
+    validated_by: ['SINAC'],
+    schedule: null,
+    closed_day: null,
+    notes: row.location_name ? `Ubicación: ${row.location_name}.` : null,
+    likes_count: 0,
+    reviews_count: 0,
+    average_rating: 0,
+    liked: false,
+    photos: [],
+    community_photos: [],
+  };
+}
+
+export async function getExplorePlaces(): Promise<ExplorePlace[]> {
+  const [official, community, sanctuaries] = await Promise.all([
+    supabase.from('destinations').select('id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,validated_by').eq('status', 'Activo'),
+    supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude').eq('status', 'published'),
+    supabase.from('fauna_sanctuaries').select('id,name,province,location_name,description_es,description_en,verified').eq('verified', true).order('name'),
+  ]);
+  const error = official.error ?? community.error ?? sanctuaries.error;
+  if (error) throw error;
+  const contributorIds = [...new Set((community.data ?? []).map((place) => place.user_id))];
+  const contributors = contributorIds.length ? await supabase.from('users').select('id,username,full_name').in('id', contributorIds) : { data: [], error: null };
+  if (contributors.error) throw contributors.error;
+  const contributorNames = new Map((contributors.data ?? []).map((profile) => [profile.id, profile.full_name || profile.username]));
+  const officialPlaces = [
+    ...(official.data ?? []).map((place) => ({ ...place, community: false, contributor_id: null, contributor_name: null })),
+    ...(community.data ?? []).map((place) => ({ ...place, community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[] })),
+  ]
+    .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
+    .map((place) => ({ ...place, latitude: Number(place.latitude), longitude: Number(place.longitude), price_national_crc: place.price_national_crc == null ? null : Number(place.price_national_crc) })) as ExplorePlace[];
+  const knownIds = new Set(officialPlaces.map((place) => place.id));
+  const sanctuaryPlaces = ((sanctuaries.data ?? []) as VerifiedSanctuaryRow[])
+    .map(toExploreSanctuary)
+    .filter((place): place is ExplorePlace => place !== null && !knownIds.has(place.id));
+  return [...officialPlaces, ...sanctuaryPlaces];
+}
+
+export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'validated_by'> & { user_id: string; district?: string }) {
   const { error } = await supabase.from('destination_suggestions').insert({ ...input, status: 'published' });
   if (error) throw error;
 }
@@ -73,13 +226,19 @@ export async function getPlacesForProvince(province: string, userId?: string): P
 }
 
 export async function getPlacesForCategory(category: string, userId?: string): Promise<MapPlace[]> {
-  return getPlaces('category', category, userId);
+  const places = await getPlaces('category', category, userId);
+  if (normalizedName(category) !== normalizedName(SANCTUARY_CATEGORY)) return places;
+  const knownIds = new Set(places.map((place) => place.id));
+  const sanctuaryPlaces = (await getVerifiedSanctuaryRows())
+    .map(toMapSanctuary)
+    .filter((place): place is MapPlace => place !== null && !knownIds.has(place.id));
+  return [...places, ...sanctuaryPlaces].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function getPlaces(filter: 'province' | 'category', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos(image_url,created_at)');
+    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos(image_url,created_at)');
   if (filter === 'province') query = query.eq('province', value);
   else if (value === 'Pozas / Lagos') query = query.or('category.ilike.%Poza%,category.ilike.%Lago%,category.ilike.%Laguna%');
   else query = query.ilike('category', `%${value}%`);
@@ -154,7 +313,7 @@ export async function addDestinationReview(destinationId: string, userId: string
   let photoPath: string | undefined;
   if (photo) {
     const context = ImageManipulator.manipulate(photo.uri);
-    context.resize({ width: Math.min(photo.width || 1600, 1600), height: null });
+    context.resize({ width: Math.min(photo.width || 1600, 1600) });
     const rendered = await context.renderAsync();
     const sanitized = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
     const bytes = await fetch(sanitized.uri).then((response) => response.arrayBuffer());
@@ -173,7 +332,7 @@ export async function addDestinationReview(destinationId: string, userId: string
 
 export async function addDestinationPhoto(destinationId: string, userId: string, photo: ImagePickerAsset) {
   const context = ImageManipulator.manipulate(photo.uri);
-  context.resize({ width: Math.min(photo.width || 1600, 1600), height: null });
+  context.resize({ width: Math.min(photo.width || 1600, 1600) });
   const rendered = await context.renderAsync();
   const sanitized = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
   const bytes = await fetch(sanitized.uri).then((response) => response.arrayBuffer());

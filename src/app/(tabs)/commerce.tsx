@@ -84,6 +84,7 @@ export default function CommerceScreen() {
       <View className="px-5 pb-5 pt-7">
         <Text className="text-3xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Asistencia y Emergencias' : 'Assistance & Emergencies'}</Text>
         <Text className="mt-2 text-base leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Servicios esenciales ordenados desde tu ubicación actual.' : 'Essential services sorted from your current location.'}</Text>
+        <Text className="mt-2 text-xs font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? '© OpenStreetMap contributors · ODbL' : '© OpenStreetMap contributors · ODbL'}</Text>
       </View>
       <View className="flex-row flex-wrap px-3 pb-4">
         {ASSISTANCE_CATEGORIES.map((item) => (

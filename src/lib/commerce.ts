@@ -10,7 +10,6 @@ export const ASSISTANCE_CATEGORIES = [
   { id: 'coast-guard', es: 'Guardacostas', en: 'Coast Guard', icon: 'lifebuoy', values: ['guardacostas', 'coast_guard'] },
   { id: 'traffic-police', es: 'Tránsito / Policía de Tráfico', en: 'Traffic Police', icon: 'car-emergency', values: ['policia_transito', 'transito', 'traffic_police'] },
   { id: 'private-emergency', es: 'Clínicas y urgencias 24/7', en: 'Private urgent care / 24/7 clinics', icon: 'hospital-box-outline', values: ['clinica', 'urgencias_privadas', 'clinica_24_7'] },
-  { id: 'tourist-info', es: 'Información Turística', en: 'Tourist Information', icon: 'information-variant', values: ['informacion_turistica', 'tourist_information'] },
 ] as const;
 
 export type AssistanceCategoryId = typeof ASSISTANCE_CATEGORIES[number]['id'];

@@ -23,12 +23,15 @@ export async function getSocialProfile(userId: string) {
 
 async function uploadImage(bucket: 'profile-avatars' | 'destination-photos', owner: string, asset: ImagePickerAsset) {
   const context = ImageManipulator.manipulate(asset.uri);
-  context.resize({ width: Math.min(asset.width || 1600, 1600), height: null });
+  context.resize({ width: Math.min(asset.width || 1600, 1600) });
   const rendered = await context.renderAsync();
   const file = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
-  const bytes = await fetch(file.uri).then((response) => response.arrayBuffer());
-  const path = `${owner}/${Date.now()}.jpg`;
-  const { error } = await supabase.storage.from(bucket).upload(path, bytes, { contentType: 'image/jpeg' });
+  const response = await fetch(file.uri);
+  if (!response.ok) throw new Error('No se pudo leer la imagen preparada.');
+  const bytes = await response.arrayBuffer();
+  if (bytes.byteLength > 6 * 1024 * 1024) throw new Error('La imagen supera el límite de 6 MB.');
+  const path = `${owner}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+  const { error } = await supabase.storage.from(bucket).upload(path, bytes, { cacheControl: '3600', contentType: 'image/jpeg', upsert: false });
   if (error) throw error;
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }

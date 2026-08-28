@@ -105,12 +105,16 @@ export default function ProfileScreen() {
 }
 
 function AdminPanel({ data, busy, refresh, run, signOut }: { data?: AdminDashboard; busy: boolean; refresh: () => Promise<void>; run: (action: () => Promise<void>) => Promise<void>; signOut: () => Promise<void> }) {
-  const addPhoto = async (destinationId: string, count: number) => {
-    if (count >= 5) return Alert.alert('Fotos del sitio', 'Este sitio ya tiene el máximo de 5 fotos.');
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync(); if (!permission.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
-    if (!result.canceled) await run(async () => { await addDestinationPhoto(destinationId, result.assets[0], count); await refresh(); });
-  };
+  const addPhoto = (destinationId: string, count: number) => void run(async () => {
+    if (count >= 5) throw new Error('Este sitio ya tiene el máximo de 5 fotos.');
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) throw new Error('Necesitamos permiso para elegir una foto del sitio.');
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.9, exif: false });
+    if (result.canceled) return;
+    await addDestinationPhoto(destinationId, result.assets[0], count);
+    await refresh();
+    Alert.alert('Fotos del sitio', 'La foto se agregó correctamente.');
+  });
   if (!data) return <ActivityIndicator color="#13bd83" />;
   return <View><View className="flex-row items-center justify-between"><Title>Panel del administrador</Title><Button label="Salir" outline onPress={() => void signOut()} /></View>
     <Text className="mb-3 mt-6 text-lg font-bold text-ui-text dark:text-ui-dark-text">Sugerencias recibidas</Text><ListEmpty empty={!data.suggestions.length}>{data.suggestions.map((item) => <Row key={item.id} icon="lightbulb-outline" title={`${profileName(item.user)}: ${item.message}`} date={item.created_at} />)}</ListEmpty>

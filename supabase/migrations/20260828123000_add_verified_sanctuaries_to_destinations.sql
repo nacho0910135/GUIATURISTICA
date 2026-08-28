@@ -4,9 +4,9 @@ insert into public.destinations (
 )
 values
   (
-    'af1a4249-acd9-4e0f-9772-f08eda57a711', 'Rescate Wildlife Rescue Center',
+    'af1a4249-acd9-4e0f-9772-f08eda57a711', 'Rescate Wildlife Rescue Center (ZooAve)',
     'Alajuela', 'Valle Central', 'Santuarios de animales',
-    'Centro de rescate y conservación de fauna silvestre en La Garita.',
+    'Centro de rescate y conservación de fauna silvestre en La Garita, antes conocido como ZooAve.',
     st_setsrid(st_makepoint(-84.27396, 10.01317), 4326), 'Fácil',
     'Consultar', 'Activo', 'https://rescatewildlife.org/directions/', now()
   ),

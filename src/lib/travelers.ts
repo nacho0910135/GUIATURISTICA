@@ -30,7 +30,7 @@ export async function getTravelerWall(userId?: string) {
 
 async function uploadPostImage(userId: string, asset: ImagePickerAsset) {
   const context = ImageManipulator.manipulate(asset.uri);
-  context.resize({ width: Math.min(asset.width || 1600, 1600), height: null });
+  context.resize({ width: Math.min(asset.width || 1600, 1600) });
   const rendered = await context.renderAsync();
   const file = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
   const bytes = await fetch(file.uri).then((response) => response.arrayBuffer());
@@ -71,4 +71,11 @@ export async function toggleTravelerFollow(userId: string, followedId: string, f
     : supabase.from('user_follows').insert({ follower_id: userId, followed_id: followedId });
   const { error } = await query;
   if (error) throw error;
+}
+
+export async function getFollowedTravelerIds(userId?: string) {
+  if (!userId) return new Set<string>();
+  const { data, error } = await supabase.from('user_follows').select('followed_id').eq('follower_id', userId);
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.followed_id as string));
 }
