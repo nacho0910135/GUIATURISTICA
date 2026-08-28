@@ -1,22 +1,18 @@
 import type { Session } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
+import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAppTheme } from '@/theme/theme-provider';
 
+WebBrowser.maybeCompleteAuthSession();
+
 type Currency = 'USD' | 'CRC';
 export type VisitorType = 'tico' | 'foreigner';
-export const GUEST_USER_ID = '00000000-0000-4000-8000-000000000001';
-
-const GUEST_SESSION = {
-  access_token: '', refresh_token: '', expires_in: 0, token_type: 'bearer',
-  user: {
-    id: GUEST_USER_ID, aud: 'anon', created_at: new Date(0).toISOString(),
-    app_metadata: {}, user_metadata: { full_name: 'Invitado' },
-  },
-} as Session;
 
 type AppContextValue = {
   language: Language;
@@ -34,6 +30,8 @@ type AppContextValue = {
   isAdmin: boolean;
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<boolean>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   setAvatarUrl: (value: string | null) => void;
 };
@@ -49,10 +47,33 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [exchangeRate, setExchangeRate] = useState(FALLBACK_USD_CRC);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userSession, setUserSession] = useState<Session | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const session = userSession ?? GUEST_SESSION;
-  const authReady = true;
+  const session = userSession;
   const isAuthenticated = Boolean(userSession);
+
+  const syncSession = useCallback(async (nextSession: Session | null) => {
+    setUserSession(nextSession);
+    if (!nextSession) {
+      setIsAdmin(false);
+      setAvatarUrl(null);
+      return;
+    }
+    const { data } = await supabase.from('users').select('role,avatar_url').eq('id', nextSession.user.id).maybeSingle();
+    setIsAdmin(data?.role === 'admin');
+    setAvatarUrl(data?.avatar_url ?? null);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (mounted) void syncSession(data.session).finally(() => setAuthReady(true));
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (mounted) void syncSession(nextSession);
+    });
+    return () => { mounted = false; listener.subscription.unsubscribe(); };
+  }, [syncSession]);
 
   useEffect(() => {
     void Location.requestForegroundPermissionsAsync().catch(() => undefined);
@@ -61,14 +82,35 @@ export function AppProvider({ children }: PropsWithChildren) {
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) throw error;
-    const { data: profile, error: profileError } = await supabase.from('users').select('role,avatar_url').eq('id', data.user.id).single();
-    if (profileError) {
-      await supabase.auth.signOut();
-      throw profileError;
+    await syncSession(data.session);
+  }, [syncSession]);
+
+  const signUp = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+    if (error) throw error;
+    if (data.session) await syncSession(data.session);
+    return Boolean(data.session);
+  }, [syncSession]);
+
+  const signInWithGoogle = useCallback(async () => {
+    const redirectTo = Linking.createURL('auth/callback');
+    const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } });
+    if (error) throw error;
+    if (!data.url) throw new Error('No se pudo iniciar Google OAuth.');
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') return;
+    const callback = new URL(result.url.replace('#', '?'));
+    const code = callback.searchParams.get('code');
+    if (code) {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) throw exchangeError;
+      return;
     }
-    setUserSession(data.session);
-    setIsAdmin(profile?.role === 'admin');
-    setAvatarUrl(profile?.avatar_url ?? null);
+    const access_token = callback.searchParams.get('access_token');
+    const refresh_token = callback.searchParams.get('refresh_token');
+    if (!access_token || !refresh_token) throw new Error('Google no devolvió una sesión válida.');
+    const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token });
+    if (sessionError) throw sessionError;
   }, []);
 
   const signOut = useCallback(async () => {
@@ -106,12 +148,16 @@ export function AppProvider({ children }: PropsWithChildren) {
     [currency, exchangeRate, language],
   );
 
-  const requireAuth = useCallback((_intent: string) => true, []);
+  const requireAuth = useCallback((intent: string) => {
+    if (userSession) return true;
+    router.push({ pathname: '/(aux)/auth-modal', params: { intent } });
+    return false;
+  }, [userSession]);
 
   const value = useMemo<AppContextValue>(() => ({
     language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, isDark: mode === 'dark', t,
-    setVisitorType, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signOut,
-  }), [language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signOut]);
+    setVisitorType, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut,
+  }), [language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

@@ -68,7 +68,7 @@ export default function ProvinceCatalogScreen() {
   const [selected, setSelected] = useState<MapPlace>();
   const [userLocation, setUserLocation] = useState<Coordinates>();
   const province = provinces.find((item) => item.name === rawProvince) ?? provinces[0];
-  const scopeTitle = rawCategory || province.name;
+  const scopeTitle = rawCategory ? categoryLabel(rawCategory, language) : province.name;
   const scopeKey = rawCategory ? `category-${rawCategory}` : `province-${province.code}`;
   const places = useQuery({
     queryKey: ['places', 'v2', scopeKey, session?.user.id],
@@ -116,7 +116,7 @@ export default function ProvinceCatalogScreen() {
       await queryClient.invalidateQueries({ queryKey: ['places'] });
       setSelected((current) => current?.id === place.id ? { ...current, liked: !current.liked, likes_count: current.likes_count + (current.liked ? -1 : 1) } : current);
     } catch (reason) {
-      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : 'No se pudo actualizar el like.');
+      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo actualizar el like.' : 'Could not update the like.'));
     }
   };
 
@@ -135,27 +135,27 @@ export default function ProvinceCatalogScreen() {
         contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 48, width: '100%', maxWidth: 1040, alignSelf: 'center' }}
         data={sortedPlaces}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? 'No se pudieron cargar los sitios desde Supabase.' : 'Aún no hay sitios publicados para esta provincia.'}</Text>}
+        ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? (language === 'es' ? 'No se pudieron cargar los sitios.' : 'Places could not be loaded.') : (language === 'es' ? 'Aún no hay sitios publicados aquí.' : 'There are no published places here yet.')}</Text>}
         renderItem={({ item }) => (
           <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}`} accessibilityRole="button" className="overflow-hidden rounded-[30px] border border-ui-border bg-ui-surface active:opacity-90 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={() => setSelected(item)}>
             <View className="relative">
               <DestinationImage height={240} place={item} />
               <View className="absolute inset-0 bg-black/15" />
               <View className="absolute left-5 top-5 rounded-full bg-black/55 px-4 py-2"><Text className="font-black text-white">{item.province}</Text></View>
-              {usesVerifiedCover(item) && item.image_attribution ? <View className="absolute right-4 top-4 max-w-[55%] rounded-lg bg-black/65 px-3 py-2"><Text className="text-right text-[10px] font-bold text-white" numberOfLines={1}>Foto: {item.image_attribution}</Text></View> : null}
+              {usesVerifiedCover(item) && item.image_attribution ? <View className="absolute right-4 top-4 max-w-[55%] rounded-lg bg-black/65 px-3 py-2"><Text className="text-right text-[10px] font-bold text-white" numberOfLines={1}>{language === 'es' ? 'Foto' : 'Photo'}: {item.image_attribution}</Text></View> : null}
               <View className="absolute bottom-4 left-5 rounded-full bg-ui-primary dark:bg-ui-dark-primary px-4 py-2"><Text className="font-black text-white">{tourismRegion(item)}</Text></View>
-              <View className="absolute bottom-4 right-5 rounded-full bg-black/60 px-4 py-2"><Text className="font-black text-white">{item.difficulty || 'Consultar'}</Text></View>
+              <View className="absolute bottom-4 right-5 rounded-full bg-black/60 px-4 py-2"><Text className="font-black text-white">{difficultyLabel(item.difficulty, language)}</Text></View>
             </View>
             <View className="p-6">
               <Text className="text-2xl font-black text-ui-text dark:text-ui-dark-text">{item.name}</Text>
               {item.validated_by?.length ? <View className="mt-3"><ValidationBadge authorities={item.validated_by} language={language} /></View> : null}
-              <Text className="mt-2 text-base leading-6 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={2}>{item.description || 'Información en proceso de verificación.'}</Text>
+              <Text className="mt-2 text-base leading-6 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={2}>{item.description || (language === 'es' ? 'Información en proceso de verificación.' : 'Information is being verified.')}</Text>
               <View className="mt-4 flex-row flex-wrap gap-2"><View className="flex-row items-center rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft px-3 py-2"><MaterialCommunityIcons name="map-marker-distance" size={18} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{userLocation ? `${distanceKm(userLocation, item).toFixed(1)} km ${language === 'es' ? 'de vos' : 'away'}` : (language === 'es' ? 'Calculando distancia…' : 'Calculating distance…')}</Text></View><View className="flex-row items-center rounded-xl bg-ui-muted dark:bg-white/5 px-3 py-2"><MaterialCommunityIcons name="star" size={18} color="#ffac16" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{item.average_rating ? item.average_rating.toFixed(1) : '—'} / 5</Text></View></View>
               <View className="mt-5 h-px bg-ui-border dark:bg-white/10" />
               <View className="mt-5 flex-row items-end justify-between">
                 <View><Text className="text-xs font-bold uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Tarifa Tico' : 'Foreigner price'}</Text><Text className="mt-1 text-xl font-black text-ui-primary dark:text-ui-dark-primary">{visitorType === 'tico' ? (item.price_national_crc == null ? 'Consultar' : item.price_national_crc === 0 ? 'Gratis' : formatPrice(item.price_national_crc)) : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`)}</Text></View>
                 <View className="flex-row items-center gap-3">
-                  <Pressable accessibilityLabel="Me gusta" className="flex-row items-center rounded-full px-3 py-3" onPress={(event) => { event.stopPropagation(); void like(item); }}><MaterialCommunityIcons name={item.liked ? 'heart' : 'heart-outline'} size={24} color={item.liked ? '#ff557d' : '#a8a29c'} /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{item.likes_count}</Text></Pressable>
+                  <Pressable accessibilityLabel={language === 'es' ? 'Me gusta' : 'Like'} className="flex-row items-center rounded-full px-3 py-3" onPress={(event) => { event.stopPropagation(); void like(item); }}><MaterialCommunityIcons name={item.liked ? 'heart' : 'heart-outline'} size={24} color={item.liked ? '#ff557d' : '#a8a29c'} /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{item.likes_count}</Text></Pressable>
                   <View className="rounded-2xl bg-ui-primary px-6 py-3 dark:bg-ui-dark-primary"><Text className="font-black text-white">{language === 'es' ? 'Ver' : 'View'}</Text></View>
                 </View>
               </View>
@@ -201,7 +201,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
       await addDestinationReview(place.id, session.user.id, rating, comment, photo);
       setComment(''); setPhoto(undefined); setRating(5);
       await Promise.all([queryClient.invalidateQueries({ queryKey: ['destination-reviews', place.id] }), queryClient.invalidateQueries({ queryKey: ['places'] })]);
-    } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : 'No se pudo publicar el comentario.'); }
+    } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo publicar el comentario.' : 'Could not publish the comment.')); }
     finally { setSending(false); }
   };
   const addPhoto = async () => {
@@ -231,12 +231,12 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
                 <Pressable className="h-12 w-12 items-center justify-center rounded-full bg-black/55" onPress={() => void Share.share({ message: `${place.name}${place.source_url ? `\n${place.source_url}` : ''}` })}><MaterialCommunityIcons name="share-variant-outline" size={23} color="white" /></Pressable>
                 <Pressable accessibilityLabel="Cerrar" className="h-12 w-12 items-center justify-center rounded-full bg-black/55" onPress={onClose}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
               </View>
-              <View className="absolute bottom-0 left-0 right-0 bg-black/55 px-6 pb-6 pt-14"><View className="flex-row flex-wrap items-center gap-2"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-3 py-2"><Text className="font-black text-white">{place.category}</Text></View>{place.average_rating ? <View className="rounded-lg bg-[#ffac16] px-3 py-2"><Text className="font-black text-white">★ {place.average_rating.toFixed(1)} ({place.reviews_count})</Text></View> : null}<ValidationBadge authorities={place.validated_by} language={language} /></View><Text className="mt-3 text-3xl font-black text-white md:text-4xl">{place.name}</Text></View>
+              <View className="absolute bottom-0 left-0 right-0 bg-black/55 px-6 pb-6 pt-14"><View className="flex-row flex-wrap items-center gap-2"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-3 py-2"><Text className="font-black text-white">{categoryLabel(place.category, language)}</Text></View>{place.average_rating ? <View className="rounded-lg bg-[#ffac16] px-3 py-2"><Text className="font-black text-white">★ {place.average_rating.toFixed(1)} ({place.reviews_count})</Text></View> : null}<ValidationBadge authorities={place.validated_by} language={language} /></View><Text className="mt-3 text-3xl font-black text-white md:text-4xl">{place.name}</Text></View>
             </View>
-            {usesVerifiedCover(place) && place.image_source_url ? <Pressable className="self-end px-5 pt-3" onPress={() => void Linking.openURL(place.image_source_url!)}><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">Foto: {place.image_attribution || 'Wikimedia Commons'} · {place.image_license || 'Ver licencia'}</Text></Pressable> : null}
+            {usesVerifiedCover(place) && place.image_source_url ? <Pressable className="self-end px-5 pt-3" onPress={() => void Linking.openURL(place.image_source_url!)}><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Foto' : 'Photo'}: {place.image_attribution || 'Wikimedia Commons'} · {place.image_license || (language === 'es' ? 'Ver licencia' : 'View license')}</Text></Pressable> : null}
             <View className="pt-5"><View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <ActivityIndicator color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>{communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((url, index) => <Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} key={`${url}-${index}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}</View>
             <View className="gap-6 p-5 md:p-8">
-              <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={place.difficulty || (language === 'es' ? 'Consultar' : 'Check')} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
+              <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={difficultyLabel(place.difficulty, language)} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
               <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{place.description || (language === 'es' ? 'Información en proceso de verificación.' : 'Information is being verified.')}</Text></View>
               <View className="rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5">
@@ -280,4 +280,20 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function InfoRow({ icon, label, value }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; value: string }) {
   return <View className="mb-4 flex-row items-start last:mb-0"><MaterialCommunityIcons name={icon} size={22} color="#00a77c" /><View className="ml-3 flex-1"><Text className="text-xs font-bold uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{label}</Text><Text className="mt-1 leading-6 text-ui-text dark:text-ui-dark-text">{value}</Text></View></View>;
+}
+
+function difficultyLabel(value: string | null, language: 'es' | 'en') {
+  if (!value) return language === 'es' ? 'Consultar' : 'Check';
+  if (language === 'es') return value;
+  return ({ Fácil: 'Easy', Moderada: 'Moderate', Difícil: 'Difficult' } as Record<string, string>)[value] ?? value;
+}
+
+function categoryLabel(value: string, language: 'es' | 'en') {
+  if (language === 'es') return value;
+  const labels: Record<string, string> = {
+    'Parque Nacional': 'National Parks', Volcán: 'Volcanoes', Catarata: 'Waterfalls', Río: 'Rivers', Mirador: 'Viewpoints', Termales: 'Hot springs', Senderismo: 'Hiking',
+    'Pozas / Lagos': 'Pools / Lakes', Playa: 'Beaches', Cultura: 'Culture', 'Santuarios de animales': 'Animal Sanctuaries',
+    'Reservas naturales y forestales': 'Nature Reserves', 'Refugios de vida silvestre': 'Wildlife Refuges', 'Experiencia Gastronómica': 'Food Experiences', 'Bares / Discotecas': 'Bars / Nightclubs',
+  };
+  return labels[value] ?? value;
 }

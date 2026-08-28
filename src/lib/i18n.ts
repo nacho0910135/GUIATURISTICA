@@ -35,7 +35,7 @@ export const copy = {
     loginInstead: 'Already have an account? Sign in', registerInstead: 'New here? Create account',
     emailSent: 'Check your email to confirm your account.', authRequired: 'This action requires an account.',
     rateUnavailable: 'Reference exchange rate', nearby: 'Nearby places', details: 'View details', comment: 'Comment', like: 'Like',
-    communityTitle: 'Descubriendo CR community', communityBody: 'Save, comment and share with travelers across the country.',
+    communityTitle: 'Community Descubriendo CR', communityBody: 'Save, comment and share with travelers across the country.',
     accountReady: 'Your account is ready to save and share.', systemTheme: 'System theme', allCR: 'All CR',
     systemThemeBody: 'Light or dark based on your device', automatic: 'Auto', validation: 'Enter a valid email and a password of at least 6 characters.',
   },
