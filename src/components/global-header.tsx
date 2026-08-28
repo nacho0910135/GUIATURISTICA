@@ -30,8 +30,8 @@ export function GlobalHeader() {
     <View className="mx-auto w-full max-w-content gap-2 px-4 py-2 md:flex-row md:items-center md:justify-between md:px-6 md:py-3">
       <Pressable accessibilityLabel={language === 'es' ? 'Ir a Explorar' : 'Go to Explore'} accessibilityRole="link" className="min-h-11 flex-row items-center" onPress={() => router.replace('/explore')}>
         <View className="h-11 w-11 overflow-hidden rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
-          <Image contentFit="contain" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: 52, width: 52 }} />
-          <Animated.View style={{ height: 52, left: 0, opacity: blink, pointerEvents: 'none', position: 'absolute', top: 0, width: 52 }}>
+          <Image contentFit="contain" contentPosition="center" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: '100%', width: '100%' }} />
+          <Animated.View style={{ inset: 0, opacity: blink, pointerEvents: 'none', position: 'absolute' }}>
             <Image contentFit="contain" source={require('@/assets/brand/frog-logo-blink.png')} style={{ height: '100%', width: '100%' }} />
           </Animated.View>
         </View>

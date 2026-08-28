@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
 import { getFaunaHome, getVulnerabilityLabel, markFaunaSeen } from '@/lib/fauna';
+import { ThemedNotice } from '@/components/themed-notice';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -19,6 +20,7 @@ export default function FaunaScreen() {
   const [home, setHome] = useState<FaunaHome>();
   const [error, setError] = useState<string>();
   const [markingId, setMarkingId] = useState<string>();
+  const [seenNotice, setSeenNotice] = useState<string>();
   const columns = width >= 1200 ? 4 : width >= 700 ? 2 : 1;
 
   const load = useCallback(async () => {
@@ -37,6 +39,8 @@ export default function FaunaScreen() {
     setMarkingId(speciesId);
     try {
       await markFaunaSeen(speciesId);
+      const item = home?.species.find((species) => species.id === speciesId);
+      setSeenNotice(language === 'es' ? item?.common_name_es : item?.common_name_en);
       setHome((current) => {
         if (!current) return current;
         const seenSpeciesIds = new Set(current.seenSpeciesIds);
@@ -51,7 +55,7 @@ export default function FaunaScreen() {
     } finally {
       setMarkingId(undefined);
     }
-  }, [language, markingId]);
+  }, [home?.species, language, markingId]);
 
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 44 }} showsVerticalScrollIndicator={false}>
@@ -146,6 +150,8 @@ export default function FaunaScreen() {
           </ScrollView>
         </View>
       ) : null}
+
+      <ThemedNotice button={language === 'es' ? 'Entendido' : 'Got it'} message={language === 'es' ? `Añadiste ${seenNotice ?? 'este animal'} como avistado a tu colección.` : `You added ${seenNotice ?? 'this animal'} as a sighting to your collection.`} onClose={() => setSeenNotice(undefined)} title={language === 'es' ? '¡Nuevo avistamiento!' : 'New sighting!'} visible={Boolean(seenNotice)} />
 
     </ScrollView>
   );

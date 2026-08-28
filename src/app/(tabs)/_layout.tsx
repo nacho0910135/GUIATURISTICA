@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
 import { Platform, type ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
 import { useApp } from '@/providers/app-provider';
@@ -36,6 +37,7 @@ const friendsIcon = ({ color, focused }: { color: ColorValue; focused: boolean }
 export default function TabsLayout() {
   const { t } = useApp();
   const { colors } = useAppTheme();
+  const { bottom } = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -45,7 +47,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '700', marginTop: 3 },
-        tabBarStyle: { alignSelf: 'center', backgroundColor: colors.surface, borderTopColor: colors.border, height: 72, maxWidth: 1120, paddingBottom: 8, paddingTop: 6, width: '100%' },
+        tabBarStyle: { alignSelf: 'center', backgroundColor: colors.surface, borderTopColor: colors.border, height: 72 + bottom, maxWidth: 1120, paddingBottom: 8 + bottom, paddingTop: 6, width: '100%' },
       }}
     >
       <Tabs.Screen name="explore" options={{ title: t('explore'), tabBarIcon: icon('compass') }} />

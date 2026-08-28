@@ -32,10 +32,11 @@ export function MapCanvas() {
   return (
     <View className="overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#56c7e9', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 530 : 460 }}>
       <MapView
-        initialRegion={{ latitude: 9.88, longitude: -84.12, latitudeDelta: wide ? 3.2 : 4.2, longitudeDelta: wide ? 3.2 : 4.2 }}
+        key={wide ? 'wide-6' : 'mobile-7.8'}
+        initialRegion={{ latitude: 9.88, longitude: -84.12, latitudeDelta: wide ? 6 : 7.8, longitudeDelta: wide ? 6 : 7.8 }}
         mapType="standard"
         maxZoomLevel={19}
-        minZoomLevel={5.7}
+        minZoomLevel={5}
         rotateEnabled={false}
         style={{ height: '100%', width: '100%' }}
       >

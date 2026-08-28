@@ -3,49 +3,40 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
-import { getFaunaSpecies, getSightingCount, getVulnerabilityLabel, markFaunaSeen, type FaunaSpecies, uploadFaunaPhoto } from '@/lib/fauna';
+import { ThemedNotice } from '@/components/themed-notice';
+import { getFaunaPhotos, getFaunaSpecies, getVulnerabilityLabel, type FaunaPhoto, type FaunaSpecies, uploadFaunaPhoto } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
 
 export default function SpeciesScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { language, requireAuth, session } = useApp();
-  const userId = session?.user.id;
   const [species, setSpecies] = useState<FaunaSpecies>();
-  const [sightingCount, setSightingCount] = useState(0);
-  const [busy, setBusy] = useState<'seen' | 'camera' | 'library'>();
+  const [photos, setPhotos] = useState<FaunaPhoto[]>([]);
+  const [busy, setBusy] = useState<'camera' | 'library'>();
   const [error, setError] = useState<string>();
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>();
+  const [photoPublished, setPhotoPublished] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     let active = true;
     Promise.all([
       getFaunaSpecies(id),
-      userId ? getSightingCount(id, userId) : Promise.resolve(0),
-    ]).then(([nextSpecies, nextCount]) => {
+      getFaunaPhotos(id),
+    ]).then(([nextSpecies, nextPhotos]) => {
       if (!active) return;
       setSpecies(nextSpecies);
-      setSightingCount(nextCount);
+      setPhotos(nextPhotos);
     }).catch((reason) => {
       if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar la especie.');
     });
     return () => { active = false; };
-  }, [id, userId]);
-
-  const markSeen = async () => {
-    if (!species || !requireAuth(language === 'es' ? 'Marcar especie como vista' : 'Mark species as seen')) return;
-    setBusy('seen');
-    try {
-      setSightingCount(await markFaunaSeen(species.id));
-    } catch (reason) {
-      Alert.alert('Fauna CR', reason instanceof Error ? reason.message : 'No se pudo registrar el avistamiento.');
-    } finally {
-      setBusy(undefined);
-    }
-  };
+  }, [id]);
 
   const choosePhoto = async (source: 'camera' | 'library') => {
     if (!species || !requireAuth(language === 'es' ? 'Compartir foto de fauna' : 'Share wildlife photo') || !session) return;
@@ -63,7 +54,8 @@ export default function SpeciesScreen() {
         : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 1, exif: false });
       if (result.canceled || !result.assets[0]) return;
       await uploadFaunaPhoto(species.id, session.user.id, result.assets[0]);
-      Alert.alert('Fauna CR', language === 'es' ? 'Foto publicada en el álbum colaborativo.' : 'Photo published to the collaborative album.');
+      setPhotos(await getFaunaPhotos(species.id));
+      setPhotoPublished(true);
     } catch (reason) {
       Alert.alert('Fauna CR', reason instanceof Error ? reason.message : 'No se pudo subir la foto.');
     } finally {
@@ -103,6 +95,8 @@ export default function SpeciesScreen() {
         </View>
       </View>
 
+      {photos.length ? <View className="px-5 pt-6"><Text className="text-xl font-black text-forest-950 dark:text-white">{language === 'es' ? 'Fotos compartidas por nuestros usuarios' : 'Photos shared by our users'}</Text><ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 12 }} showsHorizontalScrollIndicator={false}>{photos.map((photo, index) => <Pressable accessibilityLabel={language === 'es' ? `Abrir foto ${index + 1} de ${name}` : `Open photo ${index + 1} of ${name}`} key={photo.id} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ borderRadius: 16, height: 140, width: 180 }} transition={180} /></Pressable>)}</ScrollView></View> : null}
+
       <View className="px-5 pt-6">
         <View className="flex-row items-center justify-between rounded-3xl bg-white p-5 dark:bg-forest-900">
           <View className="flex-1">
@@ -140,11 +134,6 @@ export default function SpeciesScreen() {
           </View>
         </View>
 
-        <Pressable className="mt-6 flex-row items-center justify-center rounded-2xl bg-frog-500 px-5 py-4" disabled={busy === 'seen'} onPress={() => void markSeen()}>
-          {busy === 'seen' ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="eye-check-outline" size={24} color="white" />}
-          <Text className="ml-3 text-base font-black text-white">{language === 'es' ? 'Marcar como visto' : 'Mark as seen'}{sightingCount ? ` · ${sightingCount}` : ''}</Text>
-        </Pressable>
-
         <View className="mt-8">
           <Text className="text-xl font-black text-forest-950 dark:text-white">{language === 'es' ? 'Compartí tu foto' : 'Share your photo'}</Text>
           <Text className="mt-2 text-sm leading-5 text-forest-500 dark:text-mint-300">{language === 'es' ? 'La imagen se optimiza y elimina metadatos antes de publicarse.' : 'The image is optimized and metadata is removed before publishing.'}</Text>
@@ -153,7 +142,17 @@ export default function SpeciesScreen() {
             <PhotoButton busy={busy === 'library'} icon="image-multiple" label={language === 'es' ? 'Galería' : 'Library'} onPress={() => void choosePhoto('library')} />
           </View>
         </View>
+
       </View>
+
+      <ThemedNotice button={language === 'es' ? 'Entendido' : 'Got it'} message={language === 'es' ? `Tu foto de ${name} ya está disponible para la comunidad.` : `Your ${name} photo is now available to the community.`} onClose={() => setPhotoPublished(false)} title={language === 'es' ? '¡Foto compartida!' : 'Photo shared!'} visible={photoPublished} />
+
+      <Modal animationType="fade" onRequestClose={() => setSelectedPhotoIndex(undefined)} statusBarTranslucent visible={selectedPhotoIndex !== undefined}>
+        <View className="flex-1 bg-black">
+          <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{photos.map((photo, index) => <View className="flex-1 items-center justify-center" key={photo.id} style={{ width }}><Image accessibilityLabel={language === 'es' ? `Foto ${index + 1} de ${name}` : `Photo ${index + 1} of ${name}`} contentFit="contain" source={{ uri: photo.image_url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
+          <Pressable accessibilityLabel={language === 'es' ? 'Cerrar foto' : 'Close photo'} className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/70" onPress={() => setSelectedPhotoIndex(undefined)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }

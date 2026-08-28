@@ -74,30 +74,18 @@ export async function getVerifiedSanctuaries(): Promise<FaunaSanctuary[]> {
 }
 
 export async function getFaunaHome(userId?: string) {
-  const [species, sanctuaries, photos, comments, likes, follows, sightings] = await Promise.all([
+  const [species, sanctuaries, sightings] = await Promise.all([
     supabase.from('fauna_species_public').select('*').order('common_name_es'),
     supabase.from('fauna_sanctuaries').select('*').eq('verified', true).order('name'),
-    supabase.from('fauna_photos').select('*').order('created_at', { ascending: false }).limit(24),
-    supabase.from('fauna_comments').select('*').order('created_at', { ascending: false }).limit(80),
-    userId
-      ? supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'fauna_photo')
-      : Promise.resolve({ data: [], error: null }),
-    userId
-      ? supabase.from('user_follows').select('followed_id').eq('follower_id', userId)
-      : Promise.resolve({ data: [], error: null }),
     userId
       ? supabase.from('user_fauna_sightings').select('fauna_id').eq('user_id', userId).gt('sightings_count', 0)
       : Promise.resolve({ data: [], error: null }),
   ]);
-  const error = species.error ?? sanctuaries.error ?? photos.error ?? comments.error ?? likes.error ?? follows.error ?? sightings.error;
+  const error = species.error ?? sanctuaries.error ?? sightings.error;
   if (error) throw error;
   return {
     species: (species.data ?? []) as FaunaSpecies[],
     sanctuaries: (sanctuaries.data ?? []) as FaunaSanctuary[],
-    photos: (photos.data ?? []) as FaunaPhoto[],
-    comments: (comments.data ?? []) as FaunaComment[],
-    likedPhotoIds: new Set((likes.data ?? []).map((row) => row.target_id as string)),
-    followedUserIds: new Set((follows.data ?? []).map((row) => row.followed_id as string)),
     seenSpeciesIds: new Set((sightings.data ?? []).map((row) => row.fauna_id as string)),
   };
 }
@@ -106,6 +94,12 @@ export async function getFaunaSpecies(id: string) {
   const { data, error } = await supabase.from('fauna_species_public').select('*').eq('id', id).single();
   if (error) throw error;
   return data as FaunaSpecies;
+}
+
+export async function getFaunaPhotos(speciesId: string) {
+  const { data, error } = await supabase.from('fauna_photos').select('*').eq('fauna_id', speciesId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as FaunaPhoto[];
 }
 
 export async function getSightingCount(speciesId: string, userId: string) {
