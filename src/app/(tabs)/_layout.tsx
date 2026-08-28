@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Platform, Text, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -38,6 +38,7 @@ export default function TabsLayout() {
   const { t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <Tabs
@@ -50,7 +51,11 @@ export default function TabsLayout() {
         tabBarStyle: { alignSelf: 'center', backgroundColor: colors.surface, borderTopColor: colors.border, height: 72 + bottom, maxWidth: 1120, paddingBottom: 8 + bottom, paddingTop: 6, width: '100%' },
       }}
     >
-      <Tabs.Screen name="explore" options={{ title: t('explore'), tabBarIcon: icon('compass') }} />
+      <Tabs.Screen
+        listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/explore', params: { reset: String(Date.now()) } }); } }}
+        name="explore"
+        options={{ title: t('explore'), tabBarIcon: icon('compass') }}
+      />
       <Tabs.Screen name="fauna" options={{ title: t('fauna'), tabBarIcon: icon('paw-outline') }} />
       <Tabs.Screen name="friends" options={{ title: 'Amigos', tabBarIcon: friendsIcon, tabBarActiveTintColor: colors.secondary, tabBarLabelStyle: { fontSize: 11, fontWeight: '800' } }} />
       <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('hospital-box-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />

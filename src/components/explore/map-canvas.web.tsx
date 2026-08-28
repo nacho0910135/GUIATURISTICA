@@ -50,7 +50,7 @@ export function MapCanvas() {
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
     let loaded = false;
-    const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: 'mapbox://styles/mapbox/outdoors-v12', center: [-84.12, 9.88], zoom: wide ? 7.05 : 6.35, minZoom: 5.7, maxZoom: 10, dragRotate: false, pitchWithRotate: false, attributionControl: true });
+    const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: 'mapbox://styles/mapbox/outdoors-v12', center: [-84.12, 9.88], zoom: wide ? 7.37 : 6.67, minZoom: 5.7, maxZoom: 10, dragRotate: false, pitchWithRotate: false, attributionControl: true });
     map.scrollZoom.disable();
     mapRef.current = map;
     map.on('load', () => {

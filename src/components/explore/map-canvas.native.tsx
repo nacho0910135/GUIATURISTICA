@@ -25,7 +25,7 @@ export function MapCanvas() {
   const { width } = useWindowDimensions();
   const router = useRouter();
   const wide = width >= 900;
-  const mapRegion: Region = { ...initialRegion, latitudeDelta: wide ? 3.8 : 3.4, longitudeDelta: wide ? 3.8 : 3.4 };
+  const mapRegion: Region = { ...initialRegion, latitudeDelta: wide ? 3.04 : 2.72, longitudeDelta: wide ? 3.04 : 2.72 };
   const [region, setRegion] = useState<Region>(mapRegion);
   const [mapSize, setMapSize] = useState({ height: 0, width: 0 });
   useEffect(() => {
@@ -45,7 +45,7 @@ export function MapCanvas() {
       style={{ borderColor: '#56c7e9', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 371 : 322, position: 'relative' }}
     >
       <MapView
-        key={wide ? 'wide-3.8-v6' : 'mobile-3.4-v6'}
+        key={wide ? 'wide-3.04-v7' : 'mobile-2.72-v7'}
         initialRegion={mapRegion}
         mapType="standard"
         customMapStyle={cleanMapStyle}

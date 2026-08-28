@@ -1,10 +1,10 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { MapCanvas } from '@/components/explore/map-canvas';
 import { getVerifiedSanctuaries } from '@/lib/fauna';
@@ -42,6 +42,7 @@ const activities: Activity[] = [
 export default function ExploreScreen() {
   const { formatPrice, language, requireAuth, session, t } = useApp();
   const router = useRouter();
+  const { reset: resetToken } = useLocalSearchParams<{ reset?: string }>();
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
   const [category, setCategory] = useState('');
@@ -51,6 +52,22 @@ export default function ExploreScreen() {
   const wide = width >= 900;
   const places = useQuery({ queryKey: ['explore-places'], queryFn: getExplorePlaces, staleTime: 10 * 60 * 1000 });
   const sanctuaries = useQuery({ queryKey: ['verified-sanctuaries'], queryFn: getVerifiedSanctuaries, staleTime: 30 * 60 * 1000 });
+  const resetExplore = useCallback(() => {
+    setCategory('');
+    setSearch('');
+    setCoordinates(undefined);
+    setProposalOpen(false);
+  }, []);
+  useEffect(() => { if (resetToken) resetExplore(); }, [resetExplore, resetToken]);
+  useFocusEffect(useCallback(() => {
+    if (Platform.OS !== 'android') return undefined;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!category && !coordinates && !proposalOpen && !search) return false;
+      resetExplore();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [category, coordinates, proposalOpen, resetExplore, search]));
   const visiblePlaces = useMemo(() => {
     const term = search.trim().toLocaleLowerCase(language === 'es' ? 'es' : 'en');
     const filtered = term ? (places.data ?? []).filter((place) => `${place.name} ${place.province} ${place.category} ${place.description ?? ''}`.toLocaleLowerCase().includes(term)) : coordinates ? [...(places.data ?? [])] : [];
@@ -68,7 +85,16 @@ export default function ExploreScreen() {
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180 }}>
         <View className="flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="magnify" size={23} color="#68737A" /><TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Buscar playas, cataratas, miradores, volcanes o senderos…' : 'Search beaches, waterfalls, viewpoints, volcanoes or trails…'} placeholderTextColor="#68737A" value={search} /></View>
-        <View className="mt-3 flex-row gap-3"><Pressable accessibilityRole="button" className="flex-1 flex-row items-center justify-center rounded-2xl bg-ui-secondary dark:bg-ui-dark-secondary px-4 py-4" onPress={() => void discover()}><MaterialCommunityIcons name="crosshairs-gps" size={23} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Descubrir' : 'Discover'}</Text></Pressable><Pressable accessibilityRole="button" className="flex-1 flex-row items-center justify-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-4 py-4" onPress={() => { if (requireAuth(language === 'es' ? 'Publicar un nuevo lugar' : 'Publish a new place')) setProposalOpen(true); }}><MaterialCommunityIcons name="plus-circle-outline" size={24} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Agregar sitio' : 'Add place'}</Text></Pressable></View>
+        <Pressable
+          accessibilityRole="button"
+          className="relative mt-3 flex-row items-center justify-center overflow-hidden rounded-2xl border border-white/60 px-4 py-3"
+          onPress={() => void discover()}
+          style={{ alignSelf: 'center', backgroundColor: '#0077A8dd', elevation: 8, shadowColor: '#21c8f6', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.45, shadowRadius: 12, width: '88%' }}
+        >
+          <View className="absolute left-5 right-5 top-0 h-[2px] rounded-full bg-white/80" />
+          <MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" />
+          <Text className="ml-2 text-center text-sm font-black text-white">{language === 'es' ? 'Descubrir destinos turísticos cercanos' : 'Discover nearby tourist destinations'}</Text>
+        </Pressable>
         {coordinates ? <Text className="mt-3 text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ordenados del más cercano al más lejano.' : 'Sorted from nearest to farthest.'}</Text> : null}
         {search || coordinates ? <View className="mt-4 gap-3">{places.isPending ? <ActivityIndicator color="#0B6B4F" /> : visiblePlaces.slice(0, 20).map((place) => <PlaceResult formatPrice={formatPrice} key={`${place.community ? 'community' : 'official'}-${place.id}`} language={language} origin={coordinates} place={place} />)}{!places.isPending && !visiblePlaces.length ? <Text className="py-6 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con esa búsqueda.' : 'No places matched your search.'}</Text> : null}</View> : null}
       </View>
@@ -77,11 +103,12 @@ export default function ExploreScreen() {
         <MapCanvas />
       </View>
 
-      <View className="-mt-7 w-full rounded-t-[30px] bg-ui-background pb-2 pt-6 dark:bg-ui-dark-background" style={{ maxWidth: 1180 }}>
+      <View className="-mt-10 w-full rounded-t-[30px] bg-ui-background pb-2 pt-6 dark:bg-ui-dark-background" style={{ maxWidth: 1180 }}>
         <View className="flex-row items-center justify-between px-5">
-          <Text className="text-2xl font-black tracking-tight text-ui-text dark:text-ui-dark-text">{t('today')}</Text>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setCategory('')}>
-            <Text className="font-extrabold text-caribbean-600">{t('seeAll')}  ›</Text>
+          <Text className="text-[17px] font-black tracking-tight text-ui-text dark:text-ui-dark-text">{t('today')}</Text>
+          <Pressable accessibilityRole="button" className="flex-row items-center rounded-xl bg-ui-primary px-3 py-2 dark:bg-ui-dark-primary" hitSlop={8} onPress={() => { if (requireAuth(language === 'es' ? 'Publicar un nuevo lugar' : 'Publish a new place')) setProposalOpen(true); }}>
+            <MaterialCommunityIcons name="plus-circle-outline" size={17} color="white" />
+            <Text className="ml-1.5 text-xs font-black text-white">{language === 'es' ? 'Agregar sitio' : 'Add place'}</Text>
           </Pressable>
         </View>
 
@@ -104,8 +131,8 @@ export default function ExploreScreen() {
                 onPress={() => activity.category === 'Santuarios de animales' ? setCategory(selected ? '' : activity.category) : router.push({ pathname: '/(aux)/province', params: { category: activity.category } })}
                 style={{ width: '33.3333%' }}
               >
-                <View className="items-center justify-center rounded-full" style={{ backgroundColor: selected ? activity.color : `${activity.color}20`, height: wide ? 80 : 64, width: wide ? 80 : 64 }}>
-                  <MaterialCommunityIcons name={activity.icon} size={wide ? 42 : 34} color={selected ? 'white' : activity.color} />
+                <View className="items-center justify-center rounded-full" style={{ backgroundColor: selected ? activity.color : `${activity.color}20`, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
+                  <MaterialCommunityIcons name={activity.icon} size={wide ? 34 : 27} color={selected ? 'white' : activity.color} />
                   {activity.premium ? <View className="absolute -right-1 -top-1 h-6 w-6 items-center justify-center rounded-full bg-[#d69e2e]"><MaterialCommunityIcons name="crown" size={13} color="white" /></View> : null}
                   <View className="absolute -bottom-1 -right-1 h-6 min-w-6 items-center justify-center rounded-full border-2 border-ui-background px-1 dark:border-ui-dark-background" style={{ backgroundColor: activity.color }}>
                     <Text className="text-[10px] font-black text-white">{countPending ? '…' : count}</Text>
