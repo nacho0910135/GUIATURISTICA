@@ -23,6 +23,7 @@ type AppContextValue = {
   currency: Currency;
   visitorType: VisitorType;
   exchangeRate: number;
+  avatarUrl: string | null;
   session: Session | null;
   authReady: boolean;
   isDark: boolean;
@@ -31,8 +32,10 @@ type AppContextValue = {
   formatPrice: (crcAmount: number) => string;
   requireAuth: (intent: string) => boolean;
   isAdmin: boolean;
-  signInAdmin: (email: string, password: string) => Promise<void>;
-  signOutAdmin: () => Promise<void>;
+  isAuthenticated: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  setAvatarUrl: (value: string | null) => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -44,29 +47,35 @@ export function AppProvider({ children }: PropsWithChildren) {
   const language: Language = visitorType === 'tico' ? 'es' : 'en';
   const currency: Currency = visitorType === 'tico' ? 'CRC' : 'USD';
   const [exchangeRate, setExchangeRate] = useState(FALLBACK_USD_CRC);
-  const [adminSession, setAdminSession] = useState<Session | null>(null);
-  const session = adminSession ?? GUEST_SESSION;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userSession, setUserSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const session = userSession ?? GUEST_SESSION;
   const authReady = true;
-  const isAdmin = Boolean(adminSession);
+  const isAuthenticated = Boolean(userSession);
 
   useEffect(() => {
     void Location.requestForegroundPermissionsAsync().catch(() => undefined);
   }, []);
 
-  const signInAdmin = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) throw error;
-    const { data: profile, error: profileError } = await supabase.from('users').select('role').eq('id', data.user.id).single();
-    if (profileError || profile?.role !== 'admin') {
+    const { data: profile, error: profileError } = await supabase.from('users').select('role,avatar_url').eq('id', data.user.id).single();
+    if (profileError) {
       await supabase.auth.signOut();
-      throw new Error('Esta cuenta no tiene permisos de administrador.');
+      throw profileError;
     }
-    setAdminSession(data.session);
+    setUserSession(data.session);
+    setIsAdmin(profile?.role === 'admin');
+    setAvatarUrl(profile?.avatar_url ?? null);
   }, []);
 
-  const signOutAdmin = useCallback(async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    setAdminSession(null);
+    setUserSession(null);
+    setIsAdmin(false);
+    setAvatarUrl(null);
   }, []);
 
   useEffect(() => {
@@ -100,9 +109,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   const requireAuth = useCallback((_intent: string) => true, []);
 
   const value = useMemo<AppContextValue>(() => ({
-    language, currency, visitorType, exchangeRate, session, authReady, isDark: mode === 'dark', t,
-    setVisitorType, formatPrice, requireAuth, isAdmin, signInAdmin, signOutAdmin,
-  }), [language, currency, visitorType, exchangeRate, session, authReady, mode, t, formatPrice, requireAuth, isAdmin, signInAdmin, signOutAdmin]);
+    language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, isDark: mode === 'dark', t,
+    setVisitorType, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signOut,
+  }), [language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signOut]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

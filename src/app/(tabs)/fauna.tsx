@@ -61,26 +61,26 @@ export default function FaunaScreen() {
 
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 44 }} showsVerticalScrollIndicator={false}>
-      <View className="border-b border-ui-border bg-ui-surface px-5 pb-7 pt-7 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+      <View className="border-b border-ui-border bg-ui-surface px-5 py-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
         <View className="hidden" />
         <View className="flex-row items-center">
-          <View className="h-14 w-14 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
-            <MaterialCommunityIcons name="butterfly-outline" size={32} color="#0B6B4F" />
+          <View className="h-11 w-11 items-center justify-center rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+            <Text accessibilityLabel={language === 'es' ? 'Perezoso' : 'Sloth'} className="text-2xl">🦥</Text>
           </View>
-          <View className="ml-4 flex-1">
-            <Text className="text-3xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">Fauna CR</Text>
-            <Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+          <View className="ml-3 flex-1">
+            <Text className="text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">Fauna CR</Text>
+            <Text className="text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">
               {language === 'es' ? 'Conocé, observá y protegé nuestra biodiversidad.' : 'Discover, observe, and protect our biodiversity.'}
             </Text>
           </View>
         </View>
-        <View className="mt-5 flex-row items-center rounded-card border border-ui-border bg-ui-primary-soft p-4 dark:border-ui-dark-border dark:bg-ui-dark-primary-soft">
-          <MaterialCommunityIcons name="shield-lock-outline" size={24} color="#78dfa1" />
-          <Text className="ml-3 flex-1 text-sm leading-5 text-ui-text dark:text-ui-dark-text">
+        <View className="mt-3 flex-row items-center rounded-card border border-ui-border bg-ui-primary-soft p-3 dark:border-ui-dark-border dark:bg-ui-dark-primary-soft">
+          <MaterialCommunityIcons name="shield-lock-outline" size={20} color="#78dfa1" />
+          <Text className="ml-2 flex-1 text-xs leading-4 text-ui-text dark:text-ui-dark-text">
             {language === 'es' ? 'Las ubicaciones sensibles se muestran sólo por provincia.' : 'Sensitive locations are shown only at province level.'}
           </Text>
         </View>
-        <Pressable accessibilityRole="button" className="mt-4 flex-row items-center justify-center rounded-control bg-ui-primary px-5 py-4 dark:bg-ui-dark-primary" onPress={() => { if (requireAuth(language === 'es' ? 'Agregar un animal' : 'Add an animal')) setProposalOpen(true); }}><MaterialCommunityIcons name="plus-circle-outline" size={23} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text></Pressable>
+        <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center self-center rounded-control bg-ui-primary px-4 py-2.5 dark:bg-ui-dark-primary" onPress={() => { if (requireAuth(language === 'es' ? 'Agregar un animal' : 'Add an animal')) setProposalOpen(true); }}><MaterialCommunityIcons name="plus-circle-outline" size={18} color="white" /><Text className="ml-1.5 text-sm font-black text-white">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text></Pressable>
       </View>
 
       {!home && !error ? <ActivityIndicator className="mt-12" color="#13a95b" size="large" /> : null}

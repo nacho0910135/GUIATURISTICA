@@ -10,10 +10,10 @@ import { useApp } from '@/providers/app-provider';
 
 type Dashboard = Awaited<ReturnType<typeof getSocialProfile>>;
 type AdminDashboard = Awaited<ReturnType<typeof getAdminDashboard>>;
-type Section = 'notifications' | 'community' | 'sightings' | 'saved' | 'messages' | 'edit' | 'suggestions' | 'admin';
+type Section = 'notifications' | 'community' | 'sightings' | 'saved' | 'messages' | 'suggestions' | 'login';
 
 export default function ProfileScreen() {
-  const { isAdmin, language, session, signInAdmin, signOutAdmin } = useApp();
+  const { isAdmin, isAuthenticated, language, session, setAvatarUrl, signIn, signOut } = useApp();
   const [section, setSection] = useState<Section>('notifications');
   const [data, setData] = useState<Dashboard>();
   const [admin, setAdmin] = useState<AdminDashboard>();
@@ -22,6 +22,7 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [avatar, setAvatar] = useState<ImagePicker.ImagePickerAsset>();
+  const [editingProfile, setEditingProfile] = useState(false);
   const [suggestion, setSuggestion] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -31,10 +32,10 @@ export default function ProfileScreen() {
     try {
       setError(undefined);
       const next = await getSocialProfile(userId);
-      setData(next); setBio(next.profile?.bio || ''); setContactEmail(next.profile?.contact_email || '');
+      setData(next); setBio(next.profile?.bio || ''); setContactEmail(next.profile?.contact_email || ''); setAvatarUrl(next.profile?.avatar_url ?? null);
       if (isAdmin) setAdmin(await getAdminDashboard());
     } catch (reason) { setError(message(reason)); }
-  }, [isAdmin, userId]);
+  }, [isAdmin, setAvatarUrl, userId]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const run = async (action: () => Promise<void>) => {
@@ -48,6 +49,13 @@ export default function ProfileScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
     if (!result.canceled) setAvatar(result.assets[0]);
   };
+  const saveProfile = () => void run(async () => {
+    await updateTravelerProfile(userId, { bio, contactEmail, avatar });
+    setAvatar(undefined);
+    setEditingProfile(false);
+    await load();
+    Alert.alert('Perfil', 'Tus cambios fueron guardados.');
+  });
   const name = data?.profile?.full_name || data?.profile?.username || (language === 'es' ? 'Viajero invitado' : 'Guest traveler');
   const tabs: { key: Section; icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; count?: number }[] = [
     { key: 'notifications', icon: 'bell-outline', label: 'Notificaciones', count: data?.notifications.filter((n) => !n.read_status).length ?? 0 },
@@ -55,28 +63,43 @@ export default function ProfileScreen() {
     { key: 'sightings', icon: 'camera-outline', label: 'Mis avistamientos', count: data?.sightings.length ?? 0 },
     { key: 'saved', icon: 'heart-outline', label: 'Guardados', count: data?.saved.length ?? 0 },
     { key: 'messages', icon: 'message-outline', label: 'Mensajes', count: data?.messages.filter((m) => !m.read_status).length ?? 0 },
-    { key: 'edit', icon: 'account-edit-outline', label: 'Editar perfil' },
     { key: 'suggestions', icon: 'lightbulb-outline', label: 'Sugerencias' },
-    { key: 'admin', icon: 'shield-crown-outline', label: isAdmin ? 'Administrar' : 'Admin' },
+    { key: 'login', icon: isAuthenticated ? 'account-check-outline' : 'login', label: isAuthenticated ? (isAdmin ? 'Administrar' : 'Mi sesión') : 'Iniciar sesión' },
   ];
 
   return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
-    <View className="mx-auto w-full max-w-5xl rounded-[32px] border border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface p-6"><View className="flex-row items-center">
-      {data?.profile?.avatar_url ? <Image source={{ uri: data.profile.avatar_url }} style={{ borderRadius: 50, height: 100, width: 100 }} /> : <View className="h-24 w-24 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="account" size={50} color="white" /></View>}
-      <View className="ml-5 flex-1"><Text className="text-3xl font-extrabold text-ui-text dark:text-ui-dark-text">{name}</Text><Text className="mt-2 text-ui-primary dark:text-ui-dark-primary">{data?.profile?.bio || 'Explorando Costa Rica'}</Text><View className="mt-4 flex-row flex-wrap gap-5"><Stat value={data?.followers.length ?? 0} label="seguidores" /><Stat value={data?.following.length ?? 0} label="siguiendo" /><Stat value={data?.sightings.length ?? 0} label="avistamientos" /><Stat value={data?.saved.length ?? 0} label="guardados" /></View></View>
+    <View className="mx-auto w-full max-w-5xl rounded-[24px] border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"><View className="flex-row items-start">
+      <Pressable accessibilityLabel="Editar foto de perfil" className="relative" onPress={() => void chooseAvatar()}>
+        {avatar ? <Image source={{ uri: avatar.uri }} style={{ borderRadius: 40, height: 80, width: 80 }} /> : data?.profile?.avatar_url ? <Image source={{ uri: data.profile.avatar_url }} style={{ borderRadius: 40, height: 80, width: 80 }} /> : <View className="h-20 w-20 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="account" size={40} color="white" /></View>}
+        <View className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full border-2 border-ui-surface bg-ui-primary dark:border-ui-dark-surface dark:bg-ui-dark-primary"><MaterialCommunityIcons name="pencil" size={15} color="white" /></View>
+      </Pressable>
+      <View className="ml-4 flex-1">
+        <Text className="text-2xl font-extrabold text-ui-text dark:text-ui-dark-text">{name}</Text>
+        <View className="mt-2 flex-row items-center">
+          {editingProfile ? <TextInput className="min-w-0 flex-1 rounded-xl bg-ui-muted px-3 py-2 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline onChangeText={setBio} placeholder="Descripción" placeholderTextColor="#8f9bb2" value={bio} /> : <Text className="flex-1 text-ui-primary dark:text-ui-dark-primary">{data?.profile?.bio || 'Explorando Costa Rica'}</Text>}
+          <Pressable accessibilityLabel="Editar descripción" className="ml-2 p-2" onPress={() => setEditingProfile(true)}><MaterialCommunityIcons name="pencil-outline" size={19} color="#0B6B4F" /></Pressable>
+        </View>
+        <View className="mt-2 flex-row items-center">
+          <MaterialCommunityIcons name="email-outline" size={18} color="#8f9bb2" />
+          {editingProfile ? <TextInput className="ml-2 min-w-0 flex-1 rounded-xl bg-ui-muted px-3 py-2 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="email-address" onChangeText={setContactEmail} placeholder="Correo de contacto" placeholderTextColor="#8f9bb2" value={contactEmail} /> : <Text className="ml-2 flex-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{data?.profile?.contact_email || session?.user.email || 'Agregar correo de contacto'}</Text>}
+          <Pressable accessibilityLabel="Editar correo" className="ml-2 p-2" onPress={() => setEditingProfile(true)}><MaterialCommunityIcons name="pencil-outline" size={19} color="#0B6B4F" /></Pressable>
+        </View>
+        {editingProfile || avatar ? <View className="mt-3 flex-row gap-2"><Button label={busy ? 'Guardando...' : 'Guardar'} disabled={busy} onPress={saveProfile} /><Button label="Cancelar" outline onPress={() => { setBio(data?.profile?.bio || ''); setContactEmail(data?.profile?.contact_email || ''); setAvatar(undefined); setEditingProfile(false); }} /></View> : null}
+        <View className="mt-3 flex-row flex-wrap gap-3"><Stat value={data?.followers.length ?? 0} label="seguidores" /><Stat value={data?.following.length ?? 0} label="siguiendo" /><Stat value={data?.sightings.length ?? 0} label="avistamientos" /><Stat value={data?.saved.length ?? 0} label="guardados" /></View>
+      </View>
     </View></View>
-    <ScrollView horizontal className="mx-auto mt-5 w-full max-w-5xl" contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>{tabs.map((tab) => <Pressable className={section === tab.key ? 'flex-row items-center rounded-full bg-ui-primary dark:bg-ui-dark-primary px-5 py-3' : 'flex-row items-center rounded-full px-5 py-3'} key={tab.key} onPress={() => setSection(tab.key)}><MaterialCommunityIcons name={tab.icon} size={21} color={section === tab.key ? 'white' : '#9eabc4'} /><Text className={section === tab.key ? 'ml-2 font-black text-white' : 'ml-2 font-black text-ui-text-muted dark:text-ui-dark-text-muted'}>{tab.label}{tab.count !== undefined ? ` (${tab.count})` : ''}</Text></Pressable>)}</ScrollView>
+    <View className="mx-auto mt-5 w-full max-w-5xl gap-2">{tabs.map((tab) => <Pressable className={section === tab.key ? 'flex-row items-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary' : 'flex-row items-center rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={tab.key} onPress={() => setSection(tab.key)}><MaterialCommunityIcons name={tab.icon} size={21} color={section === tab.key ? 'white' : '#9eabc4'} /><Text className={section === tab.key ? 'ml-3 flex-1 font-black text-white' : 'ml-3 flex-1 font-black text-ui-text-muted dark:text-ui-dark-text-muted'}>{tab.label}</Text>{tab.count !== undefined ? <Text className={section === tab.key ? 'font-black text-white' : 'font-black text-ui-primary dark:text-ui-dark-primary'}>{tab.count}</Text> : null}<MaterialCommunityIcons name="chevron-right" size={20} color={section === tab.key ? 'white' : '#9eabc4'} /></Pressable>)}</View>
     <View className="mx-auto mt-5 w-full max-w-5xl rounded-[30px] border border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface p-5">
       {!data && !error ? <ActivityIndicator color="#13bd83" /> : null}{error ? <Text className="text-red-400">{error}</Text> : null}
       {data && section === 'notifications' ? <ListEmpty empty={!data.notifications.length}>{data.notifications.map((item) => <Row key={item.id} icon="bell-outline" title={`${item.actor?.full_name || item.actor?.username || 'Un viajero'} ${notificationText(item.type)}`} date={item.created_at} />)}</ListEmpty> : null}
       {data && section === 'community' ? <View><Title>Comunidad & Exploradores</Title><Text className="mt-3 text-ui-text-muted dark:text-ui-dark-text-muted">{data.followers.length} seguidores · {data.following.length} siguiendo</Text></View> : null}
-      {data && section === 'sightings' ? <ListEmpty empty={!data.sightings.length}>{data.sightings.map((photo) => <View className="mb-4 overflow-hidden rounded-2xl bg-ui-muted dark:bg-ui-dark-muted" key={photo.id}><Image source={{ uri: photo.image_url }} contentFit="cover" style={{ height: 220, width: '100%' }} /><View className="p-4"><Text className="font-bold text-ui-text dark:text-ui-dark-text">{photo.fauna_species?.common_name_es || 'Avistamiento de fauna'}</Text><View className="mt-3 flex-row flex-wrap gap-2"><Button label="Amigos Viajeros" onPress={() => void shareSightingToWall(userId, photo.image_url, photo.caption)} /><Button label="WhatsApp / Más" outline onPress={() => void Share.share({ message: `${photo.caption || 'Mirá mi avistamiento en Descubriendo CR'}\n${photo.image_url}`, url: photo.image_url })} /></View></View></View>)}</ListEmpty> : null}
+      {data && section === 'sightings' ? <ListEmpty empty={!data.sightings.length}>{data.sightings.map((photo) => <View className="mb-4 overflow-hidden rounded-2xl bg-ui-muted dark:bg-ui-dark-muted" key={photo.id}><Image source={{ uri: photo.image_url }} contentFit="cover" style={{ height: 220, width: '100%' }} /><View className="p-4"><Text className="font-bold text-ui-text dark:text-ui-dark-text">{photo.fauna_species?.common_name_es || 'Avistamiento de fauna'}</Text><View className="mt-3 flex-row flex-wrap gap-2"><Button label="Comunidad Viajera" onPress={() => void shareSightingToWall(userId, photo.image_url, photo.caption)} /><Button label="WhatsApp / Más" outline onPress={() => void Share.share({ message: `${photo.caption || 'Mirá mi avistamiento en Descubriendo CR'}\n${photo.image_url}`, url: photo.image_url })} /></View></View></View>)}</ListEmpty> : null}
       {data && section === 'saved' ? <ListEmpty empty={!data.saved.length}>{data.saved.map((place) => <Row key={place.id} icon="map-marker-outline" title={place.name} date={place.province} />)}</ListEmpty> : null}
       {data && section === 'messages' ? <ListEmpty empty={!data.messages.length}>{data.messages.map((item) => <Row key={item.id} icon="message-text-outline" title={`${item.sender?.full_name || item.sender?.username || 'Viajero'}: ${item.body}`} date={item.created_at} />)}</ListEmpty> : null}
-      {section === 'edit' ? <View><Title>Editar mi perfil</Title><Pressable className="my-5 self-start" onPress={chooseAvatar}>{avatar ? <Image source={{ uri: avatar.uri }} style={{ borderRadius: 45, height: 90, width: 90 }} /> : <View className="h-20 w-20 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="camera-plus" size={32} color="white" /></View>}<Text className="mt-2 font-bold text-ui-primary dark:text-ui-dark-primary">Cambiar foto</Text></Pressable><Field value={bio} onChangeText={setBio} placeholder="Descripción" multiline /><Field value={contactEmail} onChangeText={setContactEmail} placeholder="Email de contacto" keyboardType="email-address" /><Button label={busy ? 'Guardando...' : 'Guardar cambios'} disabled={busy} onPress={() => void run(async () => { await updateTravelerProfile(userId, { bio, contactEmail, avatar }); setAvatar(undefined); await load(); Alert.alert('Perfil', 'Tus cambios fueron guardados.'); })} /></View> : null}
       {section === 'suggestions' ? <View><Title>Sugerencias para el creador</Title><Text className="mb-4 mt-2 text-ui-text-muted dark:text-ui-dark-text-muted">Tus ideas llegarán directamente al panel del administrador.</Text><Field value={suggestion} onChangeText={setSuggestion} placeholder="Contanos qué mejorarías" multiline /><Button label={busy ? 'Enviando...' : 'Enviar sugerencia'} disabled={busy} onPress={() => void run(async () => { if (suggestion.trim().length < 3) throw new Error('Escribí una sugerencia.'); await sendCreatorSuggestion(userId, suggestion); setSuggestion(''); Alert.alert('Gracias', 'Tu sugerencia fue enviada al administrador.'); })} /></View> : null}
-      {section === 'admin' && !isAdmin ? <View><Title>Acceso de administrador</Title><Text className="mb-4 mt-2 text-ui-text-muted dark:text-ui-dark-text-muted">El modo invitado continúa disponible para todos. Esta entrada es solo para moderación.</Text><Field value={adminEmail} onChangeText={setAdminEmail} placeholder="Correo administrador" keyboardType="email-address" /><Field value={adminPassword} onChangeText={setAdminPassword} placeholder="Contraseña" secureTextEntry /><Button label={busy ? 'Ingresando...' : 'Ingresar'} disabled={busy} onPress={() => void run(async () => { await signInAdmin(adminEmail, adminPassword); setAdminPassword(''); setSection('admin'); })} /></View> : null}
-      {section === 'admin' && isAdmin ? <AdminPanel data={admin} busy={busy} refresh={load} run={run} signOut={signOutAdmin} /> : null}
+      {section === 'login' && !isAuthenticated ? <View><Title>Iniciar sesión</Title><Text className="mb-4 mt-2 text-ui-text-muted dark:text-ui-dark-text-muted">Ingresá con tu correo y contraseña. Las cuentas autorizadas como administrador accederán automáticamente a las herramientas de moderación.</Text><Field value={adminEmail} onChangeText={setAdminEmail} placeholder="Correo electrónico" keyboardType="email-address" /><Field value={adminPassword} onChangeText={setAdminPassword} placeholder="Contraseña" secureTextEntry /><Button label={busy ? 'Ingresando...' : 'Iniciar sesión'} disabled={busy} onPress={() => void run(async () => { await signIn(adminEmail, adminPassword); setAdminPassword(''); })} /></View> : null}
+      {section === 'login' && isAuthenticated && !isAdmin ? <View><Title>Sesión iniciada</Title><Text className="mb-4 mt-2 text-ui-text-muted dark:text-ui-dark-text-muted">{session?.user.email}</Text><Button label="Cerrar sesión" outline onPress={() => void signOut()} /></View> : null}
+      {section === 'login' && isAdmin ? <AdminPanel data={admin} busy={busy} refresh={load} run={run} signOut={signOut} /> : null}
     </View>
   </ScrollView>;
 }

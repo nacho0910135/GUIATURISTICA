@@ -7,7 +7,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { MapCanvas } from '@/components/explore/map-canvas';
-import { getVerifiedSanctuaries } from '@/lib/fauna';
 import { openNavigation } from '@/lib/logistics';
 import { getExplorePlaces, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
@@ -45,15 +44,12 @@ export default function ExploreScreen() {
   const { reset: resetToken } = useLocalSearchParams<{ reset?: string }>();
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
-  const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number }>();
   const [proposalOpen, setProposalOpen] = useState(false);
   const wide = width >= 900;
   const places = useQuery({ queryKey: ['explore-places'], queryFn: getExplorePlaces, staleTime: 10 * 60 * 1000 });
-  const sanctuaries = useQuery({ queryKey: ['verified-sanctuaries'], queryFn: getVerifiedSanctuaries, staleTime: 30 * 60 * 1000 });
   const resetExplore = useCallback(() => {
-    setCategory('');
     setSearch('');
     setCoordinates(undefined);
     setProposalOpen(false);
@@ -62,12 +58,12 @@ export default function ExploreScreen() {
   useFocusEffect(useCallback(() => {
     if (Platform.OS !== 'android') return undefined;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (!category && !coordinates && !proposalOpen && !search) return false;
+      if (!coordinates && !proposalOpen && !search) return false;
       resetExplore();
       return true;
     });
     return () => subscription.remove();
-  }, [category, coordinates, proposalOpen, resetExplore, search]));
+  }, [coordinates, proposalOpen, resetExplore, search]));
   const visiblePlaces = useMemo(() => {
     const term = search.trim().toLocaleLowerCase(language === 'es' ? 'es' : 'en');
     const filtered = term ? (places.data ?? []).filter((place) => `${place.name} ${place.province} ${place.category} ${place.description ?? ''}`.toLocaleLowerCase().includes(term)) : coordinates ? [...(places.data ?? [])] : [];
@@ -77,6 +73,12 @@ export default function ExploreScreen() {
   const discover = async () => {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (!permission.granted) return Alert.alert('Descubriendo CR', language === 'es' ? 'Necesitamos tu ubicación para ordenar los sitios cercanos.' : 'Location permission is required to sort nearby places.');
+    const cachedPosition = await Location.getLastKnownPositionAsync({ maxAge: 10 * 60 * 1000, requiredAccuracy: 5000 });
+    if (cachedPosition) {
+      setCoordinates(cachedPosition.coords);
+      void Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then((position) => setCoordinates(position.coords)).catch(() => undefined);
+      return;
+    }
     const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     setCoordinates(position.coords);
   };
@@ -103,7 +105,7 @@ export default function ExploreScreen() {
         <MapCanvas />
       </View>
 
-      <View className="-mt-10 w-full rounded-t-[30px] bg-ui-background pb-2 pt-6 dark:bg-ui-dark-background" style={{ maxWidth: 1180 }}>
+      <View className="-mt-16 w-full rounded-t-[30px] bg-ui-background pb-2 pt-6 dark:bg-ui-dark-background" style={{ maxWidth: 1180 }}>
         <View className="flex-row items-center justify-between px-5">
           <Text className="text-[17px] font-black tracking-tight text-ui-text dark:text-ui-dark-text">{t('today')}</Text>
           <Pressable accessibilityRole="button" className="flex-row items-center rounded-xl bg-ui-primary px-3 py-2 dark:bg-ui-dark-primary" hitSlop={8} onPress={() => { if (requireAuth(language === 'es' ? 'Publicar un nuevo lugar' : 'Publish a new place')) setProposalOpen(true); }}>
@@ -114,25 +116,20 @@ export default function ExploreScreen() {
 
         <View className="mt-4 flex-row flex-wrap px-3">
           {activities.map((activity) => {
-            const selected = activity.category === category;
             const matchingPlaces = (places.data ?? []).filter((place) => matchesActivityCategory(place.category, activity.category));
-            const count = activity.category === 'Santuarios de animales'
-              ? (sanctuaries.data?.length ?? 0) + matchingPlaces.filter((place) => place.community).length
-              : matchingPlaces.length;
-            const countPending = places.isPending || (activity.category === 'Santuarios de animales' && sanctuaries.isPending);
+            const count = matchingPlaces.length;
+            const countPending = places.isPending;
             return (
               <Pressable
                 accessibilityLabel={`${activity.title[language]}, ${countPending ? (language === 'es' ? 'cargando cantidad' : 'loading count') : `${count} ${language === 'es' ? 'sitios' : 'places'}`}`}
                 accessibilityRole="button"
-                accessibilityState={{ selected }}
-                aria-pressed={selected}
                 className="items-center px-1 py-3"
                 key={activity.title.es}
-                onPress={() => activity.category === 'Santuarios de animales' ? setCategory(selected ? '' : activity.category) : router.push({ pathname: '/(aux)/province', params: { category: activity.category } })}
+                onPress={() => router.push({ pathname: '/(aux)/province', params: { category: activity.category } })}
                 style={{ width: '33.3333%' }}
               >
-                <View className="items-center justify-center rounded-full" style={{ backgroundColor: selected ? activity.color : `${activity.color}20`, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
-                  <MaterialCommunityIcons name={activity.icon} size={wide ? 34 : 27} color={selected ? 'white' : activity.color} />
+                <View className="items-center justify-center rounded-full" style={{ backgroundColor: `${activity.color}20`, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
+                  <MaterialCommunityIcons name={activity.icon} size={wide ? 34 : 27} color={activity.color} />
                   {activity.premium ? <View className="absolute -right-1 -top-1 h-6 w-6 items-center justify-center rounded-full bg-[#d69e2e]"><MaterialCommunityIcons name="crown" size={13} color="white" /></View> : null}
                   <View className="absolute -bottom-1 -right-1 h-6 min-w-6 items-center justify-center rounded-full border-2 border-ui-background px-1 dark:border-ui-dark-background" style={{ backgroundColor: activity.color }}>
                     <Text className="text-[10px] font-black text-white">{countPending ? '…' : count}</Text>
@@ -143,8 +140,6 @@ export default function ExploreScreen() {
             );
           })}
         </View>
-
-        {category === 'Santuarios de animales' ? <View className="mx-5 mt-5 gap-3">{sanctuaries.isPending ? <ActivityIndicator color="#0B6B4F" /> : sanctuaries.data?.map((sanctuary) => <View className="rounded-card border border-ui-border bg-ui-surface p-5 dark:border-ui-dark-border dark:bg-ui-dark-surface" key={sanctuary.id}><View className="flex-row items-center"><View className="flex-row items-center rounded-full bg-ui-primary px-3 py-2 dark:bg-ui-dark-primary"><MaterialCommunityIcons name="shield-check" size={18} color="white" /><Text className="ml-2 text-xs font-black text-white">{language === 'es' ? 'Verificado' : 'Verified'}</Text></View></View><Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">{sanctuary.name}</Text><Text className="mt-2 font-bold text-ui-primary dark:text-ui-dark-primary">{sanctuary.location_name} · {sanctuary.province}</Text><Text className="mt-3 leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? sanctuary.description_es : sanctuary.description_en}</Text></View>)}</View> : null}
 
         <Pressable
           accessibilityLabel={t('roadAlert')}

@@ -20,7 +20,7 @@ const reactions: { type: ReactionType; emoji: string; label: string }[] = [
 
 export default function FriendsScreen() {
   const router = useRouter();
-  const { language, requireAuth, session } = useApp();
+  const { avatarUrl, language, requireAuth, session } = useApp();
   const userId = session?.user.id;
   const [wall, setWall] = useState<Wall>();
   const [body, setBody] = useState('');
@@ -37,7 +37,7 @@ export default function FriendsScreen() {
 
   const load = useCallback(async () => {
     try { setError(undefined); setWall(await getTravelerWall(userId)); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo cargar Amigos Viajeros.'); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo cargar Comunidad Viajera.'); }
   }, [userId]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
@@ -45,7 +45,7 @@ export default function FriendsScreen() {
   const choosePhoto = async () => {
     if (!requireAuth(language === 'es' ? 'Compartir una foto' : 'Share a photo')) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return Alert.alert('Amigos Viajeros', language === 'es' ? 'Necesitamos permiso para elegir una foto.' : 'Photo permission is required.');
+    if (!permission.granted) return Alert.alert('Comunidad Viajera', language === 'es' ? 'Necesitamos permiso para elegir una foto.' : 'Photo permission is required.');
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.9 });
     if (!result.canceled) setAsset(result.assets[0]);
   };
@@ -80,7 +80,7 @@ export default function FriendsScreen() {
     if (!requireAuth(language === 'es' ? 'Responder una publicación' : 'Reply to a post') || !session || !reply.trim()) return;
     setBusy(true);
     try { await addTravelerReply(postId, session.user.id, reply, parentReplyId); setReply(''); setParentReplyId(undefined); await load(); }
-    catch (reason) { Alert.alert('Amigos Viajeros', reason instanceof Error ? reason.message : 'No se pudo responder.'); }
+    catch (reason) { Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo responder.'); }
     finally { setBusy(false); }
   };
 
@@ -90,7 +90,7 @@ export default function FriendsScreen() {
       await setTravelerReaction(postId, session.user.id, reaction, wall.myReactions[postId]);
       await load();
     } catch (reason) {
-      Alert.alert('Amigos Viajeros', reason instanceof Error ? reason.message : 'No se pudo actualizar el me gusta.');
+      Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo actualizar el me gusta.');
     }
   };
 
@@ -109,23 +109,23 @@ export default function FriendsScreen() {
       await toggleTravelerFollow(session.user.id, userId, wall.followedUserIds.has(userId));
       await load();
     } catch (reason) {
-      Alert.alert('Amigos Viajeros', reason instanceof Error ? reason.message : 'No se pudo actualizar el seguimiento.');
+      Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo actualizar el seguimiento.');
     }
   };
 
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
-      <View className="w-full border-b border-ui-border bg-ui-surface px-5 py-7 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+      <View className="w-full border-b border-ui-border bg-ui-surface px-5 py-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
         <View className="mx-auto w-full max-w-3xl flex-row items-center">
-          <View className="h-14 w-14 items-center justify-center rounded-2xl bg-caribbean-50 dark:bg-caribbean-900"><MaterialCommunityIcons name="account-group" size={30} color="#0077A8" /></View>
-          <View className="ml-4"><Text className="text-3xl font-extrabold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Amigos Viajeros' : 'Travel Friends'}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Experiencias, fotos y conversaciones de viaje.' : 'Travel experiences, photos and conversations.'}</Text></View>
+          <View className="h-11 w-11 items-center justify-center rounded-xl bg-caribbean-50 dark:bg-caribbean-900"><Text accessibilityLabel={language === 'es' ? 'Dos amigos' : 'Two friends'} className="text-2xl">🧑‍🤝‍🧑</Text></View>
+          <View className="ml-3 flex-1"><Text className="text-2xl font-extrabold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Comunidad Viajera' : 'Traveler Community'}</Text><Text className="text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Experiencias, fotos y conversaciones de viaje.' : 'Travel experiences, photos and conversations.'}</Text></View>
         </View>
       </View>
 
       <View className="w-full max-w-3xl px-4 pt-5">
         <View className="rounded-card border border-ui-border bg-ui-surface p-4 shadow-sm dark:border-ui-dark-border dark:bg-ui-dark-surface">
           <View className="flex-row items-center">
-            {session?.user.user_metadata.avatar_url ? <Image source={{ uri: session.user.user_metadata.avatar_url }} style={{ borderRadius: 25, height: 50, width: 50 }} /> : <View className="h-12 w-12 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="account" size={27} color="#0B6B4F" /></View>}
+            {avatarUrl ? <Image source={{ uri: avatarUrl }} style={{ borderRadius: 25, height: 50, width: 50 }} /> : <View className="h-12 w-12 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="account" size={27} color="#0B6B4F" /></View>}
             <TextInput
               className="ml-3 flex-1 rounded-control bg-ui-muted px-5 py-4 text-base text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text"
               maxLength={2000}
