@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, toggleTravelerFollow, type ReactionType, type TravelerPost } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
@@ -113,6 +113,11 @@ export default function FriendsScreen() {
     }
   };
 
+  const sharePost = async (post: TravelerPost) => {
+    const locationUrl = post.latitude != null && post.longitude != null ? `\nhttps://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}` : '';
+    await Share.share({ message: `${displayName(post)} · Comunidad Viajera\n${post.body || ''}${locationUrl}${post.image_url ? `\n${post.image_url}` : ''}`.trim(), url: post.image_url ?? undefined });
+  };
+
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
       <View className="w-full border-b border-ui-border bg-ui-surface px-5 py-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
@@ -152,6 +157,9 @@ export default function FriendsScreen() {
 
         {wall?.posts.map((post) => {
           const postReplies = wall.replies.filter((item) => item.post_id === post.id);
+          const postReactions = wall.reactionCounts[post.id] ?? {};
+          const reactionTotal = Object.values(postReactions).reduce((total, count) => total + count, 0);
+          const leadingReactions = reactions.filter(({ type }) => postReactions[type]).sort((a, b) => (postReactions[b.type] ?? 0) - (postReactions[a.type] ?? 0)).slice(0, 2);
           const own = post.user_id === session?.user.id;
           return <View className="mt-5 overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface" key={post.id}>
             <View className="p-5">
@@ -164,21 +172,25 @@ export default function FriendsScreen() {
             </View>
             {post.image_url ? <Image source={{ uri: post.image_url }} contentFit="cover" style={{ aspectRatio: 1.35, width: '100%' }} /> : null}
             {post.latitude != null && post.longitude != null ? <Pressable className="mx-5 mb-4 flex-row items-center rounded-control bg-ui-muted p-4 dark:bg-ui-dark-muted" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}`)}><MaterialCommunityIcons name="map-marker-radius" size={25} color="#0B6B4F" /><View className="ml-3 flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ver ubicación compartida' : 'View shared location'}</Text><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{post.latitude.toFixed(5)}, {post.longitude.toFixed(5)}</Text></View><MaterialCommunityIcons name="open-in-new" size={20} color="#0B6B4F" /></Pressable> : null}
-            <View className="border-t border-ui-border dark:border-ui-dark-border px-5 py-3">
-              <View className="relative self-start">
+            <View className="border-t border-ui-border px-5 py-3 dark:border-ui-dark-border">
+              <View className="mb-2 flex-row items-center justify-between"><View className="flex-row items-center">{leadingReactions.map((item, index) => <View className="h-6 w-6 items-center justify-center rounded-full border border-white bg-ui-muted dark:border-ui-dark-surface dark:bg-ui-dark-muted" key={item.type} style={{ marginLeft: index ? -5 : 0 }}><Text className="text-sm">{item.emoji}</Text></View>)}{reactionTotal ? <Text className="ml-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{reactionTotal.toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text> : null}</View><Pressable onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{postReplies.length} {language === 'es' ? (postReplies.length === 1 ? 'comentario' : 'comentarios') : (postReplies.length === 1 ? 'comment' : 'comments')}</Text></Pressable></View>
+              <View className="flex-row border-t border-ui-border pt-2 dark:border-ui-dark-border">
+              <View className="relative flex-1">
                 {reactionPickerPostId === post.id ? <View className="absolute bottom-12 left-0 z-10 flex-row rounded-full border border-ui-border bg-ui-surface p-1 shadow-lg dark:border-ui-dark-border dark:bg-ui-dark-surface">{reactions.map((item) => <Pressable accessibilityLabel={item.label} className="h-11 w-11 items-center justify-center rounded-full" key={item.type} onPress={() => { longPressedPostId.current = undefined; setReactionPickerPostId(undefined); void react(post.id, item.type); }}><Text className="text-2xl">{item.emoji}</Text></Pressable>)}</View> : null}
                 <Pressable
                   accessibilityHint={language === 'es' ? 'Mantené presionado para ver más reacciones' : 'Long press for more reactions'}
                   accessibilityLabel={language === 'es' ? 'Me gusta' : 'Like'}
-                  className={wall.myReactions[post.id] ? 'rounded-full bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft' : 'rounded-full bg-ui-muted px-3 py-2 dark:bg-ui-dark-muted'}
+                  className="flex-row items-center justify-center rounded-xl py-2"
                   delayLongPress={450}
                   onLongPress={() => { longPressedPostId.current = post.id; setReactionPickerPostId(post.id); }}
                   onPress={() => like(post.id)}
                 >
-                  <Text className="text-base">{reactions.find(({ type }) => type === wall.myReactions[post.id])?.emoji ?? '👍'} {wall.reactionCounts[post.id]?.[wall.myReactions[post.id] ?? 'like'] ?? 0}</Text>
+                  <Text className={wall.myReactions[post.id] ? 'font-black text-ui-primary dark:text-ui-dark-primary' : 'font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{reactions.find(({ type }) => type === wall.myReactions[post.id])?.emoji ?? '♡'} {language === 'es' ? 'Me gusta' : 'Like'}</Text>
                 </Pressable>
               </View>
-              <Pressable className="mt-3 flex-row items-center" onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><MaterialCommunityIcons name="comment-outline" size={23} color="#0B6B4F" /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? `Responder · ${postReplies.length}` : `Reply · ${postReplies.length}`}</Text></Pressable>
+              <Pressable className="flex-1 flex-row items-center justify-center rounded-xl py-2" onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><MaterialCommunityIcons name="comment-outline" size={21} color="#68737A" /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Comentar' : 'Comment'}</Text></Pressable>
+              <Pressable className="flex-1 flex-row items-center justify-center rounded-xl py-2" onPress={() => void sharePost(post)}><MaterialCommunityIcons name="share-outline" size={22} color="#68737A" /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Compartir' : 'Share'}</Text></Pressable>
+              </View>
             </View>
             {replying === post.id ? <View className="border-t border-ui-border bg-ui-background p-4 dark:border-ui-dark-border dark:bg-ui-dark-background">{postReplies.map((item) => <View className={item.parent_reply_id ? 'mb-3 ml-7 rounded-control border-l-4 border-ui-primary bg-ui-surface p-3 dark:border-ui-dark-primary dark:bg-ui-dark-surface' : 'mb-3 rounded-control bg-ui-surface p-3 dark:bg-ui-dark-surface'} key={item.id}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{item.user?.full_name || item.user?.username || `Viajero ${item.user_id.slice(0, 5)}`}</Text><Text className="mt-1 text-ui-text dark:text-ui-dark-text">{item.body}</Text><Pressable className="mt-2 self-start" onPress={() => { setParentReplyId(item.id); setReply(''); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Responder comentario' : 'Reply to comment'}</Text></Pressable></View>)}{parentReplyId ? <View className="mb-2 flex-row items-center"><Text className="flex-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Respondiendo a un comentario' : 'Replying to a comment'}</Text><Pressable onPress={() => setParentReplyId(undefined)}><Text className="font-black text-ui-danger dark:text-ui-dark-danger">×</Text></Pressable></View> : null}<View className="flex-row items-end"><TextInput className="mr-2 flex-1 rounded-control bg-ui-surface px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text" maxLength={1000} multiline onChangeText={setReply} placeholder={language === 'es' ? 'Escribí una respuesta…' : 'Write a reply…'} placeholderTextColor="#68737A" value={reply} /><Pressable className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary disabled:opacity-40 dark:bg-ui-dark-primary" disabled={busy || !reply.trim()} onPress={() => void respond(post.id)}><MaterialCommunityIcons name="send" size={20} color="white" /></Pressable></View></View> : null}
           </View>;
