@@ -1,6 +1,6 @@
 # Descubriendo CR
 
-Base móvil guest-first para descubrir Costa Rica desde Android e iOS con un solo repositorio. Usa Expo SDK 57, Expo Router, TypeScript, NativeWind, Reanimated, Mapbox y Supabase.
+Base móvil guest-first para descubrir Costa Rica desde Android e iOS con un solo repositorio. Usa Expo SDK 54, Expo Router, TypeScript, NativeWind, Reanimated, react-native-maps y Supabase.
 
 ## Ejecutar
 
@@ -11,7 +11,7 @@ npm start
 
 Luego abrí el proyecto en Expo Go, un development build o los simuladores con `npm run android` / `npm run ios`.
 
-Las funciones nativas de Mapbox, MMKV y AdMob requieren un development build; Expo Go solo sirve para revisar las superficies compatibles.
+El mapa y la caché con AsyncStorage funcionan en Expo Go. Los anuncios nativos están deshabilitados en esta variante.
 
 ## Rutas
 
@@ -32,7 +32,7 @@ Habilitá Google en Supabase Auth y agregá `descubriendocr://auth/callback` a l
 
 ## Mapas en builds de tienda
 
-El mapa principal usa Mapbox en Android/iOS y un único GeoJSON móvil con los 473 distritos. Los límites distritales usan línea estable de 2 px y los provinciales 3.5 px con halo, de modo que las divisiones siguen visibles durante el zoom. Mapbox requiere un development build; no funciona dentro de Expo Go.
+El mapa principal usa react-native-maps con teselas de OpenStreetMap en Android/iOS, sin credenciales nativas y compatible con Expo Go. La versión web conserva Mapbox GL.
 
 Los límites y centros de las siete provincias provienen de `CR_distritos_geojson` y se distribuyen bajo Apache-2.0 con los cambios descritos en `THIRD_PARTY_NOTICES.md`. Para regenerar el archivo móvil desde una copia de la fuente:
 
@@ -60,7 +60,7 @@ EXPO_PUBLIC_OPENWEATHER_API_KEY=tu_clave
 EXPO_PUBLIC_WORLDTIDES_API_KEY=tu_clave
 ```
 
-TanStack Query conserva clima por 30 minutos, mareas por 3 horas y persiste el caché durante 7 días mediante MMKV. Como MMKV contiene código nativo, Android/iOS requieren un development build (`npx expo run:android`, `npx expo run:ios` o EAS), no Expo Go.
+TanStack Query conserva clima por 30 minutos, mareas por 3 horas y persiste el caché durante 7 días mediante AsyncStorage.
 
 Verificá el RPC PostGIS y los destinos costeros con:
 

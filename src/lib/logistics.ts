@@ -142,12 +142,12 @@ export async function scheduleFerryReminder(route: FerryRoute, minutes = route.a
   return departure;
 }
 
-export function saveOfflinePack(destinations: Destination[]) {
-  offlineStorage.setItem('LOGISTICS_OFFLINE_PACK', JSON.stringify({ savedAt: new Date().toISOString(), destinations, emergencyContacts }));
+export async function saveOfflinePack(destinations: Destination[]) {
+  await offlineStorage.setItem('LOGISTICS_OFFLINE_PACK', JSON.stringify({ savedAt: new Date().toISOString(), destinations, emergencyContacts }));
 }
 
-export function getOfflinePack() {
-  const value = offlineStorage.getItem('LOGISTICS_OFFLINE_PACK');
+export async function getOfflinePack() {
+  const value = await offlineStorage.getItem('LOGISTICS_OFFLINE_PACK');
   if (!value) return null;
   try { return JSON.parse(value) as { savedAt: string; destinations: Destination[]; emergencyContacts: typeof emergencyContacts }; } catch { return null; }
 }

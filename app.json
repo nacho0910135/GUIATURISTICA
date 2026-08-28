@@ -40,7 +40,6 @@
     },
     "plugins": [
       "expo-router",
-      "@rnmapbox/maps",
       [
         "expo-splash-screen",
         {
@@ -74,8 +73,7 @@
         {
           "defaultChannel": "ferries"
         }
-      ],
-      "react-native-google-mobile-ads"
+      ]
     ],
     "runtimeVersion": {
       "policy": "appVersion"

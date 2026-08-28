@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import {
@@ -36,7 +36,9 @@ export default function LogisticsScreen() {
   const [maxBudget, setMaxBudget] = useState(15000);
   const [coordinates, setCoordinates] = useState({ latitude: 9.932, longitude: -84.08, label: 'San José' });
   const [subtotal, setSubtotal] = useState('10000');
-  const [offlinePack, setOfflinePack] = useState(getOfflinePack);
+  const [offlinePack, setOfflinePack] = useState<Awaited<ReturnType<typeof getOfflinePack>>>(null);
+
+  useEffect(() => { void getOfflinePack().then(setOfflinePack); }, []);
 
   const featured = useQuery({ queryKey: ['logistics', 'featured-destinations-v2'], queryFn: getFeaturedDestinations, staleTime: 24 * 60 * 60 * 1000 });
   const recommendation = useMutation({
@@ -52,12 +54,12 @@ export default function LogisticsScreen() {
     setCoordinates({ latitude: position.coords.latitude, longitude: position.coords.longitude, label: copy(language, 'Mi ubicación', 'My location') });
   };
 
-  const downloadOffline = () => {
+  const downloadOffline = async () => {
     const destinations = [...(featured.data ?? []), ...(recommendation.data ?? [])]
       .filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index);
     if (!destinations.length) return;
-    saveOfflinePack(destinations);
-    setOfflinePack(getOfflinePack());
+    await saveOfflinePack(destinations);
+    setOfflinePack(await getOfflinePack());
     Alert.alert('Offline', copy(language, 'Fichas, coordenadas y contactos guardados.', 'Profiles, coordinates, and contacts saved.'));
   };
 
@@ -72,7 +74,7 @@ export default function LogisticsScreen() {
         <View className="mt-5 flex-row items-center rounded-card border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
           <MaterialCommunityIcons name={offlinePack ? 'cloud-check-outline' : 'cloud-download-outline'} size={24} color="#79d7f4" />
           <Text className="ml-3 flex-1 text-sm font-semibold text-ui-text dark:text-ui-dark-text">{offlinePack ? copy(language, `Paquete offline · ${offlinePack.destinations.length} destinos`, `Offline pack · ${offlinePack.destinations.length} destinations`) : copy(language, 'Caché offline activo por 7 días', '7-day offline cache enabled')}</Text>
-          <Pressable accessibilityRole="button" onPress={downloadOffline}><Text className="font-black text-[#79d7f4]">{copy(language, 'Guardar', 'Save')}</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => void downloadOffline()}><Text className="font-black text-[#79d7f4]">{copy(language, 'Guardar', 'Save')}</Text></Pressable>
         </View>
       </View>
 
