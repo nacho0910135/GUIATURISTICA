@@ -1,6 +1,6 @@
 import { useQueries } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import MapView, { Marker, Polygon, type Region } from 'react-native-maps';
 
@@ -29,12 +29,12 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
   const router = useRouter();
   const wide = width >= 900;
   const selectionMode = Boolean(onLocationPick);
-  const mapRegion: Region = { ...initialRegion, latitudeDelta: wide ? 3.04 : 2.72, longitudeDelta: wide ? 3.04 : 2.72 };
+  const mapRegion = useMemo<Region>(() => ({ ...initialRegion, latitudeDelta: wide ? 3.04 : 2.72, longitudeDelta: wide ? 3.04 : 2.72 }), [wide]);
   const [region, setRegion] = useState<Region>(mapRegion);
   const [mapSize, setMapSize] = useState({ height: 0, width: 0 });
   useEffect(() => {
     setRegion(mapRegion);
-  }, [wide]);
+  }, [mapRegion]);
   const weather = useQueries({ queries: provinces.map((province) => ({
     queryKey: ['weather', 'province', province.code, language],
     queryFn: () => getWeather(province.center, language),

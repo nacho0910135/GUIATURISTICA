@@ -1,7 +1,7 @@
 export const copy = {
   es: {
     discover: '¿Qué querés descubrir?', today: 'Qué hacer hoy', seeAll: 'Ver todo', roadAlert: 'Alerta vial',
-    roadMessage: 'Precaución en ruta 27 por obras.', explore: 'Explorar', fauna: 'Fauna CR', commerce: 'Asistencia y Emergencias',
+    roadMessage: 'Precaución en ruta 27 por obras.', explore: 'Explorar', fauna: 'Fauna CR', commerce: 'Comercios y Servicios',
     logistics: 'Logística', profile: 'Perfil', save: 'Guardar', saved: 'Sitios guardados', signIn: 'Iniciar sesión',
     signUp: 'Crear cuenta', continueGoogle: 'Continuar con Google', email: 'Correo electrónico', password: 'Contraseña',
     close: 'Cerrar', authTitle: 'Tu aventura continúa aquí', authBody: 'Ingresá para guardar, comentar y compartir tus descubrimientos.',
@@ -9,7 +9,7 @@ export const copy = {
     profilePhotos: 'Mis fotos', business: 'Asistencia y emergencias', settings: 'Preferencias', signOut: 'Cerrar sesión',
     biodiversity: 'Biodiversidad que cobra vida', biodiversityBody: 'Descubrí especies y avistamientos de nuestra red colaborativa.',
     sightings: 'Mapa de avistamientos', album: 'Álbum colaborativo', report: 'Subir avistamiento', verified: 'Verificado ICT / CST',
-    commerceTitle: 'Ayuda cerca cuando la necesitás.', commerceBody: 'Hospitales, autoridades y servicios esenciales ordenados por cercanía.',
+    commerceTitle: 'Comercios cerca de tu ruta.', commerceBody: 'Comida, hospedaje, aventura y asistencia ordenados por cercanía.',
     logisticsTitle: 'Tu ruta, en un solo lugar', logisticsBody: 'Ferris, mareas, clima y carreteras con información útil para hoy.',
     ferries: 'Próximos ferris', tides: 'Mareas CIMAR', weather: 'Pronóstico', roads: 'Carreteras y Waze',
     loginInstead: '¿Ya tenés cuenta? Iniciar sesión', registerInstead: '¿Primera vez? Crear cuenta',
@@ -21,7 +21,7 @@ export const copy = {
   },
   en: {
     discover: 'What would you like to discover?', today: 'Things to do today', seeAll: 'See all', roadAlert: 'Road alert',
-    roadMessage: 'Use caution on Route 27 due to road works.', explore: 'Explore', fauna: 'CR Wildlife', commerce: 'Assistance & Emergencies',
+    roadMessage: 'Use caution on Route 27 due to road works.', explore: 'Explore', fauna: 'CR Wildlife', commerce: 'Businesses & Services',
     logistics: 'Logistics', profile: 'Profile', save: 'Save', saved: 'Saved places', signIn: 'Sign in', signUp: 'Create account',
     continueGoogle: 'Continue with Google', email: 'Email', password: 'Password', close: 'Close',
     authTitle: 'Your adventure continues here', authBody: 'Sign in to save, comment and share your discoveries.',
@@ -29,7 +29,7 @@ export const copy = {
     profilePhotos: 'My photos', business: 'Assistance and emergencies', settings: 'Preferences', signOut: 'Sign out',
     biodiversity: 'Biodiversity comes alive', biodiversityBody: 'Discover species and sightings from our collaborative network.',
     sightings: 'Sightings map', album: 'Collaborative album', report: 'Upload sighting', verified: 'ICT / CST verified',
-    commerceTitle: 'Nearby help when you need it.', commerceBody: 'Hospitals, authorities and essential services sorted by distance.',
+    commerceTitle: 'Businesses along your route.', commerceBody: 'Food, lodging, adventure and assistance sorted by distance.',
     logisticsTitle: 'Your route, all in one place', logisticsBody: 'Ferries, tides, weather and roads with useful information for today.',
     ferries: 'Next ferries', tides: 'CIMAR tides', weather: 'Forecast', roads: 'Roads and Waze',
     loginInstead: 'Already have an account? Sign in', registerInstead: 'New here? Create account',

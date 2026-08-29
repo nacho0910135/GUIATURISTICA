@@ -10,12 +10,18 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY.');
 }
 
+const isWeb = Platform.OS === 'web';
+const isWebServer = isWeb && typeof window === 'undefined';
+const storage = isWeb ? (isWebServer ? undefined : window.localStorage) : AsyncStorage;
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: AsyncStorage,
+    ...(storage ? { storage } : {}),
     autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: Platform.OS === 'web',
+    // Expo's web server has no window/localStorage. Persist once hydrated in
+    // the browser, while keeping SSR safe so the first screen can render.
+    persistSession: !isWebServer,
+    detectSessionInUrl: isWeb,
   },
 });
 

@@ -18,7 +18,24 @@ export type Destination = {
   cover_image_url: string | null;
   price_national_crc: number;
   difficulty: string | null;
+  description: string | null;
+  schedule: string | null;
+  closed_day: string | null;
+  requires_sinac_booking: boolean;
+  sinac_booking_url: string | null;
   dist_meters?: number;
+};
+
+export type PlannerPreference = 'Todo' | 'Playa' | 'Naturaleza' | 'Cultura' | 'Comida' | 'Aventura';
+export type DayPlan = {
+  destination: Destination;
+  weather: Weather | null;
+  travelMinutes: number;
+  visitMinutes: number;
+  estimatedTotalCrc: number;
+  warnings: string[];
+  nearbyService: { id: string; title: string; distanceKm: number; phone: string | null; latitude: number; longitude: number; verifiedAt: string | null } | null;
+  createdAt: string;
 };
 
 export type Weather = { temperature: number; temperatureUnit: 'C' | 'F'; description: string; icon: string; humidity: number };
@@ -60,7 +77,7 @@ export const emergencyContacts = [
   { label: 'OIJ · línea confidencial', phone: '8008000645' },
 ] as const;
 
-const destinationFields = 'id,name,province,category,latitude,longitude,has_high_tides_risk,cover_image_url,price_national_crc,difficulty';
+const destinationFields = 'id,name,province,category,latitude,longitude,has_high_tides_risk,cover_image_url,price_national_crc,difficulty,description,requires_sinac_booking,sinac_booking_url,normativas_destinos(horario_ingreso,dia_cierre)';
 
 export async function getFeaturedDestinations(): Promise<Destination[]> {
   const names = ['Parque Nacional Marino Ballena', 'Parque Nacional Manuel Antonio', 'Parque Nacional Marino Las Baulas (Playa Grande)'];
@@ -149,22 +166,85 @@ export function getDestinationAlert(weather: Weather | undefined, tide: Tide | u
   return { level: severeWeather ? 'warning' : 'info', title: severeWeather ? (language === 'es' ? 'Condiciones adversas' : 'Adverse conditions') : (language === 'es' ? 'Condiciones actuales' : 'Current conditions'), detail: `${weather.temperature}°${weather.temperatureUnit} · ${weather.description} · ${language === 'es' ? 'humedad' : 'humidity'} ${weather.humidity}%` };
 }
 
-export async function recommendDestinations(input: { latitude: number; longitude: number; hours: number; category: string; maxBudget: number }) {
-  const radius = input.hours <= 4 ? 50000 : input.hours <= 8 ? 120000 : 250000;
+export async function recommendDestinations(input: { latitude: number; longitude: number; hours: number; category: PlannerPreference; maxBudget: number; children: boolean; seniors: boolean; reducedMobility: boolean; hasVehicle: boolean; language: 'es' | 'en' }): Promise<DayPlan | null> {
+  const broadRadius = input.hours <= 4 ? 50000 : input.hours <= 8 ? 120000 : 250000;
+  const radius = Math.min(broadRadius, input.hours * (input.hasVehicle ? 12000 : 4000));
   const { data: nearby, error } = await supabase.rpc('get_destinations_nearby', {
     user_lat: input.latitude, user_lng: input.longitude, distance_meters: radius,
   });
   if (error) throw error;
   const rows = (nearby ?? []) as { id: string; dist_meters: number }[];
-  if (!rows.length) return [];
+  if (!rows.length) return null;
   const { data: details, error: detailsError } = await supabase.from('destinations').select(destinationFields).in('id', rows.map((item) => item.id));
   if (detailsError) throw detailsError;
   const distanceById = new Map(rows.map((item) => [item.id, item.dist_meters]));
   const candidates = (details ?? []).map(normalizeDestination).map((item) => ({ ...item, dist_meters: distanceById.get(item.id) ?? 0 }))
     .filter((item) => item.price_national_crc <= input.maxBudget)
-    .sort((a, b) => (a.dist_meters ?? 0) - (b.dist_meters ?? 0));
-  const preferred = input.category === 'Todo' ? candidates : candidates.filter((item) => item.category.toLowerCase().includes(input.category.toLowerCase()));
-  return (preferred.length ? preferred : candidates).slice(0, Math.min(4, Math.max(1, Math.floor(input.hours / 2))));
+    .filter((item) => !input.reducedMobility || /fácil|facil/i.test(item.difficulty ?? ''))
+    .sort((a, b) => scoreDestination(b, input) - scoreDestination(a, input));
+  const destination = candidates[0];
+  if (!destination) return null;
+  const [weather, nearbyService, travelMinutes] = await Promise.all([
+    getWeather(destination, input.language).catch(() => null),
+    getNearbyFoodService(destination).catch(() => null),
+    getTravelMinutes(input, destination),
+  ]);
+  const visitMinutes = Math.max(60, input.hours * 60 - travelMinutes * 2 - 60);
+  const warnings: string[] = [];
+  if (destination.has_high_tides_risk) warnings.push(input.language === 'es' ? 'Revisá la marea antes de entrar.' : 'Check the tide before entering.');
+  if (!input.hasVehicle && (destination.dist_meters ?? 0) > 20000) warnings.push(input.language === 'es' ? 'Confirmá transporte de regreso antes de salir.' : 'Confirm return transportation before leaving.');
+  if (input.children || input.seniors || input.reducedMobility) warnings.push(input.language === 'es' ? 'Confirmá accesibilidad, baños y condiciones del sendero con el operador.' : 'Confirm accessibility, restrooms and trail conditions with the operator.');
+  if (destination.closed_day) warnings.push(`${input.language === 'es' ? 'Cierre indicado' : 'Listed closure'}: ${destination.closed_day}.`);
+  return { destination, weather, travelMinutes, visitMinutes, estimatedTotalCrc: destination.price_national_crc, warnings, nearbyService, createdAt: new Date().toISOString() };
+}
+
+function scoreDestination(destination: Destination, input: { category: PlannerPreference; children: boolean; seniors: boolean; reducedMobility: boolean; hasVehicle: boolean }) {
+  const categoryTerms: Record<PlannerPreference, RegExp> = {
+    Todo: /./i, Playa: /playa|costa|mar/i, Naturaleza: /parque|reserva|bosque|río|rio|catarata|fauna/i,
+    Cultura: /cultura|museo|históric|histor|arqueolog/i, Comida: /gastronom|comida|café|cafe|mercado/i,
+    Aventura: /aventura|surf|canopy|rafting|sender|volcán|volcan/i,
+  };
+  let score = categoryTerms[input.category].test(destination.category) ? 100 : input.category === 'Todo' ? 20 : 0;
+  score -= (destination.dist_meters ?? 0) / 1000;
+  if ((input.children || input.seniors || input.reducedMobility) && /fácil|facil/i.test(destination.difficulty ?? '')) score += 30;
+  if (!input.hasVehicle && (destination.dist_meters ?? 0) < 20000) score += 25;
+  return score;
+}
+
+async function getNearbyFoodService(destination: Destination): Promise<DayPlan['nearbyService']> {
+  const { data, error } = await supabase.from('commercial_services')
+    .select('id,title,phone_whatsapp,location,main_category,subcategory,business_verified_at')
+    .or('main_category.ilike.%rest%,subcategory.ilike.%rest%,main_category.ilike.%comida%,subcategory.ilike.%comida%,main_category.ilike.%cafe%,subcategory.ilike.%cafe%')
+    .limit(100);
+  if (error) throw error;
+  const services = (data ?? []).flatMap((service) => {
+    const coordinates = (service.location as { coordinates?: [number, number] } | null)?.coordinates;
+    if (!coordinates) return [];
+    const [longitude, latitude] = coordinates;
+    return [{ id: service.id, title: service.title, phone: service.phone_whatsapp, latitude, longitude, verifiedAt: service.business_verified_at, distanceKm: distanceKm(destination, { latitude, longitude }) }];
+  }).sort((a, b) => a.distanceKm - b.distanceKm);
+  return services[0] ?? null;
+}
+
+async function getTravelMinutes(origin: { latitude: number; longitude: number; hasVehicle: boolean }, destination: Destination) {
+  const fallback = Math.max(10, Math.round((destination.dist_meters ?? 0) / 1000 / (origin.hasVehicle ? 45 : 18) * 60));
+  const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
+  if (!token) return fallback;
+  const profile = origin.hasVehicle ? 'driving-traffic' : 'walking';
+  const coordinates = `${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}`;
+  try {
+    const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinates}?access_token=${encodeURIComponent(token)}&overview=false`);
+    if (!response.ok) return fallback;
+    const body = await response.json() as { code?: string; routes?: { duration?: number }[] };
+    return body.code === 'Ok' && body.routes?.[0]?.duration ? Math.max(1, Math.round(body.routes[0].duration / 60)) : fallback;
+  } catch { return fallback; }
+}
+
+function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }) {
+  const radians = (degrees: number) => degrees * Math.PI / 180;
+  const lat = radians(to.latitude - from.latitude); const lng = radians(to.longitude - from.longitude);
+  const value = Math.sin(lat / 2) ** 2 + Math.cos(radians(from.latitude)) * Math.cos(radians(to.latitude)) * Math.sin(lng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 }
 
 export async function openNavigation(latitude: number, longitude: number) {
@@ -198,14 +278,14 @@ export async function scheduleFerryReminder(route: FerryRoute, minutes = route.a
   return departure;
 }
 
-export async function saveOfflinePack(destinations: Destination[]) {
-  await offlineStorage.setItem('LOGISTICS_OFFLINE_PACK', JSON.stringify({ savedAt: new Date().toISOString(), destinations, emergencyContacts }));
+export async function saveOfflinePack(destinations: Destination[], dayPlan?: DayPlan | null) {
+  await offlineStorage.setItem('LOGISTICS_OFFLINE_PACK', JSON.stringify({ savedAt: new Date().toISOString(), destinations, emergencyContacts, dayPlan: dayPlan ?? null }));
 }
 
 export async function getOfflinePack() {
   const value = await offlineStorage.getItem('LOGISTICS_OFFLINE_PACK');
   if (!value) return null;
-  try { return JSON.parse(value) as { savedAt: string; destinations: Destination[]; emergencyContacts: typeof emergencyContacts }; } catch { return null; }
+  try { return JSON.parse(value) as { savedAt: string; destinations: Destination[]; emergencyContacts: typeof emergencyContacts; dayPlan?: DayPlan | null }; } catch { return null; }
 }
 
 export function calculateCostaRicaTotal(subtotal: number) {
@@ -213,9 +293,12 @@ export function calculateCostaRicaTotal(subtotal: number) {
 }
 
 function normalizeDestination(row: Record<string, unknown>): Destination {
+  const rulesValue = row.normativas_destinos;
+  const rules = (Array.isArray(rulesValue) ? rulesValue[0] : rulesValue) as { horario_ingreso?: string | null; dia_cierre?: string | null } | null;
   return {
     ...(row as Omit<Destination, 'price_national_crc'>),
     latitude: Number(row.latitude), longitude: Number(row.longitude), price_national_crc: Number(row.price_national_crc ?? 0),
+    schedule: rules?.horario_ingreso ?? null, closed_day: rules?.dia_cierre ?? null,
   };
 }
 

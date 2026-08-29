@@ -7,6 +7,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
+import { InformationReportModal } from '@/components/information-report-modal';
 import { ferryRoutes, getDestinationAlert, getTides, getWeather, openNavigation, TIDES_STALE_TIME, WEATHER_STALE_TIME } from '@/lib/logistics';
 import { addDestinationPhoto, addDestinationReview, getDestinationReviews, getPlacesForCategory, getPlacesForProvince, type MapPlace, type ValidationAuthority, toggleDestinationLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
@@ -183,12 +184,14 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
   const { width } = useWindowDimensions();
   const [sending, setSending] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const reviews = useQuery({ queryKey: ['destination-reviews', place?.id], queryFn: () => getDestinationReviews(place!.id), enabled: Boolean(place && commentsOpen) });
   const weather = useQuery({ queryKey: ['weather', 'destination', place?.id, language], queryFn: () => getWeather(place!, language), enabled: Boolean(place), staleTime: WEATHER_STALE_TIME });
   const tides = useQuery({ queryKey: ['tides', place?.latitude.toFixed(3), place?.longitude.toFixed(3)], queryFn: () => getTides(place!), enabled: Boolean(place?.has_high_tides_risk), staleTime: TIDES_STALE_TIME });
   if (!place) return null;
   const destinationAlert = getDestinationAlert(weather.data, tides.data, language, place.has_high_tides_risk);
   const ferry = needsPaqueraFerry(place) ? ferryRoutes[0] : undefined;
+  const documentedSource = Boolean(place.validated_by.length && place.verification_evidence_url && place.verification_checked_at);
   const visitPrice = visitorType === 'tico' ? (place.price_national_crc == null ? 'Consultar' : place.price_national_crc === 0 ? 'Gratis' : formatPrice(place.price_national_crc)) : (place.price_foreigner_usd == null ? 'Check price' : place.price_foreigner_usd === 0 ? 'Free' : `$${place.price_foreigner_usd.toFixed(2)}`);
 
   const pickPhoto = async () => {
@@ -246,11 +249,14 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
                 <InfoRow icon="clock-outline" label={language === 'es' ? 'Horario' : 'Hours'} value={place.schedule === 'Todo el día' && language === 'en' ? 'All day' : place.schedule || (language === 'es' ? 'Consultar fuente oficial' : 'Check official source')} />
                 <InfoRow icon="calendar-remove-outline" label={language === 'es' ? 'Cierre' : 'Closed'} value={place.closed_day || (language === 'es' ? 'Sin dato verificado' : 'No verified data')} />
                 <InfoRow icon="cash-multiple" label={language === 'es' ? 'Tu tarifa' : 'Your price'} value={visitPrice} />
+                {place.requires_sinac_booking ? <InfoRow icon="ticket-confirmation-outline" label={language === 'es' ? 'Reserva oficial SINAC' : 'Official SINAC reservation'} value={language === 'es' ? 'Este parque requiere reserva. Prepará fecha, cantidad de visitantes y medio de pago en el sitio oficial.' : 'This park requires a reservation. Have your date, visitor count and payment method ready on the official site.'} /> : null}
                 {place.notes ? <InfoRow icon="information-outline" label={language === 'es' ? 'Importante' : 'Important'} value={place.notes} /> : null}
                 <View className="mt-5 flex-row flex-wrap gap-3 border-t border-ui-border dark:border-ui-dark-border pt-5">
                   <Pressable className="flex-row items-center rounded-2xl bg-ui-secondary dark:bg-ui-dark-secondary px-5 py-3" onPress={() => void openNavigation(place.latitude, place.longitude)}><MaterialCommunityIcons name="waze" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Ir con Waze' : 'Open in Waze'}</Text></Pressable>
-                  {place.requires_sinac_booking && place.sinac_booking_url ? <Pressable className="flex-row items-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" onPress={() => void Linking.openURL(place.sinac_booking_url!)}><MaterialCommunityIcons name="ticket-confirmation-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Reservar en SINAC' : 'Book with SINAC'}</Text></Pressable> : null}
-                  {place.source_url ? <Pressable className="flex-row items-center rounded-2xl border border-ui-border dark:border-white/20 px-5 py-3" onPress={() => void Linking.openURL(place.source_url!)}><MaterialCommunityIcons name="link-variant" size={21} color="#00e5a7" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Consultar fuente' : 'View source'}</Text></Pressable> : null}
+                  {place.requires_sinac_booking && place.sinac_booking_url ? <Pressable className="flex-row items-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" onPress={() => void Linking.openURL(place.sinac_booking_url!)}><MaterialCommunityIcons name="ticket-confirmation-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Abrir reserva oficial SINAC' : 'Open official SINAC reservation'}</Text></Pressable> : null}
+                  {place.source_url ? <Pressable className="flex-row items-center rounded-2xl border border-ui-border dark:border-white/20 px-5 py-3" onPress={() => void Linking.openURL(place.source_url!)}><MaterialCommunityIcons name="link-variant" size={21} color="#00e5a7" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{documentedSource ? (language === 'es' ? 'Consultar fuente oficial' : 'View official source') : (language === 'es' ? 'Consultar fuente registrada' : 'View registered source')}</Text></Pressable> : null}
+                  {place.requires_sinac_booking ? <Text className="w-full text-xs font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Descubriendo CR enlaza a SINAC; no vende entradas ni cobra comisión.' : 'Descubriendo CR links to SINAC; it does not sell tickets or charge a commission.'}</Text> : null}
+                  <Pressable className="flex-row items-center rounded-2xl border border-coral-500/40 px-5 py-3" onPress={() => setReportOpen(true)}><MaterialCommunityIcons name="flag-outline" size={21} color="#B42318" /><Text className="ml-2 font-black text-coral-600">{language === 'es' ? 'Reportar información incorrecta' : 'Report incorrect information'}</Text></Pressable>
                 </View>
               </View>
               {ferry ? <View className="rounded-3xl border border-[#00b981]/50 bg-ui-primary-soft dark:bg-ui-dark-primary-soft p-5"><View className="flex-row items-center"><MaterialCommunityIcons name="ferry" size={30} color="#00a77c" /><View className="ml-3"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ferri recomendado' : 'Recommended ferry'}</Text><Text className="text-ui-secondary dark:text-ui-dark-secondary">{ferry.route} · {ferry.operator}</Text></View></View><Text className="mt-4 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Adulto' : 'Adult'} {formatPrice(ferry.adultFare)} · {language === 'es' ? 'Vehículo' : 'Vehicle'} {formatPrice(ferry.vehicleFare)} + {language === 'es' ? 'IVA' : 'VAT'}</Text><Text className="mt-2 leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Salidas' : 'Departures'}: {ferry.departures.join(' · ')}</Text><Pressable className="mt-4 self-start rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" onPress={() => void Linking.openURL(ferry.ticketUrl)}><Text className="font-black text-white">{language === 'es' ? 'Ver horarios y comprar' : 'View schedule and buy'}</Text></Pressable></View> : null}
@@ -268,6 +274,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
           <Pressable accessibilityLabel={language === 'es' ? 'Cerrar fotografías' : 'Close photos'} className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/65" onPress={() => setSelectedPhotoIndex(null)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
         </View>
       </Modal>
+      <InformationReportModal open={reportOpen} targetType="destination" targetId={place.id} targetLabel={place.name} language={language} onClose={() => setReportOpen(false)} />
     </>
   );
 }

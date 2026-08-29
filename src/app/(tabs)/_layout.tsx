@@ -60,7 +60,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="catalog" options={{ headerShown: false, href: null }} />
       <Tabs.Screen name="fauna" options={{ title: t('fauna'), tabBarIcon: icon('paw-outline') }} />
       <Tabs.Screen name="friends" options={{ title: t('communityTitle').split(' Descubriendo')[0], tabBarIcon: friendsIcon, tabBarActiveTintColor: colors.secondary, tabBarLabelStyle: { fontSize: 11, fontWeight: '800' } }} />
-      <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('hospital-box-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />
+      <Tabs.Screen
+        listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/commerce', params: { reset: String(Date.now()) } }); } }}
+        name="commerce"
+        options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }}
+      />
       <Tabs.Screen name="logistics" options={{ title: t('logistics'), tabBarIcon: icon('truck-outline') }} />
       <Tabs.Screen name="profile" options={{ title: t('profile'), tabBarIcon: ({ color }) => avatarUrl ? <Image source={{ uri: avatarUrl }} style={{ borderColor: color as string, borderRadius: 15, borderWidth: 2, height: 30, width: 30 }} /> : <MaterialCommunityIcons name="account-circle-outline" color={color} size={24} /> }} />
     </Tabs>

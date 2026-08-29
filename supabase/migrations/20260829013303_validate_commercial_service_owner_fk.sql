@@ -1,0 +1,2 @@
+alter table public.commercial_services
+  validate constraint commercial_services_owner_auth_users_fkey;

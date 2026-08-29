@@ -2,6 +2,9 @@ import { supabase } from '@/lib/supabase';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
+import { getAdminCommercialClaims } from '@/lib/commerce';
+import { getInformationReportsForAdmin } from '@/lib/reports';
+
 export async function getSocialProfile(userId: string) {
   const [profile, followers, following, posts, sightings, saved, notifications, messages] = await Promise.all([
     supabase.from('users').select('id,username,full_name,avatar_url,bio,contact_email').eq('id', userId).single(),
@@ -50,11 +53,13 @@ export async function sendCreatorSuggestion(userId: string, message: string) {
 }
 
 export async function getAdminDashboard() {
-  const [suggestions, destinations, photos, posts] = await Promise.all([
+  const [suggestions, destinations, photos, posts, reports, commercialClaims] = await Promise.all([
     supabase.from('creator_suggestions').select('*,user:users(username,full_name)').order('created_at', { ascending: false }).limit(50),
     supabase.from('destinations').select('id,name,province').order('name'),
     supabase.from('destination_photos').select('*').order('sort_order'),
     supabase.from('traveler_posts').select('id,body,created_at,user:users!traveler_posts_user_id_fkey(username,full_name)').order('created_at', { ascending: false }).limit(50),
+    getInformationReportsForAdmin(),
+    getAdminCommercialClaims(),
   ]);
   const error = suggestions.error ?? destinations.error ?? photos.error ?? posts.error;
   if (error) throw error;
@@ -62,7 +67,7 @@ export async function getAdminDashboard() {
   return {
     suggestions: (suggestions.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })),
     destinations: destinations.data ?? [], photos: photos.data ?? [],
-    posts: (posts.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })),
+    posts: (posts.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })), reports, commercialClaims,
   };
 }
 

@@ -57,7 +57,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Descubriendo CR accede a tus fotos para compartir avistamientos de fauna.",
+          "photosPermission": "Descubriendo CR accede a tus fotos para compartir imágenes de fauna, destinos y comercios.",
           "cameraPermission": "Descubriendo CR usa la cámara para fotografiar fauna de forma responsable.",
           "microphonePermission": false
         }
