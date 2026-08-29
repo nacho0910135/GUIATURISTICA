@@ -162,7 +162,7 @@ export default function ExploreScreen() {
           })}
         </View>
 
-        <View className="mt-6 flex-row items-center px-7"><View className="h-9 w-9 items-center justify-center rounded-xl bg-caribbean-500/15"><MaterialCommunityIcons name="weather-partly-cloudy" size={21} color="#0077A8" /></View><Text className="ml-3 flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Clima y mareas por destino' : 'Weather and tides by destination'}</Text></View>
+        <View className="mt-6 flex-row items-center px-7"><View className="h-9 w-9 items-center justify-center rounded-xl bg-caribbean-500/15"><MaterialCommunityIcons name="alert-outline" size={21} color="#0077A8" /></View><Text className="ml-3 flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Alertas de mareas actuales' : 'Current tide alerts'}</Text></View>
         {featuredWeather.isPending ? <ActivityIndicator className="mt-6" color="#159ed1" /> : null}
         {featuredWeather.isError ? <Text className="mx-7 mt-4 font-bold text-coral-600">{language === 'es' ? 'No se pudo cargar el clima.' : 'Weather could not be loaded.'}</Text> : null}
         <View className="mt-3 gap-2 px-7">

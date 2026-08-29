@@ -43,6 +43,7 @@ export type FaunaPhoto = {
   caption: string | null;
   likes_count: number;
   created_at: string;
+  photographer?: FaunaProfile | null;
 };
 
 export type FaunaComment = {
@@ -51,6 +52,14 @@ export type FaunaComment = {
   user_id: string;
   body: string;
   created_at: string;
+  author?: FaunaProfile | null;
+};
+
+export type FaunaProfile = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
 };
 
 const vulnerabilityLabels: Record<string, string> = {
@@ -119,9 +128,26 @@ export async function addFaunaSpecies(input: { commonName: string; scientificNam
 }
 
 export async function getFaunaPhotos(speciesId: string) {
-  const { data, error } = await supabase.from('fauna_photos').select('*').eq('fauna_id', speciesId).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('fauna_photos').select('*,photographer:users!fauna_photos_user_id_fkey(id,username,full_name,avatar_url)').eq('fauna_id', speciesId).order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []) as FaunaPhoto[];
+  return (data ?? []).map((row) => ({ ...row, photographer: Array.isArray(row.photographer) ? row.photographer[0] ?? null : row.photographer })) as FaunaPhoto[];
+}
+
+export async function getFaunaPhotoLikeIds(photoIds: string[], userId: string) {
+  if (!photoIds.length) return new Set<string>();
+  const { data, error } = await supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'fauna_photo').in('target_id', photoIds);
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.target_id as string));
+}
+
+export async function getFaunaPhotoComments(photoId: string) {
+  const { data, error } = await supabase
+    .from('fauna_comments')
+    .select('id,photo_id,user_id,body,created_at,author:users!fauna_comments_user_id_fkey(id,username,full_name,avatar_url)')
+    .eq('photo_id', photoId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({ ...row, author: Array.isArray(row.author) ? row.author[0] ?? null : row.author })) as FaunaComment[];
 }
 
 export async function getSightingCount(speciesId: string, userId: string) {
@@ -157,7 +183,9 @@ export async function toggleFaunaFollow(userId: string, photographerId: string, 
 }
 
 export async function addFaunaComment(photoId: string, userId: string, body: string) {
-  const { error } = await supabase.from('fauna_comments').insert({ photo_id: photoId, user_id: userId, body: body.trim() });
+  const text = body.trim();
+  if (!text) throw new Error('El comentario no puede estar vacío.');
+  const { error } = await supabase.from('fauna_comments').insert({ photo_id: photoId, user_id: userId, body: text });
   if (error) throw error;
 }
 

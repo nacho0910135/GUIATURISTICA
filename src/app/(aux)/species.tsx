@@ -3,10 +3,10 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { ThemedNotice } from '@/components/themed-notice';
-import { getFaunaPhotos, getFaunaSpecies, getVulnerabilityLabel, type FaunaPhoto, type FaunaSpecies, uploadFaunaPhoto } from '@/lib/fauna';
+import { addFaunaComment, getFaunaPhotoComments, getFaunaPhotoLikeIds, getFaunaPhotos, getFaunaSpecies, getVulnerabilityLabel, toggleFaunaPhotoLike, type FaunaComment, type FaunaPhoto, type FaunaSpecies, uploadFaunaPhoto } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
 
 export default function SpeciesScreen() {
@@ -21,6 +21,11 @@ export default function SpeciesScreen() {
   const [error, setError] = useState<string>();
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>();
   const [photoPublished, setPhotoPublished] = useState(false);
+  const [likedPhotoIds, setLikedPhotoIds] = useState<Set<string>>(new Set());
+  const [comments, setComments] = useState<Record<string, FaunaComment[]>>({});
+  const [expandedPhotoId, setExpandedPhotoId] = useState<string>();
+  const [commentDraft, setCommentDraft] = useState('');
+  const [socialBusy, setSocialBusy] = useState<string>();
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +42,51 @@ export default function SpeciesScreen() {
     });
     return () => { active = false; };
   }, [id]);
+
+  useEffect(() => {
+    if (!session || !photos.length) {
+      setLikedPhotoIds(new Set());
+      return;
+    }
+    let active = true;
+    getFaunaPhotoLikeIds(photos.map((photo) => photo.id), session.user.id).then((liked) => { if (active) setLikedPhotoIds(liked); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [photos, session]);
+
+  const toggleLike = async (photo: FaunaPhoto) => {
+    if (!requireAuth(language === 'es' ? 'Dar me gusta a una foto de fauna' : 'Like a wildlife photo') || !session) return;
+    const liked = likedPhotoIds.has(photo.id);
+    setSocialBusy(`${photo.id}:like`);
+    try {
+      await toggleFaunaPhotoLike(photo.id, session.user.id, liked);
+      setLikedPhotoIds((current) => { const next = new Set(current); if (liked) next.delete(photo.id); else next.add(photo.id); return next; });
+      setPhotos((current) => current.map((item) => item.id === photo.id ? { ...item, likes_count: Math.max(0, item.likes_count + (liked ? -1 : 1)) } : item));
+    } catch (reason) {
+      Alert.alert('Fauna CR', reason instanceof Error ? reason.message : 'No se pudo actualizar el me gusta.');
+    } finally { setSocialBusy(undefined); }
+  };
+
+  const toggleComments = async (photoId: string) => {
+    if (expandedPhotoId === photoId) { setExpandedPhotoId(undefined); return; }
+    setExpandedPhotoId(photoId);
+    if (comments[photoId]) return;
+    setSocialBusy(`${photoId}:comments`);
+    try { const loaded = await getFaunaPhotoComments(photoId); setComments((current) => ({ ...current, [photoId]: loaded })); }
+    catch (reason) { Alert.alert('Fauna CR', reason instanceof Error ? reason.message : 'No se pudieron cargar los comentarios.'); }
+    finally { setSocialBusy(undefined); }
+  };
+
+  const submitComment = async (photoId: string) => {
+    if (!requireAuth(language === 'es' ? 'Comentar una foto de fauna' : 'Comment on a wildlife photo') || !session || !commentDraft.trim()) return;
+    setSocialBusy(`${photoId}:comment`);
+    try {
+      await addFaunaComment(photoId, session.user.id, commentDraft);
+      setCommentDraft('');
+      const loaded = await getFaunaPhotoComments(photoId);
+      setComments((current) => ({ ...current, [photoId]: loaded }));
+    } catch (reason) { Alert.alert('Fauna CR', reason instanceof Error ? reason.message : 'No se pudo publicar el comentario.'); }
+    finally { setSocialBusy(undefined); }
+  };
 
   const choosePhoto = async (source: 'camera' | 'library') => {
     if (!species || !requireAuth(language === 'es' ? 'Compartir foto de fauna' : 'Share wildlife photo') || !session) return;
@@ -95,7 +145,7 @@ export default function SpeciesScreen() {
         </View>
       </View>
 
-      {photos.length ? <View className="px-5 pt-6"><Text className="text-xl font-black text-forest-950 dark:text-white">{language === 'es' ? 'Fotos compartidas por nuestros usuarios' : 'Photos shared by our users'}</Text><ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 12 }} showsHorizontalScrollIndicator={false}>{photos.map((photo, index) => <Pressable accessibilityLabel={language === 'es' ? `Abrir foto ${index + 1} de ${name}` : `Open photo ${index + 1} of ${name}`} key={photo.id} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ borderRadius: 16, height: 140, width: 180 }} transition={180} /></Pressable>)}</ScrollView></View> : null}
+      {photos.length ? <View className="px-5 pt-6"><Text className="text-xl font-black text-forest-950 dark:text-white">{language === 'es' ? 'Comunidad de fotógrafos' : 'Photographer community'}</Text><Text className="mt-1 text-sm text-forest-600 dark:text-mint-200">{language === 'es' ? 'Descubrí quién capturó cada imagen y sumate a la conversación.' : 'See who captured each image and join the conversation.'}</Text><ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 12 }} showsHorizontalScrollIndicator={false}>{photos.map((photo, index) => { const photographer = photo.photographer; const liked = likedPhotoIds.has(photo.id); const photoComments = comments[photo.id] ?? []; return <View className="w-64 overflow-hidden rounded-3xl bg-white dark:bg-forest-900" key={photo.id}><Pressable accessibilityLabel={language === 'es' ? `Abrir foto ${index + 1} de ${name}` : `Open photo ${index + 1} of ${name}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ height: 170, width: '100%' }} transition={180} /></Pressable><View className="p-4"><Pressable className="flex-row items-center" onPress={() => { if (!photographer || !requireAuth(language === 'es' ? 'Ver el perfil del fotógrafo' : 'View the photographer profile')) return; router.push({ pathname: '/(aux)/traveler-profile', params: { id: photographer.id } }); }}><View className="h-9 w-9 items-center justify-center rounded-full bg-frog-500"><Text className="font-black text-white">{(photographer?.full_name || photographer?.username || 'V').slice(0, 1).toUpperCase()}</Text></View><View className="ml-2 flex-1"><Text className="text-xs font-black text-forest-950 dark:text-white">{photographer?.full_name || photographer?.username || (language === 'es' ? 'Viajero' : 'Traveler')}</Text><Text className="text-[10px] text-forest-500 dark:text-mint-300">{language === 'es' ? 'Ver perfil' : 'View profile'}</Text></View></Pressable><View className="mt-3 flex-row items-center gap-2"><Pressable accessibilityLabel={liked ? (language === 'es' ? 'Quitar me gusta' : 'Unlike') : (language === 'es' ? 'Dar me gusta' : 'Like')} className="flex-row items-center rounded-full bg-frog-100 px-3 py-2 dark:bg-forest-700" disabled={socialBusy === `${photo.id}:like`} onPress={() => void toggleLike(photo)}><MaterialCommunityIcons name={liked ? 'heart' : 'heart-outline'} size={19} color={liked ? '#e05260' : '#087443'} /><Text className="ml-1 font-bold text-forest-800 dark:text-mint-100">{photo.likes_count}</Text></Pressable><Pressable className="flex-row items-center rounded-full bg-frog-100 px-3 py-2 dark:bg-forest-700" onPress={() => void toggleComments(photo.id)}><MaterialCommunityIcons name="comment-outline" size={18} color="#087443" /><Text className="ml-1 font-bold text-forest-800 dark:text-mint-100">{photoComments.length || (expandedPhotoId === photo.id ? 0 : '·')}</Text></Pressable></View>{expandedPhotoId === photo.id ? <View className="mt-3 border-t border-mint-100 pt-3 dark:border-forest-700"><ScrollView className="max-h-32">{photoComments.length ? photoComments.map((comment) => <View className="mb-2" key={comment.id}><Text className="text-xs font-bold text-forest-900 dark:text-white">{comment.author?.full_name || comment.author?.username || (language === 'es' ? 'Viajero' : 'Traveler')}</Text><Text className="text-xs text-forest-600 dark:text-mint-200">{comment.body}</Text></View>) : <Text className="text-xs text-forest-500 dark:text-mint-300">{language === 'es' ? 'Sé el primero en comentar.' : 'Be the first to comment.'}</Text>}</ScrollView><View className="mt-2 flex-row items-end gap-2"><TextInput className="min-h-10 flex-1 rounded-xl bg-frog-50 px-3 py-2 text-xs text-forest-900 dark:bg-forest-800 dark:text-white" editable={!socialBusy} onChangeText={setCommentDraft} placeholder={language === 'es' ? 'Escribí un comentario…' : 'Write a comment…'} placeholderTextColor="#7d9a8c" value={commentDraft} multiline /><Pressable className="rounded-xl bg-frog-500 px-3 py-2" disabled={Boolean(socialBusy) || !commentDraft.trim()} onPress={() => void submitComment(photo.id)}><MaterialCommunityIcons name="send" size={17} color="white" /></Pressable></View></View> : null}</View></View>; })}</ScrollView></View> : null}
 
       <View className="px-5 pt-6">
         <View className="flex-row items-center justify-between rounded-3xl bg-white p-5 dark:bg-forest-900">

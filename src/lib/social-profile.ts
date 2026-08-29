@@ -5,8 +5,82 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { getAdminCommercialClaims } from '@/lib/commerce';
 import { getInformationReportsForAdmin } from '@/lib/reports';
 
+export type PrivateMessage = {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  read_status: boolean;
+  created_at: string;
+};
+
+export type PrivateConversation = {
+  partner_id: string;
+  partner_name: string;
+  partner_avatar_url: string | null;
+  messages: PrivateMessage[];
+  unread_count: number;
+};
+
+export async function getPrivateConversations(userId: string): Promise<PrivateConversation[]> {
+  const { data, error } = await supabase
+    .from('traveler_messages')
+    .select('id,sender_id,recipient_id,body,read_status,created_at')
+    .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+
+  const messages = (data ?? []) as PrivateMessage[];
+  const partnerIds = [...new Set(messages.map((item) => item.sender_id === userId ? item.recipient_id : item.sender_id))];
+  if (!partnerIds.length) return [];
+  const { data: profiles, error: profilesError } = await supabase.from('users').select('id,username,full_name,avatar_url').in('id', partnerIds);
+  if (profilesError) throw profilesError;
+  const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+  const conversations = new Map<string, PrivateConversation>();
+  for (const message of messages) {
+    const partnerId = message.sender_id === userId ? message.recipient_id : message.sender_id;
+    const profile = profileById.get(partnerId);
+    const current: PrivateConversation = conversations.get(partnerId) ?? {
+      partner_id: partnerId,
+      partner_name: profile?.full_name || profile?.username || 'Viajero',
+      partner_avatar_url: profile?.avatar_url ?? null,
+      messages: [] as PrivateMessage[],
+      unread_count: 0,
+    };
+    current.messages.push(message);
+    if (message.recipient_id === userId && !message.read_status) current.unread_count += 1;
+    conversations.set(partnerId, current);
+  }
+  return [...conversations.values()].sort((a, b) => {
+    const latestA = a.messages[a.messages.length - 1]?.created_at ?? '';
+    const latestB = b.messages[b.messages.length - 1]?.created_at ?? '';
+    return latestB.localeCompare(latestA);
+  });
+}
+
+export async function markNotificationRead(notificationId: string) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('authentication_required');
+  const { error } = await supabase.from('notifications').update({ read_status: true }).eq('id', notificationId).eq('recipient_id', auth.user.id);
+  if (error) throw error;
+}
+
+export async function markAllNotificationsRead() {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('authentication_required');
+  const { error } = await supabase.from('notifications').update({ read_status: true }).eq('recipient_id', auth.user.id).eq('read_status', false);
+  if (error) throw error;
+}
+
+export async function markMessageRead(messageId: string) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('authentication_required');
+  const { error } = await supabase.from('traveler_messages').update({ read_status: true }).eq('id', messageId).eq('recipient_id', auth.user.id);
+  if (error) throw error;
+}
+
 export async function getSocialProfile(userId: string) {
-  const [profile, followers, following, posts, sightings, saved, notifications, messages] = await Promise.all([
+  const [profile, followers, following, posts, sightings, saved, notifications, conversations] = await Promise.all([
     supabase.from('users').select('id,username,full_name,avatar_url,bio,contact_email').eq('id', userId).single(),
     supabase.from('user_follows').select('follower_id').eq('followed_id', userId),
     supabase.from('user_follows').select('followed_id').eq('follower_id', userId),
@@ -14,14 +88,14 @@ export async function getSocialProfile(userId: string) {
     supabase.from('fauna_photos').select('*,fauna_species(common_name_es,common_name_en)').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'destination'),
     supabase.from('notifications').select('*,actor:users!notifications_actor_id_fkey(username,full_name,avatar_url)').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(50),
-    supabase.from('traveler_messages').select('*,sender:users!traveler_messages_sender_id_fkey(username,full_name,avatar_url)').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(50),
+    getPrivateConversations(userId),
   ]);
-  const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? sightings.error ?? saved.error ?? notifications.error ?? messages.error;
+  const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? sightings.error ?? saved.error ?? notifications.error;
   if (error) throw error;
   const savedIds = (saved.data ?? []).map((item) => item.target_id);
   const destinations = savedIds.length ? await supabase.from('destinations').select('id,name,province,cover_image_url').in('id', savedIds) : { data: [], error: null };
   if (destinations.error) throw destinations.error;
-  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: sightings.data ?? [], saved: destinations.data ?? [], notifications: notifications.data ?? [], messages: messages.data ?? [] };
+  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: sightings.data ?? [], saved: destinations.data ?? [], notifications: notifications.data ?? [], conversations };
 }
 
 async function uploadImage(bucket: 'profile-avatars' | 'destination-photos', owner: string, asset: ImagePickerAsset) {
@@ -49,6 +123,13 @@ export async function updateTravelerProfile(userId: string, values: { bio: strin
 
 export async function sendCreatorSuggestion(userId: string, message: string) {
   const { error } = await supabase.from('creator_suggestions').insert({ user_id: userId, message: message.trim() });
+  if (error) throw error;
+}
+
+export type CreatorSuggestionStatus = 'new' | 'read' | 'resolved';
+
+export async function updateCreatorSuggestionStatus(id: string, status: CreatorSuggestionStatus) {
+  const { error } = await supabase.from('creator_suggestions').update({ status }).eq('id', id);
   if (error) throw error;
 }
 
