@@ -2,38 +2,11 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import type { ImagePickerAsset } from 'expo-image-picker';
 
 import { supabase } from '@/lib/supabase';
+import { getAppOptions } from '@/lib/app-options';
 
-export const ASSISTANCE_CATEGORIES = [
-  { id: 'hospitals', es: 'Hospitales', en: 'Hospitals', icon: 'hospital-building', values: ['hospital'] },
-  { id: 'firefighters', es: 'Bomberos', en: 'Fire stations', icon: 'fire-truck', values: ['bomberos', 'fire_station'] },
-  { id: 'police', es: 'Estaciones de policía', en: 'Police stations', icon: 'police-badge', values: ['policia'] },
-  { id: 'red-cross', es: 'Cruz Roja', en: 'Red Cross', icon: 'medical-bag', values: ['cruz_roja', 'red_cross'] },
-  { id: 'embassies', es: 'Embajadas y Consulados', en: 'Embassies and Consulates', icon: 'flag-variant', values: ['embajada', 'consulado', 'embassy', 'consulate'] },
-  { id: 'immigration', es: 'Migración y Extranjería', en: 'Immigration', icon: 'passport', values: ['migracion_extranjeria', 'migracion', 'extranjeria', 'immigration'] },
-  { id: 'coast-guard', es: 'Guardacostas', en: 'Coast Guard', icon: 'lifebuoy', values: ['guardacostas', 'coast_guard'] },
-  { id: 'traffic-police', es: 'Tránsito / Policía de Tráfico', en: 'Traffic Police', icon: 'car-emergency', values: ['policia_transito', 'transito', 'traffic_police'] },
-  { id: 'private-emergency', es: 'Clínicas y urgencias 24/7', en: 'Private urgent care / 24/7 clinics', icon: 'hospital-box-outline', values: ['clinica', 'urgencias_privadas', 'clinica_24_7'] },
-] as const;
+export type AssistanceCategoryId = string;
 
-export type AssistanceCategoryId = typeof ASSISTANCE_CATEGORIES[number]['id'];
-const assistanceValues = ASSISTANCE_CATEGORIES.flatMap((category) => category.values);
-
-export const COMMERCE_CATEGORIES = [
-  { id: 'food', es: 'Comida', en: 'Food', icon: 'silverware-fork-knife', values: ['restaurant', 'comida', 'gastronomia', 'cafe', 'bar', 'bakery'] },
-  { id: 'lodging', es: 'Hospedaje', en: 'Lodging', icon: 'bed', values: ['hotel', 'hospedaje', 'hostel', 'cabinas', 'alojamiento'] },
-  { id: 'adventure', es: 'Aventura', en: 'Adventure', icon: 'hiking', values: ['adventure', 'aventura', 'tour', 'tours', 'canopy'] },
-  { id: 'water_activities', es: 'Tours Acuáticos y Pesca', en: 'Water Tours & Fishing', icon: 'ferry', values: ['water_activities', 'tours_acuaticos', 'pesca', 'pesca_deportiva', 'boat_tour', 'lancha', 'rafting', 'kayak', 'surf'] },
-  { id: 'nature', es: 'Naturaleza', en: 'Nature', icon: 'tree', values: ['naturaleza', 'parque', 'reserva', 'senderismo', 'ecoturismo'] },
-  { id: 'wellness', es: 'Termales y bienestar', en: 'Wellness', icon: 'hot-tub', values: ['termales', 'spa', 'bienestar', 'masaje'] },
-  { id: 'guides_experiences', es: 'Guías y Experiencias', en: 'Guides & Experiences', icon: 'compass-outline', values: ['guides_experiences', 'guias', 'guia', 'experiencias_locales'] },
-  { id: 'rentals_equipment', es: 'Alquileres', en: 'Rentals', icon: 'key-variant', values: ['rentals_equipment', 'alquiler', 'alquiler_equipo', 'rentacar', 'alquiler_autos'] },
-  { id: 'transport', es: 'Transporte', en: 'Transport', icon: 'car', values: ['transporte', 'taxi', 'shuttle', 'rentacar', 'alquiler_autos'] },
-  { id: 'shopping', es: 'Compras', en: 'Shopping', icon: 'storefront-outline', values: ['compras', 'artesanias', 'mercado', 'tienda'] },
-  { id: 'emergency', es: 'Asistencia y emergencias', en: 'Assistance & emergencies', icon: 'lifebuoy', values: assistanceValues },
-] as const;
-
-export type CommerceCategoryId = typeof COMMERCE_CATEGORIES[number]['id'];
-export type CommerceSubcategory = { id: string; es: string; en: string };
+export type CommerceCategoryId = string;
 export type CommerceRegion = {
   id: string;
   name_es: string;
@@ -44,44 +17,6 @@ export type CommerceRegion = {
   radius_km: number;
 };
 
-export const COMMERCE_SUBCATEGORIES: Record<CommerceCategoryId, readonly CommerceSubcategory[]> = {
-  food: [],
-  lodging: [],
-  adventure: [
-    { id: 'canopy_zipline', es: 'Canopy / Tirolesa', en: 'Canopy / zipline' },
-    { id: 'atv', es: 'Cuadraciclos (ATV)', en: 'ATV' },
-    { id: 'rappel_canyoning', es: 'Rappel / Canyoning', en: 'Rappel / canyoning' },
-    { id: 'hiking', es: 'Senderismo', en: 'Hiking' },
-    { id: 'cycling', es: 'Ciclismo', en: 'Cycling' },
-  ],
-  water_activities: [
-    { id: 'fishing', es: 'Pesca deportiva', en: 'Sport fishing' },
-    { id: 'boat_tours', es: 'Tours en lancha', en: 'Boat tours' },
-    { id: 'surf', es: 'Surf', en: 'Surf' },
-    { id: 'kayak_sup', es: 'Kayak / SUP', en: 'Kayak / SUP' },
-    { id: 'diving_snorkeling', es: 'Buceo / Snorkel', en: 'Diving / snorkeling' },
-    { id: 'catamaran', es: 'Catamarán', en: 'Catamaran' },
-    { id: 'rafting', es: 'Rafting', en: 'Rafting' },
-  ],
-  nature: [],
-  wellness: [],
-  guides_experiences: [
-    { id: 'certified_guides', es: 'Guías certificados', en: 'Certified guides' },
-    { id: 'birdwatching', es: 'Avistamiento de aves', en: 'Birdwatching' },
-    { id: 'night_walks', es: 'Caminatas nocturnas', en: 'Night walks' },
-    { id: 'coffee_cacao', es: 'Tour café / cacao', en: 'Coffee / cacao tour' },
-    { id: 'surf_cooking_classes', es: 'Clases de surf / cocina', en: 'Surf / cooking classes' },
-  ],
-  rentals_equipment: [
-    { id: 'rent_a_car', es: 'Rent a car local', en: 'Local rent-a-car' },
-    { id: 'atv_bikes', es: 'Cuadraciclos / Bikes', en: 'ATV / bikes' },
-    { id: 'boards_kayaks', es: 'Tablas / Kayaks', en: 'Boards / kayaks' },
-    { id: 'camping_equipment', es: 'Equipo de camping', en: 'Camping equipment' },
-  ],
-  transport: [],
-  shopping: [],
-  emergency: [],
-};
 
 export type Coordinates = { latitude: number; longitude: number };
 export type BusinessEventType = 'impression' | 'whatsapp_click' | 'call' | 'directions' | 'save' | 'reservation' | 'coupon_redeemed';
@@ -167,10 +102,9 @@ export async function getCommerceRegions() {
 }
 
 export async function getCommerceDirectory(categoryId: CommerceCategoryId, origin: Coordinates, subcategory?: string, region?: CommerceRegion): Promise<CommerceDirectory> {
-  const category = COMMERCE_CATEGORIES.find((item) => item.id === categoryId) ?? COMMERCE_CATEGORIES[0];
   const rows: ServiceRow[] = [];
   for (let from = 0; ; from += 1000) {
-    let request = supabase.from('vw_ranked_commercial_services').select(RANKED_SERVICE_FIELDS).eq('category', category.id);
+    let request = supabase.from('vw_ranked_commercial_services').select(RANKED_SERVICE_FIELDS).eq('category', categoryId);
     if (subcategory) request = request.contains('subcategories', [subcategory]);
     const { data, error } = await request.range(from, from + 999);
     if (error) throw error;
@@ -213,12 +147,13 @@ export async function getClaimableBusiness(serviceId: string): Promise<Claimable
 }
 
 export async function getAssistanceDirectory(categoryId: AssistanceCategoryId, origin: Coordinates) {
-  const category = ASSISTANCE_CATEGORIES.find((item) => item.id === categoryId) ?? ASSISTANCE_CATEGORIES[0];
+  const category = (await getAppOptions('assistance_category')).find((item) => item.id === categoryId);
+  if (!category?.allowed_targets?.length) return [];
   const { data, error } = await supabase
     .from('commercial_services')
     .select(SERVICE_FIELDS)
     .eq('category', 'emergency')
-    .in('main_category', [...category.values])
+    .in('main_category', category.allowed_targets)
     .limit(1000);
   if (error) throw error;
   return ((data ?? []) as ServiceRow[]).flatMap((service) => {
@@ -395,41 +330,13 @@ export async function registerCommercialService(input: {
   photos?: string[];
   coverImageUrl?: string;
 }) {
-  const { data, error } = await supabase.rpc('register_commercial_service', {
-    p_main_category: input.mainCategory,
-    p_subcategory: input.subcategory,
-    p_title: input.title,
-    p_latitude: input.latitude,
-    p_longitude: input.longitude,
-    p_phone: input.phone || null,
-    p_whatsapp: input.whatsapp || null,
-    p_description: input.description || null,
-    p_price_range: input.priceRange || null,
-    p_opening_hours: input.openingHours || null,
-    p_booking_url: input.bookingUrl || null,
-  });
+  const { data, error } = await supabase.rpc('register_commercial_service_v2', { p_payload: {
+    ...input,
+    category: input.mainCategory,
+    subcategories: input.subcategory.split(',').map((value) => value.trim()).filter(Boolean),
+  } });
   if (error) throw error;
-  const serviceId = data as string;
-  await updateCommercialServiceProfile(serviceId, {
-    title: input.title,
-    phone: input.phone,
-    whatsapp: input.whatsapp,
-    openingHours: input.openingHours,
-    description: input.description,
-    priceRange: input.priceRange,
-    bookingUrl: input.bookingUrl,
-    menuUrl: input.menuUrl,
-    parking: input.parking,
-    hasParking: input.hasParking,
-    paymentMethods: input.paymentMethods,
-    accessibility: input.accessibility,
-    languages: input.languages,
-    experienceType: input.experienceType,
-    certifications: input.certifications,
-    photos: input.photos,
-    coverImageUrl: input.coverImageUrl,
-  });
-  return serviceId;
+  return data as string;
 }
 
 export async function updateCommercialServiceProfile(serviceId: string, input: CommercialProfileUpdate) {
@@ -462,7 +369,7 @@ export async function updateCommercialServiceProfile(serviceId: string, input: C
   if (input.photos !== undefined) payload.photos = input.photos;
   if (input.coverImageUrl !== undefined) payload.cover_image_url = trimOptional(input.coverImageUrl);
 
-  const { error } = await supabase.from('commercial_services').update(payload).eq('id', serviceId);
+  const { error } = await supabase.from('commercial_services').update(payload).eq('id', serviceId).select('id').single();
   if (error) throw error;
 }
 
@@ -516,9 +423,7 @@ export async function getOwnerDashboard() {
   if (error) throw error;
   const services = (data ?? []).map((row) => {
     const service = row as ServiceRow;
-    const knownCategory = COMMERCE_CATEGORIES.some((item) => item.id === service.category)
-      ? service.category as CommerceCategoryId
-      : 'emergency';
+    const knownCategory = service.category as CommerceCategoryId;
     return {
       id: service.id,
       title: service.title,

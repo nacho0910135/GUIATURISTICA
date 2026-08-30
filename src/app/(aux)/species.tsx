@@ -200,7 +200,7 @@ export default function SpeciesScreen() {
       <Modal animationType="fade" onRequestClose={() => setSelectedPhotoIndex(undefined)} statusBarTranslucent visible={selectedPhotoIndex !== undefined}>
         <View className="flex-1 bg-black">
           <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{photos.map((photo, index) => <View className="flex-1 items-center justify-center" key={photo.id} style={{ width }}><Image accessibilityLabel={language === 'es' ? `Foto ${index + 1} de ${name}` : `Photo ${index + 1} of ${name}`} contentFit="contain" source={{ uri: photo.image_url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
-          <Pressable accessibilityLabel={language === 'es' ? 'Cerrar foto' : 'Close photo'} className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/70" onPress={() => setSelectedPhotoIndex(undefined)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
+          <Pressable accessibilityLabel={language === 'es' ? 'Cerrar foto' : 'Close photo'} accessibilityRole="button" className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/70" onPress={() => setSelectedPhotoIndex(undefined)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
         </View>
       </Modal>
     </ScrollView>

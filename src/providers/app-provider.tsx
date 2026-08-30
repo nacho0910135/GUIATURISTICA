@@ -63,8 +63,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       return;
     }
     const { data } = await supabase.from('users').select('role,avatar_url').eq('id', nextSession.user.id).maybeSingle();
+    const metadataAvatar = nextSession.user.user_metadata.avatar_url ?? nextSession.user.user_metadata.picture;
     setIsAdmin(data?.role === 'admin');
-    setAvatarUrl(data?.avatar_url ?? null);
+    setAvatarUrl(data?.avatar_url ?? (typeof metadataAvatar === 'string' ? metadataAvatar : null));
   }, []);
 
   useEffect(() => {

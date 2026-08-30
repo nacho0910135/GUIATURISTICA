@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useAudioPlayer } from 'expo-audio';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 let startupSoundPlayed = false;
@@ -11,7 +11,7 @@ export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   const opacity = useSharedValue(1);
 
   useEffect(() => {
-    if (!startupSoundPlayed) {
+    if (Platform.OS !== 'web' && !startupSoundPlayed) {
       startupSoundPlayed = true;
       player.play();
     }

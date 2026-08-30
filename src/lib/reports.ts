@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
 export type ReportTargetType = 'destination' | 'commercial_service' | 'road';
-export type ReportType = 'incorrect_information' | 'destination_closed' | 'price_changed' | 'hours_outdated' | 'road_affected' | 'business_closed';
+export type ReportType = string;
 export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
 
 export type InformationReport = {
@@ -18,17 +18,8 @@ export type InformationReport = {
   reviewed_at: string | null;
 };
 
-export const REPORT_TYPES: { id: ReportType; es: string; en: string }[] = [
-  { id: 'incorrect_information', es: 'Reportar información incorrecta', en: 'Report incorrect information' },
-  { id: 'destination_closed', es: 'Destino cerrado', en: 'Destination closed' },
-  { id: 'price_changed', es: 'Precio cambió', en: 'Price changed' },
-  { id: 'hours_outdated', es: 'Horario no actualizado', en: 'Hours are outdated' },
-  { id: 'road_affected', es: 'Carretera afectada', en: 'Road affected' },
-  { id: 'business_closed', es: 'Negocio ya no opera', en: 'Business no longer operates' },
-];
-
 export function reportTypeLabel(type: ReportType, language: 'es' | 'en') {
-  return REPORT_TYPES.find((option) => option.id === type)?.[language] ?? type;
+  return type.replaceAll('_', ' ');
 }
 
 export async function submitInformationReport(input: {

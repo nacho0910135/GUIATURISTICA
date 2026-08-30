@@ -5,9 +5,9 @@ import { supabase } from '@/lib/supabase';
 
 export type TravelerProfile = { id: string; username: string | null; full_name: string | null; avatar_url: string | null; role: string | null };
 export type SharedLocation = { latitude: number; longitude: number };
-export type TravelerTopic = 'general' | 'moteros' | 'enduro' | 'convoy_4x4';
+export type TravelerTopic = string;
 export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; latitude: number | null; longitude: number | null; topic: TravelerTopic; created_at: string; user?: TravelerProfile };
-export type ReactionType = 'like' | 'love' | 'laugh' | 'angry' | 'wow' | 'sad';
+export type ReactionType = string;
 export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
 
 export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {
@@ -40,20 +40,23 @@ async function uploadPostImage(userId: string, asset: ImagePickerAsset) {
   const path = `${userId}/${Date.now()}.jpg`;
   const { error } = await supabase.storage.from('traveler-posts').upload(path, bytes, { contentType: 'image/jpeg' });
   if (error) throw error;
-  return supabase.storage.from('traveler-posts').getPublicUrl(path).data.publicUrl;
+  return { path, url: supabase.storage.from('traveler-posts').getPublicUrl(path).data.publicUrl };
 }
 
 export async function createTravelerPost(userId: string, body: string, asset?: ImagePickerAsset, location?: SharedLocation, topic: TravelerTopic = 'general') {
-  const imageUrl = asset ? await uploadPostImage(userId, asset) : null;
+  const image = asset ? await uploadPostImage(userId, asset) : null;
   const { error } = await supabase.from('traveler_posts').insert({
     user_id: userId,
     body: body.trim(),
-    image_url: imageUrl,
+    image_url: image?.url ?? null,
     latitude: location?.latitude ?? null,
     longitude: location?.longitude ?? null,
     topic,
   });
-  if (error) throw error;
+  if (error) {
+    if (image) await supabase.storage.from('traveler-posts').remove([image.path]);
+    throw error;
+  }
 }
 
 export async function addTravelerReply(postId: string, userId: string, body: string, parentReplyId?: string) {

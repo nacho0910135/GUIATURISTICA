@@ -25,8 +25,9 @@ export type Destination = {
   dist_meters?: number;
 };
 
-export type PlannerPreference = 'Todo' | 'Playa' | 'Naturaleza' | 'Cultura' | 'Comida' | 'Aventura';
-export type TripVehicle = 'sedan' | '4x4' | 'bus';
+export type PlannerPreference = string;
+export const TRIP_VEHICLES = [{ id: 'sedan', es: 'Sedán', en: 'Sedan' }, { id: '4x4', es: '4x4', en: '4x4' }, { id: 'bus', es: 'Bus', en: 'Bus' }] as const;
+export type TripVehicle = typeof TRIP_VEHICLES[number]['id'];
 export type TripPlanInput = {
   latitude: number;
   longitude: number;
@@ -307,12 +308,9 @@ async function getPlannerCandidates(input: { latitude: number; longitude: number
 }
 
 function scoreDestination(destination: Destination, input: { category: PlannerPreference; children: boolean; seniors: boolean; reducedMobility: boolean; hasVehicle: boolean }) {
-  const categoryTerms: Record<PlannerPreference, RegExp> = {
-    Todo: /./i, Playa: /playa|costa|mar/i, Naturaleza: /parque|reserva|bosque|río|rio|catarata|fauna/i,
-    Cultura: /cultura|museo|históric|histor|arqueolog/i, Comida: /gastronom|comida|café|cafe|mercado/i,
-    Aventura: /aventura|surf|canopy|rafting|sender|volcán|volcan/i,
-  };
-  let score = categoryTerms[input.category].test(destination.category) ? 100 : input.category === 'Todo' ? 20 : 0;
+  const normalizedCategory = input.category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+  const normalizedDestination = destination.category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+  let score = input.category === 'Todo' ? 20 : normalizedDestination.includes(normalizedCategory) ? 100 : 0;
   score -= (destination.dist_meters ?? 0) / 1000;
   if ((input.children || input.seniors || input.reducedMobility) && /fácil|facil/i.test(destination.difficulty ?? '')) score += 30;
   if (!input.hasVehicle && (destination.dist_meters ?? 0) < 20000) score += 25;
@@ -372,6 +370,10 @@ export async function openNavigation(latitude: number, longitude: number) {
 
 export async function scheduleFerryReminder(route: FerryRoute, minutes = route.arrivalMinutes) {
   if (Platform.OS === 'web') throw new Error('NATIVE_ONLY');
+  const Constants = await import('expo-constants');
+  if (Constants.default.executionEnvironment === Constants.ExecutionEnvironment.StoreClient) {
+    throw new Error('EXPO_GO_NOTIFICATIONS_UNAVAILABLE');
+  }
   const Notifications = await import('expo-notifications');
   const permission = await Notifications.requestPermissionsAsync();
   if (!permission.granted) throw new Error('PERMISSION_DENIED');

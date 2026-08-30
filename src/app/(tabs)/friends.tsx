@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -6,6 +7,9 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
+import { MotionPressable, MotionReveal, Skeleton } from '@/components/motion';
+import { getAppOptions } from '@/lib/app-options';
+import { haptic } from '@/lib/haptics';
 import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
@@ -13,16 +17,27 @@ type Wall = Awaited<ReturnType<typeof getTravelerWall>>;
 
 const displayName = (post: TravelerPost) => post.user?.username || post.user?.full_name || `Viajero ${post.user_id.slice(0, 5)}`;
 const AdminBadge = () => <View className="ml-2 flex-row items-center rounded-full bg-ui-primary px-2 py-1 dark:bg-ui-dark-primary"><MaterialCommunityIcons name="shield-crown" size={11} color="white" /><Text className="ml-1 text-[9px] font-black text-white">ADMIN</Text></View>;
-const reactions: { type: ReactionType; emoji: string; label: string }[] = [
-  { type: 'like', emoji: '👍', label: 'Me gusta' }, { type: 'love', emoji: '❤️', label: 'Me encanta' },
-  { type: 'laugh', emoji: '😂', label: 'Me divierte' }, { type: 'wow', emoji: '😮', label: 'Me asombra' },
-  { type: 'angry', emoji: '😡', label: 'Me enoja' }, { type: 'sad', emoji: '🤢', label: 'Me disgusta' },
-];
-const topics: { key: Exclude<TravelerTopic, 'general'>; label: string }[] = [
-  { key: 'moteros', label: 'Moteros 🏍️' },
-  { key: 'enduro', label: 'Enduro 🏁' },
-  { key: 'convoy_4x4', label: 'Convoy 4x4 🛣️' },
-];
+
+function TravelerWallSkeleton({ language }: { language: 'es' | 'en' }) {
+  return (
+    <View accessibilityLabel={language === 'es' ? 'Cargando publicaciones' : 'Loading posts'} accessibilityRole="progressbar" className="mt-5 gap-5">
+      {[0, 1].map((item) => (
+        <View className="h-[252px] rounded-card border border-ui-border bg-ui-surface p-5 dark:border-ui-dark-border dark:bg-ui-dark-surface" key={item}>
+          <View className="flex-row items-center">
+            <Skeleton style={{ borderRadius: 24, height: 48, width: 48 }} />
+            <View className="ml-3 flex-1 gap-2">
+              <Skeleton style={{ height: 14, width: '54%' }} />
+              <Skeleton style={{ height: 11, width: '32%' }} />
+            </View>
+          </View>
+          <Skeleton style={{ height: 14, marginTop: 22, width: '94%' }} />
+          <Skeleton style={{ height: 14, marginTop: 9, width: '78%' }} />
+          <Skeleton style={{ borderRadius: 18, height: 92, marginTop: 20, width: '100%' }} />
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export default function FriendsScreen() {
   const router = useRouter();
@@ -41,6 +56,10 @@ export default function FriendsScreen() {
   const [reactionPickerPostId, setReactionPickerPostId] = useState<string>();
   const [topic, setTopic] = useState<TravelerTopic>('general');
   const longPressedPostId = useRef<string | undefined>(undefined);
+  const topicOptions = useQuery({ queryKey: ['app-options', 'traveler_topic'], queryFn: () => getAppOptions('traveler_topic'), staleTime: Infinity });
+  const reactionOptions = useQuery({ queryKey: ['app-options', 'traveler_reaction'], queryFn: () => getAppOptions('traveler_reaction'), staleTime: Infinity });
+  const topics = topicOptions.data ?? [];
+  const reactions = reactionOptions.data ?? [];
 
   const load = useCallback(async () => {
     try { setError(undefined); setWall(await getTravelerWall(userId, topic)); }
@@ -54,11 +73,18 @@ export default function FriendsScreen() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return Alert.alert('Comunidad Viajera', language === 'es' ? 'Necesitamos permiso para elegir una foto.' : 'Photo permission is required.');
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.9 });
-    if (!result.canceled) setAsset(result.assets[0]);
+    if (!result.canceled) {
+      setAsset(result.assets[0]);
+      void haptic('selection');
+    }
   };
 
   const chooseLocation = async () => {
-    if (location) return setLocation(undefined);
+    if (location) {
+      setLocation(undefined);
+      void haptic('selection');
+      return;
+    }
     const permission = await Location.requestForegroundPermissionsAsync();
     if (!permission.granted) {
       setPublishError(language === 'es' ? 'Necesitamos permiso para compartir tu ubicación.' : 'Location permission is required.');
@@ -69,6 +95,7 @@ export default function FriendsScreen() {
       const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setLocation({ latitude: current.coords.latitude, longitude: current.coords.longitude });
       setPublishError(undefined);
+      void haptic('success');
     } catch (reason) {
       setPublishError(reason instanceof Error ? reason.message : 'No se pudo obtener la ubicación.');
     } finally { setBusy(false); }
@@ -78,16 +105,16 @@ export default function FriendsScreen() {
     if (!requireAuth(language === 'es' ? 'Crear una publicación' : 'Create a post') || !session || (!body.trim() && !asset && !location)) return;
     setBusy(true);
     setPublishError(undefined);
-    try { await createTravelerPost(session.user.id, body, asset, location, topic); setBody(''); setAsset(undefined); setLocation(undefined); await load(); }
-    catch (reason) { setPublishError(reason instanceof Error ? reason.message : 'No se pudo publicar.'); }
+    try { await createTravelerPost(session.user.id, body, asset, location, topic); setBody(''); setAsset(undefined); setLocation(undefined); await load(); void haptic('success'); }
+    catch (reason) { setPublishError(reason instanceof Error ? reason.message : 'No se pudo publicar.'); void haptic('error'); }
     finally { setBusy(false); }
   };
 
   const respond = async (postId: string) => {
     if (!requireAuth(language === 'es' ? 'Responder una publicación' : 'Reply to a post') || !session || !reply.trim()) return;
     setBusy(true);
-    try { await addTravelerReply(postId, session.user.id, reply, parentReplyId); setReply(''); setParentReplyId(undefined); await load(); }
-    catch (reason) { Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo responder.'); }
+    try { await addTravelerReply(postId, session.user.id, reply, parentReplyId); setReply(''); setParentReplyId(undefined); await load(); void haptic('success'); }
+    catch (reason) { void haptic('error'); Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo responder.'); }
     finally { setBusy(false); }
   };
 
@@ -96,7 +123,9 @@ export default function FriendsScreen() {
     try {
       await setTravelerReaction(postId, session.user.id, reaction, wall.myReactions[postId]);
       await load();
+      void haptic('success');
     } catch (reason) {
+      void haptic('error');
       Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo actualizar el me gusta.');
     }
   };
@@ -115,12 +144,15 @@ export default function FriendsScreen() {
     try {
       await toggleTravelerFollow(session.user.id, userId, wall.followedUserIds.has(userId));
       await load();
+      void haptic('success');
     } catch (reason) {
+      void haptic('error');
       Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo actualizar el seguimiento.');
     }
   };
 
   const sharePost = async (post: TravelerPost) => {
+    void haptic('impact');
     const locationUrl = post.latitude != null && post.longitude != null ? `\nhttps://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}` : '';
     await Share.share({ message: `${displayName(post)} · Comunidad Viajera\n${post.body || ''}${locationUrl}${post.image_url ? `\n${post.image_url}` : ''}`.trim(), url: post.image_url ?? undefined });
   };
@@ -132,20 +164,36 @@ export default function FriendsScreen() {
           <View className="h-11 w-11 items-center justify-center rounded-xl bg-caribbean-50 dark:bg-caribbean-900"><Text accessibilityLabel={language === 'es' ? 'Dos amigos' : 'Two friends'} className="text-2xl">🧑‍🤝‍🧑</Text></View>
           <View className="ml-3 flex-1"><Text className="text-2xl font-extrabold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Comunidad Viajera' : 'Traveler Community'}</Text><Text className="text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Experiencias, fotos y conversaciones de viaje.' : 'Travel experiences, photos and conversations.'}</Text></View>
         </View>
-        <View className="mx-auto mt-4 w-full max-w-3xl"><Pressable accessibilityRole="tab" accessibilityState={{ selected: topic === 'general' }} className={topic === 'general' ? 'self-center rounded-full bg-ui-primary px-5 py-2.5 dark:bg-ui-dark-primary' : 'self-center rounded-full border border-ui-border bg-ui-muted px-5 py-2.5 dark:border-ui-dark-border dark:bg-ui-dark-muted'} onPress={() => setTopic('general')}><Text className={topic === 'general' ? 'font-black text-white' : 'font-black text-ui-text dark:text-ui-dark-text'}>Comunidad Viajera</Text></Pressable><View className="mt-2 flex-row gap-2">{topics.map((item) => <Pressable accessibilityRole="tab" accessibilityState={{ selected: topic === item.key }} className={topic === item.key ? 'flex-1 items-center rounded-full bg-ui-primary px-2 py-2.5 dark:bg-ui-dark-primary' : 'flex-1 items-center rounded-full border border-ui-border bg-ui-muted px-2 py-2.5 dark:border-ui-dark-border dark:bg-ui-dark-muted'} key={item.key} onPress={() => setTopic(item.key)}><Text className={topic === item.key ? 'text-center text-xs font-black text-white' : 'text-center text-xs font-black text-ui-text dark:text-ui-dark-text'}>{item.label}</Text></Pressable>)}</View></View>
+        <View className="mx-auto mt-4 w-full max-w-3xl flex-row flex-wrap gap-2">
+          {topics.map((item) => (
+            <MotionPressable
+              accessibilityRole="tab"
+              accessibilityState={{ selected: topic === item.id }}
+              className={topic === item.id ? 'flex-1 items-center rounded-full bg-ui-primary px-2 py-2.5 dark:bg-ui-dark-primary' : 'flex-1 items-center rounded-full border border-ui-border bg-ui-muted px-2 py-2.5 dark:border-ui-dark-border dark:bg-ui-dark-muted'}
+              containerStyle={{ flex: 1, minWidth: 96 }}
+              key={item.id}
+              onPress={() => {
+                void haptic('selection');
+                setTopic(item.id);
+              }}
+            >
+              <Text className={topic === item.id ? 'text-center text-xs font-black text-white' : 'text-center text-xs font-black text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? item.label_es : item.label_en}</Text>
+            </MotionPressable>
+          ))}
+        </View>
       </View>
 
       <View className="w-full max-w-3xl px-4 pt-5">
         <View className="rounded-card border border-ui-border bg-ui-surface p-4 shadow-sm dark:border-ui-dark-border dark:bg-ui-dark-surface">
           <View className="flex-row items-center">
-            {avatarUrl ? <Image source={{ uri: avatarUrl }} style={{ borderRadius: 25, height: 50, width: 50 }} /> : <View className="h-12 w-12 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="account" size={27} color="#0B6B4F" /></View>}
+            {avatarUrl ? <Image cachePolicy="none" source={{ uri: avatarUrl }} style={{ borderRadius: 25, height: 50, width: 50 }} /> : <View className="h-12 w-12 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="account" size={27} color="#0B6B4F" /></View>}
             <TextInput
               className="ml-3 flex-1 rounded-control bg-ui-muted px-5 py-4 text-base text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text"
               maxLength={2000}
               multiline
               onChangeText={setBody}
               onFocus={() => { if (!session) requireAuth(language === 'es' ? 'Crear una publicación' : 'Create a post'); }}
-              placeholder={language === 'es' ? `Compartí algo en ${topics.find((item) => item.key === topic)?.label ?? 'Comunidad Viajera'}...` : "Share something with the community..."}
+              placeholder={language === 'es' ? `Compartí algo en ${topics.find((item) => item.id === topic)?.label_es ?? 'Comunidad Viajera'}...` : `Share something in ${topics.find((item) => item.id === topic)?.label_en ?? 'Traveler Community'}...`}
               placeholderTextColor="#73807b"
               value={body}
             />
@@ -155,11 +203,11 @@ export default function FriendsScreen() {
           {publishError ? <Text className="mt-3 rounded-xl bg-red-50 p-3 font-bold text-red-600">{publishError}</Text> : null}
           <View className="mt-3 flex-row items-center justify-between border-t border-ui-border dark:border-ui-dark-border pt-3">
             <View className="flex-row"><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl px-3 py-2" onPress={() => void choosePhoto()}><MaterialCommunityIcons name="image-multiple" size={27} color="#0B6B4F" /><Text className="ml-2 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Foto' : 'Photo'}</Text></Pressable><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl px-3 py-2" onPress={() => void chooseLocation()}><MaterialCommunityIcons name="map-marker-outline" size={27} color="#C33B3B" /><Text className="ml-1 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ubicación' : 'Location'}</Text></Pressable></View>
-            <Pressable accessibilityRole="button" className="rounded-control bg-ui-primary px-6 py-3 disabled:opacity-40 dark:bg-ui-dark-primary" disabled={busy || (!body.trim() && !asset && !location)} onPress={() => void publish()}>{busy ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar' : 'Post'}</Text>}</Pressable>
+            <MotionPressable accessibilityRole="button" className="min-w-28 items-center rounded-control bg-ui-primary px-6 py-3 disabled:opacity-40 dark:bg-ui-dark-primary" disabled={busy || (!body.trim() && !asset && !location)} onPress={() => void publish()}>{busy ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar' : 'Post'}</Text>}</MotionPressable>
           </View>
         </View>
 
-        {!wall && !error ? <ActivityIndicator className="mt-10" color="#13a95b" size="large" /> : null}
+        {!wall && !error ? <TravelerWallSkeleton language={language} /> : null}
         {error ? <Text className="mt-6 rounded-2xl bg-red-50 p-4 font-bold text-red-600">{error}</Text> : null}
         {wall && !wall.posts.length ? <View className="mt-6 items-center rounded-card border border-dashed border-ui-border bg-ui-surface p-8 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="forum-outline" size={45} color="#0B6B4F" /><Text className="mt-3 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Abrí el primer hilo de conversación' : 'Start the first conversation'}</Text><Text className="mt-2 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Contá una experiencia, pedí consejos o compartí una foto.' : 'Share an experience, ask for advice, or post a photo.'}</Text></View> : null}
 
@@ -167,7 +215,7 @@ export default function FriendsScreen() {
           const postReplies = wall.replies.filter((item) => item.post_id === post.id);
           const postReactions = wall.reactionCounts[post.id] ?? {};
           const reactionTotal = Object.values(postReactions).reduce((total, count) => total + count, 0);
-          const leadingReactions = reactions.filter(({ type }) => postReactions[type]).sort((a, b) => (postReactions[b.type] ?? 0) - (postReactions[a.type] ?? 0)).slice(0, 2);
+          const leadingReactions = reactions.filter(({ id }) => postReactions[id]).sort((a, b) => (postReactions[b.id] ?? 0) - (postReactions[a.id] ?? 0)).slice(0, 2);
           const own = post.user_id === session?.user.id;
           return <View className="mt-5 overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface" key={post.id}>
             <View className="p-5">
@@ -181,20 +229,21 @@ export default function FriendsScreen() {
             {post.image_url ? <Image source={{ uri: post.image_url }} contentFit="cover" style={{ aspectRatio: 1.35, width: '100%' }} /> : null}
             {post.latitude != null && post.longitude != null ? <Pressable className="mx-5 mb-4 flex-row items-center rounded-control bg-ui-muted p-4 dark:bg-ui-dark-muted" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}`)}><MaterialCommunityIcons name="map-marker-radius" size={25} color="#0B6B4F" /><View className="ml-3 flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ver ubicación compartida' : 'View shared location'}</Text><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{post.latitude.toFixed(5)}, {post.longitude.toFixed(5)}</Text></View><MaterialCommunityIcons name="open-in-new" size={20} color="#0B6B4F" /></Pressable> : null}
             <View className="border-t border-ui-border px-5 py-3 dark:border-ui-dark-border">
-              <View className="mb-2 flex-row items-center justify-between"><View className="flex-row items-center">{leadingReactions.map((item, index) => <View className="h-6 w-6 items-center justify-center rounded-full border border-white bg-ui-muted dark:border-ui-dark-surface dark:bg-ui-dark-muted" key={item.type} style={{ marginLeft: index ? -5 : 0 }}><Text className="text-sm">{item.emoji}</Text></View>)}{reactionTotal ? <Text className="ml-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{reactionTotal.toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text> : null}</View><Pressable onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{postReplies.length} {language === 'es' ? (postReplies.length === 1 ? 'comentario' : 'comentarios') : (postReplies.length === 1 ? 'comment' : 'comments')}</Text></Pressable></View>
+              <View className="mb-2 flex-row items-center justify-between"><View className="flex-row items-center">{leadingReactions.map((item, index) => <View className="h-6 w-6 items-center justify-center rounded-full border border-white bg-ui-muted dark:border-ui-dark-surface dark:bg-ui-dark-muted" key={item.id} style={{ marginLeft: index ? -5 : 0 }}><Text className="text-sm">{item.icon}</Text></View>)}{reactionTotal ? <Text className="ml-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{reactionTotal.toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text> : null}</View><Pressable onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{postReplies.length} {language === 'es' ? (postReplies.length === 1 ? 'comentario' : 'comentarios') : (postReplies.length === 1 ? 'comment' : 'comments')}</Text></Pressable></View>
               <View className="flex-row border-t border-ui-border pt-2 dark:border-ui-dark-border">
               <View className="relative flex-1">
-                {reactionPickerPostId === post.id ? <View className="absolute bottom-12 left-0 z-10 flex-row rounded-full border border-ui-border bg-ui-surface p-1 shadow-lg dark:border-ui-dark-border dark:bg-ui-dark-surface">{reactions.map((item) => <Pressable accessibilityLabel={item.label} className="h-11 w-11 items-center justify-center rounded-full" key={item.type} onPress={() => { longPressedPostId.current = undefined; setReactionPickerPostId(undefined); void react(post.id, item.type); }}><Text className="text-2xl">{item.emoji}</Text></Pressable>)}</View> : null}
-                <Pressable
+                {reactionPickerPostId === post.id ? <View className="absolute bottom-12 left-0 z-10"><MotionReveal><View className="flex-row rounded-full border border-ui-border bg-ui-surface p-1 shadow-lg dark:border-ui-dark-border dark:bg-ui-dark-surface">{reactions.map((item) => <MotionPressable accessibilityLabel={language === 'es' ? item.label_es : item.label_en} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full" key={item.id} onPress={() => { longPressedPostId.current = undefined; setReactionPickerPostId(undefined); void react(post.id, item.id); }}><Text className="text-2xl">{item.icon}</Text></MotionPressable>)}</View></MotionReveal></View> : null}
+                <MotionPressable
                   accessibilityHint={language === 'es' ? 'Mantené presionado para ver más reacciones' : 'Long press for more reactions'}
                   accessibilityLabel={language === 'es' ? 'Me gusta' : 'Like'}
                   className="flex-row items-center justify-center rounded-xl py-2"
+                  containerStyle={{ width: '100%' }}
                   delayLongPress={450}
-                  onLongPress={() => { longPressedPostId.current = post.id; setReactionPickerPostId(post.id); }}
+                  onLongPress={() => { void haptic('impact'); longPressedPostId.current = post.id; setReactionPickerPostId(post.id); }}
                   onPress={() => like(post.id)}
                 >
-                  <Text className={wall.myReactions[post.id] ? 'font-black text-ui-primary dark:text-ui-dark-primary' : 'font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{reactions.find(({ type }) => type === wall.myReactions[post.id])?.emoji ?? '♡'} {language === 'es' ? 'Me gusta' : 'Like'}</Text>
-                </Pressable>
+                  <Text className={wall.myReactions[post.id] ? 'font-black text-ui-primary dark:text-ui-dark-primary' : 'font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{reactions.find(({ id }) => id === wall.myReactions[post.id])?.icon ?? '♡'} {language === 'es' ? 'Me gusta' : 'Like'}</Text>
+                </MotionPressable>
               </View>
               <Pressable className="flex-1 flex-row items-center justify-center rounded-xl py-2" onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><MaterialCommunityIcons name="comment-outline" size={21} color="#68737A" /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Comentar' : 'Comment'}</Text></Pressable>
               <Pressable className="flex-1 flex-row items-center justify-center rounded-xl py-2" onPress={() => void sharePost(post)}><MaterialCommunityIcons name="share-outline" size={22} color="#68737A" /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Compartir' : 'Share'}</Text></Pressable>
