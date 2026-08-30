@@ -1,50 +1,39 @@
 import { supabase } from '@/lib/supabase';
 
+export type BusSchedules = { weekday: string[]; saturday: string[]; sunday: string[] };
+
 export type BusRoute = {
   source_key: string;
-  codigo_ruta: string | null;
-  codigo_ramal: string | null;
-  codigo_fraccionamiento: string | null;
+  source_url: string;
   route_name: string;
+  origin_city: string;
+  destination_city: string;
   company_name: string | null;
-  fare_crc: number | null;
-  senior_fare_crc: number | null;
-  distance_km: number | null;
-  resolution: string | null;
-  effective_date: string | null;
-  source_updated_at: string;
+  schedules: BusSchedules;
+  fare_crc: number;
+  fare_kind: 'estimated' | 'official';
+  terminal_name: string | null;
+  terminal_waze_url: string | null;
+  terminal_source_url: string | null;
+  last_verified_at: string;
 };
 
-export type BusRoutePage = { routes: BusRoute[]; total: number };
-export const BUS_ROUTE_PAGE_SIZE = 50;
-
-export async function getBusRoutes(query: string, page: number): Promise<BusRoutePage> {
+export async function getBusRoutes(query: string): Promise<BusRoute[]> {
   const term = query.trim().replace(/[,%]/g, ' ');
   let request = supabase
-    .from('aresep_bus_tariffs')
-    .select('source_key,codigo_ruta,codigo_ramal,codigo_fraccionamiento,nombre_ruta,nombre_ramal,nombre_fraccionamiento,operadores,tarifa_regular,tarifa_adulto_mayor,promedio_km_viaje,resolucion,fecha_vigencia,source_updated_at', { count: 'exact' })
-    .order('nombre_fraccionamiento', { ascending: true })
-    .range(page * BUS_ROUTE_PAGE_SIZE, page * BUS_ROUTE_PAGE_SIZE + BUS_ROUTE_PAGE_SIZE - 1);
+    .from('tourist_bus_routes')
+    .select('source_key,source_url,route_name,origin_city,destination_city,company_name,schedules,fare_crc,fare_kind,terminal_name,terminal_waze_url,terminal_source_url,last_verified_at')
+    .eq('is_published', true)
+    .order('route_name', { ascending: true });
 
-  if (term) request = request.or(`nombre_fraccionamiento.ilike.%${term}%,nombre_ramal.ilike.%${term}%,nombre_ruta.ilike.%${term}%`);
-  const { data, error, count } = await request;
+  if (term) request = request.ilike('route_name', `%${term}%`);
+  const { data, error } = await request;
   if (error) throw error;
 
-  return {
-    total: count ?? 0,
-    routes: (data ?? []).map((route) => ({
-      source_key: route.source_key,
-      codigo_ruta: route.codigo_ruta,
-      codigo_ramal: route.codigo_ramal,
-      codigo_fraccionamiento: route.codigo_fraccionamiento,
-      route_name: route.nombre_fraccionamiento || route.nombre_ramal || route.nombre_ruta || 'Ruta sin nombre publicado',
-      company_name: route.operadores,
-      fare_crc: route.tarifa_regular === null ? null : Number(route.tarifa_regular),
-      senior_fare_crc: route.tarifa_adulto_mayor === null ? null : Number(route.tarifa_adulto_mayor),
-      distance_km: route.promedio_km_viaje === null ? null : Number(route.promedio_km_viaje),
-      resolution: route.resolucion,
-      effective_date: route.fecha_vigencia,
-      source_updated_at: route.source_updated_at,
-    })),
-  };
+  return (data ?? []).map((route) => ({
+    ...route,
+    fare_crc: Number(route.fare_crc),
+    fare_kind: route.fare_kind as BusRoute['fare_kind'],
+    schedules: route.schedules as BusSchedules,
+  }));
 }
