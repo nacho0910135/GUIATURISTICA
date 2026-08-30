@@ -5,6 +5,15 @@ import { supabase } from '@/lib/supabase';
 
 export type ValidationAuthority = 'ICT' | 'SINAC';
 export type CommunityPhoto = { id: string; image_url: string; user_id: string; created_at: string; likes_count: number; liked: boolean };
+export type DestinationFreshnessCheck = 'open' | 'price' | 'cards';
+export type DestinationFreshness = Record<DestinationFreshnessCheck, { confirmed: number; notConfirmed: number }>;
+export type MyDestinationFreshness = Partial<Record<DestinationFreshnessCheck, boolean>>;
+
+const emptyDestinationFreshness = (): DestinationFreshness => ({
+  open: { confirmed: 0, notConfirmed: 0 },
+  price: { confirmed: 0, notConfirmed: 0 },
+  cards: { confirmed: 0, notConfirmed: 0 },
+});
 
 export type MapPlace = {
   id: string;
@@ -21,6 +30,7 @@ export type MapPlace = {
   status: string;
   region: string | null;
   description: string | null;
+  description_en: string | null;
   difficulty: string | null;
   price_national_crc: number | null;
   price_foreigner_usd: number | null;
@@ -54,9 +64,20 @@ export type DestinationReview = {
   created_at: string;
   author_name: string;
   avatar_url: string | null;
+  author_role: string | null;
 };
 
 export type ExplorePlace = Pick<MapPlace, 'id' | 'name' | 'province' | 'category' | 'description' | 'difficulty' | 'price_national_crc' | 'latitude' | 'longitude' | 'cover_image_url' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at'> & { community: boolean; contributor_id: string | null; contributor_name: string | null };
+
+function mobileImageUrl(url: string | null | undefined) {
+  if (!url?.includes('upload.wikimedia.org/wikipedia/commons/')) return url ?? null;
+  try {
+    const path = decodeURIComponent(new URL(url).pathname);
+    const thumbnailFile = path.match(/\/thumb\/[^/]+\/[^/]+\/([^/]+)\//)?.[1];
+    const fileName = thumbnailFile ?? path.split('/').at(-1);
+    return fileName ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName)}?width=1280` : url;
+  } catch { return url; }
+}
 
 type VerifiedSanctuaryRow = {
   id: string;
@@ -190,6 +211,7 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
     status: 'Activo',
     region: details.region,
     description: row.description_es || row.description_en || null,
+    description_en: row.description_en || null,
     difficulty: 'Fácil',
     price_national_crc: null,
     price_foreigner_usd: null,
@@ -228,7 +250,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   if (contributors.error) throw contributors.error;
   const contributorNames = new Map((contributors.data ?? []).map((profile) => [profile.id, profile.full_name || profile.username]));
   const officialPlaces = [
-    ...(official.data ?? []).map((place) => ({ ...place, cover_image_url: place.cover_image_url ?? place.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url ?? null, category: classifiedCategory(place), community: false, contributor_id: null, contributor_name: null })),
+    ...(official.data ?? []).map((place) => ({ ...place, cover_image_url: mobileImageUrl(place.cover_image_url ?? place.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url), category: classifiedCategory(place), community: false, contributor_id: null, contributor_name: null })),
     ...(community.data ?? []).map((place) => ({ ...place, cover_image_url: null, community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[], verification_evidence_url: null, verification_checked_at: null })),
   ]
     .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
@@ -262,7 +284,7 @@ export async function getPlacesForCategory(category: string, userId?: string): P
 async function getPlaces(filter: 'province' | 'category', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at)');
+    .select('id,name,province,region,category,description,description_en,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at)');
   if (filter === 'province') query = query.eq('province', value);
   else if (value === RESERVE_CATEGORY) query = query.in('id', [...RESERVE_IDS]);
   else if (value === REFUGE_CATEGORY) query = query.in('id', [...REFUGE_IDS]);
@@ -306,9 +328,10 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
       average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : initialDestinationRating(place.id),
       liked: likedIds.has(place.id),
       community_photos: communityPhotos,
+      cover_image_url: mobileImageUrl(place.cover_image_url),
       featured_community_photo_url: communityPhotos.find((photo) => photo.id === place.featured_community_photo_id)?.image_url ?? null,
       photos: [
-        ...(place.destination_photos ?? []).sort((a, b) => a.sort_order - b.sort_order).map((photo) => photo.image_url),
+        ...(place.destination_photos ?? []).sort((a, b) => a.sort_order - b.sort_order).map((photo) => mobileImageUrl(photo.image_url)).filter((url): url is string => Boolean(url)),
         ...communityPhotos.map((photo) => photo.image_url),
       ],
     };
@@ -318,15 +341,46 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
 export async function getDestinationReviews(destinationId: string): Promise<DestinationReview[]> {
   const { data, error } = await supabase
     .from('reviews')
-    .select('id,user_id,rating,comment,photos,created_at,users(full_name,username,avatar_url)')
+    .select('id,user_id,rating,comment,photos,created_at,users(full_name,username,avatar_url,role)')
     .eq('target_type', 'destination')
     .eq('target_id', destinationId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((review) => {
     const author = Array.isArray(review.users) ? review.users[0] : review.users;
-    return { ...review, rating: Number(review.rating), author_name: author?.full_name || author?.username || `Viajero ${review.user_id.slice(0, 6)}`, avatar_url: author?.avatar_url ?? null };
+    return { ...review, rating: Number(review.rating), author_name: author?.full_name || author?.username || `Viajero ${review.user_id.slice(0, 6)}`, avatar_url: author?.avatar_url ?? null, author_role: author?.role ?? null };
   }) as DestinationReview[];
+}
+
+export async function getDestinationFreshness(destinationId: string): Promise<DestinationFreshness> {
+  const { data, error } = await supabase.rpc('get_destination_freshness', { p_destination_id: destinationId });
+  if (error) throw error;
+  const rows = (data ?? []) as { check_type: string; confirmed_count: number; not_confirmed_count: number }[];
+  return rows.reduce((summary, row) => {
+    const check = row.check_type as DestinationFreshnessCheck;
+    if (check in summary) summary[check] = { confirmed: Number(row.confirmed_count), notConfirmed: Number(row.not_confirmed_count) };
+    return summary;
+  }, emptyDestinationFreshness());
+}
+
+export async function getMyDestinationFreshness(destinationId: string, userId: string): Promise<MyDestinationFreshness> {
+  const { data, error } = await supabase.from('destination_freshness_votes')
+    .select('check_type,confirmed')
+    .eq('destination_id', destinationId)
+    .eq('user_id', userId);
+  if (error) throw error;
+  return Object.fromEntries((data ?? []).map((vote) => [vote.check_type, vote.confirmed])) as MyDestinationFreshness;
+}
+
+export async function setDestinationFreshnessVote(destinationId: string, userId: string, check: DestinationFreshnessCheck, confirmed: boolean) {
+  const { error } = await supabase.from('destination_freshness_votes').upsert({
+    destination_id: destinationId,
+    user_id: userId,
+    check_type: check,
+    confirmed,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'destination_id,user_id,check_type' });
+  if (error) throw error;
 }
 
 export async function toggleDestinationLike(destinationId: string, userId: string, liked: boolean) {

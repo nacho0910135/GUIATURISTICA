@@ -1,6 +1,0 @@
-2026/08/29-06:25:14.492 5f30 Reusing MANIFEST C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/08/29-06:25:14.493 5f30 Recovering log #4
-2026/08/29-06:25:14.493 5f30 Reusing old log C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default\EdgeCoupons/coupons_data.db/000004.log 
-2026/08/29-06:25:14.815 d46c Level-0 table #8: started
-2026/08/29-06:25:14.822 d46c Level-0 table #8: 683444 bytes OK
-2026/08/29-06:25:14.823 d46c Delete type=0 #4

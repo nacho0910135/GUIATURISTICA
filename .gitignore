@@ -32,6 +32,9 @@ yarn-error.*
 
 # local env files
 .env*.local
+/.brave-yoviajo-profile/
+/.playwright*_profile/
+/.playwright-session/
 
 # typescript
 *.tsbuildinfo

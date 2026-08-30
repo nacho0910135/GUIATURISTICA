@@ -100,10 +100,10 @@ export async function getSocialProfile(userId: string) {
     supabase.from('users').select('id,username,full_name,avatar_url,bio,contact_email').eq('id', userId).single(),
     supabase.from('user_follows').select('follower_id').eq('followed_id', userId),
     supabase.from('user_follows').select('followed_id').eq('follower_id', userId),
-    supabase.from('traveler_posts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-    supabase.from('fauna_photos').select('*,fauna_species(common_name_es,common_name_en)').eq('user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at').eq('user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('fauna_photos').select('id,fauna_id,user_id,image_url,caption,likes_count,created_at,fauna_species(common_name_es,common_name_en)').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'destination'),
-    supabase.from('notifications').select('*,actor:users!notifications_actor_id_fkey(username,full_name,avatar_url)').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(50),
+    supabase.from('notifications').select('id,recipient_id,actor_id,type,entity_type,entity_id,message,read_status,created_at,actor:users!notifications_actor_id_fkey(username,full_name,avatar_url)').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(50),
     getPrivateConversations(userId),
   ]);
   const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? sightings.error ?? saved.error ?? notifications.error;
@@ -112,7 +112,11 @@ export async function getSocialProfile(userId: string) {
   const destinations = savedIds.length ? await supabase.from('destinations').select('id,name,province,cover_image_url,destination_photos(image_url,sort_order)').in('id', savedIds) : { data: [], error: null };
   if (destinations.error) throw destinations.error;
   const savedDestinations = (destinations.data ?? []).map((destination) => ({ ...destination, cover_image_url: destination.cover_image_url ?? destination.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url ?? null }));
-  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: sightings.data ?? [], saved: savedDestinations, notifications: notifications.data ?? [], conversations };
+  const normalizedSightings = (sightings.data ?? []).map((photo) => ({
+    ...photo,
+    fauna_species: Array.isArray(photo.fauna_species) ? photo.fauna_species[0] : photo.fauna_species,
+  }));
+  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: normalizedSightings, saved: savedDestinations, notifications: notifications.data ?? [], conversations };
 }
 
 async function uploadImage(bucket: 'profile-avatars' | 'destination-photos', owner: string, asset: ImagePickerAsset) {
@@ -158,9 +162,9 @@ export async function updateCreatorSuggestionStatus(id: string, status: CreatorS
 
 export async function getAdminDashboard() {
   const [suggestions, destinations, photos, sanctuaries, communityDestinations, posts, reports, commercialClaims] = await Promise.all([
-    supabase.from('creator_suggestions').select('*,user:users(username,full_name)').order('created_at', { ascending: false }).limit(50),
+    supabase.from('creator_suggestions').select('id,user_id,message,status,created_at,user:users(username,full_name)').order('created_at', { ascending: false }).limit(50),
     supabase.from('destinations').select('id,name,province').order('name'),
-    supabase.from('destination_photos').select('*').order('sort_order'),
+    supabase.from('destination_photos').select('id,destination_id,image_url,sort_order').order('sort_order'),
     supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url').eq('verified', true).order('name'),
     supabase.from('destination_suggestions').select('id,name,province,category,description,created_at').eq('status', 'published').order('created_at', { ascending: false }),
     supabase.from('traveler_posts').select('id,body,created_at,user:users!traveler_posts_user_id_fkey(username,full_name)').order('created_at', { ascending: false }).limit(50),
@@ -257,7 +261,7 @@ export async function getPublicTravelerProfile(userId: string, viewerId: string)
     supabase.from('users').select('id,username,full_name,avatar_url,bio').eq('id', userId).single(),
     supabase.from('user_follows').select('follower_id').eq('followed_id', userId),
     supabase.from('user_follows').select('followed_id').eq('follower_id', userId),
-    supabase.from('traveler_posts').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('traveler_posts').select('id,user_id,body,image_url,topic,created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('user_follows').select('followed_id').eq('follower_id', viewerId).eq('followed_id', userId).maybeSingle(),
   ]);
   const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? followed.error;

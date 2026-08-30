@@ -1,7 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Image } from 'expo-image';
 import { Tabs, useRouter } from 'expo-router';
-import { Platform, Text, type ColorValue } from 'react-native';
+import { Text, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
@@ -15,28 +14,22 @@ const icon = (name: keyof typeof MaterialCommunityIcons.glyphMap) =>
     );
   };
 
-const friendsIcon = ({ color, focused }: { color: ColorValue; focused: boolean }) => (
+const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }) => (
   <MaterialCommunityIcons
-    name="account-group"
+    name="compass"
     color={focused ? 'white' : color}
-    size={25}
+    size={24}
     style={{
-      backgroundColor: focused ? '#0077A8' : 'transparent',
-      borderColor: focused ? '#ffffff' : 'transparent',
-      borderRadius: 30,
-      borderWidth: 4,
-      padding: focused ? 10 : 0,
-      transform: [{ translateY: focused ? -7 : 0 }],
-      ...Platform.select({
-        web: { boxShadow: '0 3px 10px rgba(6, 47, 35, 0.24)' },
-        default: { elevation: 6, shadowColor: '#062f23', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.24, shadowRadius: 5 },
-      }),
+      backgroundColor: focused ? '#087443' : '#E7F5ED',
+      borderRadius: 18,
+      padding: 7,
+      transform: [{ translateY: focused ? -4 : 0 }],
     }}
   />
 );
 
 export default function TabsLayout() {
-  const { avatarUrl, t } = useApp();
+  const { t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
   const router = useRouter();
@@ -52,14 +45,15 @@ export default function TabsLayout() {
         tabBarStyle: { alignSelf: 'center', backgroundColor: colors.surface, borderTopColor: colors.border, height: 72 + bottom, maxWidth: 1120, paddingBottom: 8 + bottom, paddingTop: 6, width: '100%' },
       }}
     >
+      <Tabs.Screen name="catalog" options={{ headerShown: false, href: null }} />
+      <Tabs.Screen name="fauna" options={{ href: null }} />
+      <Tabs.Screen name="friends" options={{ title: t('communityTitle').split(' Descubriendo')[0], tabBarIcon: icon('account-group') }} />
+      <Tabs.Screen name="my-trip" options={{ title: 'Mi viaje', tabBarIcon: icon('map-marker-path') }} />
       <Tabs.Screen
         listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/explore', params: { reset: String(Date.now()) } }); } }}
         name="explore"
-        options={{ title: t('explore'), tabBarIcon: icon('compass') }}
+        options={{ title: t('explore'), tabBarIcon: exploreIcon }}
       />
-      <Tabs.Screen name="catalog" options={{ headerShown: false, href: null }} />
-      <Tabs.Screen name="fauna" options={{ title: t('fauna'), tabBarIcon: icon('paw-outline') }} />
-      <Tabs.Screen name="friends" options={{ title: t('communityTitle').split(' Descubriendo')[0], tabBarIcon: friendsIcon, tabBarActiveTintColor: colors.secondary, tabBarLabelStyle: { fontSize: 11, fontWeight: '800' } }} />
       <Tabs.Screen
         listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/commerce', params: { reset: String(Date.now()) } }); } }}
         name="commerce"
@@ -68,9 +62,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/logistics', params: { reset: String(Date.now()) } }); } }}
         name="logistics"
-        options={{ title: t('logistics'), tabBarIcon: icon('bus-clock') }}
+        options={{ title: 'Buses', tabBarIcon: icon('bus') }}
       />
-      <Tabs.Screen name="profile" options={{ title: t('profile'), tabBarIcon: ({ color }) => avatarUrl ? <Image source={{ uri: avatarUrl }} style={{ borderColor: color as string, borderRadius: 15, borderWidth: 2, height: 30, width: 30 }} /> : <MaterialCommunityIcons name="account-circle-outline" color={color} size={24} /> }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
 }

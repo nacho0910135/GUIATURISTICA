@@ -34,6 +34,8 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="subscriptions" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="claim-business" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="(aux)/traveler-profile" options={{ animation: 'slide_from_right' }} />

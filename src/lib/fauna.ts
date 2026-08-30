@@ -29,6 +29,9 @@ export type FaunaSanctuary = {
   id: string;
   name: string;
   province: string;
+  cover_image_url: string | null;
+  photos: string[];
+  photo_attributions: { image_url: string; attribution: string; license: string; provider: string; source_url: string }[];
   location_name: string | null;
   description_es: string;
   description_en: string;
@@ -60,6 +63,7 @@ export type FaunaProfile = {
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  role: string | null;
 };
 
 const vulnerabilityLabels: Record<string, string> = {
@@ -77,15 +81,15 @@ export function getVulnerabilityLabel(status: string | null, language: 'es' | 'e
 }
 
 export async function getVerifiedSanctuaries(): Promise<FaunaSanctuary[]> {
-  const { data, error } = await supabase.from('fauna_sanctuaries').select('*').eq('verified', true).order('name');
+  const { data, error } = await supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url,photos,photo_attributions,location_name,description_es,description_en,verified').eq('verified', true).order('name');
   if (error) throw error;
   return (data ?? []) as FaunaSanctuary[];
 }
 
 export async function getFaunaHome(userId?: string) {
   const [species, sanctuaries, sightings] = await Promise.all([
-    supabase.from('fauna_species_public').select('*').order('common_name_es'),
-    supabase.from('fauna_sanctuaries').select('*').eq('verified', true).order('name'),
+    supabase.from('fauna_species_public').select('id,common_name_es,common_name_en,scientific_name,category,description,description_en,habitat,habitat_en,vulnerability_status,province,tour_observable,is_endemic,is_national_symbol,image_url,location_protected,latitude,longitude,location_precision').order('common_name_es'),
+    supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url,photos,photo_attributions,location_name,description_es,description_en,verified').eq('verified', true).order('name'),
     userId
       ? supabase.from('user_fauna_sightings').select('fauna_id').eq('user_id', userId).gt('sightings_count', 0)
       : Promise.resolve({ data: [], error: null }),
@@ -100,7 +104,7 @@ export async function getFaunaHome(userId?: string) {
 }
 
 export async function getFaunaSpecies(id: string) {
-  const { data, error } = await supabase.from('fauna_species_public').select('*').eq('id', id).single();
+  const { data, error } = await supabase.from('fauna_species_public').select('id,common_name_es,common_name_en,scientific_name,category,description,description_en,habitat,habitat_en,vulnerability_status,province,tour_observable,is_endemic,is_national_symbol,image_url,location_protected,latitude,longitude,location_precision').eq('id', id).single();
   if (error) throw error;
   return data as FaunaSpecies;
 }
@@ -146,7 +150,7 @@ export async function addFaunaSpecies(input: { commonName: string; scientificNam
 }
 
 export async function getFaunaPhotos(speciesId: string) {
-  const { data, error } = await supabase.from('fauna_photos').select('*,photographer:users!fauna_photos_user_id_fkey(id,username,full_name,avatar_url)').eq('fauna_id', speciesId).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('fauna_photos').select('id,fauna_id,user_id,image_url,caption,likes_count,created_at,photographer:users!fauna_photos_user_id_fkey(id,username,full_name,avatar_url)').eq('fauna_id', speciesId).order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((row) => ({ ...row, photographer: Array.isArray(row.photographer) ? row.photographer[0] ?? null : row.photographer })) as FaunaPhoto[];
 }
@@ -161,7 +165,7 @@ export async function getFaunaPhotoLikeIds(photoIds: string[], userId: string) {
 export async function getFaunaPhotoComments(photoId: string) {
   const { data, error } = await supabase
     .from('fauna_comments')
-    .select('id,photo_id,user_id,body,created_at,author:users!fauna_comments_user_id_fkey(id,username,full_name,avatar_url)')
+    .select('id,photo_id,user_id,body,created_at,author:users!fauna_comments_user_id_fkey(id,username,full_name,avatar_url,role)')
     .eq('photo_id', photoId)
     .order('created_at', { ascending: true });
   if (error) throw error;

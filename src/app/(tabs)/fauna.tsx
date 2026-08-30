@@ -2,15 +2,28 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { ThemedNotice } from '@/components/themed-notice';
-import { addFaunaSpecies, getFaunaHome, getVulnerabilityLabel, markFaunaSeen } from '@/lib/fauna';
+import { addFaunaSpecies, getFaunaHome, getVulnerabilityLabel, markFaunaSeen, type FaunaSanctuary } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
 type FaunaHome = Awaited<ReturnType<typeof getFaunaHome>>;
+
+function SanctuaryImage({ sanctuary }: { sanctuary: FaunaSanctuary }) {
+  const photos = [...new Set([sanctuary.cover_image_url, ...sanctuary.photos].filter((url): url is string => Boolean(url)))];
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    setIndex(0);
+    if (photos.length < 2) return undefined;
+    const interval = setInterval(() => setIndex((current) => (current + 1) % photos.length), 2000);
+    return () => clearInterval(interval);
+  }, [sanctuary.id, photos.length]);
+  const source = photos[index];
+  return source ? <Image cachePolicy="memory-disk" contentFit="cover" source={{ uri: source }} style={{ height: 146, width: '100%' }} transition={250} /> : <View className="h-[146px] items-center justify-center bg-ui-muted dark:bg-ui-dark-muted"><MaterialCommunityIcons name="image-off-outline" size={30} color="#68737A" /></View>;
+}
 
 export default function FaunaScreen() {
   const router = useRouter();
@@ -141,7 +154,9 @@ export default function FaunaScreen() {
           </View>
           <ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>
             {home.sanctuaries.map((sanctuary) => (
-              <View className="w-64 rounded-card border border-ui-border bg-ui-surface p-5 dark:border-ui-dark-border dark:bg-ui-dark-surface" key={sanctuary.id}>
+              <View className="w-64 overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface" key={sanctuary.id}>
+                <SanctuaryImage sanctuary={sanctuary} />
+                <View className="p-5">
                 <View className="flex-row items-center">
                   <MaterialCommunityIcons name="check-decagram" size={22} color="#78dfa1" />
                   <Text className="ml-2 text-xs font-black uppercase tracking-wider text-frog-300">{language === 'es' ? 'Verificado' : 'Verified'}</Text>
@@ -149,6 +164,8 @@ export default function FaunaScreen() {
                 <Text className="mt-4 text-lg font-bold text-ui-text dark:text-ui-dark-text">{sanctuary.name}</Text>
                 <Text className="mt-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{sanctuary.location_name} · {sanctuary.province}</Text>
                 <Text className="mt-3 text-sm leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? sanctuary.description_es : sanctuary.description_en}</Text>
+                {sanctuary.photos.length > 1 ? <View className="mt-3 flex-row"><MaterialCommunityIcons name="image-multiple-outline" size={16} color="#087443" /><Text className="ml-1 text-xs font-bold text-ui-primary">{sanctuary.photos.length} {language === 'es' ? 'fotos libres' : 'free photos'}</Text></View> : null}
+                </View>
               </View>
             ))}
           </ScrollView>

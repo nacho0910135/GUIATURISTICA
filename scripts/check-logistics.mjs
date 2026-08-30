@@ -1,5 +1,6 @@
-const url = 'https://dxqezvkguswleoisxikz.supabase.co';
-const key = 'sb_publishable_4YjkMWzHSFnxb4eCe4ukkw_j-yaPhd6';
+const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+if (!url || !key) throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL o EXPO_PUBLIC_SUPABASE_ANON_KEY.');
 const headers = { apikey: key, 'Content-Type': 'application/json' };
 
 const nearbyResponse = await fetch(`${url}/rest/v1/rpc/get_destinations_nearby`, {

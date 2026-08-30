@@ -1,34 +1,66 @@
 import { createClient } from '@supabase/supabase-js';
 
 const PHOTO_LIMIT = 10;
+const REQUEST_INTERVAL_MS = 3500;
 const args = new Set(process.argv.slice(2));
 const apply = args.has('--apply');
 const destinationArg = process.argv.find((arg) => arg.startsWith('--destination='))?.slice('--destination='.length);
 const limitArg = Number(process.argv.find((arg) => arg.startsWith('--limit='))?.slice('--limit='.length));
 
-if (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.UNSPLASH_ACCESS_KEY) throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY o UNSPLASH_ACCESS_KEY en .env.local.');
+if (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en .env.local.');
 const supabase = createClient(process.env.EXPO_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-const unsplashHeaders = { Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` };
-const attributionSource = (url) => `${url}${url.includes('?') ? '&' : '?'}utm_source=descubriendo_cr&utm_medium=referral`;
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const clean = (value = '') => value.replace(/<[^>]*>/g, ' ').replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
+const freeLicense = (license = '') => /^(CC BY|CC BY-SA|CC0|Public domain)/i.test(license.trim());
+let nextRequestAt = 0;
 
-async function unsplashPhotos(destination) {
-  const query = new URLSearchParams({ query: `${destination.name} Costa Rica`, per_page: '30', orientation: 'landscape', content_filter: 'high', order_by: 'relevant' });
-  const response = await fetch(`https://api.unsplash.com/search/photos?${query}`, { headers: unsplashHeaders });
-  if (!response.ok) throw new Error(`Unsplash respondió ${response.status}.`);
-  const result = await response.json();
-  return (result.results ?? []).map((photo) => ({
-    image_url: photo.urls?.regular,
-    source_url: attributionSource(photo.links?.html ?? `https://unsplash.com/photos/${photo.id}`),
-    attribution: `Foto de ${photo.user?.name || 'Unsplash'} en Unsplash`,
-    license: 'Unsplash License',
-    download_location: photo.links?.download_location,
-  })).filter((photo) => photo.image_url && photo.download_location);
+class WikimediaRateLimitError extends Error {}
+
+function retryAfterMilliseconds(value) {
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return seconds * 1000;
+  const timestamp = value ? Date.parse(value) : NaN;
+  return Number.isFinite(timestamp) ? Math.max(0, timestamp - Date.now()) : 30000;
 }
 
-async function trackUnsplashDownload(photo) {
-  const response = await fetch(photo.download_location, { headers: unsplashHeaders, redirect: 'manual' });
-  if (!response.ok && response.status !== 302) throw new Error(`Unsplash no registró la descarga (${response.status}).`);
+async function wikimediaRequest(url, progress) {
+  await sleep(Math.max(0, nextRequestAt - Date.now()));
+  let response = await fetch(url, { headers: { 'User-Agent': 'DescubriendoCR/1.0 (tourism destination photo synchronizer)' } });
+  nextRequestAt = Date.now() + REQUEST_INTERVAL_MS;
+  if (response.status !== 429) return response;
+  const wait = retryAfterMilliseconds(response.headers.get('retry-after'));
+  console.log(`${progress}: Wikimedia pidió esperar ${Math.ceil(wait / 1000)} s; reintentando una vez...`);
+  await sleep(wait);
+  response = await fetch(url, { headers: { 'User-Agent': 'DescubriendoCR/1.0 (tourism destination photo synchronizer)' } });
+  nextRequestAt = Date.now() + REQUEST_INTERVAL_MS;
+  if (response.status === 429) throw new WikimediaRateLimitError('Wikimedia mantiene el límite; se detiene el lote para no saturarlo.');
+  return response;
+}
+
+async function wikimediaSearch(search, progress) {
+  const query = new URLSearchParams({ action: 'query', format: 'json', generator: 'search', gsrnamespace: '6', gsrlimit: '30', gsrsearch: search, prop: 'imageinfo', iiprop: 'url|extmetadata', iiurlwidth: '1600', origin: '*' });
+  const response = await wikimediaRequest(`https://commons.wikimedia.org/w/api.php?${query}`, progress);
+  if (!response.ok) throw new Error(`Wikimedia respondió ${response.status}.`);
+  const pages = Object.values((await response.json()).query?.pages ?? {});
+  return pages.map((page) => {
+    const info = page.imageinfo?.[0];
+    const metadata = info?.extmetadata ?? {};
+    const license = clean(metadata.LicenseShortName?.value || metadata.UsageTerms?.value);
+    const fileName = page.title.replace(/^File:/, '');
+    return { image_url: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName)}?width=1280`, source_url: info?.descriptionurl ?? `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`, attribution: clean(metadata.Artist?.value) || clean(metadata.Credit?.value) || fileName, license };
+  }).filter((photo) => photo.image_url && freeLicense(photo.license));
+}
+
+async function wikimediaPhotos(destination, required, progress) {
+  const baseName = destination.name.replace(/\s*[-–—]\s*[^-–—]+$/, '').replace(/\s*\([^)]*\)/g, '').trim();
+  const queries = [...new Set([`"${destination.name}" Costa Rica`, `${destination.name} Costa Rica`, destination.name, `${baseName} Costa Rica`, baseName])].filter(Boolean);
+  const unique = new Map();
+  for (const [index, query] of queries.entries()) {
+    console.log(`${progress}: consulta ${index + 1}/${queries.length} en Wikimedia...`);
+    for (const photo of await wikimediaSearch(query, progress)) unique.set(photo.image_url, photo);
+    if (unique.size >= required) break;
+  }
+  return [...unique.values()];
 }
 
 let destinationsQuery = supabase.from('destinations').select('id,name,province,cover_image_url').eq('status', 'Activo').order('name');
@@ -36,42 +68,45 @@ if (destinationArg) destinationsQuery = destinationsQuery.ilike('name', `%${dest
 if (Number.isFinite(limitArg) && limitArg > 0) destinationsQuery = destinationsQuery.limit(limitArg);
 const { data: destinations, error: destinationsError } = await destinationsQuery;
 if (destinationsError) throw destinationsError;
-
-const { data: existingPhotos, error: existingError } = destinations?.length
-  ? await supabase.from('destination_photos').select('destination_id,image_url,sort_order').in('destination_id', destinations.map((destination) => destination.id))
-  : { data: [], error: null };
+const { data: existingPhotos, error: existingError } = destinations?.length ? await supabase.from('destination_photos').select('destination_id,image_url,sort_order').in('destination_id', destinations.map((destination) => destination.id)) : { data: [], error: null };
 if (existingError) throw existingError;
 
 const photosByDestination = new Map();
 for (const photo of existingPhotos ?? []) photosByDestination.set(photo.destination_id, [...(photosByDestination.get(photo.destination_id) ?? []), photo]);
+const stats = { destinations: destinations?.length ?? 0, planned: 0, inserted: 0, skippedComplete: 0, withoutEnoughFreePhotos: 0, failed: 0, rateLimited: false };
+console.log(`Inicio: ${stats.destinations} destinos · modo ${apply ? 'aplicar' : 'prueba'} · fuente Wikimedia Commons.`);
 
-const stats = { destinations: destinations?.length ?? 0, planned: 0, inserted: 0, skippedComplete: 0, withoutEnoughPhotos: 0, failed: 0 };
-for (const destination of destinations ?? []) {
+for (const [index, destination] of (destinations ?? []).entries()) {
   const existing = photosByDestination.get(destination.id) ?? [];
-  if (existing.length >= PHOTO_LIMIT) { stats.skippedComplete += 1; continue; }
+  const progress = `[${index + 1}/${stats.destinations}] ${destination.name}`;
+  if (existing.length >= PHOTO_LIMIT) { stats.skippedComplete += 1; console.log(`${progress}: completo (${PHOTO_LIMIT}/${PHOTO_LIMIT}).`); continue; }
+  console.log(`${progress}: buscando ${PHOTO_LIMIT - existing.length} foto(s) (${existing.length}/${PHOTO_LIMIT} existentes)...`);
   const usedUrls = new Set(existing.map((photo) => photo.image_url));
-  const slots = Array.from({ length: PHOTO_LIMIT }, (_, index) => index).filter((order) => !existing.some((photo) => photo.sort_order === order));
+  const slots = Array.from({ length: PHOTO_LIMIT }, (_, order) => order).filter((order) => !existing.some((photo) => photo.sort_order === order));
   let candidates;
-  try { candidates = (await unsplashPhotos(destination)).filter((photo) => !usedUrls.has(photo.image_url)).slice(0, slots.length); }
-  catch (error) { stats.failed += 1; console.warn(`Omitido ${destination.name}: ${error.message}`); continue; }
-  if (candidates.length < slots.length) stats.withoutEnoughPhotos += 1;
-  if (apply) {
-    try { for (const photo of candidates) await trackUnsplashDownload(photo); }
-    catch (error) { stats.failed += 1; console.warn(`Omitido ${destination.name}: ${error.message}`); continue; }
+  try { candidates = (await wikimediaPhotos(destination, slots.length, progress)).filter((photo) => !usedUrls.has(photo.image_url)).slice(0, slots.length); }
+  catch (error) {
+    stats.failed += 1;
+    console.warn(`${progress}: omitido — ${error.message}`);
+    if (error instanceof WikimediaRateLimitError) { stats.rateLimited = true; break; }
+    continue;
   }
-  const rows = candidates.map((photo, index) => ({ destination_id: destination.id, image_url: photo.image_url, sort_order: slots[index], source_provider: 'Unsplash', source_url: photo.source_url, attribution: photo.attribution, license: photo.license }));
+  if (candidates.length < slots.length) stats.withoutEnoughFreePhotos += 1;
+  console.log(`${progress}: ${candidates.length} foto(s) libres encontradas.`);
+  const rows = candidates.map((photo, rowIndex) => ({ destination_id: destination.id, image_url: photo.image_url, sort_order: slots[rowIndex], source_provider: 'Wikimedia Commons', source_url: photo.source_url, attribution: photo.attribution, license: photo.license }));
   stats.planned += rows.length;
   if (apply && rows.length) {
     const { error } = await supabase.from('destination_photos').insert(rows);
     if (error) throw error;
     stats.inserted += rows.length;
+    console.log(`${progress}: ${rows.length} foto(s) guardadas.`);
     if (!destination.cover_image_url) {
       const first = rows[0];
       const { error: coverError } = await supabase.from('destinations').update({ cover_image_url: first.image_url, image_verified: true, image_attribution: first.attribution, image_license: first.license, image_source_url: first.source_url }).eq('id', destination.id);
       if (coverError) throw coverError;
     }
   }
-  await sleep(1000);
+  if (!apply) console.log(`${progress}: prueba, no se guardó nada.`);
 }
 
-console.log(JSON.stringify({ mode: apply ? 'apply' : 'dry-run', source: 'Unsplash', ...stats }, null, 2));
+console.log(JSON.stringify({ mode: apply ? 'apply' : 'dry-run', source: 'Wikimedia Commons', ...stats }, null, 2));

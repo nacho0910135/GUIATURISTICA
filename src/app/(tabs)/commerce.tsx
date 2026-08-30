@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
+import { useGlobalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
@@ -16,9 +17,9 @@ import {
   getCommerceDirectory,
   getOwnerClaims,
   getOwnerDashboard,
+  normalizeBusinessAttribution,
   recordBusinessEvent,
   registerCommercialService,
-  requestCommercialServiceClaim,
   saveBusinessReview,
   setCommercialFavorite,
   setBusinessCoverPhoto,
@@ -74,31 +75,31 @@ function TrustBadge({ service, language }: { service: CommerceService; language:
       : service.source === 'owner_registered'
         ? (language === 'es' ? 'REGISTRADO POR EL NEGOCIO' : 'REGISTERED BY BUSINESS')
         : (language === 'es' ? 'APORTE COMUNITARIO' : 'COMMUNITY CONTRIBUTION');
-  if (service.business_verified_at && service.business_verification_evidence_url) {
-    return <View className="flex-row flex-wrap gap-2"><Text className="rounded-full bg-ui-primary px-2 py-1 text-[10px] font-black text-white">{language === 'es' ? 'NEGOCIO VERIFICADO' : 'VERIFIED BUSINESS'}</Text><Text className="rounded-full bg-ui-muted px-2 py-1 text-[10px] font-black text-ui-text-muted dark:bg-white/10 dark:text-ui-dark-text-muted">{sourceLabel}</Text></View>;
-  }
-  return <View className="flex-row flex-wrap gap-2"><Text className="rounded-full bg-ui-muted px-2 py-1 text-[10px] font-black text-ui-text-muted dark:bg-white/10 dark:text-ui-dark-text-muted">{sourceLabel}</Text></View>;
+  const officialOperator = service.source === 'ICT' || service.source === 'SINAC';
+  return <View className="flex-row flex-wrap gap-2">{service.business_verified_at && service.business_verification_evidence_url ? <Text className="rounded-full bg-ui-primary px-2 py-1 text-[10px] font-black text-white">{language === 'es' ? 'NEGOCIO VERIFICADO' : 'VERIFIED BUSINESS'}</Text> : null}{officialOperator ? <Text className="rounded-full bg-ui-secondary px-2 py-1 text-[10px] font-black text-white">{language === 'es' ? 'OPERADOR OFICIAL' : 'OFFICIAL OPERATOR'}</Text> : null}<Text className="rounded-full bg-ui-muted px-2 py-1 text-[10px] font-black text-ui-text-muted dark:bg-white/10 dark:text-ui-dark-text-muted">{sourceLabel}</Text></View>;
 }
 
 function ServiceCard({ service, saved, onClaim, onOpen, onReport, onSaved }: { service: CommerceService; saved: boolean; onClaim: (service: CommerceService) => void; onOpen: (service: CommerceService) => void; onReport: (service: CommerceService) => void; onSaved: (service: CommerceService) => void }) {
   const { language } = useApp();
+  const { qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term } = useGlobalSearchParams();
+  const attribution = useMemo(() => normalizeBusinessAttribution({ qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term }), [qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term]);
   const phone = service.phone ?? service.whatsapp;
   const categoryTags = COMMERCE_SUBCATEGORIES[service.category] ?? [];
   const tags = service.subcategories.map((id) => categoryTags.find((tag) => tag.id === id)?.[language] ?? id).filter(Boolean);
-  useEffect(() => { void recordBusinessEvent(service.id, 'impression'); }, [service.id]);
+  useEffect(() => { void recordBusinessEvent(service.id, 'impression', attribution); }, [service.id, attribution]);
   const openWhatsApp = () => {
     if (!service.whatsapp) return;
-    void recordBusinessEvent(service.id, 'whatsapp_click');
+    void recordBusinessEvent(service.id, 'whatsapp_click', attribution);
     void Linking.openURL(`https://wa.me/${service.whatsapp.replace(/[^\d]/g, '')}`);
   };
   const call = () => {
     if (!phone) return;
-    void recordBusinessEvent(service.id, 'call');
+    void recordBusinessEvent(service.id, 'call', attribution);
     void Linking.openURL(`tel:${phone.replace(/[^+\d]/g, '')}`);
   };
   const directions = () => {
     if (service.latitude == null || service.longitude == null) return;
-    void recordBusinessEvent(service.id, 'directions');
+    void recordBusinessEvent(service.id, 'directions', attribution);
     void openNavigation(service.latitude, service.longitude);
   };
   const share = () => {
@@ -141,7 +142,7 @@ function ServiceCard({ service, saved, onClaim, onOpen, onReport, onSaved }: { s
         </View>
         <View className="mt-2 flex-row flex-wrap gap-2">
           {service.menu_url || service.external_url ? <Pressable className="rounded-2xl border border-ui-border px-3 py-2 dark:border-ui-dark-border" onPress={() => void Linking.openURL(service.menu_url ?? service.external_url!)}><Text className="text-xs font-black text-ui-primary">{service.menu_url ? (language === 'es' ? 'Menú / catálogo' : 'Menu / catalog') : (language === 'es' ? 'Sitio web' : 'Website')}</Text></Pressable> : null}
-          {service.booking_url ? <Pressable className="rounded-2xl border border-ui-border px-3 py-2 dark:border-ui-dark-border" onPress={() => { void recordBusinessEvent(service.id, 'reservation'); void Linking.openURL(service.booking_url!); }}><Text className="text-xs font-black text-ui-primary">{language === 'es' ? 'Reservar' : 'Book'}</Text></Pressable> : null}
+          {service.booking_url ? <Pressable className="rounded-2xl border border-ui-border px-3 py-2 dark:border-ui-dark-border" onPress={() => { void recordBusinessEvent(service.id, 'reservation', attribution); void Linking.openURL(service.booking_url!); }}><Text className="text-xs font-black text-ui-primary">{language === 'es' ? 'Reservar' : 'Book'}</Text></Pressable> : null}
           <Pressable className="flex-row items-center rounded-2xl border border-ui-border px-3 py-2 dark:border-ui-dark-border" onPress={() => onSaved(service)}><MaterialCommunityIcons name={saved ? 'heart' : 'heart-outline'} size={16} color="#087443" /><Text className="ml-1 text-xs font-black text-ui-primary">{saved ? (language === 'es' ? 'Guardado' : 'Saved') : (language === 'es' ? 'Guardar' : 'Save')}</Text></Pressable>
           <Pressable className="rounded-2xl bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft" onPress={() => onOpen(service)}><Text className="text-xs font-black text-ui-primary">{language === 'es' ? 'Ver reseñas' : 'See reviews'}</Text></Pressable>
           <Pressable className="rounded-2xl border border-ui-border px-3 py-2 dark:border-ui-dark-border" onPress={share}><Text className="text-xs font-black text-ui-primary">{language === 'es' ? 'Compartir' : 'Share'}</Text></Pressable>
@@ -175,7 +176,7 @@ function BusinessDetailModal({ service, onClose, onReviewed }: { service: Commer
   };
   return <Modal visible transparent animationType="slide" onRequestClose={onClose}><View className="flex-1 justify-end bg-black/40"><View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface"><View className="flex-row items-start justify-between"><View className="flex-1 pr-3"><Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{service.title}</Text><View className="mt-2 flex-row flex-wrap items-center gap-x-4 gap-y-2"><View className="flex-row items-center"><MaterialCommunityIcons name="map-marker-distance" size={20} color="#087443" /><Text className="ml-1 font-black text-ui-primary dark:text-ui-dark-primary">{distanceLabel(service.distance_km, language)}</Text></View><View className="flex-row items-center"><MaterialCommunityIcons name="star" size={22} color="#E0A100" /><Text className="ml-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{service.avg_rating.toFixed(1)}</Text><Text className="ml-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{service.total_reviews} {language === 'es' ? 'reseñas' : 'reviews'}</Text></View></View></View><Pressable accessibilityLabel={language === 'es' ? 'Cerrar detalle' : 'Close details'} onPress={onClose}><MaterialCommunityIcons name="close" size={25} color="#68737A" /></Pressable></View><ScrollView className="mt-4" showsVerticalScrollIndicator={false}>
     <View className="rounded-2xl bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Contá tu experiencia' : 'Share your experience'}</Text><View className="mt-3 flex-row">{[1, 2, 3, 4, 5].map((star) => <Pressable accessibilityLabel={`${star} ${language === 'es' ? 'estrellas' : 'stars'}`} key={star} className="mr-2" onPress={() => setRating(star)}><MaterialCommunityIcons name={star <= rating ? 'star' : 'star-outline'} size={31} color="#E0A100" /></Pressable>)}</View><TextInput value={comment} onChangeText={setComment} placeholder={language === 'es' ? '¿Qué deberían saber otros viajeros?' : 'What should other travelers know?'} multiline className="mt-3 min-h-20 rounded-2xl bg-white px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text" textAlignVertical="top" /><Pressable disabled={busy} className="mt-3 self-start rounded-xl bg-ui-primary px-5 py-3" onPress={() => void submit()}><Text className="font-black text-white">{busy ? (language === 'es' ? 'Publicando…' : 'Posting…') : (language === 'es' ? 'Publicar reseña' : 'Post review')}</Text></Pressable></View>
-    <Text className="mb-3 mt-5 text-sm font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Comentarios recientes' : 'Recent comments'}</Text>{reviews.isLoading ? <ActivityIndicator className="py-8" color="#087443" /> : reviews.isError ? <Text className="py-6 text-center text-red-600">{language === 'es' ? 'No pudimos cargar las reseñas.' : 'Reviews could not load.'}</Text> : reviews.data?.length ? reviews.data.map((review) => <View key={review.id} className="mb-3 rounded-2xl border border-ui-border p-4 dark:border-ui-dark-border"><View className="flex-row items-center justify-between"><Text className="font-black text-ui-text dark:text-ui-dark-text">{review.author_name}</Text><View className="flex-row items-center"><MaterialCommunityIcons name="star" size={15} color="#E0A100" /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{review.rating}</Text></View></View>{review.comment ? <Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{review.comment}</Text> : null}<Text className="mt-2 text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted">{new Date(review.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></View>) : <Text className="py-8 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé la primera persona en reseñar este comercio.' : 'Be the first to review this business.'}</Text>}
+    <Text className="mb-3 mt-5 text-sm font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Comentarios recientes' : 'Recent comments'}</Text>{reviews.isLoading ? <ActivityIndicator className="py-8" color="#087443" /> : reviews.isError ? <Text className="py-6 text-center text-red-600">{language === 'es' ? 'No pudimos cargar las reseñas.' : 'Reviews could not load.'}</Text> : reviews.data?.length ? reviews.data.map((review) => <View key={review.id} className="mb-3 rounded-2xl border border-ui-border p-4 dark:border-ui-dark-border"><View className="flex-row items-center justify-between"><View className="flex-row items-center gap-2"><Text className="font-black text-ui-text dark:text-ui-dark-text">{review.author_name}</Text>{review.author_role === 'admin' ? <View className="flex-row items-center rounded-full bg-ui-primary px-2 py-1"><MaterialCommunityIcons name="shield-crown" size={12} color="white" /><Text className="ml-1 text-[10px] font-black text-white">ADMIN</Text></View> : null}</View><View className="flex-row items-center"><MaterialCommunityIcons name="star" size={15} color="#E0A100" /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{review.rating}</Text></View></View>{review.comment ? <Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{review.comment}</Text> : null}<Text className="mt-2 text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted">{new Date(review.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></View>) : <Text className="py-8 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé la primera persona en reseñar este comercio.' : 'Be the first to review this business.'}</Text>}
   </ScrollView></View></View></Modal>;
 }
 
@@ -227,12 +228,10 @@ function ProfileEditorFields({
 
 export default function CommerceScreen() {
   const { language, requireAuth, session, userLocation } = useApp();
+  const router = useRouter();
   const [category, setCategory] = useState<CommerceCategoryId>('food');
   const [subcategory, setSubcategory] = useState<string>();
   const [regionId, setRegionId] = useState<string>();
-  const [claiming, setClaiming] = useState<CommerceService | null>(null);
-  const [claimMessage, setClaimMessage] = useState('');
-  const [claimError, setClaimError] = useState('');
   const [reporting, setReporting] = useState<CommerceService | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -265,18 +264,6 @@ export default function CommerceScreen() {
   const favoriteIds = useQuery({ queryKey: ['commercial-favorites', session?.user.id], queryFn: getCommercialFavoriteIds, enabled: Boolean(session) });
   const selectedCategory = useMemo(() => COMMERCE_CATEGORIES.find((item) => item.id === category)!, [category]);
   const registrationOrigin = userLocation ?? (selectedRegion ? { latitude: selectedRegion.latitude, longitude: selectedRegion.longitude } : undefined);
-
-  const submitClaim = async () => {
-    if (!claiming || !requireAuth('reclamar un perfil comercial')) return;
-    setClaimError('');
-    try {
-      await requestCommercialServiceClaim(claiming.id, claimMessage);
-      setClaiming(null);
-      setClaimMessage('');
-      void claims.refetch();
-      void directory.refetch();
-    } catch (error) { setClaimError(error instanceof Error ? error.message : (language === 'es' ? 'No pudimos enviar el reclamo.' : 'Claim could not be sent.')); }
-  };
 
   const submitRegistration = async () => {
     if (!requireAuth('registrar un comercio')) return;
@@ -439,6 +426,7 @@ export default function CommerceScreen() {
         <View className="mt-3 flex-row gap-2">
           <Pressable className="flex-1 flex-row items-center justify-center rounded-2xl border border-ui-border px-2 py-2 dark:border-ui-dark-border" onPress={() => { if (requireAuth('abrir el panel para propietarios')) setDashboardOpen(true); }}><MaterialCommunityIcons name="chart-line" size={17} color="#087443" /><Text className="ml-1 text-center text-[11px] font-black text-ui-primary">{language === 'es' ? 'Panel propietarios' : 'Owner dashboard'}</Text></Pressable>
           <Pressable className="flex-1 flex-row items-center justify-center rounded-2xl border border-ui-border px-2 py-2 dark:border-ui-dark-border" onPress={() => { if (requireAuth('registrar un comercio')) { setRegisterForm(emptyProfileForm(category)); setRegisterPhoto(undefined); setRegisterError(''); setRegisterOpen(true); } }}><MaterialCommunityIcons name="store-plus-outline" size={17} color="#087443" /><Text className="ml-1 text-center text-[11px] font-black text-ui-primary">{language === 'es' ? 'Registrar comercio' : 'Register business'}</Text></Pressable>
+          <Pressable className="flex-1 flex-row items-center justify-center rounded-2xl border border-ui-border px-2 py-2 dark:border-ui-dark-border" onPress={() => { if (requireAuth('ver los planes Pro')) router.push('/subscriptions'); }}><MaterialCommunityIcons name="crown-outline" size={17} color="#087443" /><Text className="ml-1 text-center text-[11px] font-black text-ui-primary">{language === 'es' ? 'Planes Pro' : 'Pro plans'}</Text></Pressable>
         </View>
       </View>
       <View className="flex-row flex-wrap px-3 pb-2">
@@ -451,19 +439,8 @@ export default function CommerceScreen() {
 
   return (
     <View className="flex-1 bg-ui-background dark:bg-ui-dark-background">
-      <FlatList data={directory.data ?? []} keyExtractor={(item) => item.id} renderItem={({ item }) => <ServiceCard service={item} saved={(favoriteIds.data ?? []).includes(item.id)} onClaim={setClaiming} onOpen={setDetail} onReport={setReporting} onSaved={(service) => void toggleFavorite(service)} />} contentContainerStyle={{ paddingBottom: 28, paddingHorizontal: 20 }} ListHeaderComponent={header} ListEmptyComponent={regionsQuery.isLoading || directory.isLoading ? <View className="items-center py-14"><ActivityIndicator size="large" color="#087443" /><Text className="mt-4 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Cargando regiones y comercios…' : 'Loading regions and businesses…'}</Text></View> : regionsQuery.isError || directory.isError ? <View className="items-center rounded-card border border-ui-border bg-ui-surface px-6 py-12 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="cloud-alert-outline" size={44} color="#B42318" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No pudimos cargar el directorio' : 'Directory could not load'}</Text><Pressable className="mt-5 rounded-2xl bg-ui-primary px-5 py-3" onPress={() => { void regionsQuery.refetch(); void directory.refetch(); }}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : <View className="items-center rounded-card border border-dashed border-ui-border bg-ui-surface px-6 py-12 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name={selectedCategory.icon} size={44} color="#68737A" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Aún no hay perfiles en esta región y categoría' : 'No profiles in this region and category yet'}</Text><Text className="mt-2 text-center text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? '¿Sos dueño? Registrá tu comercio o reclamá un perfil para empezar a recibir clientes.' : 'Are you an owner? Register or claim a profile to start receiving customers.'}</Text></View>} />
+      <FlatList data={directory.data?.organic ?? []} keyExtractor={(item) => item.id} renderItem={({ item }) => <ServiceCard service={item} saved={(favoriteIds.data ?? []).includes(item.id)} onClaim={(service) => router.push({ pathname: '/claim-business', params: { serviceId: service.id } })} onOpen={setDetail} onReport={setReporting} onSaved={(service) => void toggleFavorite(service)} />} contentContainerStyle={{ paddingBottom: 28, paddingHorizontal: 20 }} ListHeaderComponent={<>{header}{directory.data?.featured.length ? <View className="mb-5"><Text className="mb-2 text-xs font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Espacios patrocinados' : 'Sponsored placements'}</Text>{directory.data.featured.map((service) => <ServiceCard key={service.id} service={service} saved={(favoriteIds.data ?? []).includes(service.id)} onClaim={(item) => router.push({ pathname: '/claim-business', params: { serviceId: item.id } })} onOpen={setDetail} onReport={setReporting} onSaved={(item) => void toggleFavorite(item)} />)}<Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Resultados orgánicos ordenados por cercanía y calificación.' : 'Organic results are ordered by distance and rating.'}</Text></View> : null}</>} ListEmptyComponent={regionsQuery.isLoading || directory.isLoading ? <View className="items-center py-14"><ActivityIndicator size="large" color="#087443" /><Text className="mt-4 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Cargando regiones y comercios…' : 'Loading regions and businesses…'}</Text></View> : regionsQuery.isError || directory.isError ? <View className="items-center rounded-card border border-ui-border bg-ui-surface px-6 py-12 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="cloud-alert-outline" size={44} color="#B42318" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No pudimos cargar el directorio' : 'Directory could not load'}</Text><Pressable className="mt-5 rounded-2xl bg-ui-primary px-5 py-3" onPress={() => { void regionsQuery.refetch(); void directory.refetch(); }}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : <View className="items-center rounded-card border border-dashed border-ui-border bg-ui-surface px-6 py-12 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name={selectedCategory.icon} size={44} color="#68737A" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Aún no hay perfiles en esta región y categoría' : 'No profiles in this region and category yet'}</Text><Text className="mt-2 text-center text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? '¿Sos dueño? Registrá tu comercio o reclamá un perfil para empezar a recibir clientes.' : 'Are you an owner? Register or claim a profile to start receiving customers.'}</Text></View>} />
       <BusinessDetailModal service={detail} onClose={() => setDetail(null)} onReviewed={async () => { await directory.refetch(); }} />
-      <Modal visible={Boolean(claiming)} transparent animationType="slide" onRequestClose={() => setClaiming(null)}>
-        <View className="flex-1 justify-end bg-black/40">
-          <View className="rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
-            <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Reclamar perfil' : 'Claim profile'}</Text>
-            <Text className="mt-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{claiming?.title}</Text>
-            <TextInput value={claimMessage} onChangeText={setClaimMessage} multiline placeholder={language === 'es' ? 'Contanos cómo podemos verificar que sos el dueño (opcional).' : 'Tell us how we can verify ownership (optional).'} className="mt-4 min-h-24 rounded-2xl border border-ui-border px-4 py-3 text-ui-text dark:border-ui-dark-border dark:text-ui-dark-text" textAlignVertical="top" />
-            {claimError ? <Text className="mt-2 text-xs font-semibold text-red-600">{claimError}</Text> : null}
-            <View className="mt-4 flex-row gap-3"><Pressable className="flex-1 rounded-2xl border border-ui-border py-3 dark:border-ui-dark-border" onPress={() => setClaiming(null)}><Text className="text-center font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Cancelar' : 'Cancel'}</Text></Pressable><Pressable className="flex-1 rounded-2xl bg-ui-primary py-3" onPress={() => void submitClaim()}><Text className="text-center font-black text-white">{language === 'es' ? 'Enviar solicitud' : 'Send request'}</Text></Pressable></View>
-          </View>
-        </View>
-      </Modal>
       <Modal visible={dashboardOpen} transparent animationType="slide" onRequestClose={() => setDashboardOpen(false)}>
         <View className="flex-1 justify-end bg-black/40">
           <View className="max-h-[90%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
@@ -487,10 +464,11 @@ export default function CommerceScreen() {
                   <Text className="mt-1 text-xs font-bold text-ui-primary">{categoryInfo?.[language] ?? service.category} · {regions.find((region) => region.id === service.region_id)?.[language === 'es' ? 'name_es' : 'name_en'] ?? (language === 'es' ? 'Región sin asignar' : 'Unassigned region')} · {service.source} · {service.claim_status}</Text>
                   {tagLabels.length ? <View className="mt-2 flex-row flex-wrap gap-2">{tagLabels.map((tag) => <Text key={tag} className="rounded-full bg-ui-primary-soft px-2 py-1 text-[10px] font-black text-ui-primary dark:bg-ui-dark-primary-soft">{tag}</Text>)}</View> : null}
                   <View className="mt-3 flex-row gap-2">{[
-                    { icon: 'eye-outline' as const, label: language === 'es' ? 'Vistas' : 'Views', value: service.metrics.views },
+                    { icon: 'account-arrow-right-outline' as const, label: language === 'es' ? 'Leads' : 'Leads', value: service.metrics.whatsapp_clicks + service.metrics.calls + service.metrics.directions },
                     { icon: 'whatsapp' as const, label: 'WhatsApp', value: service.metrics.whatsapp_clicks },
                     { icon: 'phone-outline' as const, label: language === 'es' ? 'Llamadas' : 'Calls', value: service.metrics.calls },
                   ].map((metric) => <View key={metric.label} className="flex-1 items-center rounded-2xl bg-ui-muted px-2 py-3 dark:bg-white/10"><MaterialCommunityIcons name={metric.icon} size={18} color="#087443" /><Text className="mt-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{metric.value}</Text><Text className="text-[10px] font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{metric.label}</Text></View>)}</View>
+                  <View className="mt-2 rounded-xl bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft"><View className="flex-row items-center"><MaterialCommunityIcons name="navigation-variant" size={16} color="#087443" /><Text className="ml-2 text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{service.metrics.directions} {language === 'es' ? 'rutas abiertas' : 'directions opened'} · {service.metrics.views} {language === 'es' ? 'vistas' : 'views'}</Text></View><Text className="mt-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{service.metrics.attributed_leads} {language === 'es' ? 'leads atribuidos' : 'attributed leads'} · QR {service.metrics.qr_leads} · UTM {service.metrics.utm_leads}</Text></View>
                   <View className="mt-4 flex-row items-center justify-between"><View><Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotos del negocio' : 'Business photos'}</Text><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{service.photos.length} {language === 'es' ? 'en la galería' : 'in gallery'}</Text></View><Pressable disabled={photoBusyId === service.id} className="flex-row items-center rounded-xl bg-ui-primary px-3 py-2" onPress={() => void addPhoto(service)}>{photoBusyId === service.id ? <ActivityIndicator size="small" color="white" /> : <MaterialCommunityIcons name="image-plus" size={17} color="white" />}<Text className="ml-1 text-xs font-black text-white">{language === 'es' ? 'Agregar' : 'Add'}</Text></Pressable></View>
                   {service.photos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>{service.photos.map((photo) => <View key={photo} className="overflow-hidden rounded-2xl bg-ui-muted"><Image source={{ uri: photo }} className="h-28 w-36" resizeMode="cover" />{service.cover_image_url === photo ? <Text className="absolute left-2 top-2 rounded-full bg-ui-primary px-2 py-1 text-[9px] font-black text-white">{language === 'es' ? 'PORTADA' : 'COVER'}</Text> : null}<View className="flex-row justify-end gap-1 p-1"><Pressable accessibilityLabel={language === 'es' ? 'Usar como portada' : 'Use as cover'} className="rounded-lg bg-white p-1.5" onPress={() => void chooseCover(service, photo)}><MaterialCommunityIcons name={service.cover_image_url === photo ? 'star' : 'star-outline'} size={17} color="#087443" /></Pressable><Pressable accessibilityLabel={language === 'es' ? 'Eliminar foto' : 'Delete photo'} className="rounded-lg bg-white p-1.5" onPress={() => removePhoto(service, photo)}><MaterialCommunityIcons name="trash-can-outline" size={17} color="#B42318" /></Pressable></View></View>)}</ScrollView> : <View className="mt-3 items-center rounded-2xl border border-dashed border-ui-border py-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="image-multiple-outline" size={28} color="#68737A" /><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Agregá una foto; la primera será la portada.' : 'Add a photo; the first one becomes the cover.'}</Text></View>}
                   <Pressable className="mt-4 flex-row items-center justify-center rounded-2xl border border-ui-border py-2.5 dark:border-ui-dark-border" onPress={() => openEditor(service)}><MaterialCommunityIcons name="pencil-outline" size={17} color="#087443" /><Text className="ml-2 text-center text-xs font-black text-ui-primary">{language === 'es' ? 'Editar información' : 'Edit information'}</Text></Pressable>

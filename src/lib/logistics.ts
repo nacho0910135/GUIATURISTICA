@@ -26,6 +26,32 @@ export type Destination = {
 };
 
 export type PlannerPreference = 'Todo' | 'Playa' | 'Naturaleza' | 'Cultura' | 'Comida' | 'Aventura';
+export type TripVehicle = 'sedan' | '4x4' | 'bus';
+export type TripPlanInput = {
+  latitude: number;
+  longitude: number;
+  availableHours: number;
+  maxBudget: number;
+  vehicle: TripVehicle;
+  category: PlannerPreference;
+  language: 'es' | 'en';
+};
+export type TripStop = {
+  destination: Destination;
+  order: number;
+  travelMinutes: number;
+  visitMinutes: number;
+  arrivalAt: string;
+  departureAt: string;
+  estimatedCostCrc: number;
+};
+export type TripPlan = {
+  startsAt: string;
+  stops: TripStop[];
+  totalTravelMinutes: number;
+  totalVisitMinutes: number;
+  estimatedTotalCrc: number;
+};
 export type DayPlan = {
   destination: Destination;
   weather: Weather | null;
@@ -188,21 +214,7 @@ export async function getWeather(destination: Pick<Destination, 'latitude' | 'lo
 }
 
 export async function recommendDestinations(input: { latitude: number; longitude: number; hours: number; category: PlannerPreference; maxBudget: number; children: boolean; seniors: boolean; reducedMobility: boolean; hasVehicle: boolean; language: 'es' | 'en' }): Promise<DayPlan | null> {
-  const broadRadius = input.hours <= 4 ? 50000 : input.hours <= 8 ? 120000 : 250000;
-  const radius = Math.min(broadRadius, input.hours * (input.hasVehicle ? 12000 : 4000));
-  const { data: nearby, error } = await supabase.rpc('get_destinations_nearby', {
-    user_lat: input.latitude, user_lng: input.longitude, distance_meters: radius,
-  });
-  if (error) throw error;
-  const rows = (nearby ?? []) as { id: string; dist_meters: number }[];
-  if (!rows.length) return null;
-  const { data: details, error: detailsError } = await supabase.from('destinations').select(destinationFields).in('id', rows.map((item) => item.id));
-  if (detailsError) throw detailsError;
-  const distanceById = new Map(rows.map((item) => [item.id, item.dist_meters]));
-  const candidates = (details ?? []).map(normalizeDestination).map((item) => ({ ...item, dist_meters: distanceById.get(item.id) ?? 0 }))
-    .filter((item) => item.price_national_crc <= input.maxBudget)
-    .filter((item) => !input.reducedMobility || /fácil|facil/i.test(item.difficulty ?? ''))
-    .sort((a, b) => scoreDestination(b, input) - scoreDestination(a, input));
+  const candidates = await getPlannerCandidates(input);
   const destination = candidates[0];
   if (!destination) return null;
   const [weather, nearbyService, travelMinutes] = await Promise.all([
@@ -216,6 +228,82 @@ export async function recommendDestinations(input: { latitude: number; longitude
   if (input.children || input.seniors || input.reducedMobility) warnings.push(input.language === 'es' ? 'Confirmá accesibilidad, baños y condiciones del sendero con el operador.' : 'Confirm accessibility, restrooms and trail conditions with the operator.');
   if (destination.closed_day) warnings.push(`${input.language === 'es' ? 'Cierre indicado' : 'Listed closure'}: ${destination.closed_day}.`);
   return { destination, weather, travelMinutes, visitMinutes, estimatedTotalCrc: destination.price_national_crc, warnings, nearbyService, createdAt: new Date().toISOString() };
+}
+
+export async function buildTripPlan(input: TripPlanInput): Promise<TripPlan | null> {
+  const hasVehicle = input.vehicle !== 'bus';
+  const plannerInput = { ...input, hours: input.availableHours, children: false, seniors: false, reducedMobility: false, hasVehicle };
+  const candidates = await getPlannerCandidates(plannerInput);
+  return assembleTripPlan(input, candidates);
+}
+
+export function buildOfflineTripPlan(input: TripPlanInput, destinations: Destination[]): TripPlan | null {
+  const hasVehicle = input.vehicle !== 'bus';
+  const radiusKm = Math.min(input.availableHours <= 4 ? 50 : input.availableHours <= 8 ? 120 : 250, input.availableHours * (hasVehicle ? 12 : 4));
+  const candidates = destinations
+    .map((destination) => ({ ...destination, dist_meters: distanceKm(input, destination) * 1000 }))
+    .filter((destination) => destination.dist_meters <= radiusKm * 1000 && destination.price_national_crc <= input.maxBudget)
+    .sort((a, b) => scoreDestination(b, { ...input, hasVehicle, children: false, seniors: false, reducedMobility: false }) - scoreDestination(a, { ...input, hasVehicle, children: false, seniors: false, reducedMobility: false }));
+  return assembleTripPlan(input, candidates);
+}
+
+function assembleTripPlan(input: TripPlanInput, candidates: Destination[]): TripPlan | null {
+  const hasVehicle = input.vehicle !== 'bus';
+  const plannerInput = { ...input, hours: input.availableHours, children: false, seniors: false, reducedMobility: false, hasVehicle };
+  const startsAt = new Date(Date.now() + 45 * 60 * 1000);
+  let current = { latitude: input.latitude, longitude: input.longitude };
+  let remainingMinutes = input.availableHours * 60;
+  let remainingBudget = input.maxBudget;
+  const stops: TripStop[] = [];
+  const speedKph = input.vehicle === 'bus' ? 28 : input.vehicle === '4x4' ? 42 : 48;
+  const routeScore = (destination: Destination) => scoreDestination(destination, plannerInput) - distanceKm(current, destination) * 4;
+
+  while (stops.length < 4) {
+    const destination = candidates
+      .filter((item) => item.price_national_crc <= remainingBudget && !stops.some((stop) => stop.destination.id === item.id))
+      .sort((a, b) => routeScore(b) - routeScore(a))[0];
+    if (!destination) break;
+    const travelMinutes = Math.max(10, Math.round(distanceKm(current, destination) / speedKph * 60));
+    const returnMinutes = Math.max(10, Math.round(distanceKm(destination, { latitude: input.latitude, longitude: input.longitude }) / speedKph * 60));
+    if (remainingMinutes < travelMinutes + returnMinutes + 60) break;
+    const visitMinutes = Math.min(180, Math.max(60, remainingMinutes - travelMinutes - returnMinutes - 30));
+    const arrivalAt = new Date(startsAt.getTime() + (input.availableHours * 60 - remainingMinutes + travelMinutes) * 60 * 1000);
+    const departureAt = new Date(arrivalAt.getTime() + visitMinutes * 60 * 1000);
+    stops.push({ destination, order: stops.length + 1, travelMinutes, visitMinutes, arrivalAt: arrivalAt.toISOString(), departureAt: departureAt.toISOString(), estimatedCostCrc: destination.price_national_crc });
+    remainingMinutes -= travelMinutes + visitMinutes;
+    remainingBudget -= destination.price_national_crc;
+    current = destination;
+  }
+  if (!stops.length) return null;
+  return {
+    startsAt: startsAt.toISOString(),
+    stops,
+    totalTravelMinutes: stops.reduce((total, stop) => total + stop.travelMinutes, 0),
+    totalVisitMinutes: stops.reduce((total, stop) => total + stop.visitMinutes, 0),
+    estimatedTotalCrc: stops.reduce((total, stop) => total + stop.estimatedCostCrc, 0),
+  };
+}
+
+export async function getDestinationsForOffline(province: string) {
+  const { data, error } = await supabase.from('destinations').select(destinationFields).eq('province', province).eq('status', 'Activo').order('name').limit(500);
+  if (error) throw error;
+  return (data ?? []).map(normalizeDestination);
+}
+
+async function getPlannerCandidates(input: { latitude: number; longitude: number; hours: number; category: PlannerPreference; maxBudget: number; children: boolean; seniors: boolean; reducedMobility: boolean; hasVehicle: boolean }) {
+  const broadRadius = input.hours <= 4 ? 50000 : input.hours <= 8 ? 120000 : 250000;
+  const radius = Math.min(broadRadius, input.hours * (input.hasVehicle ? 12000 : 4000));
+  const { data: nearby, error } = await supabase.rpc('get_destinations_nearby', { user_lat: input.latitude, user_lng: input.longitude, distance_meters: radius });
+  if (error) throw error;
+  const rows = (nearby ?? []) as { id: string; dist_meters: number }[];
+  if (!rows.length) return [];
+  const { data: details, error: detailsError } = await supabase.from('destinations').select(destinationFields).in('id', rows.map((item) => item.id));
+  if (detailsError) throw detailsError;
+  const distanceById = new Map(rows.map((item) => [item.id, item.dist_meters]));
+  return (details ?? []).map(normalizeDestination).map((item) => ({ ...item, dist_meters: distanceById.get(item.id) ?? 0 }))
+    .filter((item) => item.price_national_crc <= input.maxBudget)
+    .filter((item) => !input.reducedMobility || /fácil|facil/i.test(item.difficulty ?? ''))
+    .sort((a, b) => scoreDestination(b, input) - scoreDestination(a, input));
 }
 
 function scoreDestination(destination: Destination, input: { category: PlannerPreference; children: boolean; seniors: boolean; reducedMobility: boolean; hasVehicle: boolean }) {

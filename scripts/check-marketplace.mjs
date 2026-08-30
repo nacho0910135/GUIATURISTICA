@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [baseMigration, taxonomyMigration, regionsMigration, secureRegionsMigration, ownerFkMigration, officialCommerceMigration, reportsMigration, commerceSync, commerce, screen, reports, province, explore, profile] = await Promise.all([
+const [baseMigration, taxonomyMigration, regionsMigration, secureRegionsMigration, ownerFkMigration, officialCommerceMigration, reportsMigration, commerceSync, commerce, screen, reports, province, explore, profile, claimScreen, claimGuardMigration, freshnessMigration] = await Promise.all([
   readFile(new URL('../supabase/migrations/20260828235854_local_tourism_marketplace.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260829005508_commerce_categories_and_subcategories.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260829012419_commerce_regions_and_hybrid_sources.sql', import.meta.url), 'utf8'),
@@ -16,6 +16,9 @@ const [baseMigration, taxonomyMigration, regionsMigration, secureRegionsMigratio
   readFile(new URL('../src/app/(aux)/province.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/app/(tabs)/explore.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/app/(tabs)/profile.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../src/app/claim-business.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20260830105635_reject_claims_for_claimed_businesses.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20260830112646_community_freshness_and_b2b_attribution.sql', import.meta.url), 'utf8'),
 ]);
 const migration = `${baseMigration}\n${taxonomyMigration}`;
 assert.match(regionsMigration, /create table if not exists public\.commerce_regions/);
@@ -42,17 +45,25 @@ assert.match(commerce, /COMMERCE_SUBCATEGORIES/);
 for (const tag of ['water_activities', 'guides_experiences', 'rentals_equipment', 'fishing', 'boat_tours', 'kayak_sup', 'certified_guides', 'rent_a_car']) assert.match(commerce, new RegExp(tag));
 assert.match(screen, /Filtrar por experiencia/);
 assert.match(screen, /Elegí una región/);
-assert.match(screen, /Cerca de mí/);
+assert.match(screen, /Comercios cerca de tu ubicación/);
 assert.match(commerce, /getCommerceRegions/);
 assert.match(commerce, /request\.range\(from, from \+ 999\)/);
 assert.match(commerce, /distance_km: hasLocation/);
 assert.match(commerce, /radius_km/);
 assert.match(commerce, /recordBusinessEvent/);
 assert.match(commerce, /getOwnerDashboard/);
-assert.match(screen, /Reclamar perfil/);
+assert.match(commerce, /featured: services\.filter\(\(service\) => service\.is_sponsored\)/);
+assert.match(commerce, /organic: services\.filter\(\(service\) => !service\.is_sponsored\)/);
+assert.match(claimScreen, /Reclamar negocio/);
 assert.match(screen, /Panel para propietarios/);
+assert.match(screen, /Espacios patrocinados/);
+assert.match(screen, /rutas abiertas/);
+assert.match(claimScreen, /requestCommercialServiceClaim/);
+assert.match(claimScreen, /Solicitud enviada/);
+assert.match(claimGuardMigration, /service_already_claimed/);
 assert.match(screen, /Registrar comercio/);
-for (const field of ['menuUrl', 'bookingUrl', 'parking', 'hasParking', 'paymentMethods', 'accessibility', 'languages', 'experienceType', 'certifications', 'photos', 'coverImageUrl']) assert.match(screen, new RegExp(field));
+for (const field of ['menuUrl', 'bookingUrl', 'parking', 'hasParking', 'paymentMethods', 'accessibility', 'languages', 'experienceType', 'certifications', 'photos']) assert.match(screen, new RegExp(field));
+assert.match(screen, /setBusinessCoverPhoto/);
 assert.match(screen, /Editar opciones del perfil/);
 assert.match(commerce, /updateCommercialServiceProfile/);
 for (const field of ['menu_url', 'booking_url', 'parking', 'has_parking', 'payment_methods', 'accessibility', 'languages', 'experience_type', 'certifications', 'photos', 'cover_image_url']) assert.match(commerce, new RegExp(field));
@@ -62,4 +73,10 @@ assert.match(screen, /Reportar información/);
 assert.match(province, /Reportar información incorrecta/);
 assert.match(explore, /Reportar carretera afectada/);
 assert.match(profile, /Reportes de información/);
+assert.match(freshnessMigration, /destination_freshness_votes/);
+assert.match(freshnessMigration, /get_destination_freshness/);
+assert.match(freshnessMigration, /business_events_attribution_object_check/);
+for (const check of ['Sigue abierto', 'Tarifa correcta', 'Aceptan tarjeta']) assert.match(province, new RegExp(check));
+for (const field of ['normalizeBusinessAttribution', 'attributed_leads', 'qr_leads', 'utm_leads']) assert.match(commerce, new RegExp(field));
+assert.match(screen, /leads atribuidos/);
 console.log('Marketplace directory, dynamic regions, claims, registration, conversion metrics and information reports are wired.');

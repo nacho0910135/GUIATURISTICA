@@ -7,4 +7,8 @@ assert.match(source, /Promise\.all\([\s\S]*getWeather[\s\S]*getNearbyFoodService
 assert.match(source, /saveOfflinePack\(destinations: Destination\[\], dayPlan\?/);
 assert.match(source, /requires_sinac_booking,sinac_booking_url/);
 assert.doesNotMatch(source, /return \(preferred\.length \? preferred : candidates\)\.slice/);
+assert.match(source, /export async function buildTripPlan/);
+assert.match(source, /export function buildOfflineTripPlan/);
+assert.match(source, /while \(stops\.length < 4\)/);
+assert.match(source, /estimatedTotalCrc: stops\.reduce/);
 console.log('Planner builds one accessible, actionable, offline-capable day plan.');

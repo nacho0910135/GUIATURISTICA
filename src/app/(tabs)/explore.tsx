@@ -127,8 +127,7 @@ export default function ExploreScreen() {
 
       <View className="w-full" style={{ maxWidth: 1180, paddingHorizontal: wide ? 20 : 0 }}>
         <View className="bg-ui-background px-5 pb-2 dark:bg-ui-dark-background">
-          <Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Mapa interactivo de CR' : 'Interactive map of Costa Rica'}</Text>
-          <Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Presioná una provincia para acceder a los destinos.' : 'Tap a province to see its destinations.'}</Text>
+          <View className="flex-row items-center justify-between"><View className="flex-1"><Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Mapa interactivo de CR' : 'Interactive map of Costa Rica'}</Text><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Presioná una provincia para acceder a los destinos.' : 'Tap a province to see its destinations.'}</Text></View><Pressable accessibilityRole="button" className="ml-3 flex-row items-center rounded-xl bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft" onPress={() => router.push('/(tabs)/fauna')}><MaterialCommunityIcons name="paw" size={17} color="#087443" /><Text className="ml-1.5 text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Fauna' : 'Wildlife'}</Text></Pressable></View>
         </View>
         <MapCanvas />
       </View>

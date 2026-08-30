@@ -3,7 +3,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import { supabase } from '@/lib/supabase';
 
-export type TravelerProfile = { id: string; username: string | null; full_name: string | null; avatar_url: string | null };
+export type TravelerProfile = { id: string; username: string | null; full_name: string | null; avatar_url: string | null; role: string | null };
 export type SharedLocation = { latitude: number; longitude: number };
 export type TravelerTopic = 'general' | 'moteros' | 'enduro' | 'convoy_4x4';
 export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; latitude: number | null; longitude: number | null; topic: TravelerTopic; created_at: string; user?: TravelerProfile };
@@ -11,19 +11,20 @@ export type ReactionType = 'like' | 'love' | 'laugh' | 'angry' | 'wow' | 'sad';
 export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
 
 export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {
-  const postsQuery = supabase.from('traveler_posts').select('*, user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url)').eq('topic', topic).order('created_at', { ascending: false }).limit(40);
+  const postsQuery = supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic).order('created_at', { ascending: false }).limit(40);
   const [posts, replies, reactions, follows] = await Promise.all([
     postsQuery,
-    supabase.from('traveler_replies').select('*, user:users(id,username,full_name,avatar_url)').order('created_at').limit(200),
+    supabase.from('traveler_replies').select('id,post_id,parent_reply_id,user_id,body,created_at,user:users(id,username,full_name,avatar_url,role)').order('created_at').limit(200),
     supabase.from('traveler_reactions').select('post_id,user_id,reaction'),
     userId ? supabase.from('user_follows').select('followed_id').eq('follower_id', userId) : Promise.resolve({ data: [], error: null }),
   ]);
   const error = posts.error ?? replies.error ?? reactions.error ?? follows.error;
   if (error) throw error;
+  const oneProfile = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] : value;
   const reactionRows = (reactions.data ?? []) as { post_id: string; user_id: string; reaction: ReactionType }[];
   return {
-    posts: (posts.data ?? []) as TravelerPost[],
-    replies: (replies.data ?? []) as TravelerReply[],
+    posts: (posts.data ?? []).map((post) => ({ ...post, user: oneProfile(post.user) ?? undefined })) as TravelerPost[],
+    replies: (replies.data ?? []).map((reply) => ({ ...reply, user: oneProfile(reply.user) ?? undefined })) as TravelerReply[],
     myReactions: reactionRows.reduce<Record<string, ReactionType>>((mine, row) => { if (row.user_id === userId) mine[row.post_id] = row.reaction; return mine; }, {}),
     followedUserIds: new Set((follows.data ?? []).map((row) => row.followed_id as string)),
     reactionCounts: reactionRows.reduce<Record<string, Record<ReactionType, number>>>((counts, row) => { const post = counts[row.post_id] ??= {} as Record<ReactionType, number>; post[row.reaction] = (post[row.reaction] ?? 0) + 1; return counts; }, {}),

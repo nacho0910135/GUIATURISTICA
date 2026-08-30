@@ -85,6 +85,20 @@ export const COMMERCE_SUBCATEGORIES: Record<CommerceCategoryId, readonly Commerc
 
 export type Coordinates = { latitude: number; longitude: number };
 export type BusinessEventType = 'impression' | 'whatsapp_click' | 'call' | 'directions' | 'save' | 'reservation' | 'coupon_redeemed';
+export type BusinessAttribution = Partial<Record<'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_term' | 'utm_content' | 'qr', string>>;
+
+const ATTRIBUTION_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'] as const;
+
+export function normalizeBusinessAttribution(values: Record<string, unknown>): BusinessAttribution {
+  const attribution: BusinessAttribution = {};
+  for (const key of ATTRIBUTION_KEYS) {
+    const value = values[key];
+    if (typeof value === 'string' && value.trim()) attribution[key] = value.trim().slice(0, 120);
+  }
+  const qr = values.qr ?? values.qr_code;
+  if (typeof qr === 'string' && qr.trim()) attribution.qr = qr.trim().slice(0, 120);
+  return attribution;
+}
 
 export type CommerceService = {
   id: string;
@@ -127,6 +141,8 @@ export type CommerceService = {
 };
 
 export type AssistanceService = CommerceService;
+export type CommerceDirectory = { featured: CommerceService[]; organic: CommerceService[] };
+export type ClaimableBusiness = Pick<CommerceService, 'id' | 'title' | 'is_claimed' | 'owner_id' | 'claim_status'>;
 
 type ServiceRow = Omit<CommerceService, 'phone' | 'latitude' | 'longitude' | 'distance_km' | 'photos' | 'payment_methods' | 'languages' | 'certifications'> & {
   phone_whatsapp: string | null;
@@ -150,7 +166,7 @@ export async function getCommerceRegions() {
   return (data ?? []) as CommerceRegion[];
 }
 
-export async function getCommerceDirectory(categoryId: CommerceCategoryId, origin: Coordinates, subcategory?: string, region?: CommerceRegion) {
+export async function getCommerceDirectory(categoryId: CommerceCategoryId, origin: Coordinates, subcategory?: string, region?: CommerceRegion): Promise<CommerceDirectory> {
   const category = COMMERCE_CATEGORIES.find((item) => item.id === categoryId) ?? COMMERCE_CATEGORIES[0];
   const rows: ServiceRow[] = [];
   for (let from = 0; ; from += 1000) {
@@ -162,7 +178,7 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
     if ((data?.length ?? 0) < 1000) break;
   }
 
-  return rows
+  const services = rows
     .flatMap((service) => {
       const [longitude, latitude] = service.location?.coordinates ?? [];
       const hasLocation = typeof latitude === 'number' && typeof longitude === 'number';
@@ -182,8 +198,18 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
         avg_rating: Number(service.avg_rating ?? 0),
         total_reviews: Number(service.total_reviews ?? 0),
       }];
-    })
-    .sort((a, b) => Number(b.is_sponsored ?? false) - Number(a.is_sponsored ?? false) || (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) || a.title.localeCompare(b.title));
+    });
+  const byRelevance = (a: CommerceService, b: CommerceService) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) || b.avg_rating - a.avg_rating || b.total_reviews - a.total_reviews || a.title.localeCompare(b.title);
+  return {
+    featured: services.filter((service) => service.is_sponsored).sort(byRelevance),
+    organic: services.filter((service) => !service.is_sponsored).sort(byRelevance),
+  };
+}
+
+export async function getClaimableBusiness(serviceId: string): Promise<ClaimableBusiness | null> {
+  const { data, error } = await supabase.from('commercial_services').select('id,title,is_claimed,owner_id,claim_status').eq('id', serviceId).maybeSingle();
+  if (error) throw error;
+  return data as ClaimableBusiness | null;
 }
 
 export async function getAssistanceDirectory(categoryId: AssistanceCategoryId, origin: Coordinates) {
@@ -202,9 +228,9 @@ export async function getAssistanceDirectory(categoryId: AssistanceCategoryId, o
   }).sort((a, b) => a.distance_km - b.distance_km || a.title.localeCompare(b.title));
 }
 
-export async function recordBusinessEvent(serviceId: string, eventType: BusinessEventType) {
-  const { error } = await supabase.from('business_events').insert({ service_id: serviceId, event_type: eventType });
-  if (error) console.warn('No se pudo registrar la métrica comercial', error.message);
+export async function recordBusinessEvent(serviceId: string, eventType: BusinessEventType, attribution: Record<string, unknown> = {}) {
+  const { error } = await supabase.from('business_events').insert({ service_id: serviceId, event_type: eventType, attribution: normalizeBusinessAttribution(attribution) });
+  if (error) return;
 }
 
 export async function requestCommercialServiceClaim(serviceId: string, message: string) {
@@ -220,19 +246,20 @@ export type BusinessReview = {
   comment: string | null;
   created_at: string;
   author_name: string;
+  author_role: string | null;
 };
 
 export async function getBusinessReviews(serviceId: string) {
   const { data, error } = await supabase.from('reviews')
-    .select('id,user_id,rating,comment,created_at,user:users(full_name,username)')
+    .select('id,user_id,rating,comment,created_at,user:users(full_name,username,role)')
     .eq('target_type', 'service')
     .eq('target_id', serviceId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map((review): BusinessReview => {
-    const relation = review.user as { full_name?: string | null; username?: string | null } | { full_name?: string | null; username?: string | null }[] | null;
+    const relation = review.user as { full_name?: string | null; username?: string | null; role?: string | null } | { full_name?: string | null; username?: string | null; role?: string | null }[] | null;
     const author = Array.isArray(relation) ? relation[0] : relation;
-    return { ...review, author_name: author?.full_name || author?.username || 'Viajero' };
+    return { ...review, author_name: author?.full_name || author?.username || 'Viajero', author_role: author?.role ?? null };
   });
 }
 
@@ -475,6 +502,9 @@ export type OwnerDashboardService = {
     saves: number;
     reservations: number;
     coupons: number;
+    attributed_leads: number;
+    qr_leads: number;
+    utm_leads: number;
   };
 };
 
@@ -520,10 +550,11 @@ export async function getOwnerDashboard() {
     };
   });
   if (!services.length) return [];
-  const { data: events, error: eventError } = await supabase.from('business_events').select('service_id,event_type').in('service_id', services.map((service) => service.id));
+  const { data: events, error: eventError } = await supabase.from('business_events').select('service_id,event_type,attribution').in('service_id', services.map((service) => service.id));
   if (eventError) throw eventError;
   return services.map((service): OwnerDashboardService => {
     const ownEvents = (events ?? []).filter((event) => event.service_id === service.id);
+    const attributedLeads = ownEvents.filter((event) => ['whatsapp_click', 'call', 'directions'].includes(event.event_type) && Object.keys((event.attribution ?? {}) as BusinessAttribution).length);
     return {
       ...service,
       metrics: {
@@ -534,6 +565,9 @@ export async function getOwnerDashboard() {
         saves: ownEvents.filter((event) => event.event_type === 'save').length,
         reservations: ownEvents.filter((event) => event.event_type === 'reservation').length,
         coupons: ownEvents.filter((event) => event.event_type === 'coupon_redeemed').length,
+        attributed_leads: attributedLeads.length,
+        qr_leads: attributedLeads.filter((event) => Boolean((event.attribution as BusinessAttribution | null)?.qr)).length,
+        utm_leads: attributedLeads.filter((event) => ATTRIBUTION_KEYS.some((key) => Boolean((event.attribution as BusinessAttribution | null)?.[key]))).length,
       },
     };
   });
@@ -590,7 +624,7 @@ export async function deleteBusinessPhoto(service: Pick<OwnerDashboardService, '
   const path = businessPhotoPath(url);
   if (path) {
     const { error } = await supabase.storage.from('business-photos').remove([path]);
-    if (error) console.warn('La foto dejó de estar publicada, pero no se pudo limpiar el archivo del bucket.', error.message);
+    if (error) return;
   }
 }
 
