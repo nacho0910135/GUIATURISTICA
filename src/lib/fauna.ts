@@ -105,7 +105,21 @@ export async function getFaunaSpecies(id: string) {
   return data as FaunaSpecies;
 }
 
-export async function addFaunaSpecies(input: { commonName: string; scientificName: string; category: string; description: string; habitat: string; province: string; userId: string }) {
+export async function addFaunaSpecies(input: { commonName: string; scientificName: string; category: string; description: string; habitat: string; province: string; userId: string; image?: ImagePickerAsset }) {
+  let uploadedPath: string | undefined;
+  let imageUrl: string | null = null;
+  if (input.image) {
+    const context = ImageManipulator.manipulate(input.image.uri);
+    context.resize({ width: Math.min(input.image.width || 1600, 1600) });
+    const rendered = await context.renderAsync();
+    const saved = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
+    const bytes = await fetch(saved.uri).then((response) => response.arrayBuffer());
+    if (bytes.byteLength > 6 * 1024 * 1024) throw new Error('La imagen supera el límite de 6 MB.');
+    uploadedPath = `${input.userId}/species/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+    const { error } = await supabase.storage.from('fauna-photos').upload(uploadedPath, bytes, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+    if (error) throw error;
+    imageUrl = supabase.storage.from('fauna-photos').getPublicUrl(uploadedPath).data.publicUrl;
+  }
   const shared = {
     common_name_es: input.commonName.trim(),
     common_name_en: input.commonName.trim(),
@@ -120,11 +134,15 @@ export async function addFaunaSpecies(input: { commonName: string; scientificNam
     tour_observable: false,
     is_endemic: false,
     is_national_symbol: false,
+    image_url: imageUrl,
     created_by: input.userId,
     community_submitted: true,
   };
   const { error } = await supabase.from('fauna_species').insert(shared);
-  if (error) throw error;
+  if (error) {
+    if (uploadedPath) await supabase.storage.from('fauna-photos').remove([uploadedPath]);
+    throw error;
+  }
 }
 
 export async function getFaunaPhotos(speciesId: string) {

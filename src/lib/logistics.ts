@@ -44,29 +44,90 @@ export type FerryRoute = {
   id: string;
   operator: string;
   route: string;
+  schedules: { weekday: string[]; saturday: string[]; sunday: string[] };
   departures: string[];
-  adultFare: number;
-  childFare: number;
-  vehicleFare: number;
+  scheduleNote?: string;
+  adultFare: number | null;
+  childFare: number | null;
+  vehicleFare: number | null;
   ticketUrl: string;
   arrivalMinutes: number;
+  terminalName?: string;
+  wazeUrl?: string;
+  scheduleSourceUrl: string;
+  fareSourceUrl?: string;
   validUntil?: string;
 };
 
 export const ferryRoutes: FerryRoute[] = [
   {
-    id: 'paquera', operator: 'Naviera Tambor', route: 'Puntarenas → Paquera',
-    departures: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'],
+    id: 'puntarenas-paquera', operator: 'Naviera Tambor', route: 'Puntarenas → Paquera',
+    schedules: { weekday: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'], saturday: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'], sunday: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'] }, departures: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'],
     adultFare: 810, childFare: 480, vehicleFare: 11400,
-    ticketUrl: 'https://www.quickpaycr.com/', arrivalMinutes: 45,
+    terminalName: 'Terminal de Ferrys Naviera Tambor, Barrio del Carmen, Puntarenas', wazeUrl: 'https://www.waze.com/ul?q=Terminal%20de%20Ferrys%20Naviera%20Tambor%2C%20Barrio%20del%20Carmen%2C%20Puntarenas', ticketUrl: 'https://www.quickpaycr.com/', arrivalMinutes: 45, scheduleSourceUrl: 'https://navieratambor.com/horarios-y-tarifas', fareSourceUrl: 'https://aresep.go.cr/cabotaje/tarifas/',
   },
   {
-    id: 'naranjo', operator: 'Coonatramar', route: 'Puntarenas → Playa Naranjo',
-    departures: ['05:15', '10:00', '14:30', '18:45', '20:30'],
-    adultFare: 1000, childFare: 600, vehicleFare: 10170,
-    ticketUrl: 'https://coonatramar.com/', arrivalMinutes: 60, validUntil: '30/11/2026',
+    id: 'paquera-puntarenas', operator: 'Naviera Tambor', route: 'Paquera → Puntarenas',
+    schedules: { weekday: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'], saturday: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'], sunday: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'] }, departures: ['04:00', '06:30', '09:00', '12:00', '15:00', '18:00', '20:00', '22:00'],
+    adultFare: 810, childFare: 480, vehicleFare: 11400,
+    terminalName: 'Terminal de Ferrys de Paquera', wazeUrl: 'https://www.waze.com/ul?q=Terminal%20de%20Ferrys%20Paquera%2C%20Costa%20Rica', ticketUrl: 'https://www.quickpaycr.com/', arrivalMinutes: 45, scheduleSourceUrl: 'https://navieratambor.com/horarios-y-tarifas', fareSourceUrl: 'https://aresep.go.cr/cabotaje/tarifas/',
+  },
+  {
+    id: 'puntarenas-naranjo', operator: 'Coonatramar', route: 'Puntarenas → Playa Naranjo',
+    schedules: { weekday: ['05:15', '10:00', '14:30', '18:45', '20:30'], saturday: ['05:15', '10:00', '14:30', '18:45', '20:30'], sunday: ['05:15', '10:00', '14:30', '18:45', '20:30'] }, departures: ['05:15', '10:00', '14:30', '18:45', '20:30'], scheduleNote: 'Viernes: salida adicional a las 11:30.',
+    adultFare: 1000, childFare: 600, vehicleFare: null,
+    terminalName: 'Coonatramar, Barrio del Carmen, Puntarenas', wazeUrl: 'https://www.waze.com/ul?q=Coonatramar%2C%20Barrio%20del%20Carmen%2C%20Puntarenas', ticketUrl: 'https://coonatramar.com/', arrivalMinutes: 60, scheduleSourceUrl: 'https://coonatramar.com/181212-2/', fareSourceUrl: 'https://aresep.go.cr/cabotaje/tarifas/', validUntil: '30/11/2026',
+  },
+  {
+    id: 'naranjo-puntarenas', operator: 'Coonatramar', route: 'Playa Naranjo → Puntarenas',
+    schedules: { weekday: ['05:15', '07:30', '12:30', '16:30', '20:30'], saturday: ['05:15', '07:30', '12:30', '16:30', '20:30'], sunday: ['05:15', '07:30', '12:30', '16:30', '20:30'] }, departures: ['05:15', '07:30', '12:30', '16:30', '20:30'], scheduleNote: 'Domingo: salida adicional a las 14:30.',
+    adultFare: 1000, childFare: 600, vehicleFare: null,
+    terminalName: 'Embarcadero de Playa Naranjo', wazeUrl: 'https://www.waze.com/ul?q=Embarcadero%20de%20Playa%20Naranjo%2C%20Costa%20Rica', ticketUrl: 'https://coonatramar.com/', arrivalMinutes: 60, scheduleSourceUrl: 'https://coonatramar.com/181212-2/', fareSourceUrl: 'https://aresep.go.cr/cabotaje/tarifas/', validUntil: '30/11/2026',
+  },
+  {
+    id: 'puntarenas-isla-chira', operator: 'Servicio marítimo local', route: 'Puntarenas → Isla Chira',
+    schedules: { weekday: ['12:30'], saturday: ['12:30'], sunday: ['07:00'] }, departures: ['12:30'], scheduleNote: 'Horario referencial publicado por Yo Viajo CR. Confirmá antes de viajar.',
+    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: 'https://yoviajocr.com/bus/puntarenas-isla-chira', arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/puntarenas-isla-chira',
+  },
+  {
+    id: 'isla-chira-puntarenas', operator: 'Servicio marítimo local', route: 'Isla Chira → Puntarenas',
+    schedules: { weekday: ['06:00'], saturday: ['06:00'], sunday: ['06:00'] }, departures: ['06:00'], scheduleNote: 'Horario referencial publicado por Yo Viajo CR. Confirmá antes de viajar.',
+    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: 'https://yoviajocr.com/bus/isla-chira-puntarenas', arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/isla-chira-puntarenas',
+  },
+  {
+    id: 'isla-chira-costa-de-pajaros', operator: 'Servicio marítimo local', route: 'Isla Chira → Costa de Pájaros',
+    schedules: { weekday: ['06:00', '13:00'], saturday: ['06:00', '13:00'], sunday: ['06:00', '13:00'] }, departures: ['06:00', '13:00'], scheduleNote: 'Horario referencial publicado por Yo Viajo CR. Confirmá antes de viajar.',
+    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: 'https://yoviajocr.com/bus/isla-chira-costa-de-pajaros', arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/isla-chira-costa-de-pajaros',
+  },
+  {
+    id: 'costa-de-pajaros-isla-chira', operator: 'Servicio marítimo local', route: 'Costa de Pájaros → Isla Chira',
+    schedules: { weekday: ['07:50', '14:50'], saturday: ['07:50', '14:50'], sunday: ['07:50', '14:50'] }, departures: ['07:50', '14:50'], scheduleNote: 'Horario referencial publicado por Yo Viajo CR. Confirmá antes de viajar.',
+    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: 'https://yoviajocr.com/bus/costa-de-pajaros-isla-chira', arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/costa-de-pajaros-isla-chira',
   },
 ];
+
+export async function getFerryRoutes(): Promise<FerryRoute[]> {
+  const { data, error } = await supabase.from('ferry_routes').select('source_key,route_name,operator,schedules,schedule_note,fare_adult_crc,fare_child_crc,fare_vehicle_crc,origin_terminal_name,origin_waze_url,schedule_source_url,fare_source_url,valid_until').eq('is_published', true).order('route_name');
+  if (error) throw error;
+  return (data ?? []).map((route) => ({
+    id: route.source_key,
+    route: route.route_name,
+    operator: route.operator,
+    schedules: route.schedules as FerryRoute['schedules'],
+    departures: (route.schedules as FerryRoute['schedules']).weekday,
+    scheduleNote: route.schedule_note,
+    adultFare: route.fare_adult_crc === null ? null : Number(route.fare_adult_crc),
+    childFare: route.fare_child_crc === null ? null : Number(route.fare_child_crc),
+    vehicleFare: route.fare_vehicle_crc === null ? null : Number(route.fare_vehicle_crc),
+    terminalName: route.origin_terminal_name,
+    wazeUrl: route.origin_waze_url,
+    ticketUrl: route.schedule_source_url,
+    arrivalMinutes: route.operator === 'Naviera Tambor' ? 45 : 60,
+    scheduleSourceUrl: route.schedule_source_url,
+    fareSourceUrl: route.fare_source_url,
+    validUntil: route.valid_until ?? undefined,
+  }));
+}
 
 export const emergencyContacts = [
   { label: 'Emergencias 911', phone: '911' },

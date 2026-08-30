@@ -10,6 +10,11 @@ export type PrivateMessage = {
   sender_id: string;
   recipient_id: string;
   body: string;
+  media_path: string | null;
+  media_type: 'image' | 'audio' | null;
+  media_duration_ms: number | null;
+  media_url?: string | null;
+  reactions: { user_id: string; emoji: string }[];
   read_status: boolean;
   created_at: string;
 };
@@ -25,12 +30,23 @@ export type PrivateConversation = {
 export async function getPrivateConversations(userId: string): Promise<PrivateConversation[]> {
   const { data, error } = await supabase
     .from('traveler_messages')
-    .select('id,sender_id,recipient_id,body,read_status,created_at')
+    .select('id,sender_id,recipient_id,body,media_path,media_type,media_duration_ms,read_status,created_at')
     .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
     .order('created_at', { ascending: true });
   if (error) throw error;
 
-  const messages = (data ?? []) as PrivateMessage[];
+  const rawMessages = (data ?? []) as Omit<PrivateMessage, 'reactions' | 'media_url'>[];
+  const messageIds = rawMessages.map((item) => item.id);
+  const paths = rawMessages.flatMap((item) => item.media_path ? [item.media_path] : []);
+  const [reactionsResult, signedResult] = await Promise.all([
+    messageIds.length ? supabase.from('traveler_message_reactions').select('message_id,user_id,emoji').in('message_id', messageIds) : Promise.resolve({ data: [], error: null }),
+    paths.length ? supabase.storage.from('chat-media').createSignedUrls(paths, 60 * 60) : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (reactionsResult.error || signedResult.error) throw reactionsResult.error ?? signedResult.error;
+  const reactionsByMessage = new Map<string, { user_id: string; emoji: string }[]>();
+  for (const reaction of reactionsResult.data ?? []) reactionsByMessage.set(reaction.message_id, [...(reactionsByMessage.get(reaction.message_id) ?? []), reaction]);
+  const mediaUrlByPath = new Map((signedResult.data ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl]));
+  const messages: PrivateMessage[] = rawMessages.map((item) => ({ ...item, media_url: item.media_path ? mediaUrlByPath.get(item.media_path) ?? null : null, reactions: reactionsByMessage.get(item.id) ?? [] }));
   const partnerIds = [...new Set(messages.map((item) => item.sender_id === userId ? item.recipient_id : item.sender_id))];
   if (!partnerIds.length) return [];
   const { data: profiles, error: profilesError } = await supabase.from('users').select('id,username,full_name,avatar_url').in('id', partnerIds);
@@ -93,9 +109,10 @@ export async function getSocialProfile(userId: string) {
   const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? sightings.error ?? saved.error ?? notifications.error;
   if (error) throw error;
   const savedIds = (saved.data ?? []).map((item) => item.target_id);
-  const destinations = savedIds.length ? await supabase.from('destinations').select('id,name,province,cover_image_url').in('id', savedIds) : { data: [], error: null };
+  const destinations = savedIds.length ? await supabase.from('destinations').select('id,name,province,cover_image_url,destination_photos(image_url,sort_order)').in('id', savedIds) : { data: [], error: null };
   if (destinations.error) throw destinations.error;
-  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: sightings.data ?? [], saved: destinations.data ?? [], notifications: notifications.data ?? [], conversations };
+  const savedDestinations = (destinations.data ?? []).map((destination) => ({ ...destination, cover_image_url: destination.cover_image_url ?? destination.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url ?? null }));
+  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: sightings.data ?? [], saved: savedDestinations, notifications: notifications.data ?? [], conversations };
 }
 
 async function uploadImage(bucket: 'profile-avatars' | 'destination-photos', owner: string, asset: ImagePickerAsset) {
@@ -140,20 +157,22 @@ export async function updateCreatorSuggestionStatus(id: string, status: CreatorS
 }
 
 export async function getAdminDashboard() {
-  const [suggestions, destinations, photos, posts, reports, commercialClaims] = await Promise.all([
+  const [suggestions, destinations, photos, sanctuaries, communityDestinations, posts, reports, commercialClaims] = await Promise.all([
     supabase.from('creator_suggestions').select('*,user:users(username,full_name)').order('created_at', { ascending: false }).limit(50),
     supabase.from('destinations').select('id,name,province').order('name'),
     supabase.from('destination_photos').select('*').order('sort_order'),
+    supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url').eq('verified', true).order('name'),
+    supabase.from('destination_suggestions').select('id,name,province,category,description,created_at').eq('status', 'published').order('created_at', { ascending: false }),
     supabase.from('traveler_posts').select('id,body,created_at,user:users!traveler_posts_user_id_fkey(username,full_name)').order('created_at', { ascending: false }).limit(50),
     getInformationReportsForAdmin(),
     getAdminCommercialClaims(),
   ]);
-  const error = suggestions.error ?? destinations.error ?? photos.error ?? posts.error;
+  const error = suggestions.error ?? destinations.error ?? photos.error ?? sanctuaries.error ?? communityDestinations.error ?? posts.error;
   if (error) throw error;
   const oneProfile = <T,>(value: T | T[]) => Array.isArray(value) ? value[0] : value;
   return {
     suggestions: (suggestions.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })),
-    destinations: destinations.data ?? [], photos: photos.data ?? [],
+    destinations: destinations.data ?? [], photos: photos.data ?? [], sanctuaries: sanctuaries.data ?? [], communityDestinations: communityDestinations.data ?? [],
     posts: (posts.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })), reports, commercialClaims,
   };
 }
@@ -161,6 +180,12 @@ export async function getAdminDashboard() {
 export async function addDestinationPhoto(destinationId: string, asset: ImagePickerAsset, sortOrder: number) {
   const imageUrl = await uploadImage('destination-photos', destinationId, asset);
   const { error } = await supabase.from('destination_photos').insert({ destination_id: destinationId, image_url: imageUrl, sort_order: sortOrder });
+  if (error) throw error;
+}
+
+export async function setSanctuaryCover(sanctuaryId: string, asset: ImagePickerAsset) {
+  const imageUrl = await uploadImage('destination-photos', `sanctuaries/${sanctuaryId}`, asset);
+  const { error } = await supabase.from('fauna_sanctuaries').update({ cover_image_url: imageUrl }).eq('id', sanctuaryId);
   if (error) throw error;
 }
 
@@ -177,8 +202,48 @@ export async function deleteTravelerPost(postId: string) {
   if (error) throw error;
 }
 
-export async function sendTravelerMessage(senderId: string, recipientId: string, body: string) {
-  const { error } = await supabase.from('traveler_messages').insert({ sender_id: senderId, recipient_id: recipientId, body: body.trim() });
+export async function sendTravelerMessage(senderId: string, recipientId: string, body: string, attachment?: { uri: string; type: 'image' | 'audio'; durationMs?: number; width?: number }) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user || auth.user.id !== senderId) throw new Error('Debés iniciar sesión para enviar mensajes.');
+  let mediaPath: string | null = null;
+  if (attachment) {
+    const extension = attachment.type === 'image' ? 'jpg' : 'm4a';
+    const path = `${senderId}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`;
+    let bytes: ArrayBuffer;
+    if (attachment.type === 'image') {
+      const context = ImageManipulator.manipulate(attachment.uri);
+      context.resize({ width: Math.min(attachment.width || 1600, 1600) });
+      const rendered = await context.renderAsync();
+      const file = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
+      bytes = await fetch(file.uri).then((response) => response.arrayBuffer());
+    } else bytes = await fetch(attachment.uri).then((response) => response.arrayBuffer());
+    if (bytes.byteLength > 10 * 1024 * 1024) throw new Error('El adjunto supera el límite de 10 MB.');
+    const { error: uploadError } = await supabase.storage.from('chat-media').upload(path, bytes, { contentType: attachment.type === 'image' ? 'image/jpeg' : 'audio/mp4', cacheControl: '3600', upsert: false });
+    if (uploadError) throw uploadError;
+    mediaPath = path;
+  }
+  const { error } = await supabase.from('traveler_messages').insert({
+    sender_id: senderId,
+    recipient_id: recipientId,
+    body: body.trim() || (attachment?.type === 'image' ? '📷 Foto' : '🎙️ Audio'),
+    media_path: mediaPath,
+    media_type: attachment?.type ?? null,
+    media_duration_ms: attachment?.durationMs ?? null,
+  });
+  if (error) {
+    if (mediaPath) await supabase.storage.from('chat-media').remove([mediaPath]);
+    throw error;
+  }
+}
+
+export async function toggleTravelerMessageReaction(messageId: string, emoji: string) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('Debés iniciar sesión para reaccionar.');
+  const existing = await supabase.from('traveler_message_reactions').select('message_id').eq('message_id', messageId).eq('user_id', auth.user.id).eq('emoji', emoji).maybeSingle();
+  if (existing.error) throw existing.error;
+  const { error } = existing.data
+    ? await supabase.from('traveler_message_reactions').delete().eq('message_id', messageId).eq('user_id', auth.user.id).eq('emoji', emoji)
+    : await supabase.from('traveler_message_reactions').insert({ message_id: messageId, user_id: auth.user.id, emoji });
   if (error) throw error;
 }
 

@@ -238,6 +238,7 @@ export default function CommerceScreen() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [registerError, setRegisterError] = useState('');
   const [registerForm, setRegisterForm] = useState<CommercialProfileForm>(() => emptyProfileForm('food'));
+  const [registerPhoto, setRegisterPhoto] = useState<ImagePicker.ImagePickerAsset>();
   const [editing, setEditing] = useState<OwnerDashboardService | null>(null);
   const [editForm, setEditForm] = useState<CommercialProfileForm>(() => emptyProfileForm());
   const [editError, setEditError] = useState('');
@@ -283,7 +284,7 @@ export default function CommerceScreen() {
     if (!registrationOrigin) { setRegisterError(language === 'es' ? 'Elegí una región o activá tu ubicación antes de registrar.' : 'Choose a region or enable location before registering.'); return; }
     setRegisterError('');
     try {
-      await registerCommercialService({
+      const serviceId = await registerCommercialService({
         mainCategory: registerForm.category,
         subcategory: registerForm.subcategories.join(','),
         title: registerForm.title,
@@ -304,10 +305,22 @@ export default function CommerceScreen() {
         experienceType: registerForm.experienceType,
         certifications: textToList(registerForm.certifications),
       });
+      if (registerPhoto) await uploadBusinessPhoto({ id: serviceId, photos: [], cover_image_url: null }, registerPhoto);
       setRegisterOpen(false);
       setRegisterForm(emptyProfileForm(category));
+      setRegisterPhoto(undefined);
       void directory.refetch();
     } catch (error) { setRegisterError(error instanceof Error ? error.message : (language === 'es' ? 'No pudimos registrar el comercio.' : 'Business could not be registered.')); }
+  };
+
+  const pickRegistrationPhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(language === 'es' ? 'Permiso requerido' : 'Permission required', language === 'es' ? 'Permití el acceso a tus fotos para elegir una portada.' : 'Allow photo access to choose a cover image.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.9, exif: false });
+    if (!result.canceled) setRegisterPhoto(result.assets[0]);
   };
 
   const openEditor = (service: OwnerDashboardService) => {
@@ -425,7 +438,7 @@ export default function CommerceScreen() {
         <Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Descubrí comida, hospedaje, aventura y servicios cerca de tu ruta.' : 'Find food, lodging, adventure and services along your route.'}</Text>
         <View className="mt-3 flex-row gap-2">
           <Pressable className="flex-1 flex-row items-center justify-center rounded-2xl border border-ui-border px-2 py-2 dark:border-ui-dark-border" onPress={() => { if (requireAuth('abrir el panel para propietarios')) setDashboardOpen(true); }}><MaterialCommunityIcons name="chart-line" size={17} color="#087443" /><Text className="ml-1 text-center text-[11px] font-black text-ui-primary">{language === 'es' ? 'Panel propietarios' : 'Owner dashboard'}</Text></Pressable>
-          <Pressable className="flex-1 flex-row items-center justify-center rounded-2xl border border-ui-border px-2 py-2 dark:border-ui-dark-border" onPress={() => { if (requireAuth('registrar un comercio')) { setRegisterForm(emptyProfileForm(category)); setRegisterError(''); setRegisterOpen(true); } }}><MaterialCommunityIcons name="store-plus-outline" size={17} color="#087443" /><Text className="ml-1 text-center text-[11px] font-black text-ui-primary">{language === 'es' ? 'Registrar comercio' : 'Register business'}</Text></Pressable>
+          <Pressable className="flex-1 flex-row items-center justify-center rounded-2xl border border-ui-border px-2 py-2 dark:border-ui-dark-border" onPress={() => { if (requireAuth('registrar un comercio')) { setRegisterForm(emptyProfileForm(category)); setRegisterPhoto(undefined); setRegisterError(''); setRegisterOpen(true); } }}><MaterialCommunityIcons name="store-plus-outline" size={17} color="#087443" /><Text className="ml-1 text-center text-[11px] font-black text-ui-primary">{language === 'es' ? 'Registrar comercio' : 'Register business'}</Text></Pressable>
         </View>
       </View>
       <View className="flex-row flex-wrap px-3 pb-2">
@@ -493,6 +506,7 @@ export default function CommerceScreen() {
           <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? `Elegí la categoría y completa las opciones que verán tus clientes. Ubicación: ${viewMode === 'nearby' ? 'tu ubicación' : selectedRegion?.name_es ?? 'región seleccionada'}.` : `Choose a category and complete the options customers will see. Location: ${viewMode === 'nearby' ? 'your location' : selectedRegion?.name_en ?? 'selected region'}.`}</Text>
           <ScrollView showsVerticalScrollIndicator={false}>
             <ProfileEditorFields form={registerForm} language={language} onChange={(key, value) => setRegisterForm((current) => ({ ...current, [key]: value }))} onCategoryChange={(nextCategory) => setRegisterForm((current) => ({ ...current, category: nextCategory, subcategories: [] }))} onToggleSubcategory={(tag) => setRegisterForm((current) => ({ ...current, subcategories: current.subcategories.includes(tag) ? current.subcategories.filter((item) => item !== tag) : [...current.subcategories, tag] }))} onToggleParking={() => setRegisterForm((current) => ({ ...current, hasParking: !current.hasParking }))} />
+            <Pressable className="mt-4 overflow-hidden rounded-2xl border border-dashed border-ui-border p-3 dark:border-ui-dark-border" onPress={() => void pickRegistrationPhoto()}>{registerPhoto ? <Image source={{ uri: registerPhoto.uri }} className="h-40 w-full rounded-xl" resizeMode="cover" /> : <View className="flex-row items-center justify-center py-4"><MaterialCommunityIcons name="image-plus" size={24} color="#087443" /><Text className="ml-2 font-black text-ui-primary">{language === 'es' ? 'Seleccionar foto de portada' : 'Choose cover photo'}</Text></View>}</Pressable>
             {registerError ? <Text className="mt-2 text-xs font-semibold text-red-600">{registerError}</Text> : null}
             <View className="mt-4 flex-row gap-3"><Pressable className="flex-1 rounded-2xl border border-ui-border py-3 dark:border-ui-dark-border" onPress={() => setRegisterOpen(false)}><Text className="text-center font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Cancelar' : 'Cancel'}</Text></Pressable><Pressable className="flex-1 rounded-2xl bg-ui-primary py-3" onPress={() => void submitRegistration()}><Text className="text-center font-black text-white">{language === 'es' ? 'Publicar' : 'Publish'}</Text></Pressable></View>
           </ScrollView>

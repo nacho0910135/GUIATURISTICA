@@ -1,0 +1,49 @@
+[
+  {
+    "source_key": "puntarenas-paquera-ferri",
+    "source_url": "https://yoviajocr.com/bus/puntarenas-paquera-ferri",
+    "route_name": "Puntarenas – Paquera",
+    "origin_city": "Puntarenas",
+    "destination_city": "Paquera",
+    "company_name": "Naviera Tambor",
+    "schedules": {
+      "weekday": [
+        "04:00",
+        "06:30",
+        "09:00",
+        "12:00",
+        "15:00",
+        "18:00",
+        "20:00",
+        "22:00"
+      ],
+      "saturday": [
+        "04:00",
+        "06:30",
+        "09:00",
+        "12:00",
+        "15:00",
+        "18:00",
+        "20:00",
+        "22:00"
+      ],
+      "sunday": [
+        "04:00",
+        "06:30",
+        "09:00",
+        "12:00",
+        "15:00",
+        "18:00",
+        "20:00",
+        "22:00"
+      ]
+    },
+    "fare_crc": null,
+    "fare_kind": "estimated",
+    "terminal_name": "Terminal de Ferris de Puntarenas",
+    "terminal_latitude": 9.9786,
+    "terminal_longitude": -84.8378,
+    "terminal_waze_url": "https://waze.com/ul?ll=9.9786,-84.8378&navigate=yes",
+    "last_verified_at": "2026-08-30T05:28:56.788Z"
+  }
+]

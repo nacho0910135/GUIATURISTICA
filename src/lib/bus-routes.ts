@@ -10,18 +10,19 @@ export type BusRoute = {
   destination_city: string;
   company_name: string | null;
   schedules: BusSchedules;
-  fare_crc: number;
+  fare_crc: number | null;
   fare_kind: 'estimated' | 'official';
   terminal_name: string | null;
   terminal_waze_url: string | null;
   terminal_source_url: string | null;
   last_verified_at: string;
+  route_group: 'tourist' | 'cantonal';
 };
 
-export async function getBusRoutes(query: string): Promise<BusRoute[]> {
+export async function getBusRoutes(query: string, group: 'tourist' | 'cantonal' = 'tourist'): Promise<BusRoute[]> {
   const term = query.trim().replace(/[,%]/g, ' ');
   let request = supabase
-    .from('tourist_bus_routes')
+    .from(group === 'tourist' ? 'tourist_bus_routes' : 'cantonal_bus_routes')
     .select('source_key,source_url,route_name,origin_city,destination_city,company_name,schedules,fare_crc,fare_kind,terminal_name,terminal_waze_url,terminal_source_url,last_verified_at')
     .eq('is_published', true)
     .order('route_name', { ascending: true });
@@ -32,8 +33,9 @@ export async function getBusRoutes(query: string): Promise<BusRoute[]> {
 
   return (data ?? []).map((route) => ({
     ...route,
-    fare_crc: Number(route.fare_crc),
+    fare_crc: route.fare_crc === null ? null : Number(route.fare_crc),
     fare_kind: route.fare_kind as BusRoute['fare_kind'],
     schedules: route.schedules as BusSchedules,
+    route_group: group,
   }));
 }

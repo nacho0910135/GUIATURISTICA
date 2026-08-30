@@ -1,7 +1,7 @@
 import '@/global.css';
 
 import { Stack } from 'expo-router';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { QueryClientProvider } from '@tanstack/react-query';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -12,7 +12,7 @@ import { useColorScheme } from 'nativewind';
 
 import { AnimatedSplash } from '@/components/animated-splash';
 import { AppProvider } from '@/providers/app-provider';
-import { QUERY_CACHE_MAX_AGE, queryClient, queryPersister } from '@/lib/query-client';
+import { queryClient } from '@/lib/query-client';
 import { AppThemeProvider } from '@/theme/theme-provider';
 
 SplashScreen.preventAutoHideAsync();
@@ -28,7 +28,7 @@ export default function RootLayout() {
         <meta name="description" content="Explorá Costa Rica, su biodiversidad, comercios y rutas." />
       </Head>
       <AppThemeProvider>
-        <PersistQueryClientProvider client={queryClient} persistOptions={{ maxAge: QUERY_CACHE_MAX_AGE, persister: queryPersister }}>
+        <QueryClientProvider client={queryClient}>
           <AppProvider>
           <View className="flex-1 bg-ui-background dark:bg-ui-dark-background" onLayout={() => SplashScreen.hide()}>
             <Stack screenOptions={{ headerShown: false }}>
@@ -43,7 +43,7 @@ export default function RootLayout() {
           {showSplash ? <AnimatedSplash onFinish={() => setShowSplash(false)} /> : null}
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           </AppProvider>
-        </PersistQueryClientProvider>
+        </QueryClientProvider>
       </AppThemeProvider>
     </GestureHandlerRootView>
   );

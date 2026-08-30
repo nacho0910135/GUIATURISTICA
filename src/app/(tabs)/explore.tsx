@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -13,6 +14,8 @@ import { getExplorePlaces, publishCommunityPlace, type ExplorePlace } from '@/li
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
+
+const fallbackDestinationThumbnail = require('../../../assets/images/startup-rainforest.gif');
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 type Activity = {
@@ -53,7 +56,7 @@ export default function ExploreScreen() {
   const [proposalOpen, setProposalOpen] = useState(false);
   const [reportingRoad, setReportingRoad] = useState<RoadTrafficAlert | null>(null);
   const wide = width >= 900;
-  const places = useQuery({ queryKey: ['explore-places', 'v2'], queryFn: getExplorePlaces, networkMode: 'always', refetchOnMount: 'always', staleTime: 5 * 60 * 1000 });
+  const places = useQuery({ queryKey: ['explore-places', 'v3'], queryFn: getExplorePlaces, networkMode: 'always', refetchOnMount: 'always', staleTime: 5 * 60 * 1000 });
   const roadAlerts = useQuery({ queryKey: ['mapbox-road-alerts', language], queryFn: () => getLiveRoadAlerts(language), refetchInterval: 8 * 60 * 1000, staleTime: 8 * 60 * 1000 });
   const followed = useQuery({ queryKey: ['followed-travelers', session?.user.id], queryFn: () => getFollowedTravelerIds(session?.user.id), staleTime: 60 * 1000 });
   const resetExplore = useCallback(() => {
@@ -86,6 +89,10 @@ export default function ExploreScreen() {
   }, [coordinates, language, places.data, search]);
 
   const discover = async () => {
+    if (coordinates) {
+      setCoordinates(undefined);
+      return;
+    }
     const permission = await Location.requestForegroundPermissionsAsync();
     if (!permission.granted) return Alert.alert('Descubriendo CR', language === 'es' ? 'Necesitamos tu ubicación para ordenar los sitios cercanos.' : 'Location permission is required to sort nearby places.');
     const cachedPosition = await Location.getLastKnownPositionAsync({ maxAge: 10 * 60 * 1000, requiredAccuracy: 5000 });
@@ -101,18 +108,19 @@ export default function ExploreScreen() {
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180 }}>
-        <Text className="mb-1.5 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Busca un sitio por nombre' : 'Search for a place by name'}</Text>
-        <View className="flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="magnify" size={23} color="#68737A" /><TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Buscar playas, cataratas, miradores, volcanes o senderos…' : 'Search beaches, waterfalls, viewpoints, volcanoes or trails…'} placeholderTextColor="#68737A" value={search} /></View>
         <Pressable
           accessibilityRole="button"
-          className="relative mt-3 flex-row items-center justify-center overflow-hidden rounded-2xl border border-white/60 px-4 py-3"
+          accessibilityState={{ selected: Boolean(coordinates) }}
+          className="relative flex-row items-center justify-center overflow-hidden rounded-2xl border border-white/60 px-4 py-3"
           onPress={() => void discover()}
           style={{ alignSelf: 'center', backgroundColor: '#0077A8dd', elevation: 8, shadowColor: '#21c8f6', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.45, shadowRadius: 12, width: '88%' }}
         >
           <View className="absolute left-5 right-5 top-0 h-[2px] rounded-full bg-white/80" />
           <MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" />
-          <Text className="ml-2 text-center text-sm font-black text-white">{language === 'es' ? 'Descubrir destinos turísticos cercanos' : 'Discover nearby tourist destinations'}</Text>
+          <Text className="ml-2 text-center text-sm font-black text-white">{language === 'es' ? 'Destinos Turísticos Cercanos' : 'Nearby Tourist Destinations'}</Text>
         </Pressable>
+        <Text className="mb-1.5 mt-3 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Busca un sitio por nombre' : 'Search for a place by name'}</Text>
+        <View className="flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="magnify" size={23} color="#68737A" /><TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Buscar playas, cataratas, miradores, volcanes o senderos…' : 'Search beaches, waterfalls, viewpoints, volcanoes or trails…'} placeholderTextColor="#68737A" value={search} /></View>
         {coordinates ? <Text className="mt-3 text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ordenados del más cercano al más lejano.' : 'Sorted from nearest to farthest.'}</Text> : null}
         {search || coordinates ? <View className="mt-4 gap-3">{places.isPending ? <ActivityIndicator color="#0B6B4F" /> : visiblePlaces.slice(0, 20).map((place) => <PlaceResult followed={Boolean(place.contributor_id && followed.data?.has(place.contributor_id))} formatPrice={formatPrice} key={`${place.community ? 'community' : 'official'}-${place.id}`} language={language} onFollow={async () => { if (!place.contributor_id || !requireAuth(language === 'es' ? 'Seguir a un viajero' : 'Follow a traveler') || !session) return; try { await toggleTravelerFollow(session.user.id, place.contributor_id, Boolean(followed.data?.has(place.contributor_id))); await queryClient.invalidateQueries({ queryKey: ['followed-travelers', session.user.id] }); } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo actualizar el seguimiento.' : 'Could not update follow.'); } }} onPress={() => router.push({ pathname: '/(tabs)/catalog', params: { category: place.category, destinationId: place.id } })} origin={coordinates} ownContribution={place.contributor_id === session?.user.id} place={place} />)}{places.isError ? <Pressable accessibilityRole="button" className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" onPress={() => void places.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar cargar destinos' : 'Retry loading destinations'}</Text></Pressable> : !places.isPending && !visiblePlaces.length ? <Text className="py-6 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con esa búsqueda.' : 'No places matched your search.'}</Text> : null}</View> : null}
       </View>
@@ -194,7 +202,7 @@ function normalizeCategory(value: string) {
 
 function PlaceResult({ followed, formatPrice, language, onFollow, onPress, origin, ownContribution, place }: { followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; onFollow: () => void; onPress: () => void; origin?: { latitude: number; longitude: number }; ownContribution: boolean; place: ExplorePlace }) {
   const documentedAuthorities = place.verification_evidence_url && place.verification_checked_at ? place.validated_by : [];
-  return <Pressable accessibilityRole="button" className="flex-row items-center rounded-control border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={onPress}><View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="map-marker" size={25} color="#0B6B4F" /></View><View className="ml-3 flex-1"><View className="flex-row flex-wrap items-center"><Text className="flex-shrink text-base font-black text-ui-text dark:text-ui-dark-text">{place.name}</Text>{place.community ? <Text className="ml-2 rounded-full bg-ui-primary-soft px-2 py-1 text-[10px] font-black text-ui-primary dark:bg-ui-dark-primary-soft dark:text-ui-dark-primary">{language === 'es' ? 'APORTE COMUNITARIO' : 'COMMUNITY CONTRIBUTION'}</Text> : null}{documentedAuthorities.map((authority) => <Text className="ml-2 rounded-full bg-[#0B6B4F] px-2 py-1 text-[10px] font-black text-white" key={authority}>{language === 'es' ? 'FUENTE OFICIAL' : 'OFFICIAL SOURCE'} {authority}</Text>)}</View>{place.community && place.contributor_name ? <View className="mt-1 flex-row items-center"><Text className="flex-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Lugar añadido por' : 'Place added by'} {place.contributor_name}</Text>{!ownContribution ? <Pressable className="ml-2 rounded-full bg-ui-primary-soft px-3 py-1.5 dark:bg-ui-dark-primary-soft" onPress={(event) => { event.stopPropagation(); onFollow(); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{followed ? (language === 'es' ? 'Siguiendo' : 'Following') : (language === 'es' ? 'Seguir' : 'Follow')}</Text></Pressable> : null}</View> : null}<Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{place.province} · {place.category} · {place.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check price') : formatPrice(place.price_national_crc)}</Text></View>{origin ? <Text className="font-black text-ui-secondary dark:text-ui-dark-secondary">{distanceKm(origin, place).toFixed(1)} km</Text> : <MaterialCommunityIcons name="chevron-right" size={23} color="#0077A8" />}</Pressable>;
+  return <Pressable accessibilityRole="button" className="flex-row items-center rounded-control border border-ui-border bg-ui-surface p-3 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={onPress}><Image accessibilityLabel={place.name} cachePolicy="memory-disk" contentFit="cover" source={place.cover_image_url ?? fallbackDestinationThumbnail} style={{ borderRadius: 16, flexShrink: 0, height: 52, width: 52 }} transition={150} /><View className="ml-3 flex-1"><View className="flex-row flex-wrap items-center"><Text className="flex-shrink text-base font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{place.name}</Text>{place.community ? <Text className="ml-2 rounded-full bg-ui-primary-soft px-2 py-1 text-[10px] font-black text-ui-primary dark:bg-ui-dark-primary-soft dark:text-ui-dark-primary">{language === 'es' ? 'APORTE COMUNITARIO' : 'COMMUNITY CONTRIBUTION'}</Text> : null}{documentedAuthorities.map((authority) => <Text className="ml-2 rounded-full bg-[#0B6B4F] px-2 py-1 text-[10px] font-black text-white" key={authority}>{language === 'es' ? 'FUENTE OFICIAL' : 'OFFICIAL SOURCE'} {authority}</Text>)}</View>{place.community && place.contributor_name ? <View className="mt-1 flex-row items-center"><Text className="flex-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Lugar añadido por' : 'Place added by'} {place.contributor_name}</Text>{!ownContribution ? <Pressable className="ml-2 rounded-full bg-ui-primary-soft px-3 py-1.5 dark:bg-ui-dark-primary-soft" onPress={(event) => { event.stopPropagation(); onFollow(); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{followed ? (language === 'es' ? 'Siguiendo' : 'Following') : (language === 'es' ? 'Seguir' : 'Follow')}</Text></Pressable> : null}</View> : null}<Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{place.province} · {place.category} · {place.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check price') : formatPrice(place.price_national_crc)}</Text></View>{origin ? <Text className="ml-2 font-black text-ui-secondary dark:text-ui-dark-secondary">{distanceKm(origin, place).toFixed(1)} km</Text> : <MaterialCommunityIcons name="chevron-right" size={23} color="#0077A8" />}</Pressable>;
 }
 
 function ProposalModal({ language, onClose, onPublished, open, session }: { language: 'es' | 'en'; onClose: () => void; onPublished: () => void; open: boolean; session: ReturnType<typeof useApp>['session'] }) {

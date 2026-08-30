@@ -65,7 +65,11 @@ export default function TabsLayout() {
         name="commerce"
         options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }}
       />
-      <Tabs.Screen name="logistics" options={{ title: t('logistics'), tabBarIcon: icon('bus-clock') }} />
+      <Tabs.Screen
+        listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/logistics', params: { reset: String(Date.now()) } }); } }}
+        name="logistics"
+        options={{ title: t('logistics'), tabBarIcon: icon('bus-clock') }}
+      />
       <Tabs.Screen name="profile" options={{ title: t('profile'), tabBarIcon: ({ color }) => avatarUrl ? <Image source={{ uri: avatarUrl }} style={{ borderColor: color as string, borderRadius: 15, borderWidth: 2, height: 30, width: 30 }} /> : <MaterialCommunityIcons name="account-circle-outline" color={color} size={24} /> }} />
     </Tabs>
   );

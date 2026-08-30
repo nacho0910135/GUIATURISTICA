@@ -1,5 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
@@ -169,17 +170,24 @@ function FaunaProposalModal({ language, onClose, onPublished, open, userId }: { 
   const [description, setDescription] = useState('');
   const [habitat, setHabitat] = useState('');
   const [province, setProvince] = useState('');
+  const [image, setImage] = useState<ImagePicker.ImagePickerAsset>();
   const [sending, setSending] = useState(false);
   const submit = async () => {
     if (!userId || commonName.trim().length < 2 || scientificName.trim().length < 3 || category.trim().length < 2) return Alert.alert('Fauna CR', language === 'es' ? 'Completá el nombre común, nombre científico y categoría.' : 'Complete the common name, scientific name, and category.');
     setSending(true);
     try {
-      await addFaunaSpecies({ commonName, scientificName, category, description, habitat, province, userId });
+      await addFaunaSpecies({ commonName, scientificName, category, description, habitat, province, userId, image });
       onPublished(commonName.trim());
-      setCommonName(''); setScientificName(''); setCategory(''); setDescription(''); setHabitat(''); setProvince('');
+      setCommonName(''); setScientificName(''); setCategory(''); setDescription(''); setHabitat(''); setProvince(''); setImage(undefined);
     } catch (reason) {
       Alert.alert('Fauna CR', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo agregar el animal.' : 'Could not add the animal.'));
     } finally { setSending(false); }
+  };
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return Alert.alert('Fauna CR', language === 'es' ? 'Permití el acceso a tus fotos para elegir una imagen.' : 'Allow photo access to choose an image.');
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.9, exif: false });
+    if (!result.canceled) setImage(result.assets[0]);
   };
   const fields = [
     { label: language === 'es' ? 'Nombre común' : 'Common name', value: commonName, onChangeText: setCommonName, placeholder: language === 'es' ? 'Ej: Zorro gris' : 'Example: Gray fox' },
@@ -189,5 +197,5 @@ function FaunaProposalModal({ language, onClose, onPublished, open, userId }: { 
     { label: language === 'es' ? 'Hábitat' : 'Habitat', value: habitat, onChangeText: setHabitat, placeholder: language === 'es' ? 'Bosque seco, humedal…' : 'Dry forest, wetland…' },
     { label: language === 'es' ? 'Descripción' : 'Description', value: description, onChangeText: setDescription, placeholder: language === 'es' ? 'Cómo reconocerlo…' : 'How to identify it…', multiline: true },
   ];
-  return <Modal animationType="slide" onRequestClose={onClose} transparent visible={open}><View className="flex-1 items-center justify-center bg-black/60 p-4"><View className="max-h-[92%] w-full max-w-2xl overflow-hidden rounded-modal bg-ui-surface dark:bg-ui-dark-surface"><View className="flex-row items-center border-b border-ui-border p-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="paw" size={27} color="#0B6B4F" /><Text className="ml-3 flex-1 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} onPress={onClose}><MaterialCommunityIcons name="close" size={26} color="#68737A" /></Pressable></View><ScrollView contentContainerStyle={{ gap: 15, padding: 20 }}>{fields.map((field) => <View key={field.label}><Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{field.label}</Text><TextInput className="rounded-control border border-ui-border bg-ui-muted px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline={field.multiline} onChangeText={field.onChangeText} placeholder={field.placeholder} placeholderTextColor="#68737A" style={field.multiline ? { minHeight: 90, textAlignVertical: 'top' } : undefined} value={field.value} /></View>)}<View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'El animal se publicará para todos. Después podrás abrir su ficha y compartir fotografías reales.' : 'The animal will be published for everyone. You can then open its profile and share real photos.'}</Text></View><Pressable className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>{sending ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar para todos' : 'Publish for everyone'}</Text>}</Pressable></ScrollView></View></View></Modal>;
+  return <Modal animationType="slide" onRequestClose={onClose} transparent visible={open}><View className="flex-1 items-center justify-center bg-black/60 p-4"><View className="max-h-[92%] w-full max-w-2xl overflow-hidden rounded-modal bg-ui-surface dark:bg-ui-dark-surface"><View className="flex-row items-center border-b border-ui-border p-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="paw" size={27} color="#0B6B4F" /><Text className="ml-3 flex-1 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} onPress={onClose}><MaterialCommunityIcons name="close" size={26} color="#68737A" /></Pressable></View><ScrollView contentContainerStyle={{ gap: 15, padding: 20 }}>{fields.map((field) => <View key={field.label}><Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{field.label}</Text><TextInput className="rounded-control border border-ui-border bg-ui-muted px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline={field.multiline} onChangeText={field.onChangeText} placeholder={field.placeholder} placeholderTextColor="#68737A" style={field.multiline ? { minHeight: 90, textAlignVertical: 'top' } : undefined} value={field.value} /></View>)}<Pressable className="overflow-hidden rounded-control border border-dashed border-ui-border p-3 dark:border-ui-dark-border" onPress={() => void pickImage()}>{image ? <Image source={{ uri: image.uri }} contentFit="cover" style={{ borderRadius: 12, height: 170, width: '100%' }} /> : <View className="flex-row items-center justify-center py-4"><MaterialCommunityIcons name="image-plus" size={24} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-primary">{language === 'es' ? 'Agregar foto del animal' : 'Add animal photo'}</Text></View>}</Pressable><View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'El animal se publicará para todos. Después podrás abrir su ficha y compartir fotografías reales.' : 'The animal will be published for everyone. You can then open its profile and share real photos.'}</Text></View><Pressable className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>{sending ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar para todos' : 'Publish for everyone'}</Text>}</Pressable></ScrollView></View></View></Modal>;
 }

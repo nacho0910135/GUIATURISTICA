@@ -32,15 +32,14 @@ async function waitForVerification(page) {
 async function extractRoute(page, sourceKey, routeName) {
   await page.goto(`${sourceBase}${sourceKey}`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await page.waitForTimeout(3_000);
-  const text = await page.locator('body').innerText();
+  let text = await page.locator('body').innerText();
   if (/verificaci[oó]n de navegador|just a moment|attention required/i.test(text) && await waitForVerification(page)) {
-    return extractRoute(page, sourceKey, routeName);
+    text = await page.locator('body').innerText();
   }
   if (/verificaci[oó]n de navegador|just a moment|attention required/i.test(text)) {
     throw new Error('Yo Viajo CR requiere verificación de navegador; no se intentó evadirla. Abrí la página y completá la verificación antes de reintentar.');
   }
   const fare = text.match(/Tarifa estimada\s*₡\s*([\d.,]+)/i);
-  if (!fare) throw new Error('No se publicó una tarifa estimada');
 
   const schedules = {};
   for (const [key, label] of [['weekday', 'Semana'], ['saturday', 'Sábado'], ['sunday', 'Domingo']]) {
@@ -60,7 +59,7 @@ async function extractRoute(page, sourceKey, routeName) {
     origin_city: originCity,
     destination_city: destination.join(' – '),
     schedules,
-    fare_crc: Number(fare[1].replace(/\./g, '').replace(',', '.')),
+    fare_crc: fare ? Number(fare[1].replace(/\./g, '').replace(',', '.')) : null,
     fare_kind: 'estimated',
     terminal_name: null,
     terminal_waze_url: null,
@@ -74,15 +73,23 @@ async function extractRoute(page, sourceKey, routeName) {
 if (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en .env.local.');
 
 const supabase = createClient(process.env.EXPO_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-const browser = await chromium.launch({ executablePath: 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe', headless: false });
-const page = await browser.newPage();
+const browser = process.env.BRAVE_CDP_URL
+  ? await chromium.connectOverCDP(process.env.BRAVE_CDP_URL)
+  : await chromium.launch({ executablePath: 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe', headless: false });
+const context = browser.contexts()[0] ?? await browser.newContext();
+// En una conexión CDP no reutilizamos la pestaña del usuario: la verificación
+// queda en el contexto compartido y la extracción usa una pestaña propia.
+const page = await context.newPage();
 const complete = [];
 const rejected = [];
 
 try {
   for (const [key, name] of ROUTES) {
     try {
-      complete.push(await extractRoute(page, key, name));
+      const route = await extractRoute(page, key, name);
+      complete.push(route);
+      const { error: upsertError } = await supabase.from('tourist_bus_routes').upsert(route, { onConflict: 'source_key' });
+      if (upsertError) throw upsertError;
       console.log(`✓ ${name}`);
     } catch (error) {
       rejected.push({ key, reason: error.message });
@@ -90,7 +97,7 @@ try {
     }
   }
 } finally {
-  await browser.close();
+  if (!process.env.BRAVE_CDP_URL) await browser.close();
 }
 
 if (complete.length) {
