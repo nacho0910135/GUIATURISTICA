@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="csrf-token" content="eSIRsvmWnThaNnGNteQlPDhSoBeBYfSocidVskyR">
+        <meta name="author" content="Dagoberto Medina">
+        <meta name="language" content="en">
+        <meta property="og:image" content="/img/frontend/logo.png" />
+        <link rel="icon" href="/img/frontend/logo.png">
+        <link rel="manifest" href="/img/icons/manifest.json">
+            <meta name="keywords" content="Ciudad Quesada – San José, horarios de buses, transporte público, bus Ciudad Quesada – San José">
+                    <title>Ciudad Quesada – San José - Horarios de Buses en  | Transporte Público</title>
+            <meta property="og:url" content="https://yoviajocr.com/bus/ciudad-quesada-san-jose" />
+            <script type="application/ld+json">
+                {
+                  "@context": "http://schema.org",
+                  "@type": "BusReservation",
+                  "reservationId": "837",
+                  "reservationStatus": "http://schema.org/ReservationConfirmed",
+                  "reservationFor": {
+                    "@type": "BusTrip",
+                    "provider": {
+                      "@type": "Organization",
+                      "name": "Ciudad Quesada – San José - Yo Viajo "
+                    }
+                    ,
+                    "departureBusStop": {
+                      "@type": "BusStop",
+                      "name": "Quesada, Alajuela, Costa Rica"
+                    },
+                    "arrivalBusStop": {
+                      "@type": "BusStop",
+                      "name": "Quesada, Alajuela, Costa Rica"
+                    }
+                                }
+              }
+            </script>
+
+
+                <script src="/js/wow.min.js" defer type="bd6eafdce99ec6ea9706486c-text/javascript">
+            new WOW().init();
+        </script>
+        <link rel="shortcut icon" href="/img/favicon-yo-viajo.ico" type="image/x-icon">
+        <link rel="icon" href="/img/favicon-yo-viajo.ico" type="image/x-icon">
+        <link rel="canonical" href="https://yoviajocr.com/bus/ciudad-quesada-san-jose">
+            <meta name="description" content="Consulta los horarios, precios y paradas del bus Ciudad Quesada – San José. Encuentra toda la información que necesitas para planificar tu viaje en transporte público.">
+    <meta property="og:title" content="Ciudad Quesada – San José">
+    <meta property="og:description" content="Planifica tu viaje en bus con horarios actualizados, paradas y más para Ciudad Quesada – San José.">
+    <meta property="og:image" content="https://yoviajocr.com/img/frontend/bus-carretera-costa-rica-yo-viajo.jpeg">
+        
+        <link media="all" type="text/css" rel="stylesheet" href="https://yoviajocr.com/css/frontend.css?id=1bee1f328a711bd3c40a">
+
+
+        
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+
+                    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+            <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+                (adsbygoogle = window.adsbygoogle || []).push({
+                    google_ad_client: "ca-pub-1195759558701784",
+                    enable_page_level_ads: true
+                });
+            </script>
+        
+        <!-- Google tag (gtag.js) - GA4 -->
+                <script async src="https://www.googletagmanager.com/gtag/js?id=G-3T79QXLF3B" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+        <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-3T79QXLF3B');
+        </script>
+                    <!-- Web Application Manifest -->
+<link rel="manifest" href="https://yoviajocr.com/manifest.json">
+<!-- Chrome for Android theme color -->
+<meta name="theme-color" content="#000000">
+
+<!-- Add to homescreen for Chrome on Android -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="YoViajo">
+<link rel="icon" sizes="512x512" href="/images/icons/apple-icon.png">
+
+<!-- Add to homescreen for Safari on iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="YoViajo">
+<link rel="apple-touch-icon" href="/images/icons/apple-icon.png">
+
+
+<link href="/img/frontend/logo.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 621px) and (device-height: 1104px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+
+<!-- Tile for Win8 -->
+<meta name="msapplication-TileColor" content="#ffffff">
+<meta name="msapplication-TileImage" content="/images/icons/apple-icon.png">
+
+<script type="bd6eafdce99ec6ea9706486c-text/javascript">
+    // Initialize the service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/serviceworker.js', {
+            scope: '.'
+        }).then(function (registration) {
+            // Registration was successful
+            console.log('PWA: ServiceWorker registration successful with scope: ', registration.scope);
+        }, function (err) {
+            // registration failed :(
+            console.log('PWA: ServiceWorker registration failed: ', err);
+        });
+    }
+</script>
+        
+
+        <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+            !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+            posthog.init('phc_FWqxwDFywaYSvs7fRi8r9E6EthIJKtfBLQRMDeex54z',{api_host:'https://us.i.posthog.com', person_profiles: 'identified_only'
+            })
+        </script>
+
+            </head>
+    <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id="
+                      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <div id="app">
+                        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="z-index: 9999999999999999999">
+    <a href="https://yoviajocr.com" class="navbar-brand"><img src="/img/frontend/logo-horizontal.svg" height="30px;"></a>
+    <a href="" class="search_icon" data-toggle="modal" data-target="#modalLoginForm"><i class="fas fa-search"></i></a>
+    <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle Navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+        <ul class="navbar-nav">
+            
+                            <li class="nav-item"><a href="https://yoviajocr.com/login" class="nav-link ">Login</a></li>
+
+                            <li class="nav-item"><a href="/ticomap" class="nav-link">TicoMap</a></li>
+
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownAboutMenu" data-toggle="dropdown"
+                       aria-haspopup="true" aria-expanded="false">Yo Viajo</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownAboutMenu">
+                        <a href="/about" class="dropdown-item">Acerca de</a>
+                        <a href="/partner-with-us" class="dropdown-item">Alianzas</a>
+                        <a href="/chatbot" class="dropdown-item" title="Chatbot">Chatbot</a>
+                        <a href="/faqs" class="dropdown-item" title="Preguntas Frecuentes">FAQs</a>
+                        <a href="https://yoviajocr.com/contact" class="dropdown-item ">Contact</a>
+                    </div>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownAboutMenu" data-toggle="dropdown"
+                       aria-haspopup="true" aria-expanded="false">Horarios</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownAboutMenu">
+                        <a href="/buses" class="dropdown-item">Bus</a>
+                        <a href="/tren" class="dropdown-item">Train</a>
+                        <a href="/ferry" class="dropdown-item">Ferry</a>
+                        <!--
+                        <a href="/schedule/shuttle" class="dropdown-item">Private Shuttle</a>
+                        -->
+                        <a href="/empresas" class="dropdown-item">Empresas</a>
+                    </div>
+                </li>
+
+                                                        <li class="nav-item">
+                        <a href="https://yoviajocr.com/lang/es" class="nav-link px-2">ES</a>
+                    </li>
+                        </ul>
+    </div>
+</nav>
+        <div class="row no-gutters my-4">
+            
+                    <div class="col-md-12 justify-content-center text-center">
+                        <div class="ad-label">Ads</div>
+                        <div class="ads-container">
+                        <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+                        <!-- YoViajoFirstAd -->
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-1195759558701784"
+                             data-ad-slot="7290128471"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                        <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                        </div>
+                        <div class="ad-label">Ads</div>
+                    </div>
+
+            
+                                                <a
+                        id="yv-whatsapp-fab"
+                        class="yv-whatsapp-fab yv-help-with-mobile-menu"
+                        href="https://wa.me/50689684256"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Abrir WhatsApp"
+                    >
+                        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                    </a>
+                
+                
+                                    </div>
+            <div class="container-fluid">
+                                
+    
+    <bus-hero-component
+        :image-url='"https:\/\/images.unsplash.com\/photo-1682963847132-1923d1e7928a?ixid=M3w4MzczODF8MHwxfHNlYXJjaHwxfHxzYW4lMjBqb3MlQzMlQTklMjBjb3N0YSUyMHJpY2F8ZW58MXwwfHx8MTc2NDQ0OTY0Mnww\u0026ixlib=rb-4.1.0\u0026w=1600\u0026h=360\u0026fit=crop\u0026crop=entropy\u0026auto=format\u0026q=80"'
+        :author-name='"C\u00e9sar Badilla Miranda"'
+        :author-username='"xbmpro"'
+        :value='"Ciudad Quesada \u2013 San Jos\u00e9"'
+        :title-prefix='""'
+        :bottom-left-label='"Route 205"'
+    ></bus-hero-component>
+
+    <div class="container">
+        <div class="row" style="min-height: 500px;background-size: 250px;width: 100%; padding-left: 30px">
+
+            <div class="col-md-1 d-flex flex-column justify-content-center bg-dark p-2 rounded-top" style="margin-top: -40px;">
+                <div class="d-md-none d-lg-none m-0 p-0 rounded-top">
+                    
+                    <a onclick="if (!window.__cfRLUnblockHandlers) return false; introJs().start();" class="wow lightSpeedIn text-white float-right" data-cf-modified-bd6eafdce99ec6ea9706486c-="">
+                        <svg class="svg-inline--fa fa-info-circle fa-w-16" style="font-size: 24px; vertical-align: middle;" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="info-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"></path></svg>
+                    </a>
+                </div>
+                <dl class="d-none d-sm-block">
+                    <dt class="mt-2">
+                        <a onclick="if (!window.__cfRLUnblockHandlers) return false; introJs().start();" class="wow lightSpeedIn text-white" data-cf-modified-bd6eafdce99ec6ea9706486c-="">
+                            <svg class="svg-inline--fa fa-info-circle fa-w-16" style="font-size: 24px; vertical-align: middle;" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="info-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"></path></svg>
+                        </a>
+                    </dt>
+                </dl>
+            </div>
+
+            <div class="col-md-3 p-4 shadow bg-white wow fadeIn rounded" data-wow-delay="0.1s" data-intro='Elementos generales de tu horario' data-position='middle-middle'>
+                <div class="bus-company-header">
+                    <div class="bus-company-avatar">
+                        <span id="bus-image">Cargando imagen...</span>
+                    </div>
+                    <div class="bus-company-info">
+                        <a class="text-primary company-title-link" id="companyName"></a>
+                    </div>
+                </div>
+
+                                    <p class="bus-subtitles mb-0 mt-1">Estimated Fare</p>
+                    <div class="d-flex align-items-center">
+                                                    <div>
+                                <span class="currency-symbol">¢</span>
+                                <span class="amount">2.850</span>
+                            </div>
+                                                            <span class="conversion-icon mx-2">
+                                    ≈
+                                </span>
+                                <div>
+                                    <span class="currency-symbol">$</span>
+                                    <span class="amount">4,525.00</span>
+                                </div>
+                                                                        </div>
+
+                
+                <div class="d-flex flex-column align-items-start mt-2 mb-2">
+                    <p class="bus-subtitles mb-0">Next Bus</p>
+                    <p class="minutes mb-0">
+                        <span id="nextMin"></span>
+                        <span id="textMin">minutes</span>
+                        <span id="textTom">Tomorrow</span>
+                        <img src="/img/frontend/time.svg" alt="Time Icon" class="mx-2 time-icon">
+                        <span id="nextHour">-</span>
+                    </p>
+                                            <p class="text-secondary mb-0 bus-time-estimated">Travel time:                            <span>3 horas & 40 min</span>
+                            <small>Estimated time.</small>
+                        </p>
+                                    </div>
+
+                <div id="traffic-status" class="bus-traffic-row mt-2">
+                    <span id="traffic-chip" class="bus-traffic-chip badge badge-secondary"><i class="fa fa-traffic-light"></i> <span id="traffic-text">Tráfico: Cargando…</span></span>
+                    <span id="traffic-inline" class="bus-traffic-inline small text-muted"></span>
+                    <div id="traffic-detail" class="small text-muted mt-1" style="display:none;"></div>
+                </div>
+
+                <div class="bus-actions-toolbar desktop-only">
+                    <a href="#" data-toggle="modal" data-target="#commentModal" class="bus-action-btn" title="Comentarios">
+                        <i class="fa fa-comment"></i>
+                        <span>Comentarios</span>
+                    </a>
+                                            <a href="#" data-toggle="modal" data-target="#mapModal" class="bus-action-btn" title="Mapa de ruta">
+                            <i class="fa fa-map"></i>
+                            <span>Mapa</span>
+                        </a>
+                                                                <a href="#" data-toggle="modal" data-target="#stopsModal" class="bus-action-btn" title="Paradas">
+                            <i class="fas fa-bus"></i>
+                            <span>Paradas</span>
+                        </a>
+                                                                                                            <a id="complementarylink" class="bus-action-btn bus-action-btn--alt" title="Horario complementario">
+                            <img src="/img/frontend/complementary.svg" width="16px">
+                            <span>Complementario</span>
+                        </a>
+                        <complementary-component complementary="{&quot;complementary&quot;:[836]}"></complementary-component>
+                                    </div>
+            </div>
+
+            
+            <div class="col-12 mt-2 mb-3 d-block d-md-none" data-company-news-block>
+                <div class="company-news-card wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="company-news-badge">
+                        <img src="/img/frontend/paperclip.svg" width="24" height="24" alt="News">
+                    </div>
+                    <div class="company-news-body text-center" data-company-news-text>
+                        
+                    </div>
+                </div>
+            </div>
+
+            
+                            <div class="col-md-4 pt-2 p-1 wow fadeIn" data-wow-delay="0.2s">
+                    <div class="bus-schedule-card google-anno-skip">
+                        <div class="row google-anno-skip">
+                            <ul class="nav nav-tabs bus-schedule-tabs" id="myTab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="semana-tab" data-toggle="tab" href="#semana" role="tab" aria-controls="semana" aria-selected="true" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Week                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="sabados-tab" data-toggle="tab" href="#sabados" role="tab" aria-controls="sabados" aria-selected="false" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Saturday                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="domingos-tab" data-toggle="tab" href="#domingos" role="tab" aria-controls="domingos" aria-selected="false" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Sunday                                </a>
+                            </li>
+                                                    </ul>
+                        </div>
+                        <div class="row pl-2 wow fadeIn days-tab" data-wow-delay="0.1s" id="style-1">
+                        <div class="col-md-12 col-12 google-anno-skip">
+                        <div class="tab-content pt-3 google-anno-skip" id="myTabContent" data-intro='Horas aproximadas de tu servicio' data-position="middle">
+                            <div class="tab-pane fade show active" id="semana" role="tabpanel" aria-labelledby="semana-tab">
+                                <p>04:30 am<br>
+05:30 am<br>
+06:15 am<br>
+07:00 am Ingresa a Alajuela<br>
+07:35 am Viene de los Chiles<br>
+08:20 am<br>
+08:40 am<br>
+09:00 am Ingresa a Alajuela<br>
+09:30 am<br>
+10:00 am<br>
+10:40 am&nbsp;<br>
+11:00 am Ingresa a Alajuela<div>11:40 am<br>
+12:00 pm<br>
+01:00 pm Ingresa a Alajuela<br>
+01:40 pm<br>
+02:30 pm Ingresa a Alajuela<br>
+03:30 pm<br>
+04:00 pm Viene de Fortuna<br>
+04:40 pm Ingresa a Alajuela<br>
+05:30 pm Viene de los Chiles<br>
+06:30 pm Ingresa a Alajuela<br>
+07:45 pm</div></p>
+                            </div>
+                            <div class="tab-pane fade" id="sabados" role="tabpanel" aria-labelledby="sabados-tab">
+                                                                    <p>05:30 am<br>06:15 am<br>07:00 am Ingresa a Alajuela<br>07:35 am Viene de los Chiles<br>08:20 am<br>08:40 am<br>09:00 am Ingresa a Alajuela<br>09:30 am<br>10:00 am<br>10:40 am&nbsp;<br>11:00 am Ingresa a Alajuela<div>11:40 am<br>12:00 pm<br>01:00 pm Ingresa a Alajuela<br>01:40 pm<br>02:30 pm Ingresa a Alajuela<br>03:30 pm<br>04:00 pm Viene de Fortuna<br>04:40 pm Ingresa a Alajuela<br>05:30 pm Viene de los Chiles<br>06:30 pm Ingresa a Alajuela<br>07:45 pm</div></p>
+                                                            </div>
+                            <div class="tab-pane fade" id="domingos" role="tabpanel" aria-labelledby="domingos-tab">
+                                                                    <p>06:00 am<br>07:00 am Ingresa a Alajuela<br>07:35 am Viene de los Chiles<br>08:20 am<br>08:40 am<br>09:00 am Ingresa a Alajuela<br>09:30 am<br>10:00 am<br>10:40 am&nbsp;<br>11:00 am Ingresa a Alajuela<div>11:40 am<br>12:00 pm<br>01:00 pm Ingresa a Alajuela<br>01:40 pm<br>02:30 pm Ingresa a Alajuela<br>03:30 pm<br>04:00 pm Viene de Fortuna<br>04:40 pm Ingresa a Alajuela<br>05:30 pm Viene de los Chiles<br>06:30 pm Ingresa a Alajuela<br>07:45 pm</div></p>
+                                                            </div>
+                                                    </div>
+                        </div>
+
+                        <button class="show-more-btn-hours travel-guide-btn hidden " onclick="if (!window.__cfRLUnblockHandlers) return false; toggleExpand()" data-expand-text="Show less hours" data-collapse-text="Load more hours" data-cf-modified-bd6eafdce99ec6ea9706486c-="">
+                        <span id="expand-text">Load more hours</span>
+                        </button>
+
+                        <div class="col-md-12 justify-content-center text-center">
+                        <div class="ad-label">Ads</div>
+                        <div class="ads-container" style="height: 200px;">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1195759558701784" crossorigin="anonymous" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+                                <!-- Schedule Tabs Content Ad -->
+                                <ins class="adsbygoogle"
+                                    style="display:inline-block;width:260px;height:200px; max-width: 100%;"
+                                    data-ad-client="ca-pub-1195759558701784"
+                                    data-ad-slot="9599077511"></ins>
+                                <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+                                    (adsbygoogle = window.adsbygoogle || []).push({});
+                                </script>
+                        </div>
+                        <div class="ad-label">Ads</div>
+                    </div>
+
+                    </div>
+                    </div>
+                    
+                   
+
+                    <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+                        document.addEventListener("DOMContentLoaded", function() {
+                            const content = document.getElementById('myTabContent');
+                            const button = document.querySelector('.show-more-btn-hours');
+                            const tabpanels = document.querySelectorAll('[role="tabpanel"]');
+
+                            if (content.scrollHeight > 290) {
+                                button.classList.remove('hidden');
+                                content.classList.add('has-expand-btn');
+                            }
+
+                            tabpanels.forEach(tab => {
+                                tab.addEventListener("click", function() {
+                                    if (!content.classList.contains("expanded")) {
+                                        toggleExpand();
+                                    }
+                                });
+                            });
+                        });
+
+                        function toggleExpand() {
+                            const content = document.getElementById('myTabContent');
+                            const text = document.getElementById('expand-text');
+                            const button = document.querySelector('.show-more-btn-hours');
+
+                            content.classList.toggle('expanded');
+
+                            text.innerText = content.classList.contains('expanded')
+                                ? button.dataset.expandText
+                                : button.dataset.collapseText;
+                        }
+                    </script>
+
+                </div>
+
+                <div class="col-md-3 mt-1 mb-1" data-intro='Mapa, Comentarios y otros links adicionales'>
+                    
+                    <div class="row mb-3 d-none d-md-block" data-company-news-block>
+                        <div class="col-md-12">
+                            <div class="company-news-card wow fadeInUp" data-wow-delay="0.1s">
+                                <div class="company-news-badge">
+                                    <img src="/img/frontend/paperclip.svg" width="24" height="24" alt="News">
+                                </div>
+                                <div class="company-news-body text-center" data-company-news-text>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <schedule-component schedule="{&quot;lunes_viernes&quot;:&quot;04:30 am&lt;br&gt;\r\n05:30 am&lt;br&gt;\r\n06:15 am&lt;br&gt;\r\n07:00 am Ingresa a Alajuela&lt;br&gt;\r\n07:35 am Viene de los Chiles&lt;br&gt;\r\n08:20 am&lt;br&gt;\r\n08:40 am&lt;br&gt;\r\n09:00 am Ingresa a Alajuela&lt;br&gt;\r\n09:30 am&lt;br&gt;\r\n10:00 am&lt;br&gt;\r\n10:40 am&amp;nbsp;&lt;br&gt;\r\n11:00 am Ingresa a Alajuela&lt;div&gt;11:40 am&lt;br&gt;\r\n12:00 pm&lt;br&gt;\r\n01:00 pm Ingresa a Alajuela&lt;br&gt;\r\n01:40 pm&lt;br&gt;\r\n02:30 pm Ingresa a Alajuela&lt;br&gt;\r\n03:30 pm&lt;br&gt;\r\n04:00 pm Viene de Fortuna&lt;br&gt;\r\n04:40 pm Ingresa a Alajuela&lt;br&gt;\r\n05:30 pm Viene de los Chiles&lt;br&gt;\r\n06:30 pm Ingresa a Alajuela&lt;br&gt;\r\n07:45 pm&lt;\/div&gt;&quot;,&quot;sabados&quot;:&quot;05:30 am&lt;br&gt;06:15 am&lt;br&gt;07:00 am Ingresa a Alajuela&lt;br&gt;07:35 am Viene de los Chiles&lt;br&gt;08:20 am&lt;br&gt;08:40 am&lt;br&gt;09:00 am Ingresa a Alajuela&lt;br&gt;09:30 am&lt;br&gt;10:00 am&lt;br&gt;10:40 am&amp;nbsp;&lt;br&gt;11:00 am Ingresa a Alajuela&lt;div&gt;11:40 am&lt;br&gt;12:00 pm&lt;br&gt;01:00 pm Ingresa a Alajuela&lt;br&gt;01:40 pm&lt;br&gt;02:30 pm Ingresa a Alajuela&lt;br&gt;03:30 pm&lt;br&gt;04:00 pm Viene de Fortuna&lt;br&gt;04:40 pm Ingresa a Alajuela&lt;br&gt;05:30 pm Viene de los Chiles&lt;br&gt;06:30 pm Ingresa a Alajuela&lt;br&gt;07:45 pm&lt;\/div&gt;&quot;,&quot;domingos&quot;:&quot;06:00 am&lt;br&gt;07:00 am Ingresa a Alajuela&lt;br&gt;07:35 am Viene de los Chiles&lt;br&gt;08:20 am&lt;br&gt;08:40 am&lt;br&gt;09:00 am Ingresa a Alajuela&lt;br&gt;09:30 am&lt;br&gt;10:00 am&lt;br&gt;10:40 am&amp;nbsp;&lt;br&gt;11:00 am Ingresa a Alajuela&lt;div&gt;11:40 am&lt;br&gt;12:00 pm&lt;br&gt;01:00 pm Ingresa a Alajuela&lt;br&gt;01:40 pm&lt;br&gt;02:30 pm Ingresa a Alajuela&lt;br&gt;03:30 pm&lt;br&gt;04:00 pm Viene de Fortuna&lt;br&gt;04:40 pm Ingresa a Alajuela&lt;br&gt;05:30 pm Viene de los Chiles&lt;br&gt;06:30 pm Ingresa a Alajuela&lt;br&gt;07:45 pm&lt;\/div&gt;&quot;,&quot;feriados&quot;:&quot;&quot;}"></schedule-component>
+                        </div>
+                    </div>
+                    <travel-guide-link
+                        :map-modal="'#stopsModal'"
+                        :comment-modal="'#commentModal'"
+                        :map-text="'Map'"
+                        :comment-text="'Comments'"
+                        :title="'Ciudad Quesada – San José'"
+                        :button-text="&quot;Explore the Travel Guide&quot;"
+                        :needhelp-text="&quot;How can I assist you today?&quot;">
+                    </travel-guide-link>
+
+                                            <simple-bus-stops-map stops="[{&quot;id&quot;:7944,&quot;title&quot;:&quot;Terminal Buses de San Carlos&quot;,&quot;address&quot;:&quot;Plaza San Carlos, Barrio La Uni\u00f3n, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.33287362913872&quot;,&quot;lng&quot;:&quot;-84.43465806997526&quot;,&quot;time&quot;:&quot;00:00&quot;,&quot;price&quot;:null,&quot;order&quot;:1,&quot;starts&quot;:1,&quot;ends&quot;:0},{&quot;id&quot;:6779,&quot;title&quot;:&quot;Ebais de Ciudad Quesada&quot;,&quot;address&quot;:&quot;Ebais De Ciudad Quesada, Barrio San Roque, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.340057077298804&quot;,&quot;lng&quot;:&quot;-84.43354328095094&quot;,&quot;time&quot;:&quot;00:02&quot;,&quot;price&quot;:null,&quot;order&quot;:2,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10796,&quot;title&quot;:&quot;Tribunales de Justicia, San Carlos&quot;,&quot;address&quot;:&quot;TRIBUNAL DE JUSTICIA SAN CARLOS, 141, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.322439604366629&quot;,&quot;lng&quot;:&quot;-84.4314497545616&quot;,&quot;time&quot;:&quot;00:04&quot;,&quot;price&quot;:null,&quot;order&quot;:3,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10797,&quot;title&quot;:&quot;UTN Sede, San Carlos&quot;,&quot;address&quot;:&quot;Universidad T\u00e9cnica Nacional, Barrio Lourdes, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.31911073001507&quot;,&quot;lng&quot;:&quot;-84.42980894355125&quot;,&quot;time&quot;:&quot;00:08&quot;,&quot;price&quot;:null,&quot;order&quot;:4,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10798,&quot;title&quot;:&quot;Registro Civil, Ciudad Quesada&quot;,&quot;address&quot;:&quot;Registro Civil TSE, Barrio Lourdes, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.317694593258775&quot;,&quot;lng&quot;:&quot;-84.42911876990586&quot;,&quot;time&quot;:&quot;00:10&quot;,&quot;price&quot;:null,&quot;order&quot;:5,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6860,&quot;title&quot;:&quot;Estaci\u00f3n de Servicio Loyva&quot;,&quot;address&quot;:&quot;Estaci\u00f3n de Servicio LOYVA, Barrio Lourdes, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.31655960941892&quot;,&quot;lng&quot;:&quot;-84.4282615951065&quot;,&quot;time&quot;:&quot;00:12&quot;,&quot;price&quot;:null,&quot;order&quot;:6,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10790,&quot;title&quot;:&quot;Escuela La Mercedes, San Carlos&quot;,&quot;address&quot;:&quot;Escuela La Mercedes, 141, Barrio Hacienda Las Mercedes, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.3106198&quot;,&quot;lng&quot;:&quot;-84.42675679999999&quot;,&quot;time&quot;:&quot;00:14&quot;,&quot;price&quot;:null,&quot;order&quot;:7,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10789,&quot;title&quot;:&quot;Frente a Restaurante Mirna y Pachi, Bajo Porvenir&quot;,&quot;address&quot;:&quot;Restaurante Mirna y Pachi, Barrio Porvenir Abajo, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.301165255902438&quot;,&quot;lng&quot;:&quot;-84.42656682943039&quot;,&quot;time&quot;:&quot;00:15&quot;,&quot;price&quot;:null,&quot;order&quot;:8,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10788,&quot;title&quot;:&quot;Cercan\u00edas Iglesia Cat\u00f3lica de Porvenir, San Carlos&quot;,&quot;address&quot;:&quot;Iglesia Cat\u00f3lica de Porvenir, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.292366355237412&quot;,&quot;lng&quot;:&quot;-84.42789639577028&quot;,&quot;time&quot;:&quot;00:18&quot;,&quot;price&quot;:null,&quot;order&quot;:9,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10787,&quot;title&quot;:&quot;Frente Abastecedor Porvenir, San Carlos&quot;,&quot;address&quot;:&quot;Abastecedor Porvenir, 141, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.29148272231368&quot;,&quot;lng&quot;:&quot;-84.42865790489348&quot;,&quot;time&quot;:&quot;00:20&quot;,&quot;price&quot;:null,&quot;order&quot;:10,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10786,&quot;title&quot;:&quot;Frente a Entrada Ron Ron Arriba&quot;,&quot;address&quot;:&quot;Ron Ron, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.287294712740074&quot;,&quot;lng&quot;:&quot;-84.43221684378051&quot;,&quot;time&quot;:&quot;00:22&quot;,&quot;price&quot;:null,&quot;order&quot;:11,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10785,&quot;title&quot;:&quot;Frente a Restaurante Bariloche&quot;,&quot;address&quot;:&quot;Restaurante Bariloche, Sucre, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.281158891429921&quot;,&quot;lng&quot;:&quot;-84.43070046197128&quot;,&quot;time&quot;:&quot;00:25&quot;,&quot;price&quot;:null,&quot;order&quot;:12,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10784,&quot;title&quot;:&quot;Liceo de Sucre, San Carlos&quot;,&quot;address&quot;:&quot;Liceo de Innovaci\u00f3n Educativa Sucre, 141, Sucre, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.279245168611165&quot;,&quot;lng&quot;:&quot;-84.43108303187714&quot;,&quot;time&quot;:&quot;00:28&quot;,&quot;price&quot;:null,&quot;order&quot;:13,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6861,&quot;title&quot;:&quot;San Juan de Lajas&quot;,&quot;address&quot;:&quot;Plaza de San Juan de Lajas, Provincia de Alajuela, Alfaro Ruiz, Costa Rica&quot;,&quot;lat&quot;:&quot;10.252775274593308&quot;,&quot;lng&quot;:&quot;-84.42515397678223&quot;,&quot;time&quot;:&quot;00:30&quot;,&quot;price&quot;:null,&quot;order&quot;:14,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10783,&quot;title&quot;:&quot;Plaza de Deportes Zapote, Zarcero&quot;,&quot;address&quot;:&quot;Cancha de Zapote, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.226902992875589&quot;,&quot;lng&quot;:&quot;-84.42724606018828&quot;,&quot;time&quot;:&quot;00:32&quot;,&quot;price&quot;:null,&quot;order&quot;:15,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6862,&quot;title&quot;:&quot;Escuela de Zapote&quot;,&quot;address&quot;:&quot;Escuela Zapote, 141, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.225090962741563&quot;,&quot;lng&quot;:&quot;-84.4239965656414&quot;,&quot;time&quot;:&quot;00:35&quot;,&quot;price&quot;:null,&quot;order&quot;:16,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10779,&quot;title&quot;:&quot;Contiguo a Super El Pueblo, Zarcero&quot;,&quot;address&quot;:&quot;Super El Pueblo, Calle Zapote, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.226677611434503&quot;,&quot;lng&quot;:&quot;-84.42701703862305&quot;,&quot;time&quot;:&quot;00:38&quot;,&quot;price&quot;:null,&quot;order&quot;:17,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10799,&quot;title&quot;:&quot;Frente a Farmacia Romi, Laguna Zarcero&quot;,&quot;address&quot;:&quot;Farmacia Romi, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.2090212583333&quot;,&quot;lng&quot;:&quot;-84.40132988958398&quot;,&quot;time&quot;:&quot;00:40&quot;,&quot;price&quot;:null,&quot;order&quot;:18,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10778,&quot;title&quot;:&quot;Frente a Almac\u00e9n Siempre Verde S.A., Zarcero&quot;,&quot;address&quot;:&quot;Zarcero Siempre VERDE S.A, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.2002464&quot;,&quot;lng&quot;:&quot;-84.39759579999999&quot;,&quot;time&quot;:&quot;00:42&quot;,&quot;price&quot;:null,&quot;order&quot;:19,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10777,&quot;title&quot;:&quot;Cercan\u00edas a C\u00e1mara de Productores de Ca\u00f1a del Pacifico, Zarcero&quot;,&quot;address&quot;:&quot;Camara de Productores de Ca\u00f1a del Pacifico, Almac\u00e9n Zarcero., Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.194473794582764&quot;,&quot;lng&quot;:&quot;-84.39522518881608&quot;,&quot;time&quot;:&quot;00:44&quot;,&quot;price&quot;:null,&quot;order&quot;:20,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7285,&quot;title&quot;:&quot;Almac\u00e9n Agroveterinario Dos Pinos&quot;,&quot;address&quot;:&quot;Almac\u00e9n Agroveterinario Dos Pinos, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.327555847790217&quot;,&quot;lng&quot;:&quot;-84.42152459206542&quot;,&quot;time&quot;:&quot;00:48&quot;,&quot;price&quot;:null,&quot;order&quot;:21,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10776,&quot;title&quot;:&quot;Frente a Carnes y Embutidos Guadalupe, Zarcero&quot;,&quot;address&quot;:&quot;Carnes y Embutidos Guadalupe, Calle Central, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.1898136788344&quot;,&quot;lng&quot;:&quot;-84.39131816931152&quot;,&quot;time&quot;:&quot;00:50&quot;,&quot;price&quot;:null,&quot;order&quot;:22,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10800,&quot;title&quot;:&quot;Frente a Parque Evangelista Blanco Brenes, Zarcero&quot;,&quot;address&quot;:&quot;Parque Evangelista Blanco Brenes, 141, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.184482260852775&quot;,&quot;lng&quot;:&quot;-84.39215741233787&quot;,&quot;time&quot;:&quot;00:52&quot;,&quot;price&quot;:null,&quot;order&quot;:23,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10769,&quot;title&quot;:&quot;Cercan\u00edas a Restaurante Los Gallos, Zarcero&quot;,&quot;address&quot;:&quot;Los Gallos Parrillada Tica Fusi\u00f3n, 141, San Pablo, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.182256778730894&quot;,&quot;lng&quot;:&quot;-84.38927742209015&quot;,&quot;time&quot;:&quot;00:55&quot;,&quot;price&quot;:null,&quot;order&quot;:24,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10768,&quot;title&quot;:&quot;Frente a Soda La Cocina Zarcere\u00f1a&quot;,&quot;address&quot;:&quot;Soda La Cocina Zarcere\u00f1a, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.179948419459848&quot;,&quot;lng&quot;:&quot;-84.3842894852848&quot;,&quot;time&quot;:&quot;00:58&quot;,&quot;price&quot;:null,&quot;order&quot;:25,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10767,&quot;title&quot;:&quot;Frente a Restaurante El Fog\u00f3n de Mam\u00e1, Palmita&quot;,&quot;address&quot;:&quot;El Fogon De Mam\u00e1, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.179033320539986&quot;,&quot;lng&quot;:&quot;-84.38105409259032&quot;,&quot;time&quot;:&quot;01:00&quot;,&quot;price&quot;:null,&quot;order&quot;:26,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10766,&quot;title&quot;:&quot;Contiguo a Restaurante La Casa del Pollo, Palmita&quot;,&quot;address&quot;:&quot;Pollo a la Le\u00f1a, La Palmita, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.17735262030698&quot;,&quot;lng&quot;:&quot;-84.38387438161469&quot;,&quot;time&quot;:&quot;01:02&quot;,&quot;price&quot;:null,&quot;order&quot;:27,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10765,&quot;title&quot;:&quot;Frente al Tramo Las Hortensias, Palmita&quot;,&quot;address&quot;:&quot;Tramo Las Hortensias, 141, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.172824039826892&quot;,&quot;lng&quot;:&quot;-84.38034999629518&quot;,&quot;time&quot;:&quot;01:04&quot;,&quot;price&quot;:null,&quot;order&quot;:28,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10764,&quot;title&quot;:&quot;Frente a Multiservicios La Trocha, Naranjo&quot;,&quot;address&quot;:&quot;Multiservicios La Trocha, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.17018430494725&quot;,&quot;lng&quot;:&quot;-84.38157107361067&quot;,&quot;time&quot;:&quot;01:05&quot;,&quot;price&quot;:null,&quot;order&quot;:29,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10763,&quot;title&quot;:&quot;Frente a Escuela Llano Bonito, Naranjo&quot;,&quot;address&quot;:&quot;Escuela Llano Bonito, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.168801326823159&quot;,&quot;lng&quot;:&quot;-84.37381973491821&quot;,&quot;time&quot;:&quot;01:08&quot;,&quot;price&quot;:null,&quot;order&quot;:30,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10762,&quot;title&quot;:&quot;Cruce con Calle Sol\u00eds, Naranjo&quot;,&quot;address&quot;:&quot;Calle Sol\u00eds, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.165657060047238&quot;,&quot;lng&quot;:&quot;-84.37816805362856&quot;,&quot;time&quot;:&quot;01:12&quot;,&quot;price&quot;:null,&quot;order&quot;:31,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10801,&quot;title&quot;:&quot;Plaza de Deportes Llano Bonito, Cirr\u00ed Norte&quot;,&quot;address&quot;:&quot;Plaza de Llano Bonito, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.160009900494966&quot;,&quot;lng&quot;:&quot;-84.37447109629517&quot;,&quot;time&quot;:&quot;01:14&quot;,&quot;price&quot;:null,&quot;order&quot;:32,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10758,&quot;title&quot;:&quot;Cementerio San Juanillo, Naranjo&quot;,&quot;address&quot;:&quot;Cementerio San Juanillo, 141, Provincia de Alajuela, San Juanillo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.136904495591578&quot;,&quot;lng&quot;:&quot;-84.39508764351653&quot;,&quot;time&quot;:&quot;01:18&quot;,&quot;price&quot;:null,&quot;order&quot;:33,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10759,&quot;title&quot;:&quot;Contiguo a Bar Esquivel, Naranjo&quot;,&quot;address&quot;:&quot;Bar Salon Esquivel, Guanacaste, San Juanillo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.132254895636462&quot;,&quot;lng&quot;:&quot;-84.39712350615157&quot;,&quot;time&quot;:&quot;01:20&quot;,&quot;price&quot;:null,&quot;order&quot;:34,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10757,&quot;title&quot;:&quot;Soda y Chicharrones Dami\u00e1n, San Juanillo&quot;,&quot;address&quot;:&quot;Soda y Chicharrones Damian, Desamparados, Provincia de Alajuela, San Juanillo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.130206268472866&quot;,&quot;lng&quot;:&quot;-84.40271359999998&quot;,&quot;time&quot;:&quot;01:22&quot;,&quot;price&quot;:null,&quot;order&quot;:35,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10756,&quot;title&quot;:&quot;Cruce con Calle Garc\u00eda, Naranjo&quot;,&quot;address&quot;:&quot;Calle Garc\u00eda, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.124349848257255&quot;,&quot;lng&quot;:&quot;-84.40451261849364&quot;,&quot;time&quot;:&quot;01:25&quot;,&quot;price&quot;:null,&quot;order&quot;:36,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6847,&quot;title&quot;:&quot;Bar &amp;#038; Restaurante Los Pilones&quot;,&quot;address&quot;:&quot;Bar &amp; Restaurante Los Pilones, 141, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.116727383541617&quot;,&quot;lng&quot;:&quot;-84.3984619478157&quot;,&quot;time&quot;:&quot;01:30&quot;,&quot;price&quot;:null,&quot;order&quot;:37,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10755,&quot;title&quot;:&quot;Frente a Muebles Elio Barboza, Naranjo&quot;,&quot;address&quot;:&quot;Muebles Elio Barboza, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.115437150850825&quot;,&quot;lng&quot;:&quot;-84.39765194536895&quot;,&quot;time&quot;:&quot;01:32&quot;,&quot;price&quot;:null,&quot;order&quot;:38,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7913,&quot;title&quot;:&quot;Cercan\u00edas Restaurante Allan&amp;#8217;S&quot;,&quot;address&quot;:&quot;Restaurante Allan&#039;s, 141, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.107468017468976&quot;,&quot;lng&quot;:&quot;-84.38771196441802&quot;,&quot;time&quot;:&quot;01:34&quot;,&quot;price&quot;:null,&quot;order&quot;:39,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10754,&quot;title&quot;:&quot;Frente a Ferreter\u00eda Javier, Naranjo&quot;,&quot;address&quot;:&quot;Ferreteria Javier, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.105806788316382&quot;,&quot;lng&quot;:&quot;-84.38598637724608&quot;,&quot;time&quot;:&quot;01:35&quot;,&quot;price&quot;:null,&quot;order&quot;:40,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10751,&quot;title&quot;:&quot;Frente al Colegio de Naranjo&quot;,&quot;address&quot;:&quot;Colegio de Naranjo, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.104248785835509&quot;,&quot;lng&quot;:&quot;-84.38449072936096&quot;,&quot;time&quot;:&quot;01:38&quot;,&quot;price&quot;:null,&quot;order&quot;:41,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7912,&quot;title&quot;:&quot;Frente a Parque Mar\u00eda Auxiliadora, Naranjo&quot;,&quot;address&quot;:&quot;Parque, Mar\u00eda Auxiliadora, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.10194782510986&quot;,&quot;lng&quot;:&quot;-84.38332122883607&quot;,&quot;time&quot;:&quot;01:40&quot;,&quot;price&quot;:null,&quot;order&quot;:42,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10750,&quot;title&quot;:&quot;Frente a Veterinaria y Spa Dr. Pet, Naranjo&quot;,&quot;address&quot;:&quot;Veterinaria y Spa Dr. Pet, Calle Central, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.100480034711108&quot;,&quot;lng&quot;:&quot;-84.38219126501235&quot;,&quot;time&quot;:&quot;01:45&quot;,&quot;price&quot;:null,&quot;order&quot;:43,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7029,&quot;title&quot;:&quot;Mi Servicentro Naranjo&quot;,&quot;address&quot;:&quot;Mi Servicentro Naranjo, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.095430233873595&quot;,&quot;lng&quot;:&quot;-84.37715902331352&quot;,&quot;time&quot;:&quot;01:50&quot;,&quot;price&quot;:null,&quot;order&quot;:44,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10747,&quot;title&quot;:&quot;Restaurante Costumbres, Radial Naranjo&quot;,&quot;address&quot;:&quot;Restaurante Costumbres Comida Tipica, Radial Arnoldo Kopper Vega, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.081504118889912&quot;,&quot;lng&quot;:&quot;-84.38213267301636&quot;,&quot;time&quot;:&quot;02:00&quot;,&quot;price&quot;:null,&quot;order&quot;:45,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10666,&quot;title&quot;:&quot;Cercan\u00edas Iglesia Cat\u00f3lica El Llano, Naranjo&quot;,&quot;address&quot;:&quot;Iglesia cat\u00f3lica de El Llano, El Llano, Provincia de Alajuela, Rosario, Costa Rica&quot;,&quot;lat&quot;:&quot;10.038141263260352&quot;,&quot;lng&quot;:&quot;-84.36107898095092&quot;,&quot;time&quot;:&quot;02:05&quot;,&quot;price&quot;:null,&quot;order&quot;:46,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10665,&quot;title&quot;:&quot;Monumento Griego, Autopista Bernardo Soto, Grecia&quot;,&quot;address&quot;:&quot;Autop. Bernardo Soto, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.019282952180388&quot;,&quot;lng&quot;:&quot;-84.35688574358595&quot;,&quot;time&quot;:&quot;02:08&quot;,&quot;price&quot;:null,&quot;order&quot;:47,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6822,&quot;title&quot;:&quot;F\u00e1brica Nacional de Licores (FANAL), Carretera Bernardo Soto, Alajuela&quot;,&quot;address&quot;:&quot;F\u00e1brica Nacional de Licores, Autopista Bernardo Soto, Rinc\u00f3n de Salas, Provincia de Alajuela, Grecia, Costa Rica&quot;,&quot;lat&quot;:&quot;10.015793088917743&quot;,&quot;lng&quot;:&quot;-84.34282685211488&quot;,&quot;time&quot;:&quot;02:15&quot;,&quot;price&quot;:null,&quot;order&quot;:48,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10347,&quot;title&quot;:&quot;Frente a Plantel RECOPE, La Garita&quot;,&quot;address&quot;:&quot;RECOPE, La Garita, 1, Provincia de Alajuela, \u00c1nimas, Costa Rica&quot;,&quot;lat&quot;:&quot;10.005898099782298&quot;,&quot;lng&quot;:&quot;-84.2944348080387&quot;,&quot;time&quot;:&quot;02:18&quot;,&quot;price&quot;:null,&quot;order&quot;:49,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:9610,&quot;title&quot;:&quot;50 este del Puente Coyol&quot;,&quot;address&quot;:&quot;Carretera del Coyol, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;9.99677500922806&quot;,&quot;lng&quot;:&quot;-84.26916236691741&quot;,&quot;time&quot;:&quot;02:20&quot;,&quot;price&quot;:null,&quot;order&quot;:50,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10664,&quot;title&quot;:&quot;Cercan\u00edas Zona Franca Green Park, La Garita, Alajuela, Coyol&quot;,&quot;address&quot;:&quot;The Greenpark Free Zone, Autopista Bernardo Soto, Provincia de Alajuela, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.993905075504763&quot;,&quot;lng&quot;:&quot;-84.24897400555726&quot;,&quot;time&quot;:&quot;02:25&quot;,&quot;price&quot;:null,&quot;order&quot;:51,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10301,&quot;title&quot;:&quot;Contiguo a Hotel Aeropuerto, Alajuela, Autopista Bernardo Soto&quot;,&quot;address&quot;:&quot;Hotel Aeropuerto - Airport Hotel Costa Rica, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;9.993789623549969&quot;,&quot;lng&quot;:&quot;-84.2417035441803&quot;,&quot;time&quot;:&quot;02:30&quot;,&quot;price&quot;:null,&quot;order&quot;:52,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:9591,&quot;title&quot;:&quot;Puente Villa Bonita, Autopista Bernardo Soto&quot;,&quot;address&quot;:&quot;Puente Villa Bonita, 124, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;9.999261239208176&quot;,&quot;lng&quot;:&quot;-84.22010913624572&quot;,&quot;time&quot;:&quot;02:35&quot;,&quot;price&quot;:null,&quot;order&quot;:53,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6864,&quot;title&quot;:&quot;Terminal Autobusera del Norte, Radial Francisco J Orlich, Alajuela&quot;,&quot;address&quot;:&quot;Radial Francisco J. Orlich, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;10.009887417625354&quot;,&quot;lng&quot;:&quot;-84.21310851209068&quot;,&quot;time&quot;:&quot;02:40&quot;,&quot;price&quot;:null,&quot;order&quot;:54,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10299,&quot;title&quot;:&quot;Contiguo A Aerocentro, Radial Francisco J. Orlich, Alajuela&quot;,&quot;address&quot;:&quot;2Q3R+P6C Puente Radial R\u00edo Ciruelas, Radial Francisco J. Orlich, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;10.003931278631486&quot;,&quot;lng&quot;:&quot;-84.20897776528018&quot;,&quot;time&quot;:&quot;02:42&quot;,&quot;price&quot;:null,&quot;order&quot;:55,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6840,&quot;title&quot;:&quot;Aeropuerto Juan Santamar\u00eda, Alajuela&quot;,&quot;address&quot;:&quot;Aeropuerto Juan Santamar\u00eda, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;9.998836937305525&quot;,&quot;lng&quot;:&quot;-84.20417040370482&quot;,&quot;time&quot;:&quot;02:45&quot;,&quot;price&quot;:null,&quot;order&quot;:56,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6818,&quot;title&quot;:&quot;Frente a Zona Franca Saret, Autopista General Ca\u00f1as&quot;,&quot;address&quot;:&quot;SARET Metalmecanica, Provincia de Alajuela, R\u00edo Segundo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.002654487483527&quot;,&quot;lng&quot;:&quot;-84.17888924688262&quot;,&quot;time&quot;:&quot;02:50&quot;,&quot;price&quot;:null,&quot;order&quot;:57,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7705,&quot;title&quot;:&quot;Tabacalera Costarricense&quot;,&quot;address&quot;:&quot;Tabacalera Costarricense, S. A., Heredia, Bel\u00e9n, Costa Rica&quot;,&quot;lat&quot;:&quot;9.9983589&quot;,&quot;lng&quot;:&quot;-84.1718686&quot;,&quot;time&quot;:&quot;02:55&quot;,&quot;price&quot;:null,&quot;order&quot;:58,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6816,&quot;title&quot;:&quot;Cruce Firestone Autopista General Ca\u00f1as&quot;,&quot;address&quot;:&quot;Firestone de Costa Rica, Heredia, Bel\u00e9n, Costa Rica&quot;,&quot;lat&quot;:&quot;9.995914299536336&quot;,&quot;lng&quot;:&quot;-84.16780939049006&quot;,&quot;time&quot;:&quot;03:05&quot;,&quot;price&quot;:null,&quot;order&quot;:59,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7985,&quot;title&quot;:&quot;Ferreter\u00eda EPA, Bel\u00e9n&quot;,&quot;address&quot;:&quot;EPA Bel\u00e9n, Heredia, Bel\u00e9n, Costa Rica&quot;,&quot;lat&quot;:&quot;9.981325195475327&quot;,&quot;lng&quot;:&quot;-84.16335262883605&quot;,&quot;time&quot;:&quot;03:10&quot;,&quot;price&quot;:null,&quot;order&quot;:60,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7706,&quot;title&quot;:&quot;Hotel Wyndham Herradura, Autopista General Ca\u00f1as Heredia&quot;,&quot;address&quot;:&quot;Wyndham San Jose Herradura Hotel &amp; Convention Center, Autopista General Ca\u00f1as, Heredia, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.9788716&quot;,&quot;lng&quot;:&quot;-84.1612595&quot;,&quot;time&quot;:&quot;03:15&quot;,&quot;price&quot;:null,&quot;order&quot;:61,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6836,&quot;title&quot;:&quot;Frente a Plaza los Arcos&quot;,&quot;address&quot;:&quot;LOS ARCOS, Cariari, Heredia, Costa Rica&quot;,&quot;lat&quot;:&quot;9.974997812006759&quot;,&quot;lng&quot;:&quot;-84.15138839577025&quot;,&quot;time&quot;:&quot;03:18&quot;,&quot;price&quot;:null,&quot;order&quot;:62,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10290,&quot;title&quot;:&quot;Intersecci\u00f3n La Castella, Autopista General Ca\u00f1as&quot;,&quot;address&quot;:&quot;Conservatorio de Castella, 1, Heredia, Costa Rica&quot;,&quot;lat&quot;:&quot;9.968340384390698&quot;,&quot;lng&quot;:&quot;-84.13612636004943&quot;,&quot;time&quot;:&quot;03:20&quot;,&quot;price&quot;:null,&quot;order&quot;:63,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7702,&quot;title&quot;:&quot;Instituto Nacional de Aprendizaje sede La Uruca&quot;,&quot;address&quot;:&quot;Instituto Nacional de Aprendizaje, Carvajal Castro, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.962236899999999&quot;,&quot;lng&quot;:&quot;-84.1270601&quot;,&quot;time&quot;:&quot;03:24&quot;,&quot;price&quot;:null,&quot;order&quot;:64,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6833,&quot;title&quot;:&quot;Escuela Otto Hubbe&quot;,&quot;address&quot;:&quot;Escuela Otto H\u00fcbbe, 1, Florentino Castro, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.959567713271571&quot;,&quot;lng&quot;:&quot;-84.12013913736496&quot;,&quot;time&quot;:&quot;03:25&quot;,&quot;price&quot;:null,&quot;order&quot;:65,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6929,&quot;title&quot;:&quot;Hospital M\u00e9xico, La Uruca, San Jos\u00e9&quot;,&quot;address&quot;:&quot;Hospital M\u00e9xico, Opposite the General Ca\u00f1as Highway, Alborada, San Jos\u00e9, La Uruca, Costa Rica&quot;,&quot;lat&quot;:&quot;9.951509099999999&quot;,&quot;lng&quot;:&quot;-84.1150885&quot;,&quot;time&quot;:&quot;03:30&quot;,&quot;price&quot;:null,&quot;order&quot;:66,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10319,&quot;title&quot;:&quot;Monumento Agua&quot;,&quot;address&quot;:&quot;Monumento del Agua, Jardines Autopista, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.9462621&quot;,&quot;lng&quot;:&quot;-84.1094948&quot;,&quot;time&quot;:&quot;03:34&quot;,&quot;price&quot;:null,&quot;order&quot;:67,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10320,&quot;title&quot;:&quot;Hotel Crown Plaza Corobic\u00ed, San Jos\u00e9&quot;,&quot;address&quot;:&quot;Crowne Plaza Corobici Conference Center, General Ca\u00f1as, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.9395873&quot;,&quot;lng&quot;:&quot;-84.0990058&quot;,&quot;time&quot;:&quot;03:36&quot;,&quot;price&quot;:null,&quot;order&quot;:68,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:12227,&quot;title&quot;:&quot;Terminal Atl\u00e1ntico Norte, San Jos\u00e9&quot;,&quot;address&quot;:&quot;Terminal Atl\u00e1ntico Norte, San Jos\u00e9, Paso De La Vaca, Costa Rica&quot;,&quot;lat&quot;:&quot;9.939268&quot;,&quot;lng&quot;:&quot;-84.083926&quot;,&quot;time&quot;:&quot;03:40&quot;,&quot;price&quot;:null,&quot;order&quot;:69,&quot;starts&quot;:0,&quot;ends&quot;:1}]"></simple-bus-stops-map>
+                    
+                    <suggested-schedules-component
+                        title-text="Schedules you may like"
+                        no-results-text="No suggested schedules found."
+                        complementary-id="[836]"
+                        destination="Ciudad Quesada – San José">
+                    </suggested-schedules-component>
+
+                    
+                    <ticomap-suggestions-component
+                        destination="San José"
+                        title-text="Negocios locales en San José"
+                        subtitle-text="Descubre negocios 100% ticos aprobados por la comunidad"
+                        cta-text="Ver TicoMap"
+                        empty-text="Aún no hay negocios registrados en San José"
+                        submit-business-text="Sugerir un negocio"
+                        :show-empty="false">
+                    </ticomap-suggestions-component>
+                </div>
+            
+                                                <company-component company="{&quot;company&quot;:119}"></company-component>
+                                        <bus-stops stops="[{&quot;id&quot;:7944,&quot;title&quot;:&quot;Terminal Buses de San Carlos&quot;,&quot;address&quot;:&quot;Plaza San Carlos, Barrio La Uni\u00f3n, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.33287362913872&quot;,&quot;lng&quot;:&quot;-84.43465806997526&quot;,&quot;time&quot;:&quot;00:00&quot;,&quot;price&quot;:null,&quot;order&quot;:1,&quot;starts&quot;:1,&quot;ends&quot;:0},{&quot;id&quot;:6779,&quot;title&quot;:&quot;Ebais de Ciudad Quesada&quot;,&quot;address&quot;:&quot;Ebais De Ciudad Quesada, Barrio San Roque, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.340057077298804&quot;,&quot;lng&quot;:&quot;-84.43354328095094&quot;,&quot;time&quot;:&quot;00:02&quot;,&quot;price&quot;:null,&quot;order&quot;:2,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10796,&quot;title&quot;:&quot;Tribunales de Justicia, San Carlos&quot;,&quot;address&quot;:&quot;TRIBUNAL DE JUSTICIA SAN CARLOS, 141, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.322439604366629&quot;,&quot;lng&quot;:&quot;-84.4314497545616&quot;,&quot;time&quot;:&quot;00:04&quot;,&quot;price&quot;:null,&quot;order&quot;:3,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10797,&quot;title&quot;:&quot;UTN Sede, San Carlos&quot;,&quot;address&quot;:&quot;Universidad T\u00e9cnica Nacional, Barrio Lourdes, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.31911073001507&quot;,&quot;lng&quot;:&quot;-84.42980894355125&quot;,&quot;time&quot;:&quot;00:08&quot;,&quot;price&quot;:null,&quot;order&quot;:4,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10798,&quot;title&quot;:&quot;Registro Civil, Ciudad Quesada&quot;,&quot;address&quot;:&quot;Registro Civil TSE, Barrio Lourdes, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.317694593258775&quot;,&quot;lng&quot;:&quot;-84.42911876990586&quot;,&quot;time&quot;:&quot;00:10&quot;,&quot;price&quot;:null,&quot;order&quot;:5,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6860,&quot;title&quot;:&quot;Estaci\u00f3n de Servicio Loyva&quot;,&quot;address&quot;:&quot;Estaci\u00f3n de Servicio LOYVA, Barrio Lourdes, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.31655960941892&quot;,&quot;lng&quot;:&quot;-84.4282615951065&quot;,&quot;time&quot;:&quot;00:12&quot;,&quot;price&quot;:null,&quot;order&quot;:6,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10790,&quot;title&quot;:&quot;Escuela La Mercedes, San Carlos&quot;,&quot;address&quot;:&quot;Escuela La Mercedes, 141, Barrio Hacienda Las Mercedes, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.3106198&quot;,&quot;lng&quot;:&quot;-84.42675679999999&quot;,&quot;time&quot;:&quot;00:14&quot;,&quot;price&quot;:null,&quot;order&quot;:7,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10789,&quot;title&quot;:&quot;Frente a Restaurante Mirna y Pachi, Bajo Porvenir&quot;,&quot;address&quot;:&quot;Restaurante Mirna y Pachi, Barrio Porvenir Abajo, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.301165255902438&quot;,&quot;lng&quot;:&quot;-84.42656682943039&quot;,&quot;time&quot;:&quot;00:15&quot;,&quot;price&quot;:null,&quot;order&quot;:8,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10788,&quot;title&quot;:&quot;Cercan\u00edas Iglesia Cat\u00f3lica de Porvenir, San Carlos&quot;,&quot;address&quot;:&quot;Iglesia Cat\u00f3lica de Porvenir, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.292366355237412&quot;,&quot;lng&quot;:&quot;-84.42789639577028&quot;,&quot;time&quot;:&quot;00:18&quot;,&quot;price&quot;:null,&quot;order&quot;:9,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10787,&quot;title&quot;:&quot;Frente Abastecedor Porvenir, San Carlos&quot;,&quot;address&quot;:&quot;Abastecedor Porvenir, 141, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.29148272231368&quot;,&quot;lng&quot;:&quot;-84.42865790489348&quot;,&quot;time&quot;:&quot;00:20&quot;,&quot;price&quot;:null,&quot;order&quot;:10,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10786,&quot;title&quot;:&quot;Frente a Entrada Ron Ron Arriba&quot;,&quot;address&quot;:&quot;Ron Ron, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.287294712740074&quot;,&quot;lng&quot;:&quot;-84.43221684378051&quot;,&quot;time&quot;:&quot;00:22&quot;,&quot;price&quot;:null,&quot;order&quot;:11,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10785,&quot;title&quot;:&quot;Frente a Restaurante Bariloche&quot;,&quot;address&quot;:&quot;Restaurante Bariloche, Sucre, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.281158891429921&quot;,&quot;lng&quot;:&quot;-84.43070046197128&quot;,&quot;time&quot;:&quot;00:25&quot;,&quot;price&quot;:null,&quot;order&quot;:12,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10784,&quot;title&quot;:&quot;Liceo de Sucre, San Carlos&quot;,&quot;address&quot;:&quot;Liceo de Innovaci\u00f3n Educativa Sucre, 141, Sucre, Provincia de Alajuela, San Carlos, Costa Rica&quot;,&quot;lat&quot;:&quot;10.279245168611165&quot;,&quot;lng&quot;:&quot;-84.43108303187714&quot;,&quot;time&quot;:&quot;00:28&quot;,&quot;price&quot;:null,&quot;order&quot;:13,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6861,&quot;title&quot;:&quot;San Juan de Lajas&quot;,&quot;address&quot;:&quot;Plaza de San Juan de Lajas, Provincia de Alajuela, Alfaro Ruiz, Costa Rica&quot;,&quot;lat&quot;:&quot;10.252775274593308&quot;,&quot;lng&quot;:&quot;-84.42515397678223&quot;,&quot;time&quot;:&quot;00:30&quot;,&quot;price&quot;:null,&quot;order&quot;:14,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10783,&quot;title&quot;:&quot;Plaza de Deportes Zapote, Zarcero&quot;,&quot;address&quot;:&quot;Cancha de Zapote, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.226902992875589&quot;,&quot;lng&quot;:&quot;-84.42724606018828&quot;,&quot;time&quot;:&quot;00:32&quot;,&quot;price&quot;:null,&quot;order&quot;:15,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6862,&quot;title&quot;:&quot;Escuela de Zapote&quot;,&quot;address&quot;:&quot;Escuela Zapote, 141, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.225090962741563&quot;,&quot;lng&quot;:&quot;-84.4239965656414&quot;,&quot;time&quot;:&quot;00:35&quot;,&quot;price&quot;:null,&quot;order&quot;:16,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10779,&quot;title&quot;:&quot;Contiguo a Super El Pueblo, Zarcero&quot;,&quot;address&quot;:&quot;Super El Pueblo, Calle Zapote, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.226677611434503&quot;,&quot;lng&quot;:&quot;-84.42701703862305&quot;,&quot;time&quot;:&quot;00:38&quot;,&quot;price&quot;:null,&quot;order&quot;:17,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10799,&quot;title&quot;:&quot;Frente a Farmacia Romi, Laguna Zarcero&quot;,&quot;address&quot;:&quot;Farmacia Romi, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.2090212583333&quot;,&quot;lng&quot;:&quot;-84.40132988958398&quot;,&quot;time&quot;:&quot;00:40&quot;,&quot;price&quot;:null,&quot;order&quot;:18,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10778,&quot;title&quot;:&quot;Frente a Almac\u00e9n Siempre Verde S.A., Zarcero&quot;,&quot;address&quot;:&quot;Zarcero Siempre VERDE S.A, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.2002464&quot;,&quot;lng&quot;:&quot;-84.39759579999999&quot;,&quot;time&quot;:&quot;00:42&quot;,&quot;price&quot;:null,&quot;order&quot;:19,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10777,&quot;title&quot;:&quot;Cercan\u00edas a C\u00e1mara de Productores de Ca\u00f1a del Pacifico, Zarcero&quot;,&quot;address&quot;:&quot;Camara de Productores de Ca\u00f1a del Pacifico, Almac\u00e9n Zarcero., Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.194473794582764&quot;,&quot;lng&quot;:&quot;-84.39522518881608&quot;,&quot;time&quot;:&quot;00:44&quot;,&quot;price&quot;:null,&quot;order&quot;:20,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7285,&quot;title&quot;:&quot;Almac\u00e9n Agroveterinario Dos Pinos&quot;,&quot;address&quot;:&quot;Almac\u00e9n Agroveterinario Dos Pinos, Provincia de Alajuela, Ciudad Quesada, Costa Rica&quot;,&quot;lat&quot;:&quot;10.327555847790217&quot;,&quot;lng&quot;:&quot;-84.42152459206542&quot;,&quot;time&quot;:&quot;00:48&quot;,&quot;price&quot;:null,&quot;order&quot;:21,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10776,&quot;title&quot;:&quot;Frente a Carnes y Embutidos Guadalupe, Zarcero&quot;,&quot;address&quot;:&quot;Carnes y Embutidos Guadalupe, Calle Central, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.1898136788344&quot;,&quot;lng&quot;:&quot;-84.39131816931152&quot;,&quot;time&quot;:&quot;00:50&quot;,&quot;price&quot;:null,&quot;order&quot;:22,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10800,&quot;title&quot;:&quot;Frente a Parque Evangelista Blanco Brenes, Zarcero&quot;,&quot;address&quot;:&quot;Parque Evangelista Blanco Brenes, 141, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.184482260852775&quot;,&quot;lng&quot;:&quot;-84.39215741233787&quot;,&quot;time&quot;:&quot;00:52&quot;,&quot;price&quot;:null,&quot;order&quot;:23,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10769,&quot;title&quot;:&quot;Cercan\u00edas a Restaurante Los Gallos, Zarcero&quot;,&quot;address&quot;:&quot;Los Gallos Parrillada Tica Fusi\u00f3n, 141, San Pablo, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.182256778730894&quot;,&quot;lng&quot;:&quot;-84.38927742209015&quot;,&quot;time&quot;:&quot;00:55&quot;,&quot;price&quot;:null,&quot;order&quot;:24,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10768,&quot;title&quot;:&quot;Frente a Soda La Cocina Zarcere\u00f1a&quot;,&quot;address&quot;:&quot;Soda La Cocina Zarcere\u00f1a, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.179948419459848&quot;,&quot;lng&quot;:&quot;-84.3842894852848&quot;,&quot;time&quot;:&quot;00:58&quot;,&quot;price&quot;:null,&quot;order&quot;:25,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10767,&quot;title&quot;:&quot;Frente a Restaurante El Fog\u00f3n de Mam\u00e1, Palmita&quot;,&quot;address&quot;:&quot;El Fogon De Mam\u00e1, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.179033320539986&quot;,&quot;lng&quot;:&quot;-84.38105409259032&quot;,&quot;time&quot;:&quot;01:00&quot;,&quot;price&quot;:null,&quot;order&quot;:26,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10766,&quot;title&quot;:&quot;Contiguo a Restaurante La Casa del Pollo, Palmita&quot;,&quot;address&quot;:&quot;Pollo a la Le\u00f1a, La Palmita, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.17735262030698&quot;,&quot;lng&quot;:&quot;-84.38387438161469&quot;,&quot;time&quot;:&quot;01:02&quot;,&quot;price&quot;:null,&quot;order&quot;:27,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10765,&quot;title&quot;:&quot;Frente al Tramo Las Hortensias, Palmita&quot;,&quot;address&quot;:&quot;Tramo Las Hortensias, 141, Provincia de Alajuela, Zarcero, Costa Rica&quot;,&quot;lat&quot;:&quot;10.172824039826892&quot;,&quot;lng&quot;:&quot;-84.38034999629518&quot;,&quot;time&quot;:&quot;01:04&quot;,&quot;price&quot;:null,&quot;order&quot;:28,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10764,&quot;title&quot;:&quot;Frente a Multiservicios La Trocha, Naranjo&quot;,&quot;address&quot;:&quot;Multiservicios La Trocha, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.17018430494725&quot;,&quot;lng&quot;:&quot;-84.38157107361067&quot;,&quot;time&quot;:&quot;01:05&quot;,&quot;price&quot;:null,&quot;order&quot;:29,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10763,&quot;title&quot;:&quot;Frente a Escuela Llano Bonito, Naranjo&quot;,&quot;address&quot;:&quot;Escuela Llano Bonito, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.168801326823159&quot;,&quot;lng&quot;:&quot;-84.37381973491821&quot;,&quot;time&quot;:&quot;01:08&quot;,&quot;price&quot;:null,&quot;order&quot;:30,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10762,&quot;title&quot;:&quot;Cruce con Calle Sol\u00eds, Naranjo&quot;,&quot;address&quot;:&quot;Calle Sol\u00eds, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.165657060047238&quot;,&quot;lng&quot;:&quot;-84.37816805362856&quot;,&quot;time&quot;:&quot;01:12&quot;,&quot;price&quot;:null,&quot;order&quot;:31,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10801,&quot;title&quot;:&quot;Plaza de Deportes Llano Bonito, Cirr\u00ed Norte&quot;,&quot;address&quot;:&quot;Plaza de Llano Bonito, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.160009900494966&quot;,&quot;lng&quot;:&quot;-84.37447109629517&quot;,&quot;time&quot;:&quot;01:14&quot;,&quot;price&quot;:null,&quot;order&quot;:32,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10758,&quot;title&quot;:&quot;Cementerio San Juanillo, Naranjo&quot;,&quot;address&quot;:&quot;Cementerio San Juanillo, 141, Provincia de Alajuela, San Juanillo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.136904495591578&quot;,&quot;lng&quot;:&quot;-84.39508764351653&quot;,&quot;time&quot;:&quot;01:18&quot;,&quot;price&quot;:null,&quot;order&quot;:33,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10759,&quot;title&quot;:&quot;Contiguo a Bar Esquivel, Naranjo&quot;,&quot;address&quot;:&quot;Bar Salon Esquivel, Guanacaste, San Juanillo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.132254895636462&quot;,&quot;lng&quot;:&quot;-84.39712350615157&quot;,&quot;time&quot;:&quot;01:20&quot;,&quot;price&quot;:null,&quot;order&quot;:34,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10757,&quot;title&quot;:&quot;Soda y Chicharrones Dami\u00e1n, San Juanillo&quot;,&quot;address&quot;:&quot;Soda y Chicharrones Damian, Desamparados, Provincia de Alajuela, San Juanillo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.130206268472866&quot;,&quot;lng&quot;:&quot;-84.40271359999998&quot;,&quot;time&quot;:&quot;01:22&quot;,&quot;price&quot;:null,&quot;order&quot;:35,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10756,&quot;title&quot;:&quot;Cruce con Calle Garc\u00eda, Naranjo&quot;,&quot;address&quot;:&quot;Calle Garc\u00eda, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.124349848257255&quot;,&quot;lng&quot;:&quot;-84.40451261849364&quot;,&quot;time&quot;:&quot;01:25&quot;,&quot;price&quot;:null,&quot;order&quot;:36,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6847,&quot;title&quot;:&quot;Bar &amp;#038; Restaurante Los Pilones&quot;,&quot;address&quot;:&quot;Bar &amp; Restaurante Los Pilones, 141, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.116727383541617&quot;,&quot;lng&quot;:&quot;-84.3984619478157&quot;,&quot;time&quot;:&quot;01:30&quot;,&quot;price&quot;:null,&quot;order&quot;:37,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10755,&quot;title&quot;:&quot;Frente a Muebles Elio Barboza, Naranjo&quot;,&quot;address&quot;:&quot;Muebles Elio Barboza, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.115437150850825&quot;,&quot;lng&quot;:&quot;-84.39765194536895&quot;,&quot;time&quot;:&quot;01:32&quot;,&quot;price&quot;:null,&quot;order&quot;:38,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7913,&quot;title&quot;:&quot;Cercan\u00edas Restaurante Allan&amp;#8217;S&quot;,&quot;address&quot;:&quot;Restaurante Allan&#039;s, 141, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.107468017468976&quot;,&quot;lng&quot;:&quot;-84.38771196441802&quot;,&quot;time&quot;:&quot;01:34&quot;,&quot;price&quot;:null,&quot;order&quot;:39,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10754,&quot;title&quot;:&quot;Frente a Ferreter\u00eda Javier, Naranjo&quot;,&quot;address&quot;:&quot;Ferreteria Javier, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.105806788316382&quot;,&quot;lng&quot;:&quot;-84.38598637724608&quot;,&quot;time&quot;:&quot;01:35&quot;,&quot;price&quot;:null,&quot;order&quot;:40,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10751,&quot;title&quot;:&quot;Frente al Colegio de Naranjo&quot;,&quot;address&quot;:&quot;Colegio de Naranjo, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.104248785835509&quot;,&quot;lng&quot;:&quot;-84.38449072936096&quot;,&quot;time&quot;:&quot;01:38&quot;,&quot;price&quot;:null,&quot;order&quot;:41,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7912,&quot;title&quot;:&quot;Frente a Parque Mar\u00eda Auxiliadora, Naranjo&quot;,&quot;address&quot;:&quot;Parque, Mar\u00eda Auxiliadora, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.10194782510986&quot;,&quot;lng&quot;:&quot;-84.38332122883607&quot;,&quot;time&quot;:&quot;01:40&quot;,&quot;price&quot;:null,&quot;order&quot;:42,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10750,&quot;title&quot;:&quot;Frente a Veterinaria y Spa Dr. Pet, Naranjo&quot;,&quot;address&quot;:&quot;Veterinaria y Spa Dr. Pet, Calle Central, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.100480034711108&quot;,&quot;lng&quot;:&quot;-84.38219126501235&quot;,&quot;time&quot;:&quot;01:45&quot;,&quot;price&quot;:null,&quot;order&quot;:43,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7029,&quot;title&quot;:&quot;Mi Servicentro Naranjo&quot;,&quot;address&quot;:&quot;Mi Servicentro Naranjo, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.095430233873595&quot;,&quot;lng&quot;:&quot;-84.37715902331352&quot;,&quot;time&quot;:&quot;01:50&quot;,&quot;price&quot;:null,&quot;order&quot;:44,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10747,&quot;title&quot;:&quot;Restaurante Costumbres, Radial Naranjo&quot;,&quot;address&quot;:&quot;Restaurante Costumbres Comida Tipica, Radial Arnoldo Kopper Vega, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.081504118889912&quot;,&quot;lng&quot;:&quot;-84.38213267301636&quot;,&quot;time&quot;:&quot;02:00&quot;,&quot;price&quot;:null,&quot;order&quot;:45,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10666,&quot;title&quot;:&quot;Cercan\u00edas Iglesia Cat\u00f3lica El Llano, Naranjo&quot;,&quot;address&quot;:&quot;Iglesia cat\u00f3lica de El Llano, El Llano, Provincia de Alajuela, Rosario, Costa Rica&quot;,&quot;lat&quot;:&quot;10.038141263260352&quot;,&quot;lng&quot;:&quot;-84.36107898095092&quot;,&quot;time&quot;:&quot;02:05&quot;,&quot;price&quot;:null,&quot;order&quot;:46,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10665,&quot;title&quot;:&quot;Monumento Griego, Autopista Bernardo Soto, Grecia&quot;,&quot;address&quot;:&quot;Autop. Bernardo Soto, Provincia de Alajuela, Naranjo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.019282952180388&quot;,&quot;lng&quot;:&quot;-84.35688574358595&quot;,&quot;time&quot;:&quot;02:08&quot;,&quot;price&quot;:null,&quot;order&quot;:47,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6822,&quot;title&quot;:&quot;F\u00e1brica Nacional de Licores (FANAL), Carretera Bernardo Soto, Alajuela&quot;,&quot;address&quot;:&quot;F\u00e1brica Nacional de Licores, Autopista Bernardo Soto, Rinc\u00f3n de Salas, Provincia de Alajuela, Grecia, Costa Rica&quot;,&quot;lat&quot;:&quot;10.015793088917743&quot;,&quot;lng&quot;:&quot;-84.34282685211488&quot;,&quot;time&quot;:&quot;02:15&quot;,&quot;price&quot;:null,&quot;order&quot;:48,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10347,&quot;title&quot;:&quot;Frente a Plantel RECOPE, La Garita&quot;,&quot;address&quot;:&quot;RECOPE, La Garita, 1, Provincia de Alajuela, \u00c1nimas, Costa Rica&quot;,&quot;lat&quot;:&quot;10.005898099782298&quot;,&quot;lng&quot;:&quot;-84.2944348080387&quot;,&quot;time&quot;:&quot;02:18&quot;,&quot;price&quot;:null,&quot;order&quot;:49,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:9610,&quot;title&quot;:&quot;50 este del Puente Coyol&quot;,&quot;address&quot;:&quot;Carretera del Coyol, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;9.99677500922806&quot;,&quot;lng&quot;:&quot;-84.26916236691741&quot;,&quot;time&quot;:&quot;02:20&quot;,&quot;price&quot;:null,&quot;order&quot;:50,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10664,&quot;title&quot;:&quot;Cercan\u00edas Zona Franca Green Park, La Garita, Alajuela, Coyol&quot;,&quot;address&quot;:&quot;The Greenpark Free Zone, Autopista Bernardo Soto, Provincia de Alajuela, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.993905075504763&quot;,&quot;lng&quot;:&quot;-84.24897400555726&quot;,&quot;time&quot;:&quot;02:25&quot;,&quot;price&quot;:null,&quot;order&quot;:51,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10301,&quot;title&quot;:&quot;Contiguo a Hotel Aeropuerto, Alajuela, Autopista Bernardo Soto&quot;,&quot;address&quot;:&quot;Hotel Aeropuerto - Airport Hotel Costa Rica, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;9.993789623549969&quot;,&quot;lng&quot;:&quot;-84.2417035441803&quot;,&quot;time&quot;:&quot;02:30&quot;,&quot;price&quot;:null,&quot;order&quot;:52,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:9591,&quot;title&quot;:&quot;Puente Villa Bonita, Autopista Bernardo Soto&quot;,&quot;address&quot;:&quot;Puente Villa Bonita, 124, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;9.999261239208176&quot;,&quot;lng&quot;:&quot;-84.22010913624572&quot;,&quot;time&quot;:&quot;02:35&quot;,&quot;price&quot;:null,&quot;order&quot;:53,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6864,&quot;title&quot;:&quot;Terminal Autobusera del Norte, Radial Francisco J Orlich, Alajuela&quot;,&quot;address&quot;:&quot;Radial Francisco J. Orlich, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;10.009887417625354&quot;,&quot;lng&quot;:&quot;-84.21310851209068&quot;,&quot;time&quot;:&quot;02:40&quot;,&quot;price&quot;:null,&quot;order&quot;:54,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10299,&quot;title&quot;:&quot;Contiguo A Aerocentro, Radial Francisco J. Orlich, Alajuela&quot;,&quot;address&quot;:&quot;2Q3R+P6C Puente Radial R\u00edo Ciruelas, Radial Francisco J. Orlich, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;10.003931278631486&quot;,&quot;lng&quot;:&quot;-84.20897776528018&quot;,&quot;time&quot;:&quot;02:42&quot;,&quot;price&quot;:null,&quot;order&quot;:55,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6840,&quot;title&quot;:&quot;Aeropuerto Juan Santamar\u00eda, Alajuela&quot;,&quot;address&quot;:&quot;Aeropuerto Juan Santamar\u00eda, Provincia de Alajuela, Alajuela, Costa Rica&quot;,&quot;lat&quot;:&quot;9.998836937305525&quot;,&quot;lng&quot;:&quot;-84.20417040370482&quot;,&quot;time&quot;:&quot;02:45&quot;,&quot;price&quot;:null,&quot;order&quot;:56,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6818,&quot;title&quot;:&quot;Frente a Zona Franca Saret, Autopista General Ca\u00f1as&quot;,&quot;address&quot;:&quot;SARET Metalmecanica, Provincia de Alajuela, R\u00edo Segundo, Costa Rica&quot;,&quot;lat&quot;:&quot;10.002654487483527&quot;,&quot;lng&quot;:&quot;-84.17888924688262&quot;,&quot;time&quot;:&quot;02:50&quot;,&quot;price&quot;:null,&quot;order&quot;:57,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7705,&quot;title&quot;:&quot;Tabacalera Costarricense&quot;,&quot;address&quot;:&quot;Tabacalera Costarricense, S. A., Heredia, Bel\u00e9n, Costa Rica&quot;,&quot;lat&quot;:&quot;9.9983589&quot;,&quot;lng&quot;:&quot;-84.1718686&quot;,&quot;time&quot;:&quot;02:55&quot;,&quot;price&quot;:null,&quot;order&quot;:58,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6816,&quot;title&quot;:&quot;Cruce Firestone Autopista General Ca\u00f1as&quot;,&quot;address&quot;:&quot;Firestone de Costa Rica, Heredia, Bel\u00e9n, Costa Rica&quot;,&quot;lat&quot;:&quot;9.995914299536336&quot;,&quot;lng&quot;:&quot;-84.16780939049006&quot;,&quot;time&quot;:&quot;03:05&quot;,&quot;price&quot;:null,&quot;order&quot;:59,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7985,&quot;title&quot;:&quot;Ferreter\u00eda EPA, Bel\u00e9n&quot;,&quot;address&quot;:&quot;EPA Bel\u00e9n, Heredia, Bel\u00e9n, Costa Rica&quot;,&quot;lat&quot;:&quot;9.981325195475327&quot;,&quot;lng&quot;:&quot;-84.16335262883605&quot;,&quot;time&quot;:&quot;03:10&quot;,&quot;price&quot;:null,&quot;order&quot;:60,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7706,&quot;title&quot;:&quot;Hotel Wyndham Herradura, Autopista General Ca\u00f1as Heredia&quot;,&quot;address&quot;:&quot;Wyndham San Jose Herradura Hotel &amp; Convention Center, Autopista General Ca\u00f1as, Heredia, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.9788716&quot;,&quot;lng&quot;:&quot;-84.1612595&quot;,&quot;time&quot;:&quot;03:15&quot;,&quot;price&quot;:null,&quot;order&quot;:61,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6836,&quot;title&quot;:&quot;Frente a Plaza los Arcos&quot;,&quot;address&quot;:&quot;LOS ARCOS, Cariari, Heredia, Costa Rica&quot;,&quot;lat&quot;:&quot;9.974997812006759&quot;,&quot;lng&quot;:&quot;-84.15138839577025&quot;,&quot;time&quot;:&quot;03:18&quot;,&quot;price&quot;:null,&quot;order&quot;:62,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10290,&quot;title&quot;:&quot;Intersecci\u00f3n La Castella, Autopista General Ca\u00f1as&quot;,&quot;address&quot;:&quot;Conservatorio de Castella, 1, Heredia, Costa Rica&quot;,&quot;lat&quot;:&quot;9.968340384390698&quot;,&quot;lng&quot;:&quot;-84.13612636004943&quot;,&quot;time&quot;:&quot;03:20&quot;,&quot;price&quot;:null,&quot;order&quot;:63,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:7702,&quot;title&quot;:&quot;Instituto Nacional de Aprendizaje sede La Uruca&quot;,&quot;address&quot;:&quot;Instituto Nacional de Aprendizaje, Carvajal Castro, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.962236899999999&quot;,&quot;lng&quot;:&quot;-84.1270601&quot;,&quot;time&quot;:&quot;03:24&quot;,&quot;price&quot;:null,&quot;order&quot;:64,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6833,&quot;title&quot;:&quot;Escuela Otto Hubbe&quot;,&quot;address&quot;:&quot;Escuela Otto H\u00fcbbe, 1, Florentino Castro, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.959567713271571&quot;,&quot;lng&quot;:&quot;-84.12013913736496&quot;,&quot;time&quot;:&quot;03:25&quot;,&quot;price&quot;:null,&quot;order&quot;:65,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:6929,&quot;title&quot;:&quot;Hospital M\u00e9xico, La Uruca, San Jos\u00e9&quot;,&quot;address&quot;:&quot;Hospital M\u00e9xico, Opposite the General Ca\u00f1as Highway, Alborada, San Jos\u00e9, La Uruca, Costa Rica&quot;,&quot;lat&quot;:&quot;9.951509099999999&quot;,&quot;lng&quot;:&quot;-84.1150885&quot;,&quot;time&quot;:&quot;03:30&quot;,&quot;price&quot;:null,&quot;order&quot;:66,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10319,&quot;title&quot;:&quot;Monumento Agua&quot;,&quot;address&quot;:&quot;Monumento del Agua, Jardines Autopista, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.9462621&quot;,&quot;lng&quot;:&quot;-84.1094948&quot;,&quot;time&quot;:&quot;03:34&quot;,&quot;price&quot;:null,&quot;order&quot;:67,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:10320,&quot;title&quot;:&quot;Hotel Crown Plaza Corobic\u00ed, San Jos\u00e9&quot;,&quot;address&quot;:&quot;Crowne Plaza Corobici Conference Center, General Ca\u00f1as, San Jos\u00e9, Costa Rica&quot;,&quot;lat&quot;:&quot;9.9395873&quot;,&quot;lng&quot;:&quot;-84.0990058&quot;,&quot;time&quot;:&quot;03:36&quot;,&quot;price&quot;:null,&quot;order&quot;:68,&quot;starts&quot;:0,&quot;ends&quot;:0},{&quot;id&quot;:12227,&quot;title&quot;:&quot;Terminal Atl\u00e1ntico Norte, San Jos\u00e9&quot;,&quot;address&quot;:&quot;Terminal Atl\u00e1ntico Norte, San Jos\u00e9, Paso De La Vaca, Costa Rica&quot;,&quot;lat&quot;:&quot;9.939268&quot;,&quot;lng&quot;:&quot;-84.083926&quot;,&quot;time&quot;:&quot;03:40&quot;,&quot;price&quot;:null,&quot;order&quot;:69,&quot;starts&quot;:0,&quot;ends&quot;:1}]"></bus-stops>
+                                        <example-component mapdata="{&quot;zoom_level&quot;:11,&quot;center&quot;:{&quot;lat&quot;:10.019817149688063,&quot;lng&quot;:-84.4767951965332},&quot;markers&quot;:{&quot;m_31&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;Terminal Ciudad Quesada - San José &quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.43506002426147,10.332924044654686]},&quot;id&quot;:31},&quot;m_39&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;Terminal San José - Ciudad Quesada&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.08367991447449,9.939277932550397]},&quot;id&quot;:39}},&quot;drawnItems&quot;:{&quot;type&quot;:&quot;FeatureCollection&quot;,&quot;features&quot;:[]}}"></example-component>
+                                                <holiday-component></holiday-component>
+            <classic-report-component></classic-report-component>
+            <report-component schedule-id="837" schedule-title="Ciudad Quesada – San José"></report-component>
+            <review-component schedule-id="837" schedule-title="Ciudad Quesada – San José"></review-component>
+            <comments-component schedule-id="837" initial-comments="[{&quot;id&quot;:272,&quot;text&quot;:&quot;Buen d\u00eda deseo saber si los pasajes se pueden comprar en l\u00ednea.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8795070360730,&quot;created_at&quot;:&quot;2023-12-07 07:37:05&quot;,&quot;updated_at&quot;:&quot;2023-12-07 07:37:05&quot;},{&quot;id&quot;:290,&quot;text&quot;:&quot;Deber\u00edan quitar la info del bus de Ciudad Quesada - San Jos\u00e9 de las 5:00 am o corroborar con la empresa, ya que a esa hora no sale ning\u00fan bus, hoy llegue a las 4:40 am con el fin de tomar ese autobus y bus que sale m\u00e1s temprano es el de las 5:40 am. Nada m\u00e1s les dejo la observaci\u00f3n para que otros usuarios no tengan el mismo inconveniente.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8345873716624,&quot;created_at&quot;:&quot;2023-12-10 05:22:32&quot;,&quot;updated_at&quot;:&quot;2023-12-10 05:22:32&quot;},{&quot;id&quot;:527,&quot;text&quot;:&quot;C\u00f3mo  que no entran a alajuela me dejaron botada a medio camino y me cobr\u00f3 pasaje completo desde naranjo  como si me monte en quesada ,, y no era directo era normal&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:5950819221916,&quot;created_at&quot;:&quot;2023-12-27 14:34:01&quot;,&quot;updated_at&quot;:&quot;2023-12-27 14:34:01&quot;},{&quot;id&quot;:583,&quot;text&quot;:&quot;Q horarios son los de ma\u00f1ana 31 de diciembre&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:2589427391969,&quot;created_at&quot;:&quot;2023-12-30 17:40:39&quot;,&quot;updated_at&quot;:&quot;2023-12-30 17:40:39&quot;},{&quot;id&quot;:900,&quot;text&quot;:&quot;Pregunta para que existe un horario si no se respeta&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8897904980107,&quot;created_at&quot;:&quot;2024-02-07 17:28:49&quot;,&quot;updated_at&quot;:&quot;2024-02-07 17:28:49&quot;},{&quot;id&quot;:1100,&quot;text&quot;:&quot;Buenas noches, quicera saber si el bus de 4:30 AM de ciudad quesada a San Jos\u00e9, est\u00e1 saliendo?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8098699259476,&quot;created_at&quot;:&quot;2024-03-13 18:57:03&quot;,&quot;updated_at&quot;:&quot;2024-03-13 18:57:03&quot;},{&quot;id&quot;:1122,&quot;text&quot;:&quot;De cuidad quesada a San Jos\u00e9 6:10&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:1422657263509,&quot;created_at&quot;:&quot;2024-03-14 22:00:59&quot;,&quot;updated_at&quot;:&quot;2024-03-14 22:00:59&quot;},{&quot;id&quot;:1179,&quot;text&quot;:&quot;Horario para semana santa?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:4009288632485,&quot;created_at&quot;:&quot;2024-03-22 12:54:18&quot;,&quot;updated_at&quot;:&quot;2024-03-22 12:54:18&quot;},{&quot;id&quot;:1248,&quot;text&quot;:&quot;Buenas para saber el horario del domingo ciudad Quesada san jose&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:1942813929639,&quot;created_at&quot;:&quot;2024-03-26 19:29:02&quot;,&quot;updated_at&quot;:&quot;2024-03-26 19:29:02&quot;},{&quot;id&quot;:1445,&quot;text&quot;:&quot;Hola buenos d\u00edas que horarios hay despu\u00e9s de las 8 de la ma\u00f1ana.y cuanto dura un buz de ciudad quesada al hospital M\u00e9xico&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:1961573843130,&quot;created_at&quot;:&quot;2024-04-09 07:27:34&quot;,&quot;updated_at&quot;:&quot;2024-04-09 07:27:34&quot;},{&quot;id&quot;:1831,&quot;text&quot;:&quot;Tienen servicio de encomienda?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:9327050360895,&quot;created_at&quot;:&quot;2024-07-10 06:45:16&quot;,&quot;updated_at&quot;:&quot;2024-07-10 06:45:16&quot;},{&quot;id&quot;:2209,&quot;text&quot;:&quot;Buenas para saber si a las 5 y 30pm hay bus para alajuela?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:2564996495678,&quot;created_at&quot;:&quot;2024-08-18 16:46:54&quot;,&quot;updated_at&quot;:&quot;2024-08-18 16:46:54&quot;},{&quot;id&quot;:2210,&quot;text&quot;:&quot;Lo siento, pero los horarios que tengo son para la ruta Ciudad Quesada \u2013 San Jos\u00e9. No tengo informaci\u00f3n sobre buses a Alajuela. Te recomiendo consultar directamente con la terminal o la empresa de autobuses que opera esa ruta.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:2209,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2024-08-18 16:46:56&quot;,&quot;updated_at&quot;:&quot;2024-08-18 16:46:56&quot;},{&quot;id&quot;:2700,&quot;text&quot;:&quot;Buenas tardes \nEn San Jos\u00e9 donde est\u00e1n ubicados?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:171173197589,&quot;created_at&quot;:&quot;2024-11-19 15:30:04&quot;,&quot;updated_at&quot;:&quot;2024-11-19 15:30:04&quot;},{&quot;id&quot;:2821,&quot;text&quot;:&quot;Hola buenas cual es el horario de buces de el d\u00eda 25 de diciembre&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:9609364852521,&quot;created_at&quot;:&quot;2024-12-23 12:38:39&quot;,&quot;updated_at&quot;:&quot;2024-12-23 12:38:39&quot;},{&quot;id&quot;:2822,&quot;text&quot;:&quot;Hola, el 25 de diciembre no hay servicio de autobuses. Si necesitas informaci\u00f3n sobre otros d\u00edas, no dudes en preguntar.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:2821,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2024-12-23 12:38:40&quot;,&quot;updated_at&quot;:&quot;2024-12-23 12:38:40&quot;},{&quot;id&quot;:3074,&quot;text&quot;:&quot;Aqueora sale  el primer  bus de ciudad  qesada  a San jose&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8091037687750,&quot;created_at&quot;:&quot;2025-03-02 04:54:23&quot;,&quot;updated_at&quot;:&quot;2025-03-02 04:54:23&quot;},{&quot;id&quot;:3075,&quot;text&quot;:&quot;El primer bus de Ciudad Quesada a San Jos\u00e9 sale a las 04:30 am de lunes a viernes.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:3074,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2025-03-02 04:54:26&quot;,&quot;updated_at&quot;:&quot;2025-03-02 04:54:26&quot;},{&quot;id&quot;:3100,&quot;text&quot;:&quot;Los s\u00e1bados a q hora es el primer bus&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8654600488886,&quot;created_at&quot;:&quot;2025-03-15 02:14:17&quot;,&quot;updated_at&quot;:&quot;2025-03-15 02:14:17&quot;},{&quot;id&quot;:3101,&quot;text&quot;:&quot;Los s\u00e1bados, el primer bus sale a las 5:30 am.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:3100,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2025-03-15 02:14:18&quot;,&quot;updated_at&quot;:&quot;2025-03-15 02:14:18&quot;},{&quot;id&quot;:3169,&quot;text&quot;:&quot;Hola , a qu\u00e9 hora sale el \u00faltimo bus a ciudad quesada&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:4057421114497,&quot;created_at&quot;:&quot;2025-04-03 10:13:37&quot;,&quot;updated_at&quot;:&quot;2025-04-03 10:13:37&quot;},{&quot;id&quot;:3170,&quot;text&quot;:&quot;El \u00faltimo bus a Ciudad Quesada sale a las 07:45 pm.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:3169,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2025-04-03 10:13:38&quot;,&quot;updated_at&quot;:&quot;2025-04-03 10:13:38&quot;},{&quot;id&quot;:3240,&quot;text&quot;:&quot;El domingo 20 de abril trabajan con horario normal&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:4864395602074,&quot;created_at&quot;:&quot;2025-04-16 07:06:43&quot;,&quot;updated_at&quot;:&quot;2025-04-16 07:06:43&quot;},{&quot;id&quot;:3301,&quot;text&quot;:&quot;Horarios de buses hoy viernes santos ciudad quesada a San Jos\u00e9&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:1601569597316,&quot;created_at&quot;:&quot;2025-04-18 18:40:06&quot;,&quot;updated_at&quot;:&quot;2025-04-18 18:40:06&quot;},{&quot;id&quot;:3302,&quot;text&quot;:&quot;Los horarios de autob\u00fas de Ciudad Quesada a San Jos\u00e9 para hoy, viernes, son los mismos que los de un lunes a viernes. Aqu\u00ed tienes la lista:\n\n- 04:30 am\n- 05:30 am\n- 06:15 am\n- 07:00 am\n- 07:35 am\n- 07:50 am\n- 08:20 am\n- 08:40 am\n- 09:00 am\n- 09:30 am\n- 10:00 am\n- 10:40 am\n- 11:40 am\n- 12:00 pm\n- 01:00 pm\n- 01:40 pm\n- 02:30 pm\n- 03:30 pm\n- 04:00 pm\n- 04:40 pm\n- 05:30 pm\n- 06:30 pm\n- 07:45 pm\n\n\u00a1Buen viaje!&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:3301,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2025-04-18 18:40:10&quot;,&quot;updated_at&quot;:&quot;2025-04-18 18:40:10&quot;},{&quot;id&quot;:3342,&quot;text&quot;:&quot;Buenas tardes, ocup\u00f3 tomar el&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:5693144012931,&quot;created_at&quot;:&quot;2025-05-07 15:21:27&quot;,&quot;updated_at&quot;:&quot;2025-05-07 15:21:27&quot;},{&quot;id&quot;:3400,&quot;text&quot;:&quot;Buenas tardes aque hora es el \u00faltimo bus ciudad quesada, para san jose&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:7060298732930,&quot;created_at&quot;:&quot;2025-07-07 13:28:00&quot;,&quot;updated_at&quot;:&quot;2025-07-07 13:28:00&quot;},{&quot;id&quot;:3401,&quot;text&quot;:&quot;Buenas tardes. El \u00faltimo bus de Ciudad Quesada a San Jos\u00e9 sale a las 07:45 pm. \u00a1Que tengas un buen viaje!&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:3400,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2025-07-07 13:28:02&quot;,&quot;updated_at&quot;:&quot;2025-07-07 13:28:02&quot;},{&quot;id&quot;:3472,&quot;text&quot;:&quot;Muy mal servicio&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8123016029461,&quot;created_at&quot;:&quot;2025-08-29 11:47:59&quot;,&quot;updated_at&quot;:&quot;2025-08-29 11:47:59&quot;},{&quot;id&quot;:3473,&quot;text&quot;:&quot;No cumple los horarios&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8123016029461,&quot;created_at&quot;:&quot;2025-08-29 11:48:13&quot;,&quot;updated_at&quot;:&quot;2025-08-29 11:48:13&quot;},{&quot;id&quot;:3640,&quot;text&quot;:&quot;Pasa por el  M\u00e9xico ?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:3119389791842,&quot;created_at&quot;:&quot;2025-11-12 21:07:25&quot;,&quot;updated_at&quot;:&quot;2025-11-12 21:07:25&quot;},{&quot;id&quot;:3641,&quot;text&quot;:&quot;No, la ruta de autob\u00fas es de Ciudad Quesada a San Jos\u00e9 y no pasa por M\u00e9xico.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:3640,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2025-11-12 21:07:28&quot;,&quot;updated_at&quot;:&quot;2025-11-12 21:07:28&quot;},{&quot;id&quot;:3642,&quot;text&quot;:&quot;Pasa Por el centro de salud M\u00e9xico&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:3119389791842,&quot;created_at&quot;:&quot;2025-11-12 21:08:05&quot;,&quot;updated_at&quot;:&quot;2025-11-12 21:08:05&quot;},{&quot;id&quot;:3924,&quot;text&quot;:&quot;Hola buenos d\u00edas aque hora sale el primer bus de cuidad quesada a san Jos\u00e9 y aque hora yega&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:692919144682,&quot;created_at&quot;:&quot;2026-02-15 08:24:18&quot;,&quot;updated_at&quot;:&quot;2026-02-15 08:24:18&quot;},{&quot;id&quot;:3925,&quot;text&quot;:&quot;\u00a1Hola! El primer bus de Ciudad Quesada a San Jos\u00e9 sale a las 04:30 am. El tiempo de viaje es de aproximadamente 3 horas y 40 minutos, por lo que llegar\u00eda alrededor de las 08:10 am. \u00a1Buen viaje!&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:3924,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2026-02-15 08:24:21&quot;,&quot;updated_at&quot;:&quot;2026-02-15 08:24:21&quot;},{&quot;id&quot;:3947,&quot;text&quot;:&quot;Cu\u00e1l es la tarifa de ciudad quesada a naranjo&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:2226821439584,&quot;created_at&quot;:&quot;2026-02-23 12:27:15&quot;,&quot;updated_at&quot;:&quot;2026-02-23 12:27:15&quot;},{&quot;id&quot;:3948,&quot;text&quot;:&quot;Lo siento, pero no tengo informaci\u00f3n sobre la tarifa de autob\u00fas de Ciudad Quesada a Naranjo. Solo puedo proporcionar detalles sobre la ruta de Ciudad Quesada a San Jos\u00e9, que tiene una tarifa de 2715 colones.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:3947,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2026-02-23 12:27:17&quot;,&quot;updated_at&quot;:&quot;2026-02-23 12:27:17&quot;},{&quot;id&quot;:4062,&quot;text&quot;:&quot;Cu\u00e1l es el horario de jueves y viernes santo \nEntre ciudad quesada y tirar\u00e1n&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:1985048588013,&quot;created_at&quot;:&quot;2026-03-31 18:23:36&quot;,&quot;updated_at&quot;:&quot;2026-03-31 18:23:36&quot;},{&quot;id&quot;:4063,&quot;text&quot;:&quot;No hay horarios espec\u00edficos para Jueves y Viernes Santo. Sin embargo, los horarios regulares de lunes a viernes son los siguientes:\n\n- 04:30 am\n- 05:30 am\n- 06:15 am\n- 07:00 am\n- 07:35 am\n- 07:50 am\n- 08:20 am\n- 08:40 am\n- 09:00 am\n- 09:30 am\n- 10:00 am\n- 10:40 am\n- 11:40 am\n- 12:00 pm\n- 01:00 pm\n- 01:40 pm\n- 02:30 pm\n- 03:30 pm\n- 04:00 pm\n- 04:40 pm\n- 05:30 pm\n- 06:30 pm\n- 07:45 pm\n\nTe recomiendo verificar m\u00e1s cerca de la fecha para confirmar si hay cambios en el horario.&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:4062,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2026-03-31 18:23:40&quot;,&quot;updated_at&quot;:&quot;2026-03-31 18:23:40&quot;},{&quot;id&quot;:4149,&quot;text&quot;:&quot;Buenas tardes! Me interesa conocer el horario de los buses de CQ-San Jos\u00e9?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:2321062276625,&quot;created_at&quot;:&quot;2026-04-14 13:45:46&quot;,&quot;updated_at&quot;:&quot;2026-04-14 13:45:46&quot;},{&quot;id&quot;:4150,&quot;text&quot;:&quot;\u00a1Buenas tardes! Los horarios de los buses de Ciudad Quesada a San Jos\u00e9 son los siguientes:\n\n**Lunes a Viernes:**\n- 04:30 am\n- 05:30 am\n- 06:15 am\n- 07:00 am\n- 07:35 am\n- 07:50 am\n- 08:20 am\n- 08:40 am\n- 09:00 am\n- 09:30 am\n- 10:00 am\n- 10:40 am\n- 11:40 am\n- 12:00 pm\n- 01:00 pm\n- 01:40 pm\n- 02:30 pm\n- 03:30 pm\n- 04:00 pm\n- 04:40 pm\n- 05:30 pm\n- 06:30 pm\n- 07:45 pm\n\n**S\u00e1bados y Domingos:**\n- 05:30 am\n- 06:15 am\n- 07:00 am\n- 07:35 am\n- 07:50 am\n- 08:20 am\n- 08:40 am\n- 09:00 am\n- 09:30 am\n- 10:00 am\n- 10:40 am\n- 11:40 am\n- 12:00 pm\n- 01:00 pm\n- 01:40 pm\n- 02:30 pm\n- 03:30 pm\n- 04:00 pm\n- 04:40 pm\n- 05:30 pm\n- 06:30 pm\n- 07:45 pm\n\nLa tarifa es de 2715 colones. \u00a1Espero que esta informaci\u00f3n te sea \u00fatil!&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:4149,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2026-04-14 13:45:56&quot;,&quot;updated_at&quot;:&quot;2026-04-14 13:45:56&quot;},{&quot;id&quot;:4151,&quot;text&quot;:&quot;Existe alguna # donde se pueda llamar?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:2321062276625,&quot;created_at&quot;:&quot;2026-04-14 13:46:26&quot;,&quot;updated_at&quot;:&quot;2026-04-14 13:46:26&quot;},{&quot;id&quot;:4373,&quot;text&quot;:&quot;Hoy feriado trabajan normal?&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:8549576118020,&quot;created_at&quot;:&quot;2026-08-02 10:40:09&quot;,&quot;updated_at&quot;:&quot;2026-08-02 10:40:09&quot;},{&quot;id&quot;:4415,&quot;text&quot;:&quot;Si tomo bus de 6:15 am a que hora llegar\u00eda a San Jos\u00e9 desde Ciudad Quesada? Gracias&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:3011835926149,&quot;created_at&quot;:&quot;2026-08-17 18:55:58&quot;,&quot;updated_at&quot;:&quot;2026-08-17 18:55:58&quot;},{&quot;id&quot;:4416,&quot;text&quot;:&quot;Si tomas el bus de 6:15 am desde Ciudad Quesada, llegar\u00edas a San Jos\u00e9 aproximadamente a las 9:55 am, ya que el viaje dura alrededor de 3 horas y 40 minutos. \u00a1Buen viaje!&quot;,&quot;schedule_id&quot;:837,&quot;parent_id&quot;:4415,&quot;author_type&quot;:&quot;bot&quot;,&quot;user_id&quot;:1,&quot;created_at&quot;:&quot;2026-08-17 18:56:01&quot;,&quot;updated_at&quot;:&quot;2026-08-17 18:56:01&quot;}]"></comments-component>
+
+            
+           <mobile-menu-component
+                :hotel-link="''"
+                :user-image="''"
+                :complementary-link="[836]"
+                :search-modal="'#searchModal'"
+                :map-modal="'#stopsModal'"
+                :comment-modal="'#commentModal'"
+                :title="'Ciudad Quesada – San José'">
+            </mobile-menu-component>
+
+        </div>
+    </div>
+    <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+    (function(){
+      function __traffic_init(){
+      function detectScheduleId(){
+        var primary = parseInt(String('837').trim(), 10);
+        if (!isNaN(primary) && primary > 0) return primary;
+        var el = document.querySelector('report-component[schedule-id]') || document.querySelector('review-component[schedule-id]');
+        if (el){ var v = parseInt(el.getAttribute('schedule-id') || '', 10); if (!isNaN(v) && v > 0) return v; }
+        return null;
+      }
+      var scheduleId = detectScheduleId();
+      var container = document.getElementById('traffic-status');
+      var chip = document.getElementById('traffic-chip');
+      var chipText = document.getElementById('traffic-text');
+      var inlineTxt = document.getElementById('traffic-inline');
+      if (!chipText && chip){
+        try{
+          var nodes = Array.prototype.slice.call(chip.childNodes||[]);
+          nodes.forEach(function(n){ if(n && n.nodeType===3){ chip.removeChild(n); }});
+          chip.appendChild(document.createTextNode(' '));
+          chipText = document.createElement('span');
+          chipText.id = 'traffic-text';
+          chipText.textContent = 'Tráfico: Cargando…';
+          chip.appendChild(chipText);
+        }catch(e){}
+      }
+      var detail = document.getElementById('traffic-detail');
+      var btnRefresh = document.getElementById('traffic-refresh');
+      if (!container || !chip || !detail || !chipText) return;
+
+      var isEs = (document.documentElement.getAttribute('lang')||'').toLowerCase().indexOf('es')===0;
+      var L = isEs ? {
+        loading: 'Tráfico: Cargando…',
+        noData: 'Tráfico: Sin datos',
+        fluid: 'Tráfico: Fluido',
+        slow: 'Tráfico: Lento',
+        heavy: 'Tráfico: Cargado',
+        congested: 'Tráfico: Presas',
+        approx: 'Retraso aprox'
+      } : {
+        loading: 'Traffic: Loading…',
+        noData: 'Traffic: No data',
+        fluid: 'Traffic: Smooth',
+        slow: 'Traffic: Slow',
+        heavy: 'Traffic: Heavy',
+        congested: 'Traffic: Congested',
+        approx: 'Approx delay'
+      };
+      
+      if (!scheduleId){
+        // Sin identificador de horario válido: ocultar completamente el widget
+        container.style.display = 'none';
+        return;
+      }
+
+      function setChip(state, text){
+        chipText.textContent = text;
+        chip.classList.remove('badge-secondary','badge-success','badge-info','badge-warning','badge-danger');
+        chip.classList.add('badge');
+        if (state) chip.classList.add(state);
+      }
+
+      function render(data){
+        if (!data){
+          // Sin datos de tráfico: ocultar todo el bloque
+          container.style.display = 'none';
+          if (inlineTxt) inlineTxt.textContent = '';
+          if (btnRefresh) btnRefresh.style.display = '';
+          return;
+        }
+
+        container.style.display = '';
+
+        var delay = parseInt(data.delay_minutes||0,10);
+        if (isNaN(delay) || delay < 0) delay = 0;
+
+        var clsName;
+        var label;
+
+        // Escala LATAM: verde (<=4), naranja (5-10), rojo (>10)
+        if (delay > 10) {
+          clsName = 'badge-danger';
+          label = L.congested;
+        } else if (delay >= 5) {
+          clsName = 'badge-warning';
+          label = L.slow;
+        } else {
+          clsName = 'badge-success';
+          label = L.fluid;
+        }
+
+        setChip(clsName, label);
+        if (inlineTxt) inlineTxt.textContent = '— ' + L.approx + ': ' + delay + ' min';
+        detail.style.display = 'none';
+        if (btnRefresh) btnRefresh.style.display = '';
+      }
+
+      function fetchTraffic(){
+        container.style.display = '';
+        setChip('badge-secondary', L.loading);
+        detail.style.display='none';
+        var safety = setTimeout(function(){
+          try{
+            // Si sigue cargando demasiado tiempo, ocultar el widget
+            container.style.display = 'none';
+          }catch(e){}
+        }, 6000);
+        var controller = (window.AbortController) ? new AbortController() : null;
+        var t = null;
+        if (controller){ t = setTimeout(function(){ try{ controller.abort(); }catch(e){} }, 8000); }
+        var csrfTag = document.querySelector('meta[name="csrf-token"]');
+        var csrf = csrfTag ? csrfTag.getAttribute('content') : '';
+        fetch(window.location.origin + '/api/traffic/bus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf },
+          credentials: 'same-origin',
+          body: JSON.stringify({ schedules: [scheduleId] }),
+          signal: controller ? controller.signal : undefined
+        }).then(function(r){ if (t) clearTimeout(t); if (safety) clearTimeout(safety); if (!r.ok){ throw new Error('http'); } return r.json(); })
+          .then(function(res){
+            if (safety) clearTimeout(safety);
+            if (!res || res.success!==true){ throw new Error('bad'); }
+            var data = res.data || {};
+            var per = data[''+scheduleId] || data[scheduleId] || null;
+            if (per == null){
+              var ks = Object.keys(data||{});
+              if (ks.length===1){ per = data[ks[0]]; }
+            }
+            render(per);
+          })
+          .catch(function(err){
+            if (safety) clearTimeout(safety);
+            // En error, ocultar el widget de tráfico
+            container.style.display = 'none';
+          });
+      }
+
+      chip.addEventListener('click', function(){ if (detail.style.display==='none'){ detail.style.display=''; } else { detail.style.display='none'; } });
+      if (btnRefresh){ btnRefresh.addEventListener('click', function(){ fetchTraffic(); }); }
+      fetchTraffic();
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', __traffic_init);
+      } else {
+        __traffic_init();
+      }
+    })();
+    </script>
+            </div><!-- container -->
+
+        
+        <daily-verse-component></daily-verse-component>
+
+        </div><!-- #app -->
+
+        <div class="modal fade" id="modalLoginForm" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-body mx-3">
+
+                        <form class="form-inline d-flex justify-content-center" method="get" action="/search">
+
+                            <div class="input-group col-md-10  text-center">
+                                <input class="form-control py-2 border-right-0 border" type="search"  id="searchterm" name="s" placeholder="Starting City Destination" aria-label="Search">
+                                <span class="input-group-append">
+                                 <button class="btn btn-outline-secondary border-left-0 border" type="submit">
+                                <i class="fa fa-search"></i>
+                                </button>
+                            </span>
+                            </div>
+                        </form>
+                        <div class="lds-ellipsis" id="searchLoader"><div></div><div></div><div></div><div></div></div>
+                        <div id="results"> </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <!-- Scripts -->
+
+                <script src="https://yoviajocr.com/js/manifest.js?id=27eb3f267bb8c14ad506" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+
+        <script src="https://yoviajocr.com/js/vendor.js?id=1474a3b49c54777a053c" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+
+        <script src="https://yoviajocr.com/js/frontend.js?id=9824a30197b36ea074c4" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+
+        
+        <style>
+            .yv-chat-modal{position:fixed;right:20px;bottom:110px;width:340px;max-width:92vw;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 28px rgba(2,6,23,.25);z-index:9999;display:flex;flex-direction:column;overflow:hidden}
+            .yv-chat-header{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#0d6efd,#0aa0ff);color:#fff;padding:10px 12px;font-weight:600}
+            .yv-chat-title{display:flex;align-items:center;gap:8px}
+            .yv-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#38e06b;box-shadow:0 0 0 2px rgba(56,224,107,.25)}
+            .yv-chat-header button{background:transparent;border:0;color:#fff;font-size:20px;line-height:1;cursor:pointer}
+            .yv-chat-messages{padding:12px;max-height:340px;overflow:auto;background:#f8fafc}
+            .yv-msg{margin:8px 0;padding:10px 12px;border-radius:12px;font-size:14px;line-height:1.45;box-shadow:0 1px 1px rgba(2,6,23,.04)}
+            .yv-me{background:none;align-self:flex-end}
+            .yv-bot{background:#f1f5f9}
+            .yv-typing{display:flex;align-items:center;gap:8px;padding:0 12px 8px;color:#6b7280}
+            .yv-typing .dot{width:6px;height:6px;border-radius:50%;background:#9ca3af;display:inline-block;margin:0 2px;animation: yv-bounce 1.2s infinite ease-in-out both}
+            .yv-typing .dot:nth-child(1){animation-delay:-0.24s}
+            .yv-typing .dot:nth-child(2){animation-delay:-0.12s}
+            @keyframes  yv-bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+            .yv-chat-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+            .yv-chip{background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
+            .yv-chat-input{display:flex;gap:6px;padding:8px;border-top:1px solid #eef2f7;background:#fff}
+            .yv-chat-input input{flex:1;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px}
+            .yv-chat-input button{background:#0d6efd;color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
+            .yv-chat-disclaimer{color:#6b7280;font-size:11px;line-height:1.3;padding:0 12px 8px}
+            .yv-whatsapp-fab{position:fixed;right:20px;bottom:24px;width:58px;height:58px;border-radius:50%;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:9998;transition:transform .2s ease, box-shadow .2s ease}
+            .yv-whatsapp-fab:hover,.yv-whatsapp-fab:focus{color:#fff;text-decoration:none;transform:translateY(-2px);box-shadow:0 14px 24px rgba(0,0,0,.25)}
+            .yv-help-launcher{position:fixed;right:20px;bottom:80px;z-index:9998;display:flex;flex-direction:row;align-items:flex-end;gap:10px;pointer-events:none;transition:opacity .22s ease,transform .22s ease}
+            .yv-help-launcher > *{pointer-events:auto}
+            .yv-help-launcher.yv-help-hidden{opacity:0;transform:translateY(8px);pointer-events:none}
+            .yv-help-launcher.yv-help-hidden > *{pointer-events:none !important}
+            .yv-help-bot-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+            .yv-help-toggle{width:64px;height:64px;border:0;border-radius:50%;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;position:relative;transition:transform .15s ease,box-shadow .15s ease}
+            .yv-help-toggle:hover,.yv-help-toggle:focus{transform:translateY(-1px) scale(1.02);box-shadow:none;outline:none}
+            .yv-help-toggle img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.45)}
+            .yv-help-ping{position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(13,110,253,.24);animation:yv-help-pulse 6s ease-in-out infinite;pointer-events:none}
+            @keyframes  yv-help-pulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.08);opacity:.08}}
+            .yv-help-nudge{position:absolute;right:0;bottom:78px;max-width:300px;background:#fff;color:#0f172a;border:1px solid #dbe5f1;border-radius:18px;padding:12px 16px;font-size:13px;line-height:1.45;box-shadow:0 10px 24px rgba(15,23,42,.16);opacity:0;transform:translateY(8px) scale(.98);transform-origin:bottom right;pointer-events:none;transition:opacity .22s ease,transform .22s ease;z-index:2}
+            .yv-help-nudge::after{content:'';position:absolute;right:12px;bottom:-8px;border-width:8px 8px 0 8px;border-style:solid;border-color:#fff transparent transparent transparent;filter:drop-shadow(0 1px 1px rgba(15,23,42,.08))}
+            .yv-help-bot-wrap.show-nudge .yv-help-nudge{opacity:1;transform:translateY(0) scale(1)}
+            /* Chatbot message enrichments */
+            .yv-msg.yv-bot a.yv-btn{display:inline-block;background:#0d6efd;color:#fff !important;padding:8px 12px;border-radius:10px;font-weight:600;text-decoration:none;margin-top:6px}
+            .yv-msg.yv-bot a.yv-btn.secondary{background:#eef2ff;color:#1d4ed8 !important;border:1px solid #c7d2fe}
+            .yv-msg.yv-bot ul.yv-list{list-style:none;padding-left:0;margin:8px 0}
+            .yv-msg.yv-bot ul.yv-list>li{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 2px rgba(2,6,23,.04)}
+            .yv-msg.yv-bot ul.yv-list>li .yv-item-title{font-weight:600;color:#111827}
+            .yv-msg.yv-bot ul.yv-list>li .yv-item-meta{color:#6b7280;font-size:12px;margin-left:10px}
+            /* Avatar + bubble layout */
+            .yv-message{display:flex;align-items:flex-start;gap:8px;margin:8px 12px}
+            .yv-message.yv-me{flex-direction:row-reverse}
+            .chat-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
+            .bot-avatar{background:#eef2ff}
+            .user-avatar{background:#e0f2fe}
+            .yv-bubble{max-width:80%;border-radius:12px;padding:8px 12px;word-wrap:break-word}
+            .yv-bubble.yv-bot{background:#f0f6ff;color:#111827}
+            .yv-bubble.yv-me{background:#0d6efd;color:#fff}
+            @media (max-width:768px){
+                .yv-whatsapp-fab{right:14px;bottom:calc(20px + env(safe-area-inset-bottom));}
+                .yv-whatsapp-fab.yv-help-with-mobile-menu{bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-launcher{right:14px;left:auto;justify-content:flex-end;bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-launcher.yv-help-with-mobile-menu{bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-nudge{right:46px;left:auto;max-width:min(240px,calc(100vw - 92px));font-size:12px;bottom:74px;padding:10px 12px;line-height:1.4}
+                .yv-chat-modal{right:12px;left:12px;bottom:calc(92px + env(safe-area-inset-bottom));width:auto;max-width:none}
+            }
+        </style>
+
+        <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+            (function(){
+                var botWrap=document.getElementById('yv-help-bot-wrap');
+                var launcher=document.getElementById('yv-help-launcher');
+                var launcherToggle=document.getElementById('yv-help-toggle');
+                var closeBtn=document.getElementById('yv-chat-close');
+                var modal=document.getElementById('yv-chat-modal');
+                var messages=document.getElementById('yv-chat-messages');
+                var input=document.getElementById('yv-chat-text');
+                var sendBtn=document.getElementById('yv-chat-send');
+                var typing=document.getElementById('yv-typing');
+                var sugg=document.getElementById('yv-chat-suggestions');
+                var nudgeEl=document.getElementById('yv-help-nudge');
+                var nudgeTimer=null;
+                var nudgeHideTimer=null;
+                var launcherHideTimer=null;
+
+                function setLauncherVisibility(isVisible){
+                    if(!launcher) return;
+                    launcher.classList.toggle('yv-help-hidden', !isVisible);
+                }
+
+                function scheduleLauncherAutoHide(){
+                    if(!launcher) return;
+                    clearTimeout(launcherHideTimer);
+                    launcherHideTimer=setTimeout(function(){
+                        if(modal && modal.style.display==='flex'){
+                            scheduleLauncherAutoHide();
+                            return;
+                        }
+                        setNudgeState(false);
+                        setLauncherVisibility(false);
+                    }, 15000);
+                }
+
+                function handleUserActivity(){
+                    setLauncherVisibility(true);
+                    scheduleLauncherAutoHide();
+                }
+
+                function setNudgeState(isVisible){
+                    if(!botWrap) return;
+                    botWrap.classList.toggle('show-nudge', !!isVisible);
+                }
+
+                function hasShownNudge(){
+                    try{return sessionStorage.getItem('yv_help_nudge_shown') === '1';}catch(e){return false;}
+                }
+
+                function markNudgeShown(){
+                    try{sessionStorage.setItem('yv_help_nudge_shown','1');}catch(e){}
+                }
+
+                function pickNudgeMessage(){
+                    if(!nudgeEl) return '';
+                    var msgs=[
+                        nudgeEl.dataset.nudge1,
+                        nudgeEl.dataset.nudge2,
+                        nudgeEl.dataset.nudge3,
+                        nudgeEl.dataset.nudge4,
+                        nudgeEl.dataset.nudge5
+                    ].filter(function(m){ return !!(m && m.trim()); });
+                    if(!msgs.length) return nudgeEl.textContent || '';
+                    var idx=Math.floor(Math.random()*msgs.length);
+                    return msgs[idx];
+                }
+
+                function scheduleNudge(){
+                    if(!botWrap || !launcherToggle || hasShownNudge()) return;
+                    clearTimeout(nudgeTimer);
+                    clearTimeout(nudgeHideTimer);
+                    nudgeTimer=setTimeout(function(){
+                        if(modal && modal.style.display==='flex') return;
+                        if(nudgeEl){ nudgeEl.textContent = pickNudgeMessage(); }
+                        setNudgeState(true);
+                        markNudgeShown();
+                        nudgeHideTimer=setTimeout(function(){setNudgeState(false);}, 7000);
+                    }, 5000);
+                }
+
+                // Client summary helpers (non-sensitive): name, summary, updated_at
+                function loadSummary(){
+                    try{var s=localStorage.getItem('yv_chat_summary');if(!s) return null;return JSON.parse(s);}catch(e){return null}
+                }
+                function saveSummary(obj){
+                    try{localStorage.setItem('yv_chat_summary', JSON.stringify(obj));}catch(e){}
+                }
+                function updateSummaryOnSend(text, ctx){
+                    var s=loadSummary()||{}; s.updated_at=Date.now();
+                    if(typeof s.name!=='string'){ s.name=''; }
+                    if(typeof s.summary!=='string'){ s.summary=''; }
+                    var add=(text||'').trim(); if(add){ s.summary=(s.summary+' | '+add).slice(-240); }
+                    s={ name:s.name, summary:s.summary, updated_at:s.updated_at };
+                    saveSummary(s); return s;
+                }
+
+                function pageContext(){
+                    var p=(window.location.pathname||'');
+                    var parts=p.split('/').filter(Boolean);
+                    var ctx={type:'',slug:'',url:window.location.href};
+                    if(parts[0]==='bus' && parts[1]){ctx.type='bus';ctx.slug=decodeURIComponent(parts[1]);}
+                    else if(parts[0]==='company' && parts[1]){ctx.type='company';ctx.slug=decodeURIComponent(parts[1]);}
+                    else if(parts[0]==='travel' && parts[1] && parts[2]){ctx.type='travel';ctx.origin=decodeURIComponent(parts[1]);ctx.destination=decodeURIComponent(parts[2]);}
+                    else if(p==='/'||p===''){ctx.type='home';}
+                    else {ctx.type='page';}
+                    return ctx;
+                }
+
+                function setSuggestions(){
+                    if(!sugg) return;
+                    var ctx=pageContext();
+                    var chips=[];
+                    if(ctx.type==='bus') chips=['Próxima salida','Precio','Paradas principales'];
+                    else if(ctx.type==='travel') chips=['Rutas directas','Con transbordo','Precio aproximado'];
+                    else chips=['Buscar ruta','Ayuda'];
+                    sugg.innerHTML='';
+                    chips.forEach(function(c){
+                        var b=document.createElement('button');b.type='button';b.className='yv-chip';b.textContent=c; b.addEventListener('click',function(){ input.value=c; send(); });
+                        sugg.appendChild(b);
+                    });
+                }
+
+                // Sanitize redundant phrasing before CTAs while preserving anchors
+                function sanitizeBotReply(html){
+                    try{
+                        var out=String(html);
+                        // Remove leading phrasing up to the CTA mention (Spanish)
+                        out=out.replace(/(?:<p>)?\s*(?:Puedes|Puede|Consulta|Puedes\s+ver)[^<]*?horario\s+completo\s+en\s+/giu,'');
+                        // English variant
+                        out=out.replace(/(?:<p>)?\s*You\s+can\s+view\s+the\s+full\s+schedule\s+at\s+/giu,'');
+                        // Collapse empty paragraphs generated after removal
+                        out=out.replace(/<p>\s*<\/p>/g,'');
+                        return out;
+                    }catch(e){return html}
+                }
+
+                function sanitizeBotHtml(html){
+                    var wrapper=document.createElement('div');
+                    wrapper.innerHTML=String(html||'');
+
+                    var blocked=wrapper.querySelectorAll('script,style,iframe,object,embed,link,meta');
+                    blocked.forEach(function(el){ el.remove(); });
+
+                    wrapper.querySelectorAll('*').forEach(function(el){
+                        Array.from(el.attributes).forEach(function(attr){
+                            var name=(attr.name||'').toLowerCase();
+                            var value=String(attr.value||'');
+                            if(name.indexOf('on')===0){ el.removeAttribute(attr.name); }
+                            if((name==='href' || name==='src') && /^\s*javascript:/i.test(value)){
+                                el.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+
+                    return wrapper.innerHTML;
+                }
+
+                // Render bot HTML (with avatar + bubble)
+                function appendBotHtml(html){
+                    if(!messages) return;
+                    var wrap=document.createElement('div');wrap.className='yv-message';
+                    var img=document.createElement('img');img.className='chat-avatar bot-avatar';img.src='/img/frontend/bot-avatar-small.png';
+                    var bub=document.createElement('div');bub.className='yv-bubble yv-bot';
+                    var clean = sanitizeBotHtml(sanitizeBotReply(html));
+                    try{bub.innerHTML=clean;}catch(e){bub.textContent=clean;}
+                    wrap.appendChild(img);wrap.appendChild(bub);
+                    messages.appendChild(wrap);messages.scrollTop=messages.scrollHeight;
+                }
+
+                // Render plain text message (user or bot)
+                function appendMsg(text, who){
+                    if(!messages) return;
+                    var wrap=document.createElement('div');wrap.className='yv-message '+(who==='me'?'yv-me':'');
+                    var img=document.createElement('img');img.className='chat-avatar '+(who==='me'?'user-avatar':'bot-avatar');
+                    img.src=(who==='me'?'/img/frontend/bot-avatar-user-small.png':'/img/frontend/bot-avatar-small.png');
+                    var bub=document.createElement('div');bub.className='yv-bubble '+(who==='me'?'yv-me':'yv-bot');
+                    bub.textContent=(text||'');
+                    wrap.appendChild(img);wrap.appendChild(bub);
+                    messages.appendChild(wrap);messages.scrollTop=messages.scrollHeight;
+                }
+                function send(){
+                    var txt=(input.value||'').trim();if(!txt){return;}
+                    var ctx=pageContext();
+                    // On generic pages, use legacy /chatbot page
+                    if(ctx.type!=='bus' && ctx.type!=='travel'){
+                        var q=encodeURIComponent(txt);
+                        window.location.href='/chatbot'+(q?('?m='+q):'');
+                        return;
+                    }
+                    var cs=updateSummaryOnSend(txt, ctx);
+                    appendMsg(txt,'me'); input.value=''; sendBtn.disabled=true;
+                    if(typing) typing.style.display='flex';
+                    $.ajax({
+                        url:'/api/chatbot/contextual',
+                        method:'POST',
+                        contentType:'application/json',
+                        data:JSON.stringify({message:txt,page:ctx,client_summary:cs}),
+                        headers:{'X-Requested-With':'XMLHttpRequest'},
+                    }).done(function(res){
+                        var reply=(res&&res.reply)?res.reply:'No pude procesar tu solicitud.';
+                        appendBotHtml(reply);
+                    }).fail(function(){
+                        appendMsg('Ocurrió un error. Intenta nuevamente.','bot');
+                    }).always(function(){sendBtn.disabled=false; if(typing) typing.style.display='none';});
+                }
+
+                function openWebChat(){
+                    setNudgeState(false);
+                    var ctx=pageContext();
+                    if(ctx.type!=='bus' && ctx.type!=='travel'){
+                        window.location.href='/chatbot';
+                        return;
+                    }
+                    if(modal.style.display==='none'||!modal.style.display){
+                        modal.style.display='flex';
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','true'); }
+                        setSuggestions();
+                        setTimeout(function(){input&&input.focus();},50);
+                    } else {
+                        modal.style.display='none';
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                    }
+                }
+
+                if(launcherToggle){launcherToggle.addEventListener('click',function(e){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUserActivity();
+                    openWebChat();
+                });}
+                if(closeBtn){closeBtn.addEventListener('click',function(){
+                    handleUserActivity();
+                    setNudgeState(false);
+                    modal.style.display='none';
+                    if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                });}
+                if(sendBtn){sendBtn.addEventListener('click',function(){ handleUserActivity(); send(); });}
+                if(input){input.addEventListener('keypress',function(e){ if(e.key==='Enter'){ handleUserActivity(); e.preventDefault(); send(); }});} 
+
+                document.addEventListener('keydown',function(e){
+                    handleUserActivity();
+                    if(e.key==='Escape'){
+                        setNudgeState(false);
+                        if(modal){ modal.style.display='none'; }
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                    }
+                });
+
+                document.addEventListener('pointerdown', handleUserActivity, {passive:true});
+                document.addEventListener('touchstart', handleUserActivity, {passive:true});
+                document.addEventListener('scroll', handleUserActivity, {passive:true});
+
+                // Initialize suggestions on load if opened later
+                setSuggestions();
+                // scheduleNudge(); // Disabled: annoying popup in mobile
+                scheduleLauncherAutoHide();
+            })();
+        </script>
+
+    <script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="bd6eafdce99ec6ea9706486c-|49" defer></script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"83aca9c3cea946d7a135c708e100fe79"}' crossorigin="anonymous"></script>
+</body>
+
+
+<div class="row m-4">
+    <div class="col-md-12 justify-content-center text-center">
+                    <div class="ad-label">Ads support everyone's journey.</div>
+            <div class="ads-container">
+                <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+                <!-- YoViajoContentFooterAd -->
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-1195759558701784"
+                     data-ad-slot="1438912281"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script type="bd6eafdce99ec6ea9706486c-text/javascript">
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+            <div class="ad-label">Ads</div>
+                </div>
+</div>
+
+<!-- Footer -->
+<!-- Footer -->
+<footer class="page-footer font-small bg-dark text-white pt-4">
+    <div class="container">
+        <div class="row">
+            <!-- Popular Destinations -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Destinos Populares</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/place/monteverde" class="text-white">Monteverde</a></li>
+                    <li><a href="/place/samara" class="text-white">Sámara</a></li>
+                    <li><a href="/place/manzanillo" class="text-white">Puerto Viejo Talamanca</a></li>
+                    <li><a href="/place/cahuita" class="text-white">Cahuita</a></li>
+                    <li><a href="/place/montezuma" class="text-white">Montezuma</a></li>
+                    <li><a href="/place/herradura" class="text-white">Herradura</a></li>
+                </ul>
+            </div>
+
+            <!-- Blog Links -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Del Blog</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/post/guia-completa-para-viajar-a-costa-rica" class="text-white">Guía completa para viajar por Costa Rica</a></li>
+                    <li><a href="/post/como-viajar-barato-por-costa-rica-la-guia-definitiva" class="text-white">Guía para viajar barato por Costa Rica</a></li>
+                    <li><a href="/post/costa-rica-en-15-dias-itinerario-completo-con-lugares-imprescindibles-que-ver-y-consejos-de-viaje" class="text-white">Costa Rica en 15 días</a></li>
+                </ul>
+            </div>
+
+            <!-- Links -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Enlaces</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/about" class="text-white">Acerca de</a></li>
+                    <li><a href="/ticomap" class="text-white">Ticomap</a></li>
+                    <li><a href="/partner-with-us" class="text-white">Alianzas</a></li>
+                    <li><a href="/chatbot" class="text-white" title="Chatbot">Chatbot</a></li>
+                    <li><a href="/contact" class="text-white" title="Preguntas Frecuentes">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr class="my-3" style="border-color: rgba(255, 255, 255, 0.1);">
+
+        <!-- Copyright -->
+        <div class="d-flex justify-content-center text-center py-3">
+            <!-- Logo and Social Links -->
+            <div class="col-md-4 col-12 text-center mb-4">
+                <div class="footer-logo p-2">
+                    <img src="/img/frontend/logo.svg" alt="Logo Yo Viajo" class="img-fluid mb-1" style="max-width: 110px;" width="30%">
+                </div>
+                <div class="d-flex justify-content-center mb-3">
+                    <a href="/buses" class="text-white mr-2"><i class="fa fa-bus"></i> Bus</a>
+                    <a href="/tren" class="text-white mx-2"><i class="fas fa-train"></i> Tren</a>
+                    <a href="/ferry" class="text-white ml-2"><i class="fas fa-ship"></i> Ferry</a>
+                </div>
+                <div>
+                    <a href="https://www.facebook.com/yoviajocr" target="_blank" class="text-white mr-2"><i class="fab fa-facebook"></i></a>
+                    <a href="https://www.instagram.com/yoviajocr/" target="_blank" class="text-white mr-2"><i class="fab fa-instagram"></i></a>
+                    <a href="https://cr.linkedin.com/company/yo-viajo" target="_blank" class="text-white"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="mt-1" style="font-size: 11px;">© 2026 Copyright Yo Viajo. Todos los Derechos Reservados</p>
+            </div>
+
+        </div>
+        
+        <!-- Disclaimer -->
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-2" style="background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.1);">
+                    <p class="mb-0" style="font-size: 9px; color: #ccc;">
+                        <strong>Aviso:</strong> Los horarios y rutas mostrados son referenciales y pueden variar debido a condiciones de tráfico, clima, días feriados u otros factores externos. 
+                        Yo Viajo no se hace responsable por retrasos, cancelaciones o cambios en los servicios de transporte.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Footer -->
+<script type="bd6eafdce99ec6ea9706486c-text/javascript">
+    document.addEventListener('DOMContentLoaded', function(event) {
+        $("#searchLoader").css("display", "none");
+
+        //getNotice();
+
+    });
+    var timer;
+    var timeout = 600;
+    $("#searchterm").keyup(function(e){
+        clearTimeout(timer);
+        var len = this.value.length;
+        if(len > 4) {
+            timer = setTimeout(function(){
+                var q = $("#searchterm").val();
+                $("#searchLoader").css("display", "block");
+                $.getJSON("/autocomplete",
+                    {
+                        srsearch: q,
+                        action: "query",
+                        list: "search",
+                        format: "json"
+                    },
+                    function (data) {
+                        $("#searchLoader").css("display", "none");
+                        $("#results").empty();
+                        $.each(data, function (i, item) {
+                            if(item.id == 999999999){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='/search?s=" + encodeURIComponent(item.slug) + "'>" + item.title + "</a></h5></div>");
+                            }else if(item.id == 777){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='" + item.slug + "' target='_blank''>" + item.title + "</a></h5></div>");
+                            }else if(item.id == 333){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='" + item.slug + "' target='_blank''>" + item.title + "</a></h5></div>");
+                            }else{
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='/bus/" + encodeURIComponent(item.slug) + "'>" + item.title + "</a></h5></div>");
+                              }
+
+                        });
+
+                    });
+            }, timeout);
+        }
+    });
+
+    window.setTimeout(function() {
+        $("#favoriteAlert").fadeTo(1700, 0).slideUp(1600, function(){
+            $(this).remove();
+        });
+    }, 6900);
+
+    window.setTimeout(function() {
+        $("#noticeAlert").fadeTo(1700, 0).slideUp(1600, function(){
+            $(this).remove();
+        });
+    }, 9500);
+
+    function addFavorite($id,$title){
+        $.ajax({
+            type: "POST",
+            url: '/addfavorite',
+            data: {'_token': "eSIRsvmWnThaNnGNteQlPDhSoBeBYfSocidVskyR",'id':$id,'title':$title},
+            success: function( msg ) {
+                var status = msg.status;
+                if(status == 'ok'){
+                    $(".nd3").css("background-color","#BF0426");
+                    var alert = '<div class="alert alert-success" role="alert" style="position: fixed;bottom: 5px;right:2%;width: 96%;z-index:99999;max-width: 400px;" id="nextHolidayAlert">\n' +
+                        '<p>Tu favorito ha sido guardado 💚</p>'+
+                        '  <hr> <p class="mb-0">Revisa tus favoritos desde tu perfil.</p><button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+                        '                        <span aria-hidden="true">&times;</span>\n' +
+                        '                    </button>\n' +
+                        '                </div>';
+                    $("body").prepend(alert);
+                }
+                if(status == 'exist'){
+                    $(".nd3").css("background-color","#BF0436");
+                    var alert = '<div class="alert alert-warning" role="alert" style="position: fixed;bottom: 5px;right:2%;width: 96%;z-index:99999;max-width: 400px;" id="nextHolidayAlert">\n' +
+                        '<p>Este favorito ya estaba en tu lista 😁</p>'+
+                        '  <hr> <p class="mb-0">Revisa tus favoritos desde tu perfil.</p><button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+                        '                        <span aria-hidden="true">&times;</span>\n' +
+                        '                    </button>\n' +
+                        '                </div>';
+                    $("body").prepend(alert);
+
+
+                }
+            },
+            error: function(xhr, status, err) {
+                if (xhr.status == 401)
+                    window.location.href = '/login';
+            }
+        });
+
+    }
+
+    function getNotice(){
+        var textArray = ["<a href='/dashboard'>Guarda tus favoritos.💚</a>",
+           "<a href='https://www.facebook.com/yoviajocr' target='_blank'>Síguenos en Facebook <i class=\"fab fa-facebook\"></i></a>",
+            "<a href='https://www.instagram.com/yoviajocr' target='_blank'>Síguenos en Instagram <i class=\"fab fa-instagram\"></i></a>"];
+        var text = textArray[(Math.random() * textArray.length) | 0];
+        var alert = '<div class="alert alert-info" role="alert" style="position: fixed;bottom: 3px;right:2%;width: 96%;z-index:99999;max-width: 235px;" id="noticeAlert">\n' +
+            text+'\n' +
+            '                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+            '                        <span aria-hidden="true">&times;</span>\n' +
+            '                    </button>\n' +
+            '                </div>';
+        $("body").prepend(alert);
+
+    }
+</script>
+<script src="/lib/introjs/intro.min.js" defer type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.js' defer type="bd6eafdce99ec6ea9706486c-text/javascript"></script>
+</html>

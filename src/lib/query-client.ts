@@ -17,7 +17,7 @@ export const queryClient = new QueryClient({
 });
 
 export const queryPersister = createAsyncStoragePersister({
-  key: 'DESCUBRIENDO_CR_QUERY_CACHE',
+  key: 'DESCUBRIENDO_CR_QUERY_CACHE_V2',
   storage: queryStorage,
   throttleTime: 1000,
 });

@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="csrf-token" content="eSIRsvmWnThaNnGNteQlPDhSoBeBYfSocidVskyR">
+        <meta name="author" content="Dagoberto Medina">
+        <meta name="language" content="en">
+        <meta property="og:image" content="/img/frontend/logo.png" />
+        <link rel="icon" href="/img/frontend/logo.png">
+        <link rel="manifest" href="/img/icons/manifest.json">
+            <meta name="keywords" content="Alajuela – San Ramón, horarios de buses, transporte público, bus Alajuela – San Ramón">
+                    <title>Alajuela – San Ramón - Horarios de Buses en  | Transporte Público</title>
+            <meta property="og:url" content="https://yoviajocr.com/bus/alajuela-san-ramon" />
+            <script type="application/ld+json">
+                {
+                  "@context": "http://schema.org",
+                  "@type": "BusReservation",
+                  "reservationId": "1074",
+                  "reservationStatus": "http://schema.org/ReservationConfirmed",
+                  "reservationFor": {
+                    "@type": "BusTrip",
+                    "provider": {
+                      "@type": "Organization",
+                      "name": "Alajuela – San Ramón - Yo Viajo "
+                    }
+                    ,
+                    "departureBusStop": {
+                      "@type": "BusStop",
+                      "name": "Esparza, Costa Rica"
+                    },
+                    "arrivalBusStop": {
+                      "@type": "BusStop",
+                      "name": "Esparza, Costa Rica"
+                    }
+                                }
+              }
+            </script>
+
+
+                <script src="/js/wow.min.js" defer type="aa32d375ea03ca068a79970f-text/javascript">
+            new WOW().init();
+        </script>
+        <link rel="shortcut icon" href="/img/favicon-yo-viajo.ico" type="image/x-icon">
+        <link rel="icon" href="/img/favicon-yo-viajo.ico" type="image/x-icon">
+        <link rel="canonical" href="https://yoviajocr.com/bus/alajuela-san-ramon">
+            <meta name="description" content="Consulta los horarios, precios y paradas del bus Alajuela – San Ramón. Encuentra toda la información que necesitas para planificar tu viaje en transporte público.">
+    <meta property="og:title" content="Alajuela – San Ramón">
+    <meta property="og:description" content="Planifica tu viaje en bus con horarios actualizados, paradas y más para Alajuela – San Ramón.">
+    <meta property="og:image" content="https://yoviajocr.com/img/frontend/bus-carretera-costa-rica-yo-viajo.jpeg">
+        
+        <link media="all" type="text/css" rel="stylesheet" href="https://yoviajocr.com/css/frontend.css?id=1bee1f328a711bd3c40a">
+
+
+        
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+
+                    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+            <script type="aa32d375ea03ca068a79970f-text/javascript">
+                (adsbygoogle = window.adsbygoogle || []).push({
+                    google_ad_client: "ca-pub-1195759558701784",
+                    enable_page_level_ads: true
+                });
+            </script>
+        
+        <!-- Google tag (gtag.js) - GA4 -->
+                <script async src="https://www.googletagmanager.com/gtag/js?id=G-3T79QXLF3B" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+        <script type="aa32d375ea03ca068a79970f-text/javascript">
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-3T79QXLF3B');
+        </script>
+                    <!-- Web Application Manifest -->
+<link rel="manifest" href="https://yoviajocr.com/manifest.json">
+<!-- Chrome for Android theme color -->
+<meta name="theme-color" content="#000000">
+
+<!-- Add to homescreen for Chrome on Android -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="YoViajo">
+<link rel="icon" sizes="512x512" href="/images/icons/apple-icon.png">
+
+<!-- Add to homescreen for Safari on iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="YoViajo">
+<link rel="apple-touch-icon" href="/images/icons/apple-icon.png">
+
+
+<link href="/img/frontend/logo.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 621px) and (device-height: 1104px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+
+<!-- Tile for Win8 -->
+<meta name="msapplication-TileColor" content="#ffffff">
+<meta name="msapplication-TileImage" content="/images/icons/apple-icon.png">
+
+<script type="aa32d375ea03ca068a79970f-text/javascript">
+    // Initialize the service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/serviceworker.js', {
+            scope: '.'
+        }).then(function (registration) {
+            // Registration was successful
+            console.log('PWA: ServiceWorker registration successful with scope: ', registration.scope);
+        }, function (err) {
+            // registration failed :(
+            console.log('PWA: ServiceWorker registration failed: ', err);
+        });
+    }
+</script>
+        
+
+        <script type="aa32d375ea03ca068a79970f-text/javascript">
+            !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+            posthog.init('phc_FWqxwDFywaYSvs7fRi8r9E6EthIJKtfBLQRMDeex54z',{api_host:'https://us.i.posthog.com', person_profiles: 'identified_only'
+            })
+        </script>
+
+            </head>
+    <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id="
+                      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <div id="app">
+                        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="z-index: 9999999999999999999">
+    <a href="https://yoviajocr.com" class="navbar-brand"><img src="/img/frontend/logo-horizontal.svg" height="30px;"></a>
+    <a href="" class="search_icon" data-toggle="modal" data-target="#modalLoginForm"><i class="fas fa-search"></i></a>
+    <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle Navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+        <ul class="navbar-nav">
+            
+                            <li class="nav-item"><a href="https://yoviajocr.com/login" class="nav-link ">Login</a></li>
+
+                            <li class="nav-item"><a href="/ticomap" class="nav-link">TicoMap</a></li>
+
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownAboutMenu" data-toggle="dropdown"
+                       aria-haspopup="true" aria-expanded="false">Yo Viajo</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownAboutMenu">
+                        <a href="/about" class="dropdown-item">Acerca de</a>
+                        <a href="/partner-with-us" class="dropdown-item">Alianzas</a>
+                        <a href="/chatbot" class="dropdown-item" title="Chatbot">Chatbot</a>
+                        <a href="/faqs" class="dropdown-item" title="Preguntas Frecuentes">FAQs</a>
+                        <a href="https://yoviajocr.com/contact" class="dropdown-item ">Contact</a>
+                    </div>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownAboutMenu" data-toggle="dropdown"
+                       aria-haspopup="true" aria-expanded="false">Horarios</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownAboutMenu">
+                        <a href="/buses" class="dropdown-item">Bus</a>
+                        <a href="/tren" class="dropdown-item">Train</a>
+                        <a href="/ferry" class="dropdown-item">Ferry</a>
+                        <!--
+                        <a href="/schedule/shuttle" class="dropdown-item">Private Shuttle</a>
+                        -->
+                        <a href="/empresas" class="dropdown-item">Empresas</a>
+                    </div>
+                </li>
+
+                                                        <li class="nav-item">
+                        <a href="https://yoviajocr.com/lang/es" class="nav-link px-2">ES</a>
+                    </li>
+                        </ul>
+    </div>
+</nav>
+        <div class="row no-gutters my-4">
+            
+                    <div class="col-md-12 justify-content-center text-center">
+                        <div class="ad-label">Ads</div>
+                        <div class="ads-container">
+                        <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+                        <!-- YoViajoFirstAd -->
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-1195759558701784"
+                             data-ad-slot="7290128471"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                        <script type="aa32d375ea03ca068a79970f-text/javascript">
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                        </div>
+                        <div class="ad-label">Ads</div>
+                    </div>
+
+            
+                                                <a
+                        id="yv-whatsapp-fab"
+                        class="yv-whatsapp-fab yv-help-with-mobile-menu"
+                        href="https://wa.me/50689684256"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Abrir WhatsApp"
+                    >
+                        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                    </a>
+                
+                
+                                    </div>
+            <div class="container-fluid">
+                                
+    
+    <bus-hero-component
+        :image-url='"https:\/\/images.unsplash.com\/photo-1680057727229-f25751bf32b8?ixid=M3w4MzczODF8MHwxfHNlYXJjaHwxfHxzYW4lMjByYW1vbiUyMGNvc3RhJTIwcmljYXxlbnwxfDB8fHwxNzY0NDQ4NDQ5fDA\u0026ixlib=rb-4.1.0\u0026w=1600\u0026h=360\u0026fit=crop\u0026crop=entropy\u0026auto=format\u0026q=80"'
+        :author-name='"Gerhard Crous"'
+        :author-username='"crousg"'
+        :value='"Alajuela \u2013 San Ram\u00f3n"'
+        :title-prefix='""'
+        :bottom-left-label='"Route 204 - 600"'
+    ></bus-hero-component>
+
+    <div class="container">
+        <div class="row" style="min-height: 500px;background-size: 250px;width: 100%; padding-left: 30px">
+
+            <div class="col-md-1 d-flex flex-column justify-content-center bg-dark p-2 rounded-top" style="margin-top: -40px;">
+                <div class="d-md-none d-lg-none m-0 p-0 rounded-top">
+                    
+                    <a onclick="if (!window.__cfRLUnblockHandlers) return false; introJs().start();" class="wow lightSpeedIn text-white float-right" data-cf-modified-aa32d375ea03ca068a79970f-="">
+                        <svg class="svg-inline--fa fa-info-circle fa-w-16" style="font-size: 24px; vertical-align: middle;" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="info-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"></path></svg>
+                    </a>
+                </div>
+                <dl class="d-none d-sm-block">
+                    <dt class="mt-2">
+                        <a onclick="if (!window.__cfRLUnblockHandlers) return false; introJs().start();" class="wow lightSpeedIn text-white" data-cf-modified-aa32d375ea03ca068a79970f-="">
+                            <svg class="svg-inline--fa fa-info-circle fa-w-16" style="font-size: 24px; vertical-align: middle;" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="info-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"></path></svg>
+                        </a>
+                    </dt>
+                </dl>
+            </div>
+
+            <div class="col-md-3 p-4 shadow bg-white wow fadeIn rounded" data-wow-delay="0.1s" data-intro='Elementos generales de tu horario' data-position='middle-middle'>
+                <div class="bus-company-header">
+                    <div class="bus-company-avatar">
+                        <span id="bus-image">Cargando imagen...</span>
+                    </div>
+                    <div class="bus-company-info">
+                        <a class="text-primary company-title-link" id="companyName"></a>
+                    </div>
+                </div>
+
+                                    <p class="bus-subtitles mb-0 mt-1">Estimated Fare</p>
+                    <div class="d-flex align-items-center">
+                                                    <div>
+                                <span class="currency-symbol">¢</span>
+                                <span class="amount">1.730</span>
+                            </div>
+                                                            <span class="conversion-icon mx-2">
+                                    ≈
+                                </span>
+                                <div>
+                                    <span class="currency-symbol">$</span>
+                                    <span class="amount">2.86</span>
+                                </div>
+                                                                        </div>
+
+                
+                <div class="d-flex flex-column align-items-start mt-2 mb-2">
+                    <p class="bus-subtitles mb-0">Next Bus</p>
+                    <p class="minutes mb-0">
+                        <span id="nextMin"></span>
+                        <span id="textMin">minutes</span>
+                        <span id="textTom">Tomorrow</span>
+                        <img src="/img/frontend/time.svg" alt="Time Icon" class="mx-2 time-icon">
+                        <span id="nextHour">-</span>
+                    </p>
+                                            <p class="text-secondary mb-0 bus-time-estimated">Travel time:                            <span>3 horas & 0 min</span>
+                            <small>Estimated time.</small>
+                        </p>
+                                    </div>
+
+                <div id="traffic-status" class="bus-traffic-row mt-2">
+                    <span id="traffic-chip" class="bus-traffic-chip badge badge-secondary"><i class="fa fa-traffic-light"></i> <span id="traffic-text">Tráfico: Cargando…</span></span>
+                    <span id="traffic-inline" class="bus-traffic-inline small text-muted"></span>
+                    <div id="traffic-detail" class="small text-muted mt-1" style="display:none;"></div>
+                </div>
+
+                <div class="bus-actions-toolbar desktop-only">
+                    <a href="#" data-toggle="modal" data-target="#commentModal" class="bus-action-btn" title="Comentarios">
+                        <i class="fa fa-comment"></i>
+                        <span>Comentarios</span>
+                    </a>
+                                            <a href="#" data-toggle="modal" data-target="#mapModal" class="bus-action-btn" title="Mapa de ruta">
+                            <i class="fa fa-map"></i>
+                            <span>Mapa</span>
+                        </a>
+                                                                                                </div>
+            </div>
+
+            
+            <div class="col-12 mt-2 mb-3 d-block d-md-none" data-company-news-block>
+                <div class="company-news-card wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="company-news-badge">
+                        <img src="/img/frontend/paperclip.svg" width="24" height="24" alt="News">
+                    </div>
+                    <div class="company-news-body text-center" data-company-news-text>
+                        
+                    </div>
+                </div>
+            </div>
+
+            
+                            <div class="col-md-4 pt-2 p-1 wow fadeIn" data-wow-delay="0.2s">
+                    <div class="bus-schedule-card google-anno-skip">
+                        <div class="row google-anno-skip">
+                            <ul class="nav nav-tabs bus-schedule-tabs" id="myTab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="semana-tab" data-toggle="tab" href="#semana" role="tab" aria-controls="semana" aria-selected="true" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Week                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="sabados-tab" data-toggle="tab" href="#sabados" role="tab" aria-controls="sabados" aria-selected="false" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Saturday                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="domingos-tab" data-toggle="tab" href="#domingos" role="tab" aria-controls="domingos" aria-selected="false" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Sunday                                </a>
+                            </li>
+                                                    </ul>
+                        </div>
+                        <div class="row pl-2 wow fadeIn days-tab" data-wow-delay="0.1s" id="style-1">
+                        <div class="col-md-12 col-12 google-anno-skip">
+                        <div class="tab-content pt-3 google-anno-skip" id="myTabContent" data-intro='Horas aproximadas de tu servicio' data-position="middle">
+                            <div class="tab-pane fade show active" id="semana" role="tabpanel" aria-labelledby="semana-tab">
+                                <p>06:15 am <br>
+07:15 am <br>
+08:15 am <br>
+09:15 am <br>
+10:15 am <br>
+11:15 am <br>
+12:15 pm<br>
+01:15 pm<br>
+02:15 pm<br>
+03:15 pm<br>
+04:15 pm<br>
+05:15 pm<br>
+06:15 pm<br>
+07:45 pm<br>
+09:00 pm<br>
+10:00 pm<br>
+10:30 pm</p>
+                            </div>
+                            <div class="tab-pane fade" id="sabados" role="tabpanel" aria-labelledby="sabados-tab">
+                                                                    <p>06:15 am <br>
+07:15 am <br>
+08:15 am <br>
+09:15 am <br>
+10:15 am <br>
+11:15 am <br>
+12:15 pm<br>
+01:15 pm<br>
+02:15 pm<br>
+03:15 pm<br>
+04:15 pm<br>
+05:15 pm<br>
+06:15 pm<br>
+07:45 pm<br>
+09:00 pm<br>
+10:00 pm<br>
+10:30 pm</p>
+                                                            </div>
+                            <div class="tab-pane fade" id="domingos" role="tabpanel" aria-labelledby="domingos-tab">
+                                                                    <p>06:15 am <br>
+07:15 am <br>
+08:15 am <br>
+09:15 am <br>
+10:15 am <br>
+11:15 am <br>
+12:15 pm<br>
+01:15 pm<br>
+02:15 pm<br>
+03:15 pm<br>
+04:15 pm<br>
+05:15 pm<br>
+06:15 pm<br>
+07:45 pm<br>
+09:00 pm<br>
+10:00 pm<br>
+10:30 pm</p>
+                                                            </div>
+                                                    </div>
+                        </div>
+
+                        <button class="show-more-btn-hours travel-guide-btn hidden " onclick="if (!window.__cfRLUnblockHandlers) return false; toggleExpand()" data-expand-text="Show less hours" data-collapse-text="Load more hours" data-cf-modified-aa32d375ea03ca068a79970f-="">
+                        <span id="expand-text">Load more hours</span>
+                        </button>
+
+                        <div class="col-md-12 justify-content-center text-center">
+                        <div class="ad-label">Ads</div>
+                        <div class="ads-container" style="height: 200px;">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1195759558701784" crossorigin="anonymous" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+                                <!-- Schedule Tabs Content Ad -->
+                                <ins class="adsbygoogle"
+                                    style="display:inline-block;width:260px;height:200px; max-width: 100%;"
+                                    data-ad-client="ca-pub-1195759558701784"
+                                    data-ad-slot="9599077511"></ins>
+                                <script type="aa32d375ea03ca068a79970f-text/javascript">
+                                    (adsbygoogle = window.adsbygoogle || []).push({});
+                                </script>
+                        </div>
+                        <div class="ad-label">Ads</div>
+                    </div>
+
+                    </div>
+                    </div>
+                    
+                   
+
+                    <script type="aa32d375ea03ca068a79970f-text/javascript">
+                        document.addEventListener("DOMContentLoaded", function() {
+                            const content = document.getElementById('myTabContent');
+                            const button = document.querySelector('.show-more-btn-hours');
+                            const tabpanels = document.querySelectorAll('[role="tabpanel"]');
+
+                            if (content.scrollHeight > 290) {
+                                button.classList.remove('hidden');
+                                content.classList.add('has-expand-btn');
+                            }
+
+                            tabpanels.forEach(tab => {
+                                tab.addEventListener("click", function() {
+                                    if (!content.classList.contains("expanded")) {
+                                        toggleExpand();
+                                    }
+                                });
+                            });
+                        });
+
+                        function toggleExpand() {
+                            const content = document.getElementById('myTabContent');
+                            const text = document.getElementById('expand-text');
+                            const button = document.querySelector('.show-more-btn-hours');
+
+                            content.classList.toggle('expanded');
+
+                            text.innerText = content.classList.contains('expanded')
+                                ? button.dataset.expandText
+                                : button.dataset.collapseText;
+                        }
+                    </script>
+
+                </div>
+
+                <div class="col-md-3 mt-1 mb-1" data-intro='Mapa, Comentarios y otros links adicionales'>
+                    
+                    <div class="row mb-3 d-none d-md-block" data-company-news-block>
+                        <div class="col-md-12">
+                            <div class="company-news-card wow fadeInUp" data-wow-delay="0.1s">
+                                <div class="company-news-badge">
+                                    <img src="/img/frontend/paperclip.svg" width="24" height="24" alt="News">
+                                </div>
+                                <div class="company-news-body text-center" data-company-news-text>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <schedule-component schedule="{&quot;lunes_viernes&quot;:&quot;06:15 am &lt;br&gt;\r\n07:15 am &lt;br&gt;\r\n08:15 am &lt;br&gt;\r\n09:15 am &lt;br&gt;\r\n10:15 am &lt;br&gt;\r\n11:15 am &lt;br&gt;\r\n12:15 pm&lt;br&gt;\r\n01:15 pm&lt;br&gt;\r\n02:15 pm&lt;br&gt;\r\n03:15 pm&lt;br&gt;\r\n04:15 pm&lt;br&gt;\r\n05:15 pm&lt;br&gt;\r\n06:15 pm&lt;br&gt;\r\n07:45 pm&lt;br&gt;\r\n09:00 pm&lt;br&gt;\r\n10:00 pm&lt;br&gt;\r\n10:30 pm&quot;,&quot;sabados&quot;:&quot;06:15 am &lt;br&gt;\r\n07:15 am &lt;br&gt;\r\n08:15 am &lt;br&gt;\r\n09:15 am &lt;br&gt;\r\n10:15 am &lt;br&gt;\r\n11:15 am &lt;br&gt;\r\n12:15 pm&lt;br&gt;\r\n01:15 pm&lt;br&gt;\r\n02:15 pm&lt;br&gt;\r\n03:15 pm&lt;br&gt;\r\n04:15 pm&lt;br&gt;\r\n05:15 pm&lt;br&gt;\r\n06:15 pm&lt;br&gt;\r\n07:45 pm&lt;br&gt;\r\n09:00 pm&lt;br&gt;\r\n10:00 pm&lt;br&gt;\r\n10:30 pm&quot;,&quot;domingos&quot;:&quot;06:15 am &lt;br&gt;\r\n07:15 am &lt;br&gt;\r\n08:15 am &lt;br&gt;\r\n09:15 am &lt;br&gt;\r\n10:15 am &lt;br&gt;\r\n11:15 am &lt;br&gt;\r\n12:15 pm&lt;br&gt;\r\n01:15 pm&lt;br&gt;\r\n02:15 pm&lt;br&gt;\r\n03:15 pm&lt;br&gt;\r\n04:15 pm&lt;br&gt;\r\n05:15 pm&lt;br&gt;\r\n06:15 pm&lt;br&gt;\r\n07:45 pm&lt;br&gt;\r\n09:00 pm&lt;br&gt;\r\n10:00 pm&lt;br&gt;\r\n10:30 pm&quot;,&quot;feriados&quot;:&quot;&quot;}"></schedule-component>
+                        </div>
+                    </div>
+                    <travel-guide-link
+                        :map-modal="'#mapModal'"
+                        :comment-modal="'#commentModal'"
+                        :map-text="'Map'"
+                        :comment-text="'Comments'"
+                        :title="'Alajuela – San Ramón'"
+                        :button-text="&quot;Explore the Travel Guide&quot;"
+                        :needhelp-text="&quot;How can I assist you today?&quot;">
+                    </travel-guide-link>
+
+                                            <static-inline-map-component mapdata="{&quot;zoom_level&quot;:9,&quot;center&quot;:{&quot;lat&quot;:10.022948394510154,&quot;lng&quot;:-84.50271606445312},&quot;markers&quot;:{&quot;m_31&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;La Radial, Alajuela&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.21289801597595,10.009678365113377]},&quot;id&quot;:31},&quot;m_39&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;Empresarios Unidos, San Ramón&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.47197794914246,10.08901574395195]},&quot;id&quot;:39},&quot;m_42&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;Empresarios Unidos, Esparza&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.66517746448517,9.994870442750257]},&quot;id&quot;:42},&quot;m_45&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;Empresarios Unidos, Puntarenas&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.83036398887634,9.975782389891123]},&quot;id&quot;:45}},&quot;drawnItems&quot;:{&quot;type&quot;:&quot;FeatureCollection&quot;,&quot;features&quot;:[{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{},&quot;geometry&quot;:{&quot;type&quot;:&quot;LineString&quot;,&quot;coordinates&quot;:[[-84.21306967735289,10.009688930639284],[-84.21308040618896,10.010660957551433],[-84.21286582946777,10.01151676144492],[-84.21297311782837,10.01180202890795],[-84.21387434005737,10.011506195978503],[-84.21319842338562,10.009255743795174],[-84.21254396438599,10.007913917463458],[-84.20640707015991,10.000507358972193],[-84.20664310455321,9.99960926265413],[-84.21099901199341,9.998373055427239],[-84.21369194984436,9.998256830574325],[-84.21769380569458,9.999059837800527],[-84.22059059143066,9.999080969542824],[-84.22900199890137,9.995773835152038],[-84.23248887062071,9.994949687798224],[-84.244784116745,9.99343874555686],[-84.24771308898926,9.99367119866639],[-84.25486922264099,9.994664405535133],[-84.26159620285033,9.995583647486601],[-84.27221775054932,9.997210805027779],[-84.27874088287354,9.999366247929593],[-84.29556369781494,10.006043803798358],[-84.2971086502075,10.005874753444724],[-84.29839611053465,10.005283076514033],[-84.3019151687622,10.002705043021757],[-84.30680751800537,10.003127672865336],[-84.31169986724854,10.001902044804146],[-84.31496143341064,9.99915493063011],[-84.31680679321288,9.99945077481092],[-84.31792259216309,10.001014518149242],[-84.31826591491699,10.003338987580925],[-84.3195104598999,10.005198551150212],[-84.32470321655272,10.010270034034505],[-84.32547569274902,10.01453847072089],[-84.33041095733643,10.018130675904063],[-84.33182716369629,10.018130675904063],[-84.33384418487549,10.017750326650024],[-84.33697700500488,10.018384241825636],[-84.34118270874023,10.015975357567449],[-84.34912204742432,10.015468221760035],[-84.35440063476562,10.016567015007448],[-84.3574047088623,10.01956754683837],[-84.3599796295166,10.024934626076217],[-84.35989379882811,10.02776604152028],[-84.36131000518799,10.030681950967754],[-84.36036586761475,10.036344656642926],[-84.36225414276123,10.04145791025088],[-84.36191082000732,10.04859942673663],[-84.36062335968018,10.063642578383954],[-84.3625545501709,10.065755324469889],[-84.36684608459473,10.066811692327121],[-84.3711805343628,10.071163891426925],[-84.37191009521484,10.074375185157358],[-84.37341213226318,10.074670960603365],[-84.37551498413086,10.074375185157358],[-84.37705993652344,10.075178003593964],[-84.3834114074707,10.081093446231318],[-84.38461303710938,10.080966687884413],[-84.3874454498291,10.08007937806021],[-84.39534187316895,10.08054415970136],[-84.39697265625,10.079699101673455],[-84.40388202667236,10.073149826848386],[-84.40607070922852,10.073868140904525],[-84.40916061401367,10.07627659400509],[-84.41740036010742,10.079023053655895],[-84.42134857177734,10.081515973694204],[-84.42576885223389,10.082530037344826],[-84.42834377288818,10.082656795076767],[-84.43233489990234,10.079530089802002],[-84.43418025970459,10.07686814113764],[-84.4357681274414,10.074797721425762],[-84.43701267242432,10.07031880881594],[-84.44379329681396,10.062121392640684],[-84.44473743438719,10.061741095085047],[-84.44851398468018,10.062459434536326],[-84.45083141326904,10.061191775602863],[-84.45177555084229,10.060853732380155],[-84.45250511169434,10.061276286353257],[-84.45344924926758,10.061783350391137],[-84.4533634185791,10.063769343539029],[-84.452805519104,10.065375031194923],[-84.45340633392334,10.067065220098373],[-84.45782661437988,10.073783633451528],[-84.45782661437988,10.07454419973115],[-84.4573974609375,10.076149833764063],[-84.45696830749512,10.077417433931725],[-84.45958614349365,10.079403330840245],[-84.46246147155762,10.079699101673455],[-84.46465015411377,10.079192065793217],[-84.46649551391602,10.077797713010185],[-84.46769714355469,10.076741381129173],[-84.46915626525879,10.07665687442918],[-84.46988582611084,10.076783634470875],[-84.46979999542236,10.078685029115409],[-84.46937084197998,10.083248330499837],[-84.46915626525879,10.085191939243229],[-84.46885585784912,10.086713016167066],[-84.46877002716064,10.08785381914596],[-84.46874856948851,10.088403093213092],[-84.47216033935547,10.088846736967993],[-84.47316884994507,10.08901574395195],[-84.47391986846924,10.082614542504988],[-84.46947813034058,10.082255395421209],[-84.47014331817627,10.077227294224295],[-84.47055101394653,10.07655124102303],[-84.47673082351685,10.076128707052385],[-84.47954177856445,10.075854059674523],[-84.48108673095703,10.074945608988905],[-84.48306083679199,10.073065319207203],[-84.49093580245972,10.07006528360099],[-84.491708278656,10.070170919131419],[-84.4928240776062,10.070297681722305],[-84.49374675750731,10.069621613995444],[-84.49469089508057,10.069008926394329],[-84.49778079986572,10.068501873706715],[-84.49838161468506,10.06818496537233],[-84.49962615966797,10.066325763542196],[-84.49936866760254,10.062797476078059],[-84.49889659881592,10.061065009435813],[-84.49915409088135,10.060473433331618],[-84.50095653533934,10.059417044735973],[-84.50192213058472,10.058762082071453],[-84.5020079612732,10.058297269052236],[-84.50112819671631,10.0572408733393],[-84.50121402740479,10.056712674187379],[-84.50350999832153,10.054578740822222],[-84.50559139251708,10.050500987379694],[-84.50692176818848,10.050184061382556],[-84.5072865486145,10.049444566180984],[-84.50659990310669,10.044563855435118],[-84.5064926147461,10.044099021998877],[-84.50666427612305,10.043507414841233],[-84.50619220733643,10.042598873171231],[-84.5063853263855,10.04162694204852],[-84.5054841041565,10.04088742728197],[-84.50552701950073,10.040359201414],[-84.50580596923828,10.039450650904179],[-84.50526952743529,10.03862661451512],[-84.50514078140259,10.038098384957122],[-84.50531244277954,10.037316603629277],[-84.50524806976317,10.036788371933488],[-84.50554847717285,10.036260139375768],[-84.50614929199219,10.03617562208655],[-84.50666427612305,10.036555949714279],[-84.50720071792603,10.037337732879163],[-84.50771570205688,10.037485637589873],[-84.50881004333496,10.036999664715232],[-84.5114278793335,10.035351577360393],[-84.51318740844727,10.035224801062512],[-84.51348781585692,10.034738824794143],[-84.51338052749634,10.034104941608804],[-84.51297283172607,10.03366122264076],[-84.51239347457886,10.033365409657604],[-84.51181411743163,10.03313298498129],[-84.51108455657959,10.033175244025752],[-84.51018333435057,10.033428798176741],[-84.50958251953125,10.033576704673141],[-84.50885295867919,10.033576704673141],[-84.5084023475647,10.033492186683475],[-84.50820922851561,10.033006207814799],[-84.50808048248291,10.032245543773692],[-84.50820922851561,10.031822951867783],[-84.5085096359253,10.031400359410492],[-84.50911045074463,10.031273581565792],[-84.5099687576294,10.031294711210016],[-84.51048374176025,10.031315840852868],[-84.5106554031372,10.031294711210016],[-84.51110601425171,10.0310834147057],[-84.51314449310301,10.031252451920182],[-84.5144748687744,10.031907470293069],[-84.51640605926514,10.032097636669336],[-84.517822265625,10.033048466875814],[-84.52303647994995,10.034041553222028],[-84.52359437942505,10.0343162361418],[-84.52404499053955,10.035013507122422],[-84.52440977096558,10.035731905956156],[-84.52486038208008,10.036006587441918],[-84.52520370483398,10.03594319942742],[-84.5266842842102,10.034950118913489],[-84.52930212020874,10.033978164822836],[-84.53097581863403,10.034590918828552],[-84.53159809112549,10.034358495031853],[-84.53367948532104,10.033217503064705],[-84.53455924987793,10.033090725931306],[-84.53760623931885,10.0332808916128],[-84.53827142715454,10.03366122264076],[-84.53921556472778,10.034421883356583],[-84.53975200653076,10.035478353608617],[-84.54003095626831,10.036450303195835],[-84.54043865203856,10.036788371933488],[-84.54103946685791,10.036957406169913],[-84.54153299331665,10.037126440318085],[-84.54234838485718,10.037844834463073],[-84.54314231872559,10.037823705246275],[-84.54754114151001,10.035119154109704],[-84.55206871032715,10.035795294012027],[-84.55378532409668,10.036809501217851],[-84.55533027648926,10.037316603629277],[-84.55696105957031,10.037147569580402],[-84.55799102783203,10.036217880733913],[-84.55824851989746,10.034865601282297],[-84.5577335357666,10.034527530536913],[-84.55799102783203,10.033259762098137],[-84.55927848815918,10.033175244025752],[-84.56039428710938,10.032583616901427],[-84.5606517791748,10.032139895848909],[-84.56101655960083,10.030365005560009],[-84.56146717071532,10.029773373302548],[-84.56204652786255,10.029456427005876],[-84.56567287445068,10.028716884441113],[-84.56638097763062,10.0287380142521],[-84.56685304641724,10.029097220828117],[-84.5673894882202,10.02998467066139],[-84.5688271522522,10.033111855456985],[-84.56919193267822,10.03344992768036],[-84.56974983215332,10.033597834167102],[-84.57022190093994,10.033724611101997],[-84.57103729248045,10.033428798176741],[-84.57195997238159,10.032794912427036],[-84.57268953323364,10.031421489046446],[-84.57314014434814,10.029646594821102],[-84.57384824752808,10.029160610182544],[-84.57704544067383,10.028632365183373],[-84.57762479782104,10.027850561004005],[-84.57771062850952,10.027047625018437],[-84.57728147506712,10.026455986703317],[-84.57715272903442,10.025779827306293],[-84.57751750946045,10.025568527205404],[-84.5781397819519,10.025822087309933],[-84.57901954650879,10.026582766433194],[-84.58002805709839,10.026984235250612],[-84.58148717880249,10.026455986703317],[-84.58219528198241,10.025251576795792],[-84.58268880844116,10.024342983903745],[-84.58326816558838,10.023751340651335],[-84.58453416824341,10.022948394510154],[-84.58526372909546,10.022293358027238],[-84.5857572555542,10.021553799117184],[-84.5857572555542,10.016609276211875],[-84.58597183227539,10.015996488208891],[-84.5872163772583,10.01532030700021],[-84.5876669883728,10.014390555537187],[-84.58813905715941,10.014136986493975],[-84.58895444869995,10.014263771040346],[-84.58940505981445,10.014580732189557],[-84.59000587463379,10.015383699048389],[-84.59030628204346,10.015890834987937],[-84.59103584289551,10.015954226924633],[-84.59195852279663,10.016228925173877],[-84.59249496459961,10.016862843322786],[-84.59268808364868,10.01713754080259],[-84.59369659423827,10.01713754080259],[-84.59603548049927,10.018088414897859],[-84.5971941947937,10.017285454733829],[-84.59788084030151,10.017539021316155],[-84.59912538528442,10.019102677526845],[-84.59981203079224,10.019039286205462],[-84.60024118423462,10.018447633275043],[-84.60030555725096,10.017961631846223],[-84.6005630493164,10.017475629689159],[-84.60127115249632,10.017454499144073],[-84.60202217102051,10.01819406740305],[-84.60253715515137,10.018553285663215],[-84.60350275039673,10.018511024712087],[-84.60590600967407,10.020032415483517],[-84.60775136947632,10.019440764364946],[-84.61004734039307,10.01908154708775],[-84.61066961288452,10.018447633275043],[-84.61069107055664,10.017919370817985],[-84.6105408668518,10.017222063057265],[-84.61047649383544,10.016714929198843],[-84.61073398590088,10.015933096280442],[-84.6112060546875,10.015595005786217],[-84.61167812347412,10.015468221760035],[-84.61489677429199,10.01544709108419],[-84.61637735366821,10.014792039450345],[-84.61753606796265,10.01348193221517],[-84.6182656288147,10.011601285163808],[-84.61865186691284,10.008981039643317],[-84.6186089515686,10.006001541218211],[-84.61843729019165,10.004311033502029],[-84.61845874786377,10.00374048516183],[-84.61880207061768,10.003233330240324],[-84.61938142776489,10.002789569034462],[-84.62032556533813,10.002451464851678],[-84.62148427963257,10.002388070278228],[-84.62277173995972,10.002705043021757],[-84.62528228759764,10.003486907800056],[-84.62652683258057,10.003930668053254],[-84.62817907333374,10.004944974926785],[-84.62901592254639,10.005135157112926],[-84.63013172149658,10.005198551150212],[-84.63495969772339,10.00371935372259],[-84.64000225067139,10.002219018021897],[-84.64480876922607,10.000887728429191],[-84.65210437774658,9.998774559144758],[-84.65686798095703,9.997443255440148],[-84.66150283813477,9.996006286592019],[-84.66409921646117,9.995245535806626],[-84.66536521911621,9.995097611836082],[-84.66540813446044,9.994780631672533],[-84.66444253921509,9.994527047319174],[-84.66435670852661,9.995287799785872],[-84.67216730117798,9.995266667796942],[-84.67300415039062,9.99560477945492],[-84.67369079589844,9.996281001715888],[-84.6739912033081,9.996999486326803],[-84.67439889907837,9.997591178343312],[-84.67534303665161,9.998668900319831],[-84.67579364776611,9.999493038243328],[-84.67536449432373,10.000993386532667],[-84.675772190094,10.001902044804146],[-84.67673778533936,10.002493727893778],[-84.67800378799438,10.002409201804094],[-84.68102931976318,10.000951123295394],[-84.68178033828735,10.000591885556672],[-84.68246698379517,10.000613017199367],[-84.68323945999146,10.000296042414798],[-84.68369007110596,9.9999579356371],[-84.68420505523682,9.999176062366237],[-84.68456983566284,9.998964744943082],[-84.68570709228516,9.998647768550704],[-84.68669414520264,9.998098342071543],[-84.68733787536621,9.997950419399237],[-84.68813180923462,9.998034946648808],[-84.68918323516846,9.998225132879941],[-84.6905779838562,9.997591178343312],[-84.69317436218262,9.997168541298574],[-84.69647884368896,9.996872695040278],[-84.6987533569336,9.996281001715888],[-84.70029830932617,9.995583647486601],[-84.7014570236206,9.995541383545827],[-84.70381736755371,9.994738367627374],[-84.70519065856932,9.993068933449196],[-84.70609188079834,9.991674209716239],[-84.70759391784668,9.990828919694223],[-84.7106409072876,9.98964550997273],[-84.7126579284668,9.989476451089613],[-84.72527503967285,9.978910096600181],[-84.72656249999999,9.978064773424585],[-84.7280216217041,9.977937974758996],[-84.73711967468262,9.977980240986334],[-84.73952293395996,9.976754518166253],[-84.74102497100829,9.977008116369566],[-84.74218368530273,9.9780225072082],[-84.76235389709473,9.978107039635486],[-84.77205276489258,9.979713151584498],[-84.77994918823242,9.98060073636816],[-84.78883266448975,9.98055847048095],[-84.79681491851807,9.980896597425032],[-84.79848861694336,9.98093886326835],[-84.80063438415527,9.981826444710533],[-84.81235027313232,9.981023394938521],[-84.82200622558594,9.97903689488726],[-84.82659816741943,9.978191572040812],[-84.82921600341797,9.977980240986334],[-84.83076095581055,9.977726643539967],[-84.83048200607298,9.975835223024104]]}}]}}"></static-inline-map-component>
+                    
+                    <suggested-schedules-component
+                        title-text="Schedules you may like"
+                        no-results-text="No suggested schedules found."
+                        complementary-id="null"
+                        destination="Alajuela – San Ramón">
+                    </suggested-schedules-component>
+
+                    
+                    <ticomap-suggestions-component
+                        destination="San Ramón"
+                        title-text="Negocios locales en San Ramón"
+                        subtitle-text="Descubre negocios 100% ticos aprobados por la comunidad"
+                        cta-text="Ver TicoMap"
+                        empty-text="Aún no hay negocios registrados en San Ramón"
+                        submit-business-text="Sugerir un negocio"
+                        :show-empty="false">
+                    </ticomap-suggestions-component>
+                </div>
+            
+                                                <company-component company="{&quot;company&quot;:126}"></company-component>
+                                                    <example-component mapdata="{&quot;zoom_level&quot;:9,&quot;center&quot;:{&quot;lat&quot;:10.022948394510154,&quot;lng&quot;:-84.50271606445312},&quot;markers&quot;:{&quot;m_31&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;La Radial, Alajuela&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.21289801597595,10.009678365113377]},&quot;id&quot;:31},&quot;m_39&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;Empresarios Unidos, San Ramón&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.47197794914246,10.08901574395195]},&quot;id&quot;:39},&quot;m_42&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;Empresarios Unidos, Esparza&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.66517746448517,9.994870442750257]},&quot;id&quot;:42},&quot;m_45&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;Empresarios Unidos, Puntarenas&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.83036398887634,9.975782389891123]},&quot;id&quot;:45}},&quot;drawnItems&quot;:{&quot;type&quot;:&quot;FeatureCollection&quot;,&quot;features&quot;:[{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{},&quot;geometry&quot;:{&quot;type&quot;:&quot;LineString&quot;,&quot;coordinates&quot;:[[-84.21306967735289,10.009688930639284],[-84.21308040618896,10.010660957551433],[-84.21286582946777,10.01151676144492],[-84.21297311782837,10.01180202890795],[-84.21387434005737,10.011506195978503],[-84.21319842338562,10.009255743795174],[-84.21254396438599,10.007913917463458],[-84.20640707015991,10.000507358972193],[-84.20664310455321,9.99960926265413],[-84.21099901199341,9.998373055427239],[-84.21369194984436,9.998256830574325],[-84.21769380569458,9.999059837800527],[-84.22059059143066,9.999080969542824],[-84.22900199890137,9.995773835152038],[-84.23248887062071,9.994949687798224],[-84.244784116745,9.99343874555686],[-84.24771308898926,9.99367119866639],[-84.25486922264099,9.994664405535133],[-84.26159620285033,9.995583647486601],[-84.27221775054932,9.997210805027779],[-84.27874088287354,9.999366247929593],[-84.29556369781494,10.006043803798358],[-84.2971086502075,10.005874753444724],[-84.29839611053465,10.005283076514033],[-84.3019151687622,10.002705043021757],[-84.30680751800537,10.003127672865336],[-84.31169986724854,10.001902044804146],[-84.31496143341064,9.99915493063011],[-84.31680679321288,9.99945077481092],[-84.31792259216309,10.001014518149242],[-84.31826591491699,10.003338987580925],[-84.3195104598999,10.005198551150212],[-84.32470321655272,10.010270034034505],[-84.32547569274902,10.01453847072089],[-84.33041095733643,10.018130675904063],[-84.33182716369629,10.018130675904063],[-84.33384418487549,10.017750326650024],[-84.33697700500488,10.018384241825636],[-84.34118270874023,10.015975357567449],[-84.34912204742432,10.015468221760035],[-84.35440063476562,10.016567015007448],[-84.3574047088623,10.01956754683837],[-84.3599796295166,10.024934626076217],[-84.35989379882811,10.02776604152028],[-84.36131000518799,10.030681950967754],[-84.36036586761475,10.036344656642926],[-84.36225414276123,10.04145791025088],[-84.36191082000732,10.04859942673663],[-84.36062335968018,10.063642578383954],[-84.3625545501709,10.065755324469889],[-84.36684608459473,10.066811692327121],[-84.3711805343628,10.071163891426925],[-84.37191009521484,10.074375185157358],[-84.37341213226318,10.074670960603365],[-84.37551498413086,10.074375185157358],[-84.37705993652344,10.075178003593964],[-84.3834114074707,10.081093446231318],[-84.38461303710938,10.080966687884413],[-84.3874454498291,10.08007937806021],[-84.39534187316895,10.08054415970136],[-84.39697265625,10.079699101673455],[-84.40388202667236,10.073149826848386],[-84.40607070922852,10.073868140904525],[-84.40916061401367,10.07627659400509],[-84.41740036010742,10.079023053655895],[-84.42134857177734,10.081515973694204],[-84.42576885223389,10.082530037344826],[-84.42834377288818,10.082656795076767],[-84.43233489990234,10.079530089802002],[-84.43418025970459,10.07686814113764],[-84.4357681274414,10.074797721425762],[-84.43701267242432,10.07031880881594],[-84.44379329681396,10.062121392640684],[-84.44473743438719,10.061741095085047],[-84.44851398468018,10.062459434536326],[-84.45083141326904,10.061191775602863],[-84.45177555084229,10.060853732380155],[-84.45250511169434,10.061276286353257],[-84.45344924926758,10.061783350391137],[-84.4533634185791,10.063769343539029],[-84.452805519104,10.065375031194923],[-84.45340633392334,10.067065220098373],[-84.45782661437988,10.073783633451528],[-84.45782661437988,10.07454419973115],[-84.4573974609375,10.076149833764063],[-84.45696830749512,10.077417433931725],[-84.45958614349365,10.079403330840245],[-84.46246147155762,10.079699101673455],[-84.46465015411377,10.079192065793217],[-84.46649551391602,10.077797713010185],[-84.46769714355469,10.076741381129173],[-84.46915626525879,10.07665687442918],[-84.46988582611084,10.076783634470875],[-84.46979999542236,10.078685029115409],[-84.46937084197998,10.083248330499837],[-84.46915626525879,10.085191939243229],[-84.46885585784912,10.086713016167066],[-84.46877002716064,10.08785381914596],[-84.46874856948851,10.088403093213092],[-84.47216033935547,10.088846736967993],[-84.47316884994507,10.08901574395195],[-84.47391986846924,10.082614542504988],[-84.46947813034058,10.082255395421209],[-84.47014331817627,10.077227294224295],[-84.47055101394653,10.07655124102303],[-84.47673082351685,10.076128707052385],[-84.47954177856445,10.075854059674523],[-84.48108673095703,10.074945608988905],[-84.48306083679199,10.073065319207203],[-84.49093580245972,10.07006528360099],[-84.491708278656,10.070170919131419],[-84.4928240776062,10.070297681722305],[-84.49374675750731,10.069621613995444],[-84.49469089508057,10.069008926394329],[-84.49778079986572,10.068501873706715],[-84.49838161468506,10.06818496537233],[-84.49962615966797,10.066325763542196],[-84.49936866760254,10.062797476078059],[-84.49889659881592,10.061065009435813],[-84.49915409088135,10.060473433331618],[-84.50095653533934,10.059417044735973],[-84.50192213058472,10.058762082071453],[-84.5020079612732,10.058297269052236],[-84.50112819671631,10.0572408733393],[-84.50121402740479,10.056712674187379],[-84.50350999832153,10.054578740822222],[-84.50559139251708,10.050500987379694],[-84.50692176818848,10.050184061382556],[-84.5072865486145,10.049444566180984],[-84.50659990310669,10.044563855435118],[-84.5064926147461,10.044099021998877],[-84.50666427612305,10.043507414841233],[-84.50619220733643,10.042598873171231],[-84.5063853263855,10.04162694204852],[-84.5054841041565,10.04088742728197],[-84.50552701950073,10.040359201414],[-84.50580596923828,10.039450650904179],[-84.50526952743529,10.03862661451512],[-84.50514078140259,10.038098384957122],[-84.50531244277954,10.037316603629277],[-84.50524806976317,10.036788371933488],[-84.50554847717285,10.036260139375768],[-84.50614929199219,10.03617562208655],[-84.50666427612305,10.036555949714279],[-84.50720071792603,10.037337732879163],[-84.50771570205688,10.037485637589873],[-84.50881004333496,10.036999664715232],[-84.5114278793335,10.035351577360393],[-84.51318740844727,10.035224801062512],[-84.51348781585692,10.034738824794143],[-84.51338052749634,10.034104941608804],[-84.51297283172607,10.03366122264076],[-84.51239347457886,10.033365409657604],[-84.51181411743163,10.03313298498129],[-84.51108455657959,10.033175244025752],[-84.51018333435057,10.033428798176741],[-84.50958251953125,10.033576704673141],[-84.50885295867919,10.033576704673141],[-84.5084023475647,10.033492186683475],[-84.50820922851561,10.033006207814799],[-84.50808048248291,10.032245543773692],[-84.50820922851561,10.031822951867783],[-84.5085096359253,10.031400359410492],[-84.50911045074463,10.031273581565792],[-84.5099687576294,10.031294711210016],[-84.51048374176025,10.031315840852868],[-84.5106554031372,10.031294711210016],[-84.51110601425171,10.0310834147057],[-84.51314449310301,10.031252451920182],[-84.5144748687744,10.031907470293069],[-84.51640605926514,10.032097636669336],[-84.517822265625,10.033048466875814],[-84.52303647994995,10.034041553222028],[-84.52359437942505,10.0343162361418],[-84.52404499053955,10.035013507122422],[-84.52440977096558,10.035731905956156],[-84.52486038208008,10.036006587441918],[-84.52520370483398,10.03594319942742],[-84.5266842842102,10.034950118913489],[-84.52930212020874,10.033978164822836],[-84.53097581863403,10.034590918828552],[-84.53159809112549,10.034358495031853],[-84.53367948532104,10.033217503064705],[-84.53455924987793,10.033090725931306],[-84.53760623931885,10.0332808916128],[-84.53827142715454,10.03366122264076],[-84.53921556472778,10.034421883356583],[-84.53975200653076,10.035478353608617],[-84.54003095626831,10.036450303195835],[-84.54043865203856,10.036788371933488],[-84.54103946685791,10.036957406169913],[-84.54153299331665,10.037126440318085],[-84.54234838485718,10.037844834463073],[-84.54314231872559,10.037823705246275],[-84.54754114151001,10.035119154109704],[-84.55206871032715,10.035795294012027],[-84.55378532409668,10.036809501217851],[-84.55533027648926,10.037316603629277],[-84.55696105957031,10.037147569580402],[-84.55799102783203,10.036217880733913],[-84.55824851989746,10.034865601282297],[-84.5577335357666,10.034527530536913],[-84.55799102783203,10.033259762098137],[-84.55927848815918,10.033175244025752],[-84.56039428710938,10.032583616901427],[-84.5606517791748,10.032139895848909],[-84.56101655960083,10.030365005560009],[-84.56146717071532,10.029773373302548],[-84.56204652786255,10.029456427005876],[-84.56567287445068,10.028716884441113],[-84.56638097763062,10.0287380142521],[-84.56685304641724,10.029097220828117],[-84.5673894882202,10.02998467066139],[-84.5688271522522,10.033111855456985],[-84.56919193267822,10.03344992768036],[-84.56974983215332,10.033597834167102],[-84.57022190093994,10.033724611101997],[-84.57103729248045,10.033428798176741],[-84.57195997238159,10.032794912427036],[-84.57268953323364,10.031421489046446],[-84.57314014434814,10.029646594821102],[-84.57384824752808,10.029160610182544],[-84.57704544067383,10.028632365183373],[-84.57762479782104,10.027850561004005],[-84.57771062850952,10.027047625018437],[-84.57728147506712,10.026455986703317],[-84.57715272903442,10.025779827306293],[-84.57751750946045,10.025568527205404],[-84.5781397819519,10.025822087309933],[-84.57901954650879,10.026582766433194],[-84.58002805709839,10.026984235250612],[-84.58148717880249,10.026455986703317],[-84.58219528198241,10.025251576795792],[-84.58268880844116,10.024342983903745],[-84.58326816558838,10.023751340651335],[-84.58453416824341,10.022948394510154],[-84.58526372909546,10.022293358027238],[-84.5857572555542,10.021553799117184],[-84.5857572555542,10.016609276211875],[-84.58597183227539,10.015996488208891],[-84.5872163772583,10.01532030700021],[-84.5876669883728,10.014390555537187],[-84.58813905715941,10.014136986493975],[-84.58895444869995,10.014263771040346],[-84.58940505981445,10.014580732189557],[-84.59000587463379,10.015383699048389],[-84.59030628204346,10.015890834987937],[-84.59103584289551,10.015954226924633],[-84.59195852279663,10.016228925173877],[-84.59249496459961,10.016862843322786],[-84.59268808364868,10.01713754080259],[-84.59369659423827,10.01713754080259],[-84.59603548049927,10.018088414897859],[-84.5971941947937,10.017285454733829],[-84.59788084030151,10.017539021316155],[-84.59912538528442,10.019102677526845],[-84.59981203079224,10.019039286205462],[-84.60024118423462,10.018447633275043],[-84.60030555725096,10.017961631846223],[-84.6005630493164,10.017475629689159],[-84.60127115249632,10.017454499144073],[-84.60202217102051,10.01819406740305],[-84.60253715515137,10.018553285663215],[-84.60350275039673,10.018511024712087],[-84.60590600967407,10.020032415483517],[-84.60775136947632,10.019440764364946],[-84.61004734039307,10.01908154708775],[-84.61066961288452,10.018447633275043],[-84.61069107055664,10.017919370817985],[-84.6105408668518,10.017222063057265],[-84.61047649383544,10.016714929198843],[-84.61073398590088,10.015933096280442],[-84.6112060546875,10.015595005786217],[-84.61167812347412,10.015468221760035],[-84.61489677429199,10.01544709108419],[-84.61637735366821,10.014792039450345],[-84.61753606796265,10.01348193221517],[-84.6182656288147,10.011601285163808],[-84.61865186691284,10.008981039643317],[-84.6186089515686,10.006001541218211],[-84.61843729019165,10.004311033502029],[-84.61845874786377,10.00374048516183],[-84.61880207061768,10.003233330240324],[-84.61938142776489,10.002789569034462],[-84.62032556533813,10.002451464851678],[-84.62148427963257,10.002388070278228],[-84.62277173995972,10.002705043021757],[-84.62528228759764,10.003486907800056],[-84.62652683258057,10.003930668053254],[-84.62817907333374,10.004944974926785],[-84.62901592254639,10.005135157112926],[-84.63013172149658,10.005198551150212],[-84.63495969772339,10.00371935372259],[-84.64000225067139,10.002219018021897],[-84.64480876922607,10.000887728429191],[-84.65210437774658,9.998774559144758],[-84.65686798095703,9.997443255440148],[-84.66150283813477,9.996006286592019],[-84.66409921646117,9.995245535806626],[-84.66536521911621,9.995097611836082],[-84.66540813446044,9.994780631672533],[-84.66444253921509,9.994527047319174],[-84.66435670852661,9.995287799785872],[-84.67216730117798,9.995266667796942],[-84.67300415039062,9.99560477945492],[-84.67369079589844,9.996281001715888],[-84.6739912033081,9.996999486326803],[-84.67439889907837,9.997591178343312],[-84.67534303665161,9.998668900319831],[-84.67579364776611,9.999493038243328],[-84.67536449432373,10.000993386532667],[-84.675772190094,10.001902044804146],[-84.67673778533936,10.002493727893778],[-84.67800378799438,10.002409201804094],[-84.68102931976318,10.000951123295394],[-84.68178033828735,10.000591885556672],[-84.68246698379517,10.000613017199367],[-84.68323945999146,10.000296042414798],[-84.68369007110596,9.9999579356371],[-84.68420505523682,9.999176062366237],[-84.68456983566284,9.998964744943082],[-84.68570709228516,9.998647768550704],[-84.68669414520264,9.998098342071543],[-84.68733787536621,9.997950419399237],[-84.68813180923462,9.998034946648808],[-84.68918323516846,9.998225132879941],[-84.6905779838562,9.997591178343312],[-84.69317436218262,9.997168541298574],[-84.69647884368896,9.996872695040278],[-84.6987533569336,9.996281001715888],[-84.70029830932617,9.995583647486601],[-84.7014570236206,9.995541383545827],[-84.70381736755371,9.994738367627374],[-84.70519065856932,9.993068933449196],[-84.70609188079834,9.991674209716239],[-84.70759391784668,9.990828919694223],[-84.7106409072876,9.98964550997273],[-84.7126579284668,9.989476451089613],[-84.72527503967285,9.978910096600181],[-84.72656249999999,9.978064773424585],[-84.7280216217041,9.977937974758996],[-84.73711967468262,9.977980240986334],[-84.73952293395996,9.976754518166253],[-84.74102497100829,9.977008116369566],[-84.74218368530273,9.9780225072082],[-84.76235389709473,9.978107039635486],[-84.77205276489258,9.979713151584498],[-84.77994918823242,9.98060073636816],[-84.78883266448975,9.98055847048095],[-84.79681491851807,9.980896597425032],[-84.79848861694336,9.98093886326835],[-84.80063438415527,9.981826444710533],[-84.81235027313232,9.981023394938521],[-84.82200622558594,9.97903689488726],[-84.82659816741943,9.978191572040812],[-84.82921600341797,9.977980240986334],[-84.83076095581055,9.977726643539967],[-84.83048200607298,9.975835223024104]]}}]}}"></example-component>
+                                                <holiday-component></holiday-component>
+            <classic-report-component></classic-report-component>
+            <report-component schedule-id="1074" schedule-title="Alajuela – San Ramón"></report-component>
+            <review-component schedule-id="1074" schedule-title="Alajuela – San Ramón"></review-component>
+            <comments-component schedule-id="1074" initial-comments="[{&quot;id&quot;:1185,&quot;text&quot;:&quot;Los buses para San Ram\u00f3n entran a Radial. City Mall&quot;,&quot;schedule_id&quot;:1074,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:9086003845408,&quot;created_at&quot;:&quot;2024-03-22 17:48:38&quot;,&quot;updated_at&quot;:&quot;2024-03-22 17:48:38&quot;},{&quot;id&quot;:1440,&quot;text&quot;:&quot;Horario de los buses de ALAJUELA a PUNTARENAS&quot;,&quot;schedule_id&quot;:1074,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:6999109448490,&quot;created_at&quot;:&quot;2024-04-08 19:35:05&quot;,&quot;updated_at&quot;:&quot;2024-04-08 19:35:05&quot;},{&quot;id&quot;:1694,&quot;text&quot;:&quot;Cuanto es la tarifa de san ram\u00f3n al cruce de grecia&quot;,&quot;schedule_id&quot;:1074,&quot;parent_id&quot;:null,&quot;author_type&quot;:&quot;guest&quot;,&quot;user_id&quot;:7737604375251,&quot;created_at&quot;:&quot;2024-06-07 20:18:46&quot;,&quot;updated_at&quot;:&quot;2024-06-07 20:18:46&quot;}]"></comments-component>
+
+            
+           <mobile-menu-component
+                :hotel-link="''"
+                :user-image="''"
+                :complementary-link="null"
+                :search-modal="'#searchModal'"
+                :map-modal="'#mapModal'"
+                :comment-modal="'#commentModal'"
+                :title="'Alajuela – San Ramón'">
+            </mobile-menu-component>
+
+        </div>
+    </div>
+    <script type="aa32d375ea03ca068a79970f-text/javascript">
+    (function(){
+      function __traffic_init(){
+      function detectScheduleId(){
+        var primary = parseInt(String('1074').trim(), 10);
+        if (!isNaN(primary) && primary > 0) return primary;
+        var el = document.querySelector('report-component[schedule-id]') || document.querySelector('review-component[schedule-id]');
+        if (el){ var v = parseInt(el.getAttribute('schedule-id') || '', 10); if (!isNaN(v) && v > 0) return v; }
+        return null;
+      }
+      var scheduleId = detectScheduleId();
+      var container = document.getElementById('traffic-status');
+      var chip = document.getElementById('traffic-chip');
+      var chipText = document.getElementById('traffic-text');
+      var inlineTxt = document.getElementById('traffic-inline');
+      if (!chipText && chip){
+        try{
+          var nodes = Array.prototype.slice.call(chip.childNodes||[]);
+          nodes.forEach(function(n){ if(n && n.nodeType===3){ chip.removeChild(n); }});
+          chip.appendChild(document.createTextNode(' '));
+          chipText = document.createElement('span');
+          chipText.id = 'traffic-text';
+          chipText.textContent = 'Tráfico: Cargando…';
+          chip.appendChild(chipText);
+        }catch(e){}
+      }
+      var detail = document.getElementById('traffic-detail');
+      var btnRefresh = document.getElementById('traffic-refresh');
+      if (!container || !chip || !detail || !chipText) return;
+
+      var isEs = (document.documentElement.getAttribute('lang')||'').toLowerCase().indexOf('es')===0;
+      var L = isEs ? {
+        loading: 'Tráfico: Cargando…',
+        noData: 'Tráfico: Sin datos',
+        fluid: 'Tráfico: Fluido',
+        slow: 'Tráfico: Lento',
+        heavy: 'Tráfico: Cargado',
+        congested: 'Tráfico: Presas',
+        approx: 'Retraso aprox'
+      } : {
+        loading: 'Traffic: Loading…',
+        noData: 'Traffic: No data',
+        fluid: 'Traffic: Smooth',
+        slow: 'Traffic: Slow',
+        heavy: 'Traffic: Heavy',
+        congested: 'Traffic: Congested',
+        approx: 'Approx delay'
+      };
+      
+      if (!scheduleId){
+        // Sin identificador de horario válido: ocultar completamente el widget
+        container.style.display = 'none';
+        return;
+      }
+
+      function setChip(state, text){
+        chipText.textContent = text;
+        chip.classList.remove('badge-secondary','badge-success','badge-info','badge-warning','badge-danger');
+        chip.classList.add('badge');
+        if (state) chip.classList.add(state);
+      }
+
+      function render(data){
+        if (!data){
+          // Sin datos de tráfico: ocultar todo el bloque
+          container.style.display = 'none';
+          if (inlineTxt) inlineTxt.textContent = '';
+          if (btnRefresh) btnRefresh.style.display = '';
+          return;
+        }
+
+        container.style.display = '';
+
+        var delay = parseInt(data.delay_minutes||0,10);
+        if (isNaN(delay) || delay < 0) delay = 0;
+
+        var clsName;
+        var label;
+
+        // Escala LATAM: verde (<=4), naranja (5-10), rojo (>10)
+        if (delay > 10) {
+          clsName = 'badge-danger';
+          label = L.congested;
+        } else if (delay >= 5) {
+          clsName = 'badge-warning';
+          label = L.slow;
+        } else {
+          clsName = 'badge-success';
+          label = L.fluid;
+        }
+
+        setChip(clsName, label);
+        if (inlineTxt) inlineTxt.textContent = '— ' + L.approx + ': ' + delay + ' min';
+        detail.style.display = 'none';
+        if (btnRefresh) btnRefresh.style.display = '';
+      }
+
+      function fetchTraffic(){
+        container.style.display = '';
+        setChip('badge-secondary', L.loading);
+        detail.style.display='none';
+        var safety = setTimeout(function(){
+          try{
+            // Si sigue cargando demasiado tiempo, ocultar el widget
+            container.style.display = 'none';
+          }catch(e){}
+        }, 6000);
+        var controller = (window.AbortController) ? new AbortController() : null;
+        var t = null;
+        if (controller){ t = setTimeout(function(){ try{ controller.abort(); }catch(e){} }, 8000); }
+        var csrfTag = document.querySelector('meta[name="csrf-token"]');
+        var csrf = csrfTag ? csrfTag.getAttribute('content') : '';
+        fetch(window.location.origin + '/api/traffic/bus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf },
+          credentials: 'same-origin',
+          body: JSON.stringify({ schedules: [scheduleId] }),
+          signal: controller ? controller.signal : undefined
+        }).then(function(r){ if (t) clearTimeout(t); if (safety) clearTimeout(safety); if (!r.ok){ throw new Error('http'); } return r.json(); })
+          .then(function(res){
+            if (safety) clearTimeout(safety);
+            if (!res || res.success!==true){ throw new Error('bad'); }
+            var data = res.data || {};
+            var per = data[''+scheduleId] || data[scheduleId] || null;
+            if (per == null){
+              var ks = Object.keys(data||{});
+              if (ks.length===1){ per = data[ks[0]]; }
+            }
+            render(per);
+          })
+          .catch(function(err){
+            if (safety) clearTimeout(safety);
+            // En error, ocultar el widget de tráfico
+            container.style.display = 'none';
+          });
+      }
+
+      chip.addEventListener('click', function(){ if (detail.style.display==='none'){ detail.style.display=''; } else { detail.style.display='none'; } });
+      if (btnRefresh){ btnRefresh.addEventListener('click', function(){ fetchTraffic(); }); }
+      fetchTraffic();
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', __traffic_init);
+      } else {
+        __traffic_init();
+      }
+    })();
+    </script>
+            </div><!-- container -->
+
+        
+        <daily-verse-component></daily-verse-component>
+
+        </div><!-- #app -->
+
+        <div class="modal fade" id="modalLoginForm" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-body mx-3">
+
+                        <form class="form-inline d-flex justify-content-center" method="get" action="/search">
+
+                            <div class="input-group col-md-10  text-center">
+                                <input class="form-control py-2 border-right-0 border" type="search"  id="searchterm" name="s" placeholder="Starting City Destination" aria-label="Search">
+                                <span class="input-group-append">
+                                 <button class="btn btn-outline-secondary border-left-0 border" type="submit">
+                                <i class="fa fa-search"></i>
+                                </button>
+                            </span>
+                            </div>
+                        </form>
+                        <div class="lds-ellipsis" id="searchLoader"><div></div><div></div><div></div><div></div></div>
+                        <div id="results"> </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <!-- Scripts -->
+
+                <script src="https://yoviajocr.com/js/manifest.js?id=27eb3f267bb8c14ad506" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+
+        <script src="https://yoviajocr.com/js/vendor.js?id=1474a3b49c54777a053c" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+
+        <script src="https://yoviajocr.com/js/frontend.js?id=9824a30197b36ea074c4" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+
+        
+        <style>
+            .yv-chat-modal{position:fixed;right:20px;bottom:110px;width:340px;max-width:92vw;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 28px rgba(2,6,23,.25);z-index:9999;display:flex;flex-direction:column;overflow:hidden}
+            .yv-chat-header{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#0d6efd,#0aa0ff);color:#fff;padding:10px 12px;font-weight:600}
+            .yv-chat-title{display:flex;align-items:center;gap:8px}
+            .yv-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#38e06b;box-shadow:0 0 0 2px rgba(56,224,107,.25)}
+            .yv-chat-header button{background:transparent;border:0;color:#fff;font-size:20px;line-height:1;cursor:pointer}
+            .yv-chat-messages{padding:12px;max-height:340px;overflow:auto;background:#f8fafc}
+            .yv-msg{margin:8px 0;padding:10px 12px;border-radius:12px;font-size:14px;line-height:1.45;box-shadow:0 1px 1px rgba(2,6,23,.04)}
+            .yv-me{background:none;align-self:flex-end}
+            .yv-bot{background:#f1f5f9}
+            .yv-typing{display:flex;align-items:center;gap:8px;padding:0 12px 8px;color:#6b7280}
+            .yv-typing .dot{width:6px;height:6px;border-radius:50%;background:#9ca3af;display:inline-block;margin:0 2px;animation: yv-bounce 1.2s infinite ease-in-out both}
+            .yv-typing .dot:nth-child(1){animation-delay:-0.24s}
+            .yv-typing .dot:nth-child(2){animation-delay:-0.12s}
+            @keyframes  yv-bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+            .yv-chat-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+            .yv-chip{background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
+            .yv-chat-input{display:flex;gap:6px;padding:8px;border-top:1px solid #eef2f7;background:#fff}
+            .yv-chat-input input{flex:1;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px}
+            .yv-chat-input button{background:#0d6efd;color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
+            .yv-chat-disclaimer{color:#6b7280;font-size:11px;line-height:1.3;padding:0 12px 8px}
+            .yv-whatsapp-fab{position:fixed;right:20px;bottom:24px;width:58px;height:58px;border-radius:50%;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:9998;transition:transform .2s ease, box-shadow .2s ease}
+            .yv-whatsapp-fab:hover,.yv-whatsapp-fab:focus{color:#fff;text-decoration:none;transform:translateY(-2px);box-shadow:0 14px 24px rgba(0,0,0,.25)}
+            .yv-help-launcher{position:fixed;right:20px;bottom:80px;z-index:9998;display:flex;flex-direction:row;align-items:flex-end;gap:10px;pointer-events:none;transition:opacity .22s ease,transform .22s ease}
+            .yv-help-launcher > *{pointer-events:auto}
+            .yv-help-launcher.yv-help-hidden{opacity:0;transform:translateY(8px);pointer-events:none}
+            .yv-help-launcher.yv-help-hidden > *{pointer-events:none !important}
+            .yv-help-bot-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+            .yv-help-toggle{width:64px;height:64px;border:0;border-radius:50%;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;position:relative;transition:transform .15s ease,box-shadow .15s ease}
+            .yv-help-toggle:hover,.yv-help-toggle:focus{transform:translateY(-1px) scale(1.02);box-shadow:none;outline:none}
+            .yv-help-toggle img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.45)}
+            .yv-help-ping{position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(13,110,253,.24);animation:yv-help-pulse 6s ease-in-out infinite;pointer-events:none}
+            @keyframes  yv-help-pulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.08);opacity:.08}}
+            .yv-help-nudge{position:absolute;right:0;bottom:78px;max-width:300px;background:#fff;color:#0f172a;border:1px solid #dbe5f1;border-radius:18px;padding:12px 16px;font-size:13px;line-height:1.45;box-shadow:0 10px 24px rgba(15,23,42,.16);opacity:0;transform:translateY(8px) scale(.98);transform-origin:bottom right;pointer-events:none;transition:opacity .22s ease,transform .22s ease;z-index:2}
+            .yv-help-nudge::after{content:'';position:absolute;right:12px;bottom:-8px;border-width:8px 8px 0 8px;border-style:solid;border-color:#fff transparent transparent transparent;filter:drop-shadow(0 1px 1px rgba(15,23,42,.08))}
+            .yv-help-bot-wrap.show-nudge .yv-help-nudge{opacity:1;transform:translateY(0) scale(1)}
+            /* Chatbot message enrichments */
+            .yv-msg.yv-bot a.yv-btn{display:inline-block;background:#0d6efd;color:#fff !important;padding:8px 12px;border-radius:10px;font-weight:600;text-decoration:none;margin-top:6px}
+            .yv-msg.yv-bot a.yv-btn.secondary{background:#eef2ff;color:#1d4ed8 !important;border:1px solid #c7d2fe}
+            .yv-msg.yv-bot ul.yv-list{list-style:none;padding-left:0;margin:8px 0}
+            .yv-msg.yv-bot ul.yv-list>li{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 2px rgba(2,6,23,.04)}
+            .yv-msg.yv-bot ul.yv-list>li .yv-item-title{font-weight:600;color:#111827}
+            .yv-msg.yv-bot ul.yv-list>li .yv-item-meta{color:#6b7280;font-size:12px;margin-left:10px}
+            /* Avatar + bubble layout */
+            .yv-message{display:flex;align-items:flex-start;gap:8px;margin:8px 12px}
+            .yv-message.yv-me{flex-direction:row-reverse}
+            .chat-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
+            .bot-avatar{background:#eef2ff}
+            .user-avatar{background:#e0f2fe}
+            .yv-bubble{max-width:80%;border-radius:12px;padding:8px 12px;word-wrap:break-word}
+            .yv-bubble.yv-bot{background:#f0f6ff;color:#111827}
+            .yv-bubble.yv-me{background:#0d6efd;color:#fff}
+            @media (max-width:768px){
+                .yv-whatsapp-fab{right:14px;bottom:calc(20px + env(safe-area-inset-bottom));}
+                .yv-whatsapp-fab.yv-help-with-mobile-menu{bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-launcher{right:14px;left:auto;justify-content:flex-end;bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-launcher.yv-help-with-mobile-menu{bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-nudge{right:46px;left:auto;max-width:min(240px,calc(100vw - 92px));font-size:12px;bottom:74px;padding:10px 12px;line-height:1.4}
+                .yv-chat-modal{right:12px;left:12px;bottom:calc(92px + env(safe-area-inset-bottom));width:auto;max-width:none}
+            }
+        </style>
+
+        <script type="aa32d375ea03ca068a79970f-text/javascript">
+            (function(){
+                var botWrap=document.getElementById('yv-help-bot-wrap');
+                var launcher=document.getElementById('yv-help-launcher');
+                var launcherToggle=document.getElementById('yv-help-toggle');
+                var closeBtn=document.getElementById('yv-chat-close');
+                var modal=document.getElementById('yv-chat-modal');
+                var messages=document.getElementById('yv-chat-messages');
+                var input=document.getElementById('yv-chat-text');
+                var sendBtn=document.getElementById('yv-chat-send');
+                var typing=document.getElementById('yv-typing');
+                var sugg=document.getElementById('yv-chat-suggestions');
+                var nudgeEl=document.getElementById('yv-help-nudge');
+                var nudgeTimer=null;
+                var nudgeHideTimer=null;
+                var launcherHideTimer=null;
+
+                function setLauncherVisibility(isVisible){
+                    if(!launcher) return;
+                    launcher.classList.toggle('yv-help-hidden', !isVisible);
+                }
+
+                function scheduleLauncherAutoHide(){
+                    if(!launcher) return;
+                    clearTimeout(launcherHideTimer);
+                    launcherHideTimer=setTimeout(function(){
+                        if(modal && modal.style.display==='flex'){
+                            scheduleLauncherAutoHide();
+                            return;
+                        }
+                        setNudgeState(false);
+                        setLauncherVisibility(false);
+                    }, 15000);
+                }
+
+                function handleUserActivity(){
+                    setLauncherVisibility(true);
+                    scheduleLauncherAutoHide();
+                }
+
+                function setNudgeState(isVisible){
+                    if(!botWrap) return;
+                    botWrap.classList.toggle('show-nudge', !!isVisible);
+                }
+
+                function hasShownNudge(){
+                    try{return sessionStorage.getItem('yv_help_nudge_shown') === '1';}catch(e){return false;}
+                }
+
+                function markNudgeShown(){
+                    try{sessionStorage.setItem('yv_help_nudge_shown','1');}catch(e){}
+                }
+
+                function pickNudgeMessage(){
+                    if(!nudgeEl) return '';
+                    var msgs=[
+                        nudgeEl.dataset.nudge1,
+                        nudgeEl.dataset.nudge2,
+                        nudgeEl.dataset.nudge3,
+                        nudgeEl.dataset.nudge4,
+                        nudgeEl.dataset.nudge5
+                    ].filter(function(m){ return !!(m && m.trim()); });
+                    if(!msgs.length) return nudgeEl.textContent || '';
+                    var idx=Math.floor(Math.random()*msgs.length);
+                    return msgs[idx];
+                }
+
+                function scheduleNudge(){
+                    if(!botWrap || !launcherToggle || hasShownNudge()) return;
+                    clearTimeout(nudgeTimer);
+                    clearTimeout(nudgeHideTimer);
+                    nudgeTimer=setTimeout(function(){
+                        if(modal && modal.style.display==='flex') return;
+                        if(nudgeEl){ nudgeEl.textContent = pickNudgeMessage(); }
+                        setNudgeState(true);
+                        markNudgeShown();
+                        nudgeHideTimer=setTimeout(function(){setNudgeState(false);}, 7000);
+                    }, 5000);
+                }
+
+                // Client summary helpers (non-sensitive): name, summary, updated_at
+                function loadSummary(){
+                    try{var s=localStorage.getItem('yv_chat_summary');if(!s) return null;return JSON.parse(s);}catch(e){return null}
+                }
+                function saveSummary(obj){
+                    try{localStorage.setItem('yv_chat_summary', JSON.stringify(obj));}catch(e){}
+                }
+                function updateSummaryOnSend(text, ctx){
+                    var s=loadSummary()||{}; s.updated_at=Date.now();
+                    if(typeof s.name!=='string'){ s.name=''; }
+                    if(typeof s.summary!=='string'){ s.summary=''; }
+                    var add=(text||'').trim(); if(add){ s.summary=(s.summary+' | '+add).slice(-240); }
+                    s={ name:s.name, summary:s.summary, updated_at:s.updated_at };
+                    saveSummary(s); return s;
+                }
+
+                function pageContext(){
+                    var p=(window.location.pathname||'');
+                    var parts=p.split('/').filter(Boolean);
+                    var ctx={type:'',slug:'',url:window.location.href};
+                    if(parts[0]==='bus' && parts[1]){ctx.type='bus';ctx.slug=decodeURIComponent(parts[1]);}
+                    else if(parts[0]==='company' && parts[1]){ctx.type='company';ctx.slug=decodeURIComponent(parts[1]);}
+                    else if(parts[0]==='travel' && parts[1] && parts[2]){ctx.type='travel';ctx.origin=decodeURIComponent(parts[1]);ctx.destination=decodeURIComponent(parts[2]);}
+                    else if(p==='/'||p===''){ctx.type='home';}
+                    else {ctx.type='page';}
+                    return ctx;
+                }
+
+                function setSuggestions(){
+                    if(!sugg) return;
+                    var ctx=pageContext();
+                    var chips=[];
+                    if(ctx.type==='bus') chips=['Próxima salida','Precio','Paradas principales'];
+                    else if(ctx.type==='travel') chips=['Rutas directas','Con transbordo','Precio aproximado'];
+                    else chips=['Buscar ruta','Ayuda'];
+                    sugg.innerHTML='';
+                    chips.forEach(function(c){
+                        var b=document.createElement('button');b.type='button';b.className='yv-chip';b.textContent=c; b.addEventListener('click',function(){ input.value=c; send(); });
+                        sugg.appendChild(b);
+                    });
+                }
+
+                // Sanitize redundant phrasing before CTAs while preserving anchors
+                function sanitizeBotReply(html){
+                    try{
+                        var out=String(html);
+                        // Remove leading phrasing up to the CTA mention (Spanish)
+                        out=out.replace(/(?:<p>)?\s*(?:Puedes|Puede|Consulta|Puedes\s+ver)[^<]*?horario\s+completo\s+en\s+/giu,'');
+                        // English variant
+                        out=out.replace(/(?:<p>)?\s*You\s+can\s+view\s+the\s+full\s+schedule\s+at\s+/giu,'');
+                        // Collapse empty paragraphs generated after removal
+                        out=out.replace(/<p>\s*<\/p>/g,'');
+                        return out;
+                    }catch(e){return html}
+                }
+
+                function sanitizeBotHtml(html){
+                    var wrapper=document.createElement('div');
+                    wrapper.innerHTML=String(html||'');
+
+                    var blocked=wrapper.querySelectorAll('script,style,iframe,object,embed,link,meta');
+                    blocked.forEach(function(el){ el.remove(); });
+
+                    wrapper.querySelectorAll('*').forEach(function(el){
+                        Array.from(el.attributes).forEach(function(attr){
+                            var name=(attr.name||'').toLowerCase();
+                            var value=String(attr.value||'');
+                            if(name.indexOf('on')===0){ el.removeAttribute(attr.name); }
+                            if((name==='href' || name==='src') && /^\s*javascript:/i.test(value)){
+                                el.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+
+                    return wrapper.innerHTML;
+                }
+
+                // Render bot HTML (with avatar + bubble)
+                function appendBotHtml(html){
+                    if(!messages) return;
+                    var wrap=document.createElement('div');wrap.className='yv-message';
+                    var img=document.createElement('img');img.className='chat-avatar bot-avatar';img.src='/img/frontend/bot-avatar-small.png';
+                    var bub=document.createElement('div');bub.className='yv-bubble yv-bot';
+                    var clean = sanitizeBotHtml(sanitizeBotReply(html));
+                    try{bub.innerHTML=clean;}catch(e){bub.textContent=clean;}
+                    wrap.appendChild(img);wrap.appendChild(bub);
+                    messages.appendChild(wrap);messages.scrollTop=messages.scrollHeight;
+                }
+
+                // Render plain text message (user or bot)
+                function appendMsg(text, who){
+                    if(!messages) return;
+                    var wrap=document.createElement('div');wrap.className='yv-message '+(who==='me'?'yv-me':'');
+                    var img=document.createElement('img');img.className='chat-avatar '+(who==='me'?'user-avatar':'bot-avatar');
+                    img.src=(who==='me'?'/img/frontend/bot-avatar-user-small.png':'/img/frontend/bot-avatar-small.png');
+                    var bub=document.createElement('div');bub.className='yv-bubble '+(who==='me'?'yv-me':'yv-bot');
+                    bub.textContent=(text||'');
+                    wrap.appendChild(img);wrap.appendChild(bub);
+                    messages.appendChild(wrap);messages.scrollTop=messages.scrollHeight;
+                }
+                function send(){
+                    var txt=(input.value||'').trim();if(!txt){return;}
+                    var ctx=pageContext();
+                    // On generic pages, use legacy /chatbot page
+                    if(ctx.type!=='bus' && ctx.type!=='travel'){
+                        var q=encodeURIComponent(txt);
+                        window.location.href='/chatbot'+(q?('?m='+q):'');
+                        return;
+                    }
+                    var cs=updateSummaryOnSend(txt, ctx);
+                    appendMsg(txt,'me'); input.value=''; sendBtn.disabled=true;
+                    if(typing) typing.style.display='flex';
+                    $.ajax({
+                        url:'/api/chatbot/contextual',
+                        method:'POST',
+                        contentType:'application/json',
+                        data:JSON.stringify({message:txt,page:ctx,client_summary:cs}),
+                        headers:{'X-Requested-With':'XMLHttpRequest'},
+                    }).done(function(res){
+                        var reply=(res&&res.reply)?res.reply:'No pude procesar tu solicitud.';
+                        appendBotHtml(reply);
+                    }).fail(function(){
+                        appendMsg('Ocurrió un error. Intenta nuevamente.','bot');
+                    }).always(function(){sendBtn.disabled=false; if(typing) typing.style.display='none';});
+                }
+
+                function openWebChat(){
+                    setNudgeState(false);
+                    var ctx=pageContext();
+                    if(ctx.type!=='bus' && ctx.type!=='travel'){
+                        window.location.href='/chatbot';
+                        return;
+                    }
+                    if(modal.style.display==='none'||!modal.style.display){
+                        modal.style.display='flex';
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','true'); }
+                        setSuggestions();
+                        setTimeout(function(){input&&input.focus();},50);
+                    } else {
+                        modal.style.display='none';
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                    }
+                }
+
+                if(launcherToggle){launcherToggle.addEventListener('click',function(e){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUserActivity();
+                    openWebChat();
+                });}
+                if(closeBtn){closeBtn.addEventListener('click',function(){
+                    handleUserActivity();
+                    setNudgeState(false);
+                    modal.style.display='none';
+                    if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                });}
+                if(sendBtn){sendBtn.addEventListener('click',function(){ handleUserActivity(); send(); });}
+                if(input){input.addEventListener('keypress',function(e){ if(e.key==='Enter'){ handleUserActivity(); e.preventDefault(); send(); }});} 
+
+                document.addEventListener('keydown',function(e){
+                    handleUserActivity();
+                    if(e.key==='Escape'){
+                        setNudgeState(false);
+                        if(modal){ modal.style.display='none'; }
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                    }
+                });
+
+                document.addEventListener('pointerdown', handleUserActivity, {passive:true});
+                document.addEventListener('touchstart', handleUserActivity, {passive:true});
+                document.addEventListener('scroll', handleUserActivity, {passive:true});
+
+                // Initialize suggestions on load if opened later
+                setSuggestions();
+                // scheduleNudge(); // Disabled: annoying popup in mobile
+                scheduleLauncherAutoHide();
+            })();
+        </script>
+
+    <script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="aa32d375ea03ca068a79970f-|49" defer></script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"83aca9c3cea946d7a135c708e100fe79"}' crossorigin="anonymous"></script>
+</body>
+
+
+<div class="row m-4">
+    <div class="col-md-12 justify-content-center text-center">
+                    <div class="ad-label">Ads support everyone's journey.</div>
+            <div class="ads-container">
+                <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="aa32d375ea03ca068a79970f-text/javascript"></script>
+                <!-- YoViajoContentFooterAd -->
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-1195759558701784"
+                     data-ad-slot="1438912281"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script type="aa32d375ea03ca068a79970f-text/javascript">
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+            <div class="ad-label">Ads</div>
+                </div>
+</div>
+
+<!-- Footer -->
+<!-- Footer -->
+<footer class="page-footer font-small bg-dark text-white pt-4">
+    <div class="container">
+        <div class="row">
+            <!-- Popular Destinations -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Destinos Populares</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/place/monteverde" class="text-white">Monteverde</a></li>
+                    <li><a href="/place/samara" class="text-white">Sámara</a></li>
+                    <li><a href="/place/manzanillo" class="text-white">Puerto Viejo Talamanca</a></li>
+                    <li><a href="/place/cahuita" class="text-white">Cahuita</a></li>
+                    <li><a href="/place/montezuma" class="text-white">Montezuma</a></li>
+                    <li><a href="/place/herradura" class="text-white">Herradura</a></li>
+                </ul>
+            </div>
+
+            <!-- Blog Links -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Del Blog</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/post/guia-completa-para-viajar-a-costa-rica" class="text-white">Guía completa para viajar por Costa Rica</a></li>
+                    <li><a href="/post/como-viajar-barato-por-costa-rica-la-guia-definitiva" class="text-white">Guía para viajar barato por Costa Rica</a></li>
+                    <li><a href="/post/costa-rica-en-15-dias-itinerario-completo-con-lugares-imprescindibles-que-ver-y-consejos-de-viaje" class="text-white">Costa Rica en 15 días</a></li>
+                </ul>
+            </div>
+
+            <!-- Links -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Enlaces</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/about" class="text-white">Acerca de</a></li>
+                    <li><a href="/ticomap" class="text-white">Ticomap</a></li>
+                    <li><a href="/partner-with-us" class="text-white">Alianzas</a></li>
+                    <li><a href="/chatbot" class="text-white" title="Chatbot">Chatbot</a></li>
+                    <li><a href="/contact" class="text-white" title="Preguntas Frecuentes">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr class="my-3" style="border-color: rgba(255, 255, 255, 0.1);">
+
+        <!-- Copyright -->
+        <div class="d-flex justify-content-center text-center py-3">
+            <!-- Logo and Social Links -->
+            <div class="col-md-4 col-12 text-center mb-4">
+                <div class="footer-logo p-2">
+                    <img src="/img/frontend/logo.svg" alt="Logo Yo Viajo" class="img-fluid mb-1" style="max-width: 110px;" width="30%">
+                </div>
+                <div class="d-flex justify-content-center mb-3">
+                    <a href="/buses" class="text-white mr-2"><i class="fa fa-bus"></i> Bus</a>
+                    <a href="/tren" class="text-white mx-2"><i class="fas fa-train"></i> Tren</a>
+                    <a href="/ferry" class="text-white ml-2"><i class="fas fa-ship"></i> Ferry</a>
+                </div>
+                <div>
+                    <a href="https://www.facebook.com/yoviajocr" target="_blank" class="text-white mr-2"><i class="fab fa-facebook"></i></a>
+                    <a href="https://www.instagram.com/yoviajocr/" target="_blank" class="text-white mr-2"><i class="fab fa-instagram"></i></a>
+                    <a href="https://cr.linkedin.com/company/yo-viajo" target="_blank" class="text-white"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="mt-1" style="font-size: 11px;">© 2026 Copyright Yo Viajo. Todos los Derechos Reservados</p>
+            </div>
+
+        </div>
+        
+        <!-- Disclaimer -->
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-2" style="background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.1);">
+                    <p class="mb-0" style="font-size: 9px; color: #ccc;">
+                        <strong>Aviso:</strong> Los horarios y rutas mostrados son referenciales y pueden variar debido a condiciones de tráfico, clima, días feriados u otros factores externos. 
+                        Yo Viajo no se hace responsable por retrasos, cancelaciones o cambios en los servicios de transporte.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Footer -->
+<script type="aa32d375ea03ca068a79970f-text/javascript">
+    document.addEventListener('DOMContentLoaded', function(event) {
+        $("#searchLoader").css("display", "none");
+
+        //getNotice();
+
+    });
+    var timer;
+    var timeout = 600;
+    $("#searchterm").keyup(function(e){
+        clearTimeout(timer);
+        var len = this.value.length;
+        if(len > 4) {
+            timer = setTimeout(function(){
+                var q = $("#searchterm").val();
+                $("#searchLoader").css("display", "block");
+                $.getJSON("/autocomplete",
+                    {
+                        srsearch: q,
+                        action: "query",
+                        list: "search",
+                        format: "json"
+                    },
+                    function (data) {
+                        $("#searchLoader").css("display", "none");
+                        $("#results").empty();
+                        $.each(data, function (i, item) {
+                            if(item.id == 999999999){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='/search?s=" + encodeURIComponent(item.slug) + "'>" + item.title + "</a></h5></div>");
+                            }else if(item.id == 777){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='" + item.slug + "' target='_blank''>" + item.title + "</a></h5></div>");
+                            }else if(item.id == 333){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='" + item.slug + "' target='_blank''>" + item.title + "</a></h5></div>");
+                            }else{
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='/bus/" + encodeURIComponent(item.slug) + "'>" + item.title + "</a></h5></div>");
+                              }
+
+                        });
+
+                    });
+            }, timeout);
+        }
+    });
+
+    window.setTimeout(function() {
+        $("#favoriteAlert").fadeTo(1700, 0).slideUp(1600, function(){
+            $(this).remove();
+        });
+    }, 6900);
+
+    window.setTimeout(function() {
+        $("#noticeAlert").fadeTo(1700, 0).slideUp(1600, function(){
+            $(this).remove();
+        });
+    }, 9500);
+
+    function addFavorite($id,$title){
+        $.ajax({
+            type: "POST",
+            url: '/addfavorite',
+            data: {'_token': "eSIRsvmWnThaNnGNteQlPDhSoBeBYfSocidVskyR",'id':$id,'title':$title},
+            success: function( msg ) {
+                var status = msg.status;
+                if(status == 'ok'){
+                    $(".nd3").css("background-color","#BF0426");
+                    var alert = '<div class="alert alert-success" role="alert" style="position: fixed;bottom: 5px;right:2%;width: 96%;z-index:99999;max-width: 400px;" id="nextHolidayAlert">\n' +
+                        '<p>Tu favorito ha sido guardado 💚</p>'+
+                        '  <hr> <p class="mb-0">Revisa tus favoritos desde tu perfil.</p><button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+                        '                        <span aria-hidden="true">&times;</span>\n' +
+                        '                    </button>\n' +
+                        '                </div>';
+                    $("body").prepend(alert);
+                }
+                if(status == 'exist'){
+                    $(".nd3").css("background-color","#BF0436");
+                    var alert = '<div class="alert alert-warning" role="alert" style="position: fixed;bottom: 5px;right:2%;width: 96%;z-index:99999;max-width: 400px;" id="nextHolidayAlert">\n' +
+                        '<p>Este favorito ya estaba en tu lista 😁</p>'+
+                        '  <hr> <p class="mb-0">Revisa tus favoritos desde tu perfil.</p><button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+                        '                        <span aria-hidden="true">&times;</span>\n' +
+                        '                    </button>\n' +
+                        '                </div>';
+                    $("body").prepend(alert);
+
+
+                }
+            },
+            error: function(xhr, status, err) {
+                if (xhr.status == 401)
+                    window.location.href = '/login';
+            }
+        });
+
+    }
+
+    function getNotice(){
+        var textArray = ["<a href='/dashboard'>Guarda tus favoritos.💚</a>",
+           "<a href='https://www.facebook.com/yoviajocr' target='_blank'>Síguenos en Facebook <i class=\"fab fa-facebook\"></i></a>",
+            "<a href='https://www.instagram.com/yoviajocr' target='_blank'>Síguenos en Instagram <i class=\"fab fa-instagram\"></i></a>"];
+        var text = textArray[(Math.random() * textArray.length) | 0];
+        var alert = '<div class="alert alert-info" role="alert" style="position: fixed;bottom: 3px;right:2%;width: 96%;z-index:99999;max-width: 235px;" id="noticeAlert">\n' +
+            text+'\n' +
+            '                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+            '                        <span aria-hidden="true">&times;</span>\n' +
+            '                    </button>\n' +
+            '                </div>';
+        $("body").prepend(alert);
+
+    }
+</script>
+<script src="/lib/introjs/intro.min.js" defer type="aa32d375ea03ca068a79970f-text/javascript"></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.js' defer type="aa32d375ea03ca068a79970f-text/javascript"></script>
+</html>

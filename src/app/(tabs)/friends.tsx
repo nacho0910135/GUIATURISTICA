@@ -6,7 +6,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
-import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, toggleTravelerFollow, type ReactionType, type TravelerPost } from '@/lib/travelers';
+import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
 type Wall = Awaited<ReturnType<typeof getTravelerWall>>;
@@ -16,6 +16,11 @@ const reactions: { type: ReactionType; emoji: string; label: string }[] = [
   { type: 'like', emoji: '👍', label: 'Me gusta' }, { type: 'love', emoji: '❤️', label: 'Me encanta' },
   { type: 'laugh', emoji: '😂', label: 'Me divierte' }, { type: 'wow', emoji: '😮', label: 'Me asombra' },
   { type: 'angry', emoji: '😡', label: 'Me enoja' }, { type: 'sad', emoji: '🤢', label: 'Me disgusta' },
+];
+const topics: { key: Exclude<TravelerTopic, 'general'>; label: string }[] = [
+  { key: 'moteros', label: 'Moteros 🏍️' },
+  { key: 'enduro', label: 'Enduro 🏁' },
+  { key: 'convoy_4x4', label: 'Convoy 4x4 🛣️' },
 ];
 
 export default function FriendsScreen() {
@@ -33,12 +38,13 @@ export default function FriendsScreen() {
   const [error, setError] = useState<string>();
   const [publishError, setPublishError] = useState<string>();
   const [reactionPickerPostId, setReactionPickerPostId] = useState<string>();
+  const [topic, setTopic] = useState<TravelerTopic>('general');
   const longPressedPostId = useRef<string | undefined>(undefined);
 
   const load = useCallback(async () => {
-    try { setError(undefined); setWall(await getTravelerWall(userId)); }
+    try { setError(undefined); setWall(await getTravelerWall(userId, topic)); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo cargar Comunidad Viajera.'); }
-  }, [userId]);
+  }, [topic, userId]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
@@ -71,7 +77,7 @@ export default function FriendsScreen() {
     if (!requireAuth(language === 'es' ? 'Crear una publicación' : 'Create a post') || !session || (!body.trim() && !asset && !location)) return;
     setBusy(true);
     setPublishError(undefined);
-    try { await createTravelerPost(session.user.id, body, asset, location); setBody(''); setAsset(undefined); setLocation(undefined); await load(); }
+    try { await createTravelerPost(session.user.id, body, asset, location, topic); setBody(''); setAsset(undefined); setLocation(undefined); await load(); }
     catch (reason) { setPublishError(reason instanceof Error ? reason.message : 'No se pudo publicar.'); }
     finally { setBusy(false); }
   };
@@ -125,6 +131,7 @@ export default function FriendsScreen() {
           <View className="h-11 w-11 items-center justify-center rounded-xl bg-caribbean-50 dark:bg-caribbean-900"><Text accessibilityLabel={language === 'es' ? 'Dos amigos' : 'Two friends'} className="text-2xl">🧑‍🤝‍🧑</Text></View>
           <View className="ml-3 flex-1"><Text className="text-2xl font-extrabold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Comunidad Viajera' : 'Traveler Community'}</Text><Text className="text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Experiencias, fotos y conversaciones de viaje.' : 'Travel experiences, photos and conversations.'}</Text></View>
         </View>
+        <View className="mx-auto mt-4 w-full max-w-3xl"><Pressable accessibilityRole="tab" accessibilityState={{ selected: topic === 'general' }} className={topic === 'general' ? 'self-center rounded-full bg-ui-primary px-5 py-2.5 dark:bg-ui-dark-primary' : 'self-center rounded-full border border-ui-border bg-ui-muted px-5 py-2.5 dark:border-ui-dark-border dark:bg-ui-dark-muted'} onPress={() => setTopic('general')}><Text className={topic === 'general' ? 'font-black text-white' : 'font-black text-ui-text dark:text-ui-dark-text'}>Comunidad Viajera</Text></Pressable><View className="mt-2 flex-row gap-2">{topics.map((item) => <Pressable accessibilityRole="tab" accessibilityState={{ selected: topic === item.key }} className={topic === item.key ? 'flex-1 items-center rounded-full bg-ui-primary px-2 py-2.5 dark:bg-ui-dark-primary' : 'flex-1 items-center rounded-full border border-ui-border bg-ui-muted px-2 py-2.5 dark:border-ui-dark-border dark:bg-ui-dark-muted'} key={item.key} onPress={() => setTopic(item.key)}><Text className={topic === item.key ? 'text-center text-xs font-black text-white' : 'text-center text-xs font-black text-ui-text dark:text-ui-dark-text'}>{item.label}</Text></Pressable>)}</View></View>
       </View>
 
       <View className="w-full max-w-3xl px-4 pt-5">
@@ -137,7 +144,7 @@ export default function FriendsScreen() {
               multiline
               onChangeText={setBody}
               onFocus={() => { if (!session) requireAuth(language === 'es' ? 'Crear una publicación' : 'Create a post'); }}
-              placeholder={language === 'es' ? `¿Qué estás pensando${session?.user.user_metadata.full_name ? `, ${session.user.user_metadata.full_name.split(' ')[0]}` : ''}?` : "What's on your mind?"}
+              placeholder={language === 'es' ? `Compartí algo en ${topics.find((item) => item.key === topic)?.label ?? 'Comunidad Viajera'}...` : "Share something with the community..."}
               placeholderTextColor="#73807b"
               value={body}
             />

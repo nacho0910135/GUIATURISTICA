@@ -1,0 +1,21 @@
+2026-08-29 11:49:49.027: [INFO] CurrentProfilePath: C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default
+2026-08-29 11:49:49.027: [INFO] Profiles total count: 1
+2026-08-29 11:49:49.027: [INFO] Profile: name=Perfil 1 path=C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default lastActive=null
+2026-08-29 11:49:49.027: [INFO] LastUsedProfileDir: C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default
+2026-08-29 11:49:49.027: [INFO] VisibilityChanged: 0
+2026-08-29 11:49:49.120: [INFO] OnDoneLoading sync enabled: 0
+2026-08-29 11:49:49.120: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-29 11:49:49.120: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-29 11:49:49.120: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-29 12:23:33.995: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-29 12:24:13.981: [INFO] CurrentProfilePath: C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default
+2026-08-29 12:24:13.981: [INFO] Profiles total count: 1
+2026-08-29 12:24:13.981: [INFO] Profile: name=Personal path=C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default lastActive=2026-08-29T11:49:49.097Z
+2026-08-29 12:24:13.981: [INFO] LastUsedProfileDir: C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default
+2026-08-29 12:24:13.981: [INFO] MostRecentlyActiveProfile: name=Personal path=C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default lastActive=2026-08-29T11:49:49.097Z
+2026-08-29 12:24:13.981: [INFO] VisibilityChanged: 0
+2026-08-29 12:24:14.063: [INFO] OnDoneLoading sync enabled: 0
+2026-08-29 12:24:14.063: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-29 12:24:14.063: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-29 12:24:14.063: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-29 12:57:53.293: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1

@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="csrf-token" content="eSIRsvmWnThaNnGNteQlPDhSoBeBYfSocidVskyR">
+        <meta name="author" content="Dagoberto Medina">
+        <meta name="language" content="en">
+        <meta property="og:image" content="/img/frontend/logo.png" />
+        <link rel="icon" href="/img/frontend/logo.png">
+        <link rel="manifest" href="/img/icons/manifest.json">
+            <meta name="keywords" content="Grecia &amp;#8211; Arena &amp;#8211; Norte, horarios de buses, transporte público, bus Grecia &amp;#8211; Arena &amp;#8211; Norte">
+                    <title>Grecia &#8211; Arena &#8211; Norte - Horarios de Buses en  | Transporte Público</title>
+            <meta property="og:url" content="https://yoviajocr.com/bus/grecia-arena-norte" />
+            <script type="application/ld+json">
+                {
+                  "@context": "http://schema.org",
+                  "@type": "BusReservation",
+                  "reservationId": "8834",
+                  "reservationStatus": "http://schema.org/ReservationConfirmed",
+                  "reservationFor": {
+                    "@type": "BusTrip",
+                    "provider": {
+                      "@type": "Organization",
+                      "name": "Grecia &#8211; Arena &#8211; Norte - Yo Viajo "
+                    }
+                    ,
+                    "departureBusStop": {
+                      "@type": "BusStop",
+                      "name": "Provincia de Alajuela, Grecia, Costa Rica"
+                    },
+                    "arrivalBusStop": {
+                      "@type": "BusStop",
+                      "name": "Provincia de Alajuela, Grecia, Costa Rica"
+                    }
+                                }
+              }
+            </script>
+
+
+                <script src="/js/wow.min.js" defer type="382045d4f4bd88211004090c-text/javascript">
+            new WOW().init();
+        </script>
+        <link rel="shortcut icon" href="/img/favicon-yo-viajo.ico" type="image/x-icon">
+        <link rel="icon" href="/img/favicon-yo-viajo.ico" type="image/x-icon">
+        <link rel="canonical" href="https://yoviajocr.com/bus/grecia-arena-norte">
+            <meta name="description" content="Consulta los horarios, precios y paradas del bus Grecia &amp;#8211; Arena &amp;#8211; Norte. Encuentra toda la información que necesitas para planificar tu viaje en transporte público.">
+    <meta property="og:title" content="Grecia &amp;#8211; Arena &amp;#8211; Norte">
+    <meta property="og:description" content="Planifica tu viaje en bus con horarios actualizados, paradas y más para Grecia &amp;#8211; Arena &amp;#8211; Norte.">
+    <meta property="og:image" content="https://yoviajocr.com/img/frontend/bus-carretera-costa-rica-yo-viajo.jpeg">
+        
+        <link media="all" type="text/css" rel="stylesheet" href="https://yoviajocr.com/css/frontend.css?id=1bee1f328a711bd3c40a">
+
+
+        
+        <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js" type="382045d4f4bd88211004090c-text/javascript"></script>
+
+                    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="382045d4f4bd88211004090c-text/javascript"></script>
+            <script type="382045d4f4bd88211004090c-text/javascript">
+                (adsbygoogle = window.adsbygoogle || []).push({
+                    google_ad_client: "ca-pub-1195759558701784",
+                    enable_page_level_ads: true
+                });
+            </script>
+        
+        <!-- Google tag (gtag.js) - GA4 -->
+                <script async src="https://www.googletagmanager.com/gtag/js?id=G-3T79QXLF3B" type="382045d4f4bd88211004090c-text/javascript"></script>
+        <script type="382045d4f4bd88211004090c-text/javascript">
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-3T79QXLF3B');
+        </script>
+                    <!-- Web Application Manifest -->
+<link rel="manifest" href="https://yoviajocr.com/manifest.json">
+<!-- Chrome for Android theme color -->
+<meta name="theme-color" content="#000000">
+
+<!-- Add to homescreen for Chrome on Android -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="YoViajo">
+<link rel="icon" sizes="512x512" href="/images/icons/apple-icon.png">
+
+<!-- Add to homescreen for Safari on iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="YoViajo">
+<link rel="apple-touch-icon" href="/images/icons/apple-icon.png">
+
+
+<link href="/img/frontend/logo.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 621px) and (device-height: 1104px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+<link href="/img/frontend/logo.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+
+<!-- Tile for Win8 -->
+<meta name="msapplication-TileColor" content="#ffffff">
+<meta name="msapplication-TileImage" content="/images/icons/apple-icon.png">
+
+<script type="382045d4f4bd88211004090c-text/javascript">
+    // Initialize the service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/serviceworker.js', {
+            scope: '.'
+        }).then(function (registration) {
+            // Registration was successful
+            console.log('PWA: ServiceWorker registration successful with scope: ', registration.scope);
+        }, function (err) {
+            // registration failed :(
+            console.log('PWA: ServiceWorker registration failed: ', err);
+        });
+    }
+</script>
+        
+
+        <script type="382045d4f4bd88211004090c-text/javascript">
+            !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+            posthog.init('phc_FWqxwDFywaYSvs7fRi8r9E6EthIJKtfBLQRMDeex54z',{api_host:'https://us.i.posthog.com', person_profiles: 'identified_only'
+            })
+        </script>
+
+            </head>
+    <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id="
+                      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <div id="app">
+                        <nav class="navbar navbar-expand-lg navbar-dark bg-dark" style="z-index: 9999999999999999999">
+    <a href="https://yoviajocr.com" class="navbar-brand"><img src="/img/frontend/logo-horizontal.svg" height="30px;"></a>
+    <a href="" class="search_icon" data-toggle="modal" data-target="#modalLoginForm"><i class="fas fa-search"></i></a>
+    <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle Navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+        <ul class="navbar-nav">
+            
+                            <li class="nav-item"><a href="https://yoviajocr.com/login" class="nav-link ">Login</a></li>
+
+                            <li class="nav-item"><a href="/ticomap" class="nav-link">TicoMap</a></li>
+
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownAboutMenu" data-toggle="dropdown"
+                       aria-haspopup="true" aria-expanded="false">Yo Viajo</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownAboutMenu">
+                        <a href="/about" class="dropdown-item">Acerca de</a>
+                        <a href="/partner-with-us" class="dropdown-item">Alianzas</a>
+                        <a href="/chatbot" class="dropdown-item" title="Chatbot">Chatbot</a>
+                        <a href="/faqs" class="dropdown-item" title="Preguntas Frecuentes">FAQs</a>
+                        <a href="https://yoviajocr.com/contact" class="dropdown-item ">Contact</a>
+                    </div>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" id="navbarDropdownAboutMenu" data-toggle="dropdown"
+                       aria-haspopup="true" aria-expanded="false">Horarios</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownAboutMenu">
+                        <a href="/buses" class="dropdown-item">Bus</a>
+                        <a href="/tren" class="dropdown-item">Train</a>
+                        <a href="/ferry" class="dropdown-item">Ferry</a>
+                        <!--
+                        <a href="/schedule/shuttle" class="dropdown-item">Private Shuttle</a>
+                        -->
+                        <a href="/empresas" class="dropdown-item">Empresas</a>
+                    </div>
+                </li>
+
+                                                        <li class="nav-item">
+                        <a href="https://yoviajocr.com/lang/es" class="nav-link px-2">ES</a>
+                    </li>
+                        </ul>
+    </div>
+</nav>
+        <div class="row no-gutters my-4">
+            
+                    <div class="col-md-12 justify-content-center text-center">
+                        <div class="ad-label">Ads</div>
+                        <div class="ads-container">
+                        <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="382045d4f4bd88211004090c-text/javascript"></script>
+                        <!-- YoViajoFirstAd -->
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-1195759558701784"
+                             data-ad-slot="7290128471"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                        <script type="382045d4f4bd88211004090c-text/javascript">
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                        </div>
+                        <div class="ad-label">Ads</div>
+                    </div>
+
+            
+                                                <a
+                        id="yv-whatsapp-fab"
+                        class="yv-whatsapp-fab yv-help-with-mobile-menu"
+                        href="https://wa.me/50689684256"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Abrir WhatsApp"
+                    >
+                        <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                    </a>
+                
+                
+                                    </div>
+            <div class="container-fluid">
+                                
+    
+    <bus-hero-component
+        :image-url='"https:\/\/images.unsplash.com\/photo-1552727131-5fc6af16796d?ixid=M3w4MzczODF8MHwxfHNlYXJjaHwxfHxjb3N0YSUyMHJpY2F8ZW58MXwwfHx8MTc2NDU2Mzg5Mnww\u0026ixlib=rb-4.1.0\u0026w=1600\u0026h=360\u0026fit=crop\u0026crop=entropy\u0026auto=format\u0026q=80"'
+        :author-name='"Zden\u011bk Mach\u00e1\u010dek"'
+        :author-username='"zmachacek"'
+        :value='"Grecia \u2013 Arena \u2013 Norte"'
+        :title-prefix='""'
+        :bottom-left-label='null'
+    ></bus-hero-component>
+
+    <div class="container">
+        <div class="row" style="min-height: 500px;background-size: 250px;width: 100%; padding-left: 30px">
+
+            <div class="col-md-1 d-flex flex-column justify-content-center bg-dark p-2 rounded-top" style="margin-top: -40px;">
+                <div class="d-md-none d-lg-none m-0 p-0 rounded-top">
+                    
+                    <a onclick="if (!window.__cfRLUnblockHandlers) return false; introJs().start();" class="wow lightSpeedIn text-white float-right" data-cf-modified-382045d4f4bd88211004090c-="">
+                        <svg class="svg-inline--fa fa-info-circle fa-w-16" style="font-size: 24px; vertical-align: middle;" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="info-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"></path></svg>
+                    </a>
+                </div>
+                <dl class="d-none d-sm-block">
+                    <dt class="mt-2">
+                        <a onclick="if (!window.__cfRLUnblockHandlers) return false; introJs().start();" class="wow lightSpeedIn text-white" data-cf-modified-382045d4f4bd88211004090c-="">
+                            <svg class="svg-inline--fa fa-info-circle fa-w-16" style="font-size: 24px; vertical-align: middle;" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="info-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"></path></svg>
+                        </a>
+                    </dt>
+                </dl>
+            </div>
+
+            <div class="col-md-3 p-4 shadow bg-white wow fadeIn rounded" data-wow-delay="0.1s" data-intro='Elementos generales de tu horario' data-position='middle-middle'>
+                <div class="bus-company-header">
+                    <div class="bus-company-avatar">
+                        <span id="bus-image">Cargando imagen...</span>
+                    </div>
+                    <div class="bus-company-info">
+                        <a class="text-primary company-title-link" id="companyName"></a>
+                    </div>
+                </div>
+
+                                    <p class="bus-subtitles mb-0 mt-1">Estimated Fare</p>
+                    <div class="d-flex align-items-center">
+                                                    <div>
+                                <span class="currency-symbol">¢</span>
+                                <span class="amount">540</span>
+                            </div>
+                                                            <span class="conversion-icon mx-2">
+                                    ≈
+                                </span>
+                                <div>
+                                    <span class="currency-symbol">$</span>
+                                    <span class="amount">0.90</span>
+                                </div>
+                                                                        </div>
+
+                
+                <div class="d-flex flex-column align-items-start mt-2 mb-2">
+                    <p class="bus-subtitles mb-0">Next Bus</p>
+                    <p class="minutes mb-0">
+                        <span id="nextMin"></span>
+                        <span id="textMin">minutes</span>
+                        <span id="textTom">Tomorrow</span>
+                        <img src="/img/frontend/time.svg" alt="Time Icon" class="mx-2 time-icon">
+                        <span id="nextHour">-</span>
+                    </p>
+                                            <p class="text-secondary mb-0 bus-time-estimated">Travel time:                            <span>10 min</span>
+                            <small>Estimated time.</small>
+                        </p>
+                                    </div>
+
+                <div id="traffic-status" class="bus-traffic-row mt-2">
+                    <span id="traffic-chip" class="bus-traffic-chip badge badge-secondary"><i class="fa fa-traffic-light"></i> <span id="traffic-text">Tráfico: Cargando…</span></span>
+                    <span id="traffic-inline" class="bus-traffic-inline small text-muted"></span>
+                    <div id="traffic-detail" class="small text-muted mt-1" style="display:none;"></div>
+                </div>
+
+                <div class="bus-actions-toolbar desktop-only">
+                    <a href="#" data-toggle="modal" data-target="#commentModal" class="bus-action-btn" title="Comentarios">
+                        <i class="fa fa-comment"></i>
+                        <span>Comentarios</span>
+                    </a>
+                                            <a href="#" data-toggle="modal" data-target="#mapModal" class="bus-action-btn" title="Mapa de ruta">
+                            <i class="fa fa-map"></i>
+                            <span>Mapa</span>
+                        </a>
+                                                                <a href="#" data-toggle="modal" data-target="#stopsModal" class="bus-action-btn" title="Paradas">
+                            <i class="fas fa-bus"></i>
+                            <span>Paradas</span>
+                        </a>
+                                                                                                            <a id="complementarylink" class="bus-action-btn bus-action-btn--alt" title="Horario complementario">
+                            <img src="/img/frontend/complementary.svg" width="16px">
+                            <span>Complementario</span>
+                        </a>
+                        <complementary-component complementary="{&quot;complementary&quot;:[8835]}"></complementary-component>
+                                    </div>
+            </div>
+
+            
+            <div class="col-12 mt-2 mb-3 d-block d-md-none" data-company-news-block>
+                <div class="company-news-card wow fadeInUp" data-wow-delay="0.1s">
+                    <div class="company-news-badge">
+                        <img src="/img/frontend/paperclip.svg" width="24" height="24" alt="News">
+                    </div>
+                    <div class="company-news-body text-center" data-company-news-text>
+                        
+                    </div>
+                </div>
+            </div>
+
+            
+                            <div class="col-md-4 pt-2 p-1 wow fadeIn" data-wow-delay="0.2s">
+                    <div class="bus-schedule-card google-anno-skip">
+                        <div class="row google-anno-skip">
+                            <ul class="nav nav-tabs bus-schedule-tabs" id="myTab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="semana-tab" data-toggle="tab" href="#semana" role="tab" aria-controls="semana" aria-selected="true" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Week                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="sabados-tab" data-toggle="tab" href="#sabados" role="tab" aria-controls="sabados" aria-selected="false" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Saturday                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="domingos-tab" data-toggle="tab" href="#domingos" role="tab" aria-controls="domingos" aria-selected="false" style="color: #0075BE !important;-webkit-filter: none !important;filter: none !important;">
+                                    Sunday                                </a>
+                            </li>
+                                                    </ul>
+                        </div>
+                        <div class="row pl-2 wow fadeIn days-tab" data-wow-delay="0.1s" id="style-1">
+                        <div class="col-md-12 col-12 google-anno-skip">
+                        <div class="tab-content pt-3 google-anno-skip" id="myTabContent" data-intro='Horas aproximadas de tu servicio' data-position="middle">
+                            <div class="tab-pane fade show active" id="semana" role="tabpanel" aria-labelledby="semana-tab">
+                                <p>05:30 am <br />
+06:35 am <br />
+08:30 am<br />
+10:30 am<br />
+12:30 pm <br />
+02:30 pm<br />
+04:45 pm<br />
+06:30 pm</p>
+                            </div>
+                            <div class="tab-pane fade" id="sabados" role="tabpanel" aria-labelledby="sabados-tab">
+                                                                    <p>05:30 am <br />
+06:35 am <br />
+08:30 am<br />
+10:30 am<br />
+12:30 pm <br />
+02:30 pm<br />
+04:45 pm<br />
+06:30 pm</p>
+                                                            </div>
+                            <div class="tab-pane fade" id="domingos" role="tabpanel" aria-labelledby="domingos-tab">
+                                                                    <p>This service is not provided today, Sunday.</p>
+                                                            </div>
+                                                    </div>
+                        </div>
+
+                        <button class="show-more-btn-hours travel-guide-btn hidden " onclick="if (!window.__cfRLUnblockHandlers) return false; toggleExpand()" data-expand-text="Show less hours" data-collapse-text="Load more hours" data-cf-modified-382045d4f4bd88211004090c-="">
+                        <span id="expand-text">Load more hours</span>
+                        </button>
+
+                        <div class="col-md-12 justify-content-center text-center">
+                        <div class="ad-label">Ads</div>
+                        <div class="ads-container" style="height: 200px;">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1195759558701784" crossorigin="anonymous" type="382045d4f4bd88211004090c-text/javascript"></script>
+                                <!-- Schedule Tabs Content Ad -->
+                                <ins class="adsbygoogle"
+                                    style="display:inline-block;width:260px;height:200px; max-width: 100%;"
+                                    data-ad-client="ca-pub-1195759558701784"
+                                    data-ad-slot="9599077511"></ins>
+                                <script type="382045d4f4bd88211004090c-text/javascript">
+                                    (adsbygoogle = window.adsbygoogle || []).push({});
+                                </script>
+                        </div>
+                        <div class="ad-label">Ads</div>
+                    </div>
+
+                    </div>
+                    </div>
+                    
+                   
+
+                    <script type="382045d4f4bd88211004090c-text/javascript">
+                        document.addEventListener("DOMContentLoaded", function() {
+                            const content = document.getElementById('myTabContent');
+                            const button = document.querySelector('.show-more-btn-hours');
+                            const tabpanels = document.querySelectorAll('[role="tabpanel"]');
+
+                            if (content.scrollHeight > 290) {
+                                button.classList.remove('hidden');
+                                content.classList.add('has-expand-btn');
+                            }
+
+                            tabpanels.forEach(tab => {
+                                tab.addEventListener("click", function() {
+                                    if (!content.classList.contains("expanded")) {
+                                        toggleExpand();
+                                    }
+                                });
+                            });
+                        });
+
+                        function toggleExpand() {
+                            const content = document.getElementById('myTabContent');
+                            const text = document.getElementById('expand-text');
+                            const button = document.querySelector('.show-more-btn-hours');
+
+                            content.classList.toggle('expanded');
+
+                            text.innerText = content.classList.contains('expanded')
+                                ? button.dataset.expandText
+                                : button.dataset.collapseText;
+                        }
+                    </script>
+
+                </div>
+
+                <div class="col-md-3 mt-1 mb-1" data-intro='Mapa, Comentarios y otros links adicionales'>
+                    
+                    <div class="row mb-3 d-none d-md-block" data-company-news-block>
+                        <div class="col-md-12">
+                            <div class="company-news-card wow fadeInUp" data-wow-delay="0.1s">
+                                <div class="company-news-badge">
+                                    <img src="/img/frontend/paperclip.svg" width="24" height="24" alt="News">
+                                </div>
+                                <div class="company-news-body text-center" data-company-news-text>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <schedule-component schedule="{&quot;lunes_viernes&quot;:&quot;05:30 am &lt;br \/&gt;\r\n06:35 am &lt;br \/&gt;\r\n08:30 am&lt;br \/&gt;\r\n10:30 am&lt;br \/&gt;\r\n12:30 pm &lt;br \/&gt;\r\n02:30 pm&lt;br \/&gt;\r\n04:45 pm&lt;br \/&gt;\r\n06:30 pm&quot;,&quot;sabados&quot;:&quot;05:30 am &lt;br \/&gt;\r\n06:35 am &lt;br \/&gt;\r\n08:30 am&lt;br \/&gt;\r\n10:30 am&lt;br \/&gt;\r\n12:30 pm &lt;br \/&gt;\r\n02:30 pm&lt;br \/&gt;\r\n04:45 pm&lt;br \/&gt;\r\n06:30 pm&quot;,&quot;domingos&quot;:&quot;&quot;,&quot;feriados&quot;:&quot;&quot;}"></schedule-component>
+                        </div>
+                    </div>
+                    <travel-guide-link
+                        :map-modal="'#stopsModal'"
+                        :comment-modal="'#commentModal'"
+                        :map-text="'Map'"
+                        :comment-text="'Comments'"
+                        :title="'Grecia &#8211; Arena &#8211; Norte'"
+                        :button-text="&quot;Explore the Travel Guide&quot;"
+                        :needhelp-text="&quot;How can I assist you today?&quot;">
+                    </travel-guide-link>
+
+                                            <simple-bus-stops-map stops="[{&quot;id&quot;:7564,&quot;title&quot;:&quot;Mercado Municipal Grecia&quot;,&quot;address&quot;:&quot;Mercado Municipal de Grecia, Provincia de Alajuela, Grecia, Costa Rica&quot;,&quot;lat&quot;:&quot;10.072138299894796&quot;,&quot;lng&quot;:&quot;-84.31348561474992&quot;,&quot;time&quot;:&quot;00:00&quot;,&quot;price&quot;:null,&quot;order&quot;:1,&quot;starts&quot;:1,&quot;ends&quot;:0},{&quot;id&quot;:11897,&quot;title&quot;:&quot;Arena, Grecia&quot;,&quot;address&quot;:&quot;Provincia de Alajuela, Grecia, Arena, Costa Rica&quot;,&quot;lat&quot;:&quot;10.0603826&quot;,&quot;lng&quot;:&quot;-84.2956813&quot;,&quot;time&quot;:&quot;00:30&quot;,&quot;price&quot;:null,&quot;order&quot;:2,&quot;starts&quot;:0,&quot;ends&quot;:1}]"></simple-bus-stops-map>
+                    
+                    <suggested-schedules-component
+                        title-text="Schedules you may like"
+                        no-results-text="No suggested schedules found."
+                        complementary-id="[8835]"
+                        destination="Grecia &amp;#8211; Arena &amp;#8211; Norte">
+                    </suggested-schedules-component>
+
+                    
+                    <ticomap-suggestions-component
+                        destination="Norte"
+                        title-text="Negocios locales en Norte"
+                        subtitle-text="Descubre negocios 100% ticos aprobados por la comunidad"
+                        cta-text="Ver TicoMap"
+                        empty-text="Aún no hay negocios registrados en Norte"
+                        submit-business-text="Sugerir un negocio"
+                        :show-empty="false">
+                    </ticomap-suggestions-component>
+                </div>
+            
+                                                <company-component company="{&quot;company&quot;:84}"></company-component>
+                                        <bus-stops stops="[{&quot;id&quot;:7564,&quot;title&quot;:&quot;Mercado Municipal Grecia&quot;,&quot;address&quot;:&quot;Mercado Municipal de Grecia, Provincia de Alajuela, Grecia, Costa Rica&quot;,&quot;lat&quot;:&quot;10.072138299894796&quot;,&quot;lng&quot;:&quot;-84.31348561474992&quot;,&quot;time&quot;:&quot;00:00&quot;,&quot;price&quot;:null,&quot;order&quot;:1,&quot;starts&quot;:1,&quot;ends&quot;:0},{&quot;id&quot;:11897,&quot;title&quot;:&quot;Arena, Grecia&quot;,&quot;address&quot;:&quot;Provincia de Alajuela, Grecia, Arena, Costa Rica&quot;,&quot;lat&quot;:&quot;10.0603826&quot;,&quot;lng&quot;:&quot;-84.2956813&quot;,&quot;time&quot;:&quot;00:30&quot;,&quot;price&quot;:null,&quot;order&quot;:2,&quot;starts&quot;:0,&quot;ends&quot;:1}]"></bus-stops>
+                                        <example-component mapdata="{&quot;zoom_level&quot;:15,&quot;center&quot;:{&quot;lat&quot;:10.06867294488972,&quot;lng&quot;:-84.30777087796741},&quot;markers&quot;:{&quot;m_31&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.31356892000622,10.072112553208063]},&quot;id&quot;:31},&quot;m_39&quot;:{&quot;type&quot;:&quot;Feature&quot;,&quot;properties&quot;:{&quot;popupContent&quot;:&quot;&quot;},&quot;geometry&quot;:{&quot;type&quot;:&quot;Point&quot;,&quot;coordinates&quot;:[-84.2970679701466,10.065753270919378]},&quot;id&quot;:39}},&quot;drawnItems&quot;:{&quot;type&quot;:&quot;FeatureCollection&quot;,&quot;features&quot;:[]}}"></example-component>
+                                                <holiday-component></holiday-component>
+            <classic-report-component></classic-report-component>
+            <report-component schedule-id="8834" schedule-title="Grecia &#8211; Arena &#8211; Norte"></report-component>
+            <review-component schedule-id="8834" schedule-title="Grecia &#8211; Arena &#8211; Norte"></review-component>
+            <comments-component schedule-id="8834" initial-comments="[]"></comments-component>
+
+            
+           <mobile-menu-component
+                :hotel-link="''"
+                :user-image="''"
+                :complementary-link="[8835]"
+                :search-modal="'#searchModal'"
+                :map-modal="'#stopsModal'"
+                :comment-modal="'#commentModal'"
+                :title="'Grecia &amp;#8211; Arena &amp;#8211; Norte'">
+            </mobile-menu-component>
+
+        </div>
+    </div>
+    <script type="382045d4f4bd88211004090c-text/javascript">
+    (function(){
+      function __traffic_init(){
+      function detectScheduleId(){
+        var primary = parseInt(String('8834').trim(), 10);
+        if (!isNaN(primary) && primary > 0) return primary;
+        var el = document.querySelector('report-component[schedule-id]') || document.querySelector('review-component[schedule-id]');
+        if (el){ var v = parseInt(el.getAttribute('schedule-id') || '', 10); if (!isNaN(v) && v > 0) return v; }
+        return null;
+      }
+      var scheduleId = detectScheduleId();
+      var container = document.getElementById('traffic-status');
+      var chip = document.getElementById('traffic-chip');
+      var chipText = document.getElementById('traffic-text');
+      var inlineTxt = document.getElementById('traffic-inline');
+      if (!chipText && chip){
+        try{
+          var nodes = Array.prototype.slice.call(chip.childNodes||[]);
+          nodes.forEach(function(n){ if(n && n.nodeType===3){ chip.removeChild(n); }});
+          chip.appendChild(document.createTextNode(' '));
+          chipText = document.createElement('span');
+          chipText.id = 'traffic-text';
+          chipText.textContent = 'Tráfico: Cargando…';
+          chip.appendChild(chipText);
+        }catch(e){}
+      }
+      var detail = document.getElementById('traffic-detail');
+      var btnRefresh = document.getElementById('traffic-refresh');
+      if (!container || !chip || !detail || !chipText) return;
+
+      var isEs = (document.documentElement.getAttribute('lang')||'').toLowerCase().indexOf('es')===0;
+      var L = isEs ? {
+        loading: 'Tráfico: Cargando…',
+        noData: 'Tráfico: Sin datos',
+        fluid: 'Tráfico: Fluido',
+        slow: 'Tráfico: Lento',
+        heavy: 'Tráfico: Cargado',
+        congested: 'Tráfico: Presas',
+        approx: 'Retraso aprox'
+      } : {
+        loading: 'Traffic: Loading…',
+        noData: 'Traffic: No data',
+        fluid: 'Traffic: Smooth',
+        slow: 'Traffic: Slow',
+        heavy: 'Traffic: Heavy',
+        congested: 'Traffic: Congested',
+        approx: 'Approx delay'
+      };
+      
+      if (!scheduleId){
+        // Sin identificador de horario válido: ocultar completamente el widget
+        container.style.display = 'none';
+        return;
+      }
+
+      function setChip(state, text){
+        chipText.textContent = text;
+        chip.classList.remove('badge-secondary','badge-success','badge-info','badge-warning','badge-danger');
+        chip.classList.add('badge');
+        if (state) chip.classList.add(state);
+      }
+
+      function render(data){
+        if (!data){
+          // Sin datos de tráfico: ocultar todo el bloque
+          container.style.display = 'none';
+          if (inlineTxt) inlineTxt.textContent = '';
+          if (btnRefresh) btnRefresh.style.display = '';
+          return;
+        }
+
+        container.style.display = '';
+
+        var delay = parseInt(data.delay_minutes||0,10);
+        if (isNaN(delay) || delay < 0) delay = 0;
+
+        var clsName;
+        var label;
+
+        // Escala LATAM: verde (<=4), naranja (5-10), rojo (>10)
+        if (delay > 10) {
+          clsName = 'badge-danger';
+          label = L.congested;
+        } else if (delay >= 5) {
+          clsName = 'badge-warning';
+          label = L.slow;
+        } else {
+          clsName = 'badge-success';
+          label = L.fluid;
+        }
+
+        setChip(clsName, label);
+        if (inlineTxt) inlineTxt.textContent = '— ' + L.approx + ': ' + delay + ' min';
+        detail.style.display = 'none';
+        if (btnRefresh) btnRefresh.style.display = '';
+      }
+
+      function fetchTraffic(){
+        container.style.display = '';
+        setChip('badge-secondary', L.loading);
+        detail.style.display='none';
+        var safety = setTimeout(function(){
+          try{
+            // Si sigue cargando demasiado tiempo, ocultar el widget
+            container.style.display = 'none';
+          }catch(e){}
+        }, 6000);
+        var controller = (window.AbortController) ? new AbortController() : null;
+        var t = null;
+        if (controller){ t = setTimeout(function(){ try{ controller.abort(); }catch(e){} }, 8000); }
+        var csrfTag = document.querySelector('meta[name="csrf-token"]');
+        var csrf = csrfTag ? csrfTag.getAttribute('content') : '';
+        fetch(window.location.origin + '/api/traffic/bus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf },
+          credentials: 'same-origin',
+          body: JSON.stringify({ schedules: [scheduleId] }),
+          signal: controller ? controller.signal : undefined
+        }).then(function(r){ if (t) clearTimeout(t); if (safety) clearTimeout(safety); if (!r.ok){ throw new Error('http'); } return r.json(); })
+          .then(function(res){
+            if (safety) clearTimeout(safety);
+            if (!res || res.success!==true){ throw new Error('bad'); }
+            var data = res.data || {};
+            var per = data[''+scheduleId] || data[scheduleId] || null;
+            if (per == null){
+              var ks = Object.keys(data||{});
+              if (ks.length===1){ per = data[ks[0]]; }
+            }
+            render(per);
+          })
+          .catch(function(err){
+            if (safety) clearTimeout(safety);
+            // En error, ocultar el widget de tráfico
+            container.style.display = 'none';
+          });
+      }
+
+      chip.addEventListener('click', function(){ if (detail.style.display==='none'){ detail.style.display=''; } else { detail.style.display='none'; } });
+      if (btnRefresh){ btnRefresh.addEventListener('click', function(){ fetchTraffic(); }); }
+      fetchTraffic();
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', __traffic_init);
+      } else {
+        __traffic_init();
+      }
+    })();
+    </script>
+            </div><!-- container -->
+
+        
+        <daily-verse-component></daily-verse-component>
+
+        </div><!-- #app -->
+
+        <div class="modal fade" id="modalLoginForm" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-body mx-3">
+
+                        <form class="form-inline d-flex justify-content-center" method="get" action="/search">
+
+                            <div class="input-group col-md-10  text-center">
+                                <input class="form-control py-2 border-right-0 border" type="search"  id="searchterm" name="s" placeholder="Starting City Destination" aria-label="Search">
+                                <span class="input-group-append">
+                                 <button class="btn btn-outline-secondary border-left-0 border" type="submit">
+                                <i class="fa fa-search"></i>
+                                </button>
+                            </span>
+                            </div>
+                        </form>
+                        <div class="lds-ellipsis" id="searchLoader"><div></div><div></div><div></div><div></div></div>
+                        <div id="results"> </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <!-- Scripts -->
+
+                <script src="https://yoviajocr.com/js/manifest.js?id=27eb3f267bb8c14ad506" type="382045d4f4bd88211004090c-text/javascript"></script>
+
+        <script src="https://yoviajocr.com/js/vendor.js?id=1474a3b49c54777a053c" type="382045d4f4bd88211004090c-text/javascript"></script>
+
+        <script src="https://yoviajocr.com/js/frontend.js?id=9824a30197b36ea074c4" type="382045d4f4bd88211004090c-text/javascript"></script>
+
+        
+        <style>
+            .yv-chat-modal{position:fixed;right:20px;bottom:110px;width:340px;max-width:92vw;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 28px rgba(2,6,23,.25);z-index:9999;display:flex;flex-direction:column;overflow:hidden}
+            .yv-chat-header{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#0d6efd,#0aa0ff);color:#fff;padding:10px 12px;font-weight:600}
+            .yv-chat-title{display:flex;align-items:center;gap:8px}
+            .yv-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#38e06b;box-shadow:0 0 0 2px rgba(56,224,107,.25)}
+            .yv-chat-header button{background:transparent;border:0;color:#fff;font-size:20px;line-height:1;cursor:pointer}
+            .yv-chat-messages{padding:12px;max-height:340px;overflow:auto;background:#f8fafc}
+            .yv-msg{margin:8px 0;padding:10px 12px;border-radius:12px;font-size:14px;line-height:1.45;box-shadow:0 1px 1px rgba(2,6,23,.04)}
+            .yv-me{background:none;align-self:flex-end}
+            .yv-bot{background:#f1f5f9}
+            .yv-typing{display:flex;align-items:center;gap:8px;padding:0 12px 8px;color:#6b7280}
+            .yv-typing .dot{width:6px;height:6px;border-radius:50%;background:#9ca3af;display:inline-block;margin:0 2px;animation: yv-bounce 1.2s infinite ease-in-out both}
+            .yv-typing .dot:nth-child(1){animation-delay:-0.24s}
+            .yv-typing .dot:nth-child(2){animation-delay:-0.12s}
+            @keyframes  yv-bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+            .yv-chat-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+            .yv-chip{background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
+            .yv-chat-input{display:flex;gap:6px;padding:8px;border-top:1px solid #eef2f7;background:#fff}
+            .yv-chat-input input{flex:1;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px}
+            .yv-chat-input button{background:#0d6efd;color:#fff;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
+            .yv-chat-disclaimer{color:#6b7280;font-size:11px;line-height:1.3;padding:0 12px 8px}
+            .yv-whatsapp-fab{position:fixed;right:20px;bottom:24px;width:58px;height:58px;border-radius:50%;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 10px 20px rgba(0,0,0,.2);z-index:9998;transition:transform .2s ease, box-shadow .2s ease}
+            .yv-whatsapp-fab:hover,.yv-whatsapp-fab:focus{color:#fff;text-decoration:none;transform:translateY(-2px);box-shadow:0 14px 24px rgba(0,0,0,.25)}
+            .yv-help-launcher{position:fixed;right:20px;bottom:80px;z-index:9998;display:flex;flex-direction:row;align-items:flex-end;gap:10px;pointer-events:none;transition:opacity .22s ease,transform .22s ease}
+            .yv-help-launcher > *{pointer-events:auto}
+            .yv-help-launcher.yv-help-hidden{opacity:0;transform:translateY(8px);pointer-events:none}
+            .yv-help-launcher.yv-help-hidden > *{pointer-events:none !important}
+            .yv-help-bot-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+            .yv-help-toggle{width:64px;height:64px;border:0;border-radius:50%;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;position:relative;transition:transform .15s ease,box-shadow .15s ease}
+            .yv-help-toggle:hover,.yv-help-toggle:focus{transform:translateY(-1px) scale(1.02);box-shadow:none;outline:none}
+            .yv-help-toggle img{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.45)}
+            .yv-help-ping{position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(13,110,253,.24);animation:yv-help-pulse 6s ease-in-out infinite;pointer-events:none}
+            @keyframes  yv-help-pulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.08);opacity:.08}}
+            .yv-help-nudge{position:absolute;right:0;bottom:78px;max-width:300px;background:#fff;color:#0f172a;border:1px solid #dbe5f1;border-radius:18px;padding:12px 16px;font-size:13px;line-height:1.45;box-shadow:0 10px 24px rgba(15,23,42,.16);opacity:0;transform:translateY(8px) scale(.98);transform-origin:bottom right;pointer-events:none;transition:opacity .22s ease,transform .22s ease;z-index:2}
+            .yv-help-nudge::after{content:'';position:absolute;right:12px;bottom:-8px;border-width:8px 8px 0 8px;border-style:solid;border-color:#fff transparent transparent transparent;filter:drop-shadow(0 1px 1px rgba(15,23,42,.08))}
+            .yv-help-bot-wrap.show-nudge .yv-help-nudge{opacity:1;transform:translateY(0) scale(1)}
+            /* Chatbot message enrichments */
+            .yv-msg.yv-bot a.yv-btn{display:inline-block;background:#0d6efd;color:#fff !important;padding:8px 12px;border-radius:10px;font-weight:600;text-decoration:none;margin-top:6px}
+            .yv-msg.yv-bot a.yv-btn.secondary{background:#eef2ff;color:#1d4ed8 !important;border:1px solid #c7d2fe}
+            .yv-msg.yv-bot ul.yv-list{list-style:none;padding-left:0;margin:8px 0}
+            .yv-msg.yv-bot ul.yv-list>li{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 2px rgba(2,6,23,.04)}
+            .yv-msg.yv-bot ul.yv-list>li .yv-item-title{font-weight:600;color:#111827}
+            .yv-msg.yv-bot ul.yv-list>li .yv-item-meta{color:#6b7280;font-size:12px;margin-left:10px}
+            /* Avatar + bubble layout */
+            .yv-message{display:flex;align-items:flex-start;gap:8px;margin:8px 12px}
+            .yv-message.yv-me{flex-direction:row-reverse}
+            .chat-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
+            .bot-avatar{background:#eef2ff}
+            .user-avatar{background:#e0f2fe}
+            .yv-bubble{max-width:80%;border-radius:12px;padding:8px 12px;word-wrap:break-word}
+            .yv-bubble.yv-bot{background:#f0f6ff;color:#111827}
+            .yv-bubble.yv-me{background:#0d6efd;color:#fff}
+            @media (max-width:768px){
+                .yv-whatsapp-fab{right:14px;bottom:calc(20px + env(safe-area-inset-bottom));}
+                .yv-whatsapp-fab.yv-help-with-mobile-menu{bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-launcher{right:14px;left:auto;justify-content:flex-end;bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-launcher.yv-help-with-mobile-menu{bottom:calc(60px + env(safe-area-inset-bottom));}
+                .yv-help-nudge{right:46px;left:auto;max-width:min(240px,calc(100vw - 92px));font-size:12px;bottom:74px;padding:10px 12px;line-height:1.4}
+                .yv-chat-modal{right:12px;left:12px;bottom:calc(92px + env(safe-area-inset-bottom));width:auto;max-width:none}
+            }
+        </style>
+
+        <script type="382045d4f4bd88211004090c-text/javascript">
+            (function(){
+                var botWrap=document.getElementById('yv-help-bot-wrap');
+                var launcher=document.getElementById('yv-help-launcher');
+                var launcherToggle=document.getElementById('yv-help-toggle');
+                var closeBtn=document.getElementById('yv-chat-close');
+                var modal=document.getElementById('yv-chat-modal');
+                var messages=document.getElementById('yv-chat-messages');
+                var input=document.getElementById('yv-chat-text');
+                var sendBtn=document.getElementById('yv-chat-send');
+                var typing=document.getElementById('yv-typing');
+                var sugg=document.getElementById('yv-chat-suggestions');
+                var nudgeEl=document.getElementById('yv-help-nudge');
+                var nudgeTimer=null;
+                var nudgeHideTimer=null;
+                var launcherHideTimer=null;
+
+                function setLauncherVisibility(isVisible){
+                    if(!launcher) return;
+                    launcher.classList.toggle('yv-help-hidden', !isVisible);
+                }
+
+                function scheduleLauncherAutoHide(){
+                    if(!launcher) return;
+                    clearTimeout(launcherHideTimer);
+                    launcherHideTimer=setTimeout(function(){
+                        if(modal && modal.style.display==='flex'){
+                            scheduleLauncherAutoHide();
+                            return;
+                        }
+                        setNudgeState(false);
+                        setLauncherVisibility(false);
+                    }, 15000);
+                }
+
+                function handleUserActivity(){
+                    setLauncherVisibility(true);
+                    scheduleLauncherAutoHide();
+                }
+
+                function setNudgeState(isVisible){
+                    if(!botWrap) return;
+                    botWrap.classList.toggle('show-nudge', !!isVisible);
+                }
+
+                function hasShownNudge(){
+                    try{return sessionStorage.getItem('yv_help_nudge_shown') === '1';}catch(e){return false;}
+                }
+
+                function markNudgeShown(){
+                    try{sessionStorage.setItem('yv_help_nudge_shown','1');}catch(e){}
+                }
+
+                function pickNudgeMessage(){
+                    if(!nudgeEl) return '';
+                    var msgs=[
+                        nudgeEl.dataset.nudge1,
+                        nudgeEl.dataset.nudge2,
+                        nudgeEl.dataset.nudge3,
+                        nudgeEl.dataset.nudge4,
+                        nudgeEl.dataset.nudge5
+                    ].filter(function(m){ return !!(m && m.trim()); });
+                    if(!msgs.length) return nudgeEl.textContent || '';
+                    var idx=Math.floor(Math.random()*msgs.length);
+                    return msgs[idx];
+                }
+
+                function scheduleNudge(){
+                    if(!botWrap || !launcherToggle || hasShownNudge()) return;
+                    clearTimeout(nudgeTimer);
+                    clearTimeout(nudgeHideTimer);
+                    nudgeTimer=setTimeout(function(){
+                        if(modal && modal.style.display==='flex') return;
+                        if(nudgeEl){ nudgeEl.textContent = pickNudgeMessage(); }
+                        setNudgeState(true);
+                        markNudgeShown();
+                        nudgeHideTimer=setTimeout(function(){setNudgeState(false);}, 7000);
+                    }, 5000);
+                }
+
+                // Client summary helpers (non-sensitive): name, summary, updated_at
+                function loadSummary(){
+                    try{var s=localStorage.getItem('yv_chat_summary');if(!s) return null;return JSON.parse(s);}catch(e){return null}
+                }
+                function saveSummary(obj){
+                    try{localStorage.setItem('yv_chat_summary', JSON.stringify(obj));}catch(e){}
+                }
+                function updateSummaryOnSend(text, ctx){
+                    var s=loadSummary()||{}; s.updated_at=Date.now();
+                    if(typeof s.name!=='string'){ s.name=''; }
+                    if(typeof s.summary!=='string'){ s.summary=''; }
+                    var add=(text||'').trim(); if(add){ s.summary=(s.summary+' | '+add).slice(-240); }
+                    s={ name:s.name, summary:s.summary, updated_at:s.updated_at };
+                    saveSummary(s); return s;
+                }
+
+                function pageContext(){
+                    var p=(window.location.pathname||'');
+                    var parts=p.split('/').filter(Boolean);
+                    var ctx={type:'',slug:'',url:window.location.href};
+                    if(parts[0]==='bus' && parts[1]){ctx.type='bus';ctx.slug=decodeURIComponent(parts[1]);}
+                    else if(parts[0]==='company' && parts[1]){ctx.type='company';ctx.slug=decodeURIComponent(parts[1]);}
+                    else if(parts[0]==='travel' && parts[1] && parts[2]){ctx.type='travel';ctx.origin=decodeURIComponent(parts[1]);ctx.destination=decodeURIComponent(parts[2]);}
+                    else if(p==='/'||p===''){ctx.type='home';}
+                    else {ctx.type='page';}
+                    return ctx;
+                }
+
+                function setSuggestions(){
+                    if(!sugg) return;
+                    var ctx=pageContext();
+                    var chips=[];
+                    if(ctx.type==='bus') chips=['Próxima salida','Precio','Paradas principales'];
+                    else if(ctx.type==='travel') chips=['Rutas directas','Con transbordo','Precio aproximado'];
+                    else chips=['Buscar ruta','Ayuda'];
+                    sugg.innerHTML='';
+                    chips.forEach(function(c){
+                        var b=document.createElement('button');b.type='button';b.className='yv-chip';b.textContent=c; b.addEventListener('click',function(){ input.value=c; send(); });
+                        sugg.appendChild(b);
+                    });
+                }
+
+                // Sanitize redundant phrasing before CTAs while preserving anchors
+                function sanitizeBotReply(html){
+                    try{
+                        var out=String(html);
+                        // Remove leading phrasing up to the CTA mention (Spanish)
+                        out=out.replace(/(?:<p>)?\s*(?:Puedes|Puede|Consulta|Puedes\s+ver)[^<]*?horario\s+completo\s+en\s+/giu,'');
+                        // English variant
+                        out=out.replace(/(?:<p>)?\s*You\s+can\s+view\s+the\s+full\s+schedule\s+at\s+/giu,'');
+                        // Collapse empty paragraphs generated after removal
+                        out=out.replace(/<p>\s*<\/p>/g,'');
+                        return out;
+                    }catch(e){return html}
+                }
+
+                function sanitizeBotHtml(html){
+                    var wrapper=document.createElement('div');
+                    wrapper.innerHTML=String(html||'');
+
+                    var blocked=wrapper.querySelectorAll('script,style,iframe,object,embed,link,meta');
+                    blocked.forEach(function(el){ el.remove(); });
+
+                    wrapper.querySelectorAll('*').forEach(function(el){
+                        Array.from(el.attributes).forEach(function(attr){
+                            var name=(attr.name||'').toLowerCase();
+                            var value=String(attr.value||'');
+                            if(name.indexOf('on')===0){ el.removeAttribute(attr.name); }
+                            if((name==='href' || name==='src') && /^\s*javascript:/i.test(value)){
+                                el.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+
+                    return wrapper.innerHTML;
+                }
+
+                // Render bot HTML (with avatar + bubble)
+                function appendBotHtml(html){
+                    if(!messages) return;
+                    var wrap=document.createElement('div');wrap.className='yv-message';
+                    var img=document.createElement('img');img.className='chat-avatar bot-avatar';img.src='/img/frontend/bot-avatar-small.png';
+                    var bub=document.createElement('div');bub.className='yv-bubble yv-bot';
+                    var clean = sanitizeBotHtml(sanitizeBotReply(html));
+                    try{bub.innerHTML=clean;}catch(e){bub.textContent=clean;}
+                    wrap.appendChild(img);wrap.appendChild(bub);
+                    messages.appendChild(wrap);messages.scrollTop=messages.scrollHeight;
+                }
+
+                // Render plain text message (user or bot)
+                function appendMsg(text, who){
+                    if(!messages) return;
+                    var wrap=document.createElement('div');wrap.className='yv-message '+(who==='me'?'yv-me':'');
+                    var img=document.createElement('img');img.className='chat-avatar '+(who==='me'?'user-avatar':'bot-avatar');
+                    img.src=(who==='me'?'/img/frontend/bot-avatar-user-small.png':'/img/frontend/bot-avatar-small.png');
+                    var bub=document.createElement('div');bub.className='yv-bubble '+(who==='me'?'yv-me':'yv-bot');
+                    bub.textContent=(text||'');
+                    wrap.appendChild(img);wrap.appendChild(bub);
+                    messages.appendChild(wrap);messages.scrollTop=messages.scrollHeight;
+                }
+                function send(){
+                    var txt=(input.value||'').trim();if(!txt){return;}
+                    var ctx=pageContext();
+                    // On generic pages, use legacy /chatbot page
+                    if(ctx.type!=='bus' && ctx.type!=='travel'){
+                        var q=encodeURIComponent(txt);
+                        window.location.href='/chatbot'+(q?('?m='+q):'');
+                        return;
+                    }
+                    var cs=updateSummaryOnSend(txt, ctx);
+                    appendMsg(txt,'me'); input.value=''; sendBtn.disabled=true;
+                    if(typing) typing.style.display='flex';
+                    $.ajax({
+                        url:'/api/chatbot/contextual',
+                        method:'POST',
+                        contentType:'application/json',
+                        data:JSON.stringify({message:txt,page:ctx,client_summary:cs}),
+                        headers:{'X-Requested-With':'XMLHttpRequest'},
+                    }).done(function(res){
+                        var reply=(res&&res.reply)?res.reply:'No pude procesar tu solicitud.';
+                        appendBotHtml(reply);
+                    }).fail(function(){
+                        appendMsg('Ocurrió un error. Intenta nuevamente.','bot');
+                    }).always(function(){sendBtn.disabled=false; if(typing) typing.style.display='none';});
+                }
+
+                function openWebChat(){
+                    setNudgeState(false);
+                    var ctx=pageContext();
+                    if(ctx.type!=='bus' && ctx.type!=='travel'){
+                        window.location.href='/chatbot';
+                        return;
+                    }
+                    if(modal.style.display==='none'||!modal.style.display){
+                        modal.style.display='flex';
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','true'); }
+                        setSuggestions();
+                        setTimeout(function(){input&&input.focus();},50);
+                    } else {
+                        modal.style.display='none';
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                    }
+                }
+
+                if(launcherToggle){launcherToggle.addEventListener('click',function(e){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUserActivity();
+                    openWebChat();
+                });}
+                if(closeBtn){closeBtn.addEventListener('click',function(){
+                    handleUserActivity();
+                    setNudgeState(false);
+                    modal.style.display='none';
+                    if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                });}
+                if(sendBtn){sendBtn.addEventListener('click',function(){ handleUserActivity(); send(); });}
+                if(input){input.addEventListener('keypress',function(e){ if(e.key==='Enter'){ handleUserActivity(); e.preventDefault(); send(); }});} 
+
+                document.addEventListener('keydown',function(e){
+                    handleUserActivity();
+                    if(e.key==='Escape'){
+                        setNudgeState(false);
+                        if(modal){ modal.style.display='none'; }
+                        if(launcherToggle){ launcherToggle.setAttribute('aria-expanded','false'); }
+                    }
+                });
+
+                document.addEventListener('pointerdown', handleUserActivity, {passive:true});
+                document.addEventListener('touchstart', handleUserActivity, {passive:true});
+                document.addEventListener('scroll', handleUserActivity, {passive:true});
+
+                // Initialize suggestions on load if opened later
+                setSuggestions();
+                // scheduleNudge(); // Disabled: annoying popup in mobile
+                scheduleLauncherAutoHide();
+            })();
+        </script>
+
+    <script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="382045d4f4bd88211004090c-|49" defer></script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"83aca9c3cea946d7a135c708e100fe79"}' crossorigin="anonymous"></script>
+</body>
+
+
+<div class="row m-4">
+    <div class="col-md-12 justify-content-center text-center">
+                    <div class="ad-label">Ads support everyone's journey.</div>
+            <div class="ads-container">
+                <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" type="382045d4f4bd88211004090c-text/javascript"></script>
+                <!-- YoViajoContentFooterAd -->
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-1195759558701784"
+                     data-ad-slot="1438912281"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script type="382045d4f4bd88211004090c-text/javascript">
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+            <div class="ad-label">Ads</div>
+                </div>
+</div>
+
+<!-- Footer -->
+<!-- Footer -->
+<footer class="page-footer font-small bg-dark text-white pt-4">
+    <div class="container">
+        <div class="row">
+            <!-- Popular Destinations -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Destinos Populares</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/place/monteverde" class="text-white">Monteverde</a></li>
+                    <li><a href="/place/samara" class="text-white">Sámara</a></li>
+                    <li><a href="/place/manzanillo" class="text-white">Puerto Viejo Talamanca</a></li>
+                    <li><a href="/place/cahuita" class="text-white">Cahuita</a></li>
+                    <li><a href="/place/montezuma" class="text-white">Montezuma</a></li>
+                    <li><a href="/place/herradura" class="text-white">Herradura</a></li>
+                </ul>
+            </div>
+
+            <!-- Blog Links -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Del Blog</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/post/guia-completa-para-viajar-a-costa-rica" class="text-white">Guía completa para viajar por Costa Rica</a></li>
+                    <li><a href="/post/como-viajar-barato-por-costa-rica-la-guia-definitiva" class="text-white">Guía para viajar barato por Costa Rica</a></li>
+                    <li><a href="/post/costa-rica-en-15-dias-itinerario-completo-con-lugares-imprescindibles-que-ver-y-consejos-de-viaje" class="text-white">Costa Rica en 15 días</a></li>
+                </ul>
+            </div>
+
+            <!-- Links -->
+            <div class="col-md-4 col-12 mb-4">
+                <h6 class="font-weight-bold" style="color: #ea560d;">Enlaces</h6>
+                <ul class="list-unstyled">
+                    <li><a href="/about" class="text-white">Acerca de</a></li>
+                    <li><a href="/ticomap" class="text-white">Ticomap</a></li>
+                    <li><a href="/partner-with-us" class="text-white">Alianzas</a></li>
+                    <li><a href="/chatbot" class="text-white" title="Chatbot">Chatbot</a></li>
+                    <li><a href="/contact" class="text-white" title="Preguntas Frecuentes">Contacto</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr class="my-3" style="border-color: rgba(255, 255, 255, 0.1);">
+
+        <!-- Copyright -->
+        <div class="d-flex justify-content-center text-center py-3">
+            <!-- Logo and Social Links -->
+            <div class="col-md-4 col-12 text-center mb-4">
+                <div class="footer-logo p-2">
+                    <img src="/img/frontend/logo.svg" alt="Logo Yo Viajo" class="img-fluid mb-1" style="max-width: 110px;" width="30%">
+                </div>
+                <div class="d-flex justify-content-center mb-3">
+                    <a href="/buses" class="text-white mr-2"><i class="fa fa-bus"></i> Bus</a>
+                    <a href="/tren" class="text-white mx-2"><i class="fas fa-train"></i> Tren</a>
+                    <a href="/ferry" class="text-white ml-2"><i class="fas fa-ship"></i> Ferry</a>
+                </div>
+                <div>
+                    <a href="https://www.facebook.com/yoviajocr" target="_blank" class="text-white mr-2"><i class="fab fa-facebook"></i></a>
+                    <a href="https://www.instagram.com/yoviajocr/" target="_blank" class="text-white mr-2"><i class="fab fa-instagram"></i></a>
+                    <a href="https://cr.linkedin.com/company/yo-viajo" target="_blank" class="text-white"><i class="fab fa-linkedin"></i></a>
+                </div>
+                <p class="mt-1" style="font-size: 11px;">© 2026 Copyright Yo Viajo. Todos los Derechos Reservados</p>
+            </div>
+
+        </div>
+        
+        <!-- Disclaimer -->
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-2" style="background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.1);">
+                    <p class="mb-0" style="font-size: 9px; color: #ccc;">
+                        <strong>Aviso:</strong> Los horarios y rutas mostrados son referenciales y pueden variar debido a condiciones de tráfico, clima, días feriados u otros factores externos. 
+                        Yo Viajo no se hace responsable por retrasos, cancelaciones o cambios en los servicios de transporte.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Footer -->
+<script type="382045d4f4bd88211004090c-text/javascript">
+    document.addEventListener('DOMContentLoaded', function(event) {
+        $("#searchLoader").css("display", "none");
+
+        //getNotice();
+
+    });
+    var timer;
+    var timeout = 600;
+    $("#searchterm").keyup(function(e){
+        clearTimeout(timer);
+        var len = this.value.length;
+        if(len > 4) {
+            timer = setTimeout(function(){
+                var q = $("#searchterm").val();
+                $("#searchLoader").css("display", "block");
+                $.getJSON("/autocomplete",
+                    {
+                        srsearch: q,
+                        action: "query",
+                        list: "search",
+                        format: "json"
+                    },
+                    function (data) {
+                        $("#searchLoader").css("display", "none");
+                        $("#results").empty();
+                        $.each(data, function (i, item) {
+                            if(item.id == 999999999){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='/search?s=" + encodeURIComponent(item.slug) + "'>" + item.title + "</a></h5></div>");
+                            }else if(item.id == 777){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='" + item.slug + "' target='_blank''>" + item.title + "</a></h5></div>");
+                            }else if(item.id == 333){
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='" + item.slug + "' target='_blank''>" + item.title + "</a></h5></div>");
+                            }else{
+                                $("#results").append("<div class='mt-3 mb-2'><h5><a href='/bus/" + encodeURIComponent(item.slug) + "'>" + item.title + "</a></h5></div>");
+                              }
+
+                        });
+
+                    });
+            }, timeout);
+        }
+    });
+
+    window.setTimeout(function() {
+        $("#favoriteAlert").fadeTo(1700, 0).slideUp(1600, function(){
+            $(this).remove();
+        });
+    }, 6900);
+
+    window.setTimeout(function() {
+        $("#noticeAlert").fadeTo(1700, 0).slideUp(1600, function(){
+            $(this).remove();
+        });
+    }, 9500);
+
+    function addFavorite($id,$title){
+        $.ajax({
+            type: "POST",
+            url: '/addfavorite',
+            data: {'_token': "eSIRsvmWnThaNnGNteQlPDhSoBeBYfSocidVskyR",'id':$id,'title':$title},
+            success: function( msg ) {
+                var status = msg.status;
+                if(status == 'ok'){
+                    $(".nd3").css("background-color","#BF0426");
+                    var alert = '<div class="alert alert-success" role="alert" style="position: fixed;bottom: 5px;right:2%;width: 96%;z-index:99999;max-width: 400px;" id="nextHolidayAlert">\n' +
+                        '<p>Tu favorito ha sido guardado 💚</p>'+
+                        '  <hr> <p class="mb-0">Revisa tus favoritos desde tu perfil.</p><button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+                        '                        <span aria-hidden="true">&times;</span>\n' +
+                        '                    </button>\n' +
+                        '                </div>';
+                    $("body").prepend(alert);
+                }
+                if(status == 'exist'){
+                    $(".nd3").css("background-color","#BF0436");
+                    var alert = '<div class="alert alert-warning" role="alert" style="position: fixed;bottom: 5px;right:2%;width: 96%;z-index:99999;max-width: 400px;" id="nextHolidayAlert">\n' +
+                        '<p>Este favorito ya estaba en tu lista 😁</p>'+
+                        '  <hr> <p class="mb-0">Revisa tus favoritos desde tu perfil.</p><button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+                        '                        <span aria-hidden="true">&times;</span>\n' +
+                        '                    </button>\n' +
+                        '                </div>';
+                    $("body").prepend(alert);
+
+
+                }
+            },
+            error: function(xhr, status, err) {
+                if (xhr.status == 401)
+                    window.location.href = '/login';
+            }
+        });
+
+    }
+
+    function getNotice(){
+        var textArray = ["<a href='/dashboard'>Guarda tus favoritos.💚</a>",
+           "<a href='https://www.facebook.com/yoviajocr' target='_blank'>Síguenos en Facebook <i class=\"fab fa-facebook\"></i></a>",
+            "<a href='https://www.instagram.com/yoviajocr' target='_blank'>Síguenos en Instagram <i class=\"fab fa-instagram\"></i></a>"];
+        var text = textArray[(Math.random() * textArray.length) | 0];
+        var alert = '<div class="alert alert-info" role="alert" style="position: fixed;bottom: 3px;right:2%;width: 96%;z-index:99999;max-width: 235px;" id="noticeAlert">\n' +
+            text+'\n' +
+            '                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">\n' +
+            '                        <span aria-hidden="true">&times;</span>\n' +
+            '                    </button>\n' +
+            '                </div>';
+        $("body").prepend(alert);
+
+    }
+</script>
+<script src="/lib/introjs/intro.min.js" defer type="382045d4f4bd88211004090c-text/javascript"></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.js' defer type="382045d4f4bd88211004090c-text/javascript"></script>
+</html>

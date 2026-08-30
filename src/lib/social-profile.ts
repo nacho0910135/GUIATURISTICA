@@ -113,12 +113,18 @@ async function uploadImage(bucket: 'profile-avatars' | 'destination-photos', own
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
-export async function updateTravelerProfile(userId: string, values: { bio: string; contactEmail: string; avatar?: ImagePickerAsset }) {
+export async function updateTravelerProfile(userId: string, values: { username?: string; bio: string; contactEmail: string; avatar?: ImagePickerAsset }) {
+  const username = values.username?.trim().toLowerCase();
+  if (username !== undefined && !/^[a-z0-9_]{3,24}$/.test(username)) throw new Error('El nickname debe tener entre 3 y 24 caracteres: letras, números o guion bajo.');
   const avatarUrl = values.avatar ? await uploadImage('profile-avatars', userId, values.avatar) : undefined;
   const update: Record<string, string | null> = { bio: values.bio.trim() || null, contact_email: values.contactEmail.trim() || null };
+  if (username !== undefined) update.username = username;
   if (avatarUrl) update.avatar_url = avatarUrl;
-  const { error } = await supabase.from('users').update(update).eq('id', userId);
+  const { data, error } = await supabase.from('users').update(update).eq('id', userId).select('id,username,full_name,avatar_url,bio,contact_email').single();
+  if (error?.code === '23505') throw new Error('Ese nickname ya está en uso.');
   if (error) throw error;
+  if (!data) throw new Error('No se pudo confirmar el guardado del perfil.');
+  return data;
 }
 
 export async function sendCreatorSuggestion(userId: string, message: string) {

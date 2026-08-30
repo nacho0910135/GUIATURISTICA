@@ -24,6 +24,7 @@ export default function ProfileScreen() {
   const [busy, setBusy] = useState(false);
   const [bio, setBio] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [avatar, setAvatar] = useState<ImagePicker.ImagePickerAsset>();
   const [editingProfile, setEditingProfile] = useState(false);
   const [suggestion, setSuggestion] = useState('');
@@ -36,7 +37,7 @@ export default function ProfileScreen() {
     try {
       setError(undefined);
       const next = await getSocialProfile(userId);
-      setData(next); setBio(next.profile?.bio || ''); setContactEmail(next.profile?.contact_email || ''); setAvatarUrl(next.profile?.avatar_url ?? null);
+      setData(next); setUsername(next.profile?.username || ''); setBio(next.profile?.bio || ''); setContactEmail(next.profile?.contact_email || ''); setAvatarUrl(next.profile?.avatar_url ?? null);
       if (isAdmin) setAdmin(await getAdminDashboard());
     } catch (reason) { setError(message(reason)); }
   }, [isAdmin, setAvatarUrl, userId]);
@@ -51,16 +52,27 @@ export default function ProfileScreen() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return Alert.alert(tr(language, 'Perfil', 'Profile'), tr(language, 'Necesitamos permiso para elegir una foto.', 'Photo library permission is required.'));
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
-    if (!result.canceled) setAvatar(result.assets[0]);
+    const profile = data?.profile;
+    if (result.canceled || !profile) return;
+    setAvatar(result.assets[0]);
+    await run(async () => {
+      const saved = await updateTravelerProfile(userId, { bio: profile.bio || '', contactEmail: profile.contact_email || '', avatar: result.assets[0] });
+      setAvatarUrl(saved.avatar_url ?? null);
+      setAvatar(undefined);
+      await load();
+      Alert.alert(tr(language, 'Perfil', 'Profile'), tr(language, 'Tu foto de perfil fue guardada.', 'Your profile photo was saved.'));
+    });
+    setAvatar(undefined);
   };
   const saveProfile = () => void run(async () => {
-    await updateTravelerProfile(userId, { bio, contactEmail, avatar });
+    const saved = await updateTravelerProfile(userId, { username, bio, contactEmail, avatar });
+    setAvatarUrl(saved.avatar_url ?? null);
     setAvatar(undefined);
     setEditingProfile(false);
     await load();
     Alert.alert(tr(language, 'Perfil', 'Profile'), tr(language, 'Tus cambios fueron guardados.', 'Your changes were saved.'));
   });
-  const name = data?.profile?.full_name || data?.profile?.username || (language === 'es' ? 'Viajero invitado' : 'Guest traveler');
+  const name = data?.profile?.username || data?.profile?.full_name || (language === 'es' ? 'Viajero invitado' : 'Guest traveler');
   const tabs: { key: Section; icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; count?: number }[] = [
     { key: 'notifications', icon: 'bell-outline', label: tr(language, 'Notificaciones', 'Notifications'), count: data?.notifications.filter((n) => !n.read_status).length ?? 0 },
     { key: 'community', icon: 'account-group-outline', label: tr(language, 'Comunidad', 'Community') },
@@ -80,7 +92,8 @@ export default function ProfileScreen() {
         <View className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full border-2 border-ui-surface bg-ui-primary dark:border-ui-dark-surface dark:bg-ui-dark-primary"><MaterialCommunityIcons name="pencil" size={15} color="white" /></View>
       </Pressable>
       <View className="ml-4 flex-1">
-        <Text className="text-2xl font-extrabold text-ui-text dark:text-ui-dark-text">{name}</Text>
+        <View className="flex-row items-center"><View className="min-w-0 flex-1">{editingProfile ? <TextInput accessibilityLabel={tr(language, 'Nickname', 'Nickname')} autoCapitalize="none" autoCorrect={false} className="rounded-xl bg-ui-muted px-3 py-2 text-2xl font-extrabold text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" maxLength={24} onChangeText={setUsername} placeholder={tr(language, 'Nickname', 'Nickname')} placeholderTextColor="#8f9bb2" value={username} /> : <Text className="text-2xl font-extrabold text-ui-text dark:text-ui-dark-text">{name}</Text>}</View><Pressable accessibilityLabel={tr(language, 'Editar nickname', 'Edit nickname')} className="ml-2 rounded-full bg-ui-muted p-2 dark:bg-ui-dark-muted" onPress={() => setEditingProfile(true)}><MaterialCommunityIcons name="pencil-outline" size={18} color="#0B6B4F" /></Pressable></View>
+        <Text className="mt-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">@{data?.profile?.username || tr(language, 'sin nickname', 'no nickname')}</Text>
         <View className="mt-2 flex-row items-center">
           {editingProfile ? <TextInput className="min-w-0 flex-1 rounded-xl bg-ui-muted px-3 py-2 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline onChangeText={setBio} placeholder={tr(language, 'Descripción', 'Description')} placeholderTextColor="#8f9bb2" value={bio} /> : <Text className="flex-1 text-ui-primary dark:text-ui-dark-primary">{data?.profile?.bio || tr(language, 'Explorando Costa Rica', 'Exploring Costa Rica')}</Text>}
           <Pressable accessibilityLabel={tr(language, 'Editar descripción', 'Edit description')} className="ml-2 p-2" onPress={() => setEditingProfile(true)}><MaterialCommunityIcons name="pencil-outline" size={19} color="#0B6B4F" /></Pressable>
@@ -90,7 +103,7 @@ export default function ProfileScreen() {
           {editingProfile ? <TextInput className="ml-2 min-w-0 flex-1 rounded-xl bg-ui-muted px-3 py-2 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="email-address" onChangeText={setContactEmail} placeholder={tr(language, 'Correo de contacto', 'Contact email')} placeholderTextColor="#8f9bb2" value={contactEmail} /> : <Text className="ml-2 flex-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{data?.profile?.contact_email || session?.user.email || tr(language, 'Agregar correo de contacto', 'Add contact email')}</Text>}
           <Pressable accessibilityLabel={tr(language, 'Editar correo', 'Edit email')} className="ml-2 p-2" onPress={() => setEditingProfile(true)}><MaterialCommunityIcons name="pencil-outline" size={19} color="#0B6B4F" /></Pressable>
         </View>
-        {editingProfile || avatar ? <View className="mt-3 flex-row gap-2"><Button label={busy ? tr(language, 'Guardando...', 'Saving...') : tr(language, 'Guardar', 'Save')} disabled={busy} onPress={saveProfile} /><Button label={tr(language, 'Cancelar', 'Cancel')} outline onPress={() => { setBio(data?.profile?.bio || ''); setContactEmail(data?.profile?.contact_email || ''); setAvatar(undefined); setEditingProfile(false); }} /></View> : null}
+        {editingProfile || avatar ? <View className="mt-3 flex-row gap-2"><Button label={busy ? tr(language, 'Guardando...', 'Saving...') : tr(language, 'Guardar', 'Save')} disabled={busy} onPress={saveProfile} /><Button label={tr(language, 'Cancelar', 'Cancel')} outline onPress={() => { setUsername(data?.profile?.username || ''); setBio(data?.profile?.bio || ''); setContactEmail(data?.profile?.contact_email || ''); setAvatar(undefined); setEditingProfile(false); }} /></View> : null}
         <View className="mt-3 flex-row flex-wrap gap-3"><Stat value={data?.followers.length ?? 0} label={tr(language, 'seguidores', 'followers')} /><Stat value={data?.following.length ?? 0} label={tr(language, 'siguiendo', 'following')} /><Stat value={data?.sightings.length ?? 0} label={tr(language, 'avistamientos', 'sightings')} /><Stat value={data?.saved.length ?? 0} label={tr(language, 'guardados', 'saved')} /></View>
       </View>
     </View></View>
@@ -166,7 +179,7 @@ function Title({ children }: { children: ReactNode }) { return <Text className="
 function Stat({ value, label }: { value: number; label: string }) { return <Text className="font-semibold text-ui-text-muted dark:text-ui-dark-text-muted"><Text className="text-ui-text dark:text-ui-dark-text">{value}</Text> {label}</Text>; }
 function Row({ icon, title, date, language = 'es' }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; title: string; date: string; language?: 'es' | 'en' }) { return <View className="mb-3 flex-row items-center rounded-2xl bg-ui-muted dark:bg-ui-dark-muted p-4"><MaterialCommunityIcons name={icon} size={24} color="#0B6B4F" /><View className="ml-3 flex-1"><Text className="font-semibold text-ui-text dark:text-ui-dark-text">{title}</Text><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{date.includes('T') ? new Date(date).toLocaleString(language === 'es' ? 'es-CR' : 'en-US') : date}</Text></View></View>; }
 function ListEmpty({ empty, children, language = 'es' }: { empty: boolean; children: ReactNode; language?: 'es' | 'en' }) { return <View>{empty ? <Text className="py-8 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{tr(language, 'Todavía no hay actividad aquí.', 'There is no activity here yet.')}</Text> : children}</View>; }
-function notificationText(type: string, language: 'es' | 'en') { const labels = { like: ['reaccionó a tu publicación', 'reacted to your post'], follow: ['empezó a seguirte', 'started following you'], comment: ['respondió a tu conversación', 'replied to your conversation'], new_post: ['publicó algo nuevo', 'published something new'], message: ['te envió un mensaje', 'sent you a message'], admin_approval: ['hay una solicitud que requiere tu decisión', 'there is a request that needs your decision'], claim_verified: ['tu reclamo comercial fue revisado', 'your business claim was reviewed'] } as Record<string, [string, string]>; const value = labels[type] ?? ['generó una actividad nueva', 'created new activity']; return tr(language, ...value); }
+function notificationText(type: string, language: 'es' | 'en') { const labels = { like: ['reaccionó a tu publicación', 'reacted to your post'], follow: ['empezó a seguirte', 'started following you'], comment: ['respondió a tu conversación', 'replied to your conversation'], new_post: ['publicó algo nuevo', 'published something new'], message: ['te envió un mensaje', 'sent you a message'], photo_featured: ['hizo que tu foto sea la portada del destino', 'made your photo the destination cover'], admin_approval: ['hay una solicitud que requiere tu decisión', 'there is a request that needs your decision'], claim_verified: ['tu reclamo comercial fue revisado', 'your business claim was reviewed'] } as Record<string, [string, string]>; const value = labels[type] ?? ['generó una actividad nueva', 'created new activity']; return tr(language, ...value); }
 function suggestionStatusLabel(status: string, language: 'es' | 'en') { return tr(language, status === 'new' ? 'Nueva' : status === 'read' ? 'Leída' : 'Resuelta', status === 'new' ? 'New' : status === 'read' ? 'Read' : 'Resolved'); }
 function reportStatusLabel(status: string, language: 'es' | 'en') { return tr(language, status === 'open' ? 'Pendiente' : status === 'reviewing' ? 'Leída' : status === 'resolved' ? 'Resuelta' : 'Descartada', status === 'open' ? 'Pending' : status === 'reviewing' ? 'Read' : status === 'resolved' ? 'Resolved' : 'Dismissed'); }
 function message(reason: unknown) { return reason instanceof Error ? reason.message : 'Ocurrió un error inesperado.'; }

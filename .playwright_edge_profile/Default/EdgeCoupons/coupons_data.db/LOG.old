@@ -1,0 +1,5 @@
+2026/08/29-05:49:58.052 10b54 Creating DB C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default\EdgeCoupons/coupons_data.db since it was missing.
+2026/08/29-05:49:58.061 10b54 Reusing MANIFEST C:\Users\jose1\Documents\GUIATURISTICA\.playwright_edge_profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/08/29-05:49:58.215 7e94 Level-0 table #5: started
+2026/08/29-05:49:58.222 7e94 Level-0 table #5: 683284 bytes OK
+2026/08/29-05:49:58.224 7e94 Delete type=0 #3

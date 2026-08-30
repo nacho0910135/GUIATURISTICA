@@ -13,6 +13,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 type Currency = 'USD' | 'CRC';
 export type VisitorType = 'tico' | 'foreigner';
+type Coordinates = { latitude: number; longitude: number };
 
 type AppContextValue = {
   language: Language;
@@ -22,6 +23,7 @@ type AppContextValue = {
   avatarUrl: string | null;
   session: Session | null;
   authReady: boolean;
+  userLocation: Coordinates | null;
   isDark: boolean;
   t: (key: CopyKey) => string;
   setVisitorType: (value: VisitorType) => void;
@@ -48,6 +50,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userSession, setUserSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const session = userSession;
   const isAuthenticated = Boolean(userSession);
@@ -76,7 +79,15 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [syncSession]);
 
   useEffect(() => {
-    void Location.requestForegroundPermissionsAsync().catch(() => undefined);
+    void Location.requestForegroundPermissionsAsync()
+      .then(async (permission) => {
+        if (!permission.granted) return;
+        const cached = await Location.getLastKnownPositionAsync({ maxAge: 10 * 60 * 1000, requiredAccuracy: 5000 });
+        if (cached) setUserLocation(cached.coords);
+        const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setUserLocation(current.coords);
+      })
+      .catch(() => undefined);
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -155,9 +166,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [userSession]);
 
   const value = useMemo<AppContextValue>(() => ({
-    language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, isDark: mode === 'dark', t,
+    language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, userLocation, isDark: mode === 'dark', t,
     setVisitorType, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut,
-  }), [language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
+  }), [language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, userLocation, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

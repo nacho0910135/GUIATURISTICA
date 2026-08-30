@@ -4,6 +4,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase';
 
 export type ValidationAuthority = 'ICT' | 'SINAC';
+export type CommunityPhoto = { id: string; image_url: string; user_id: string; created_at: string; likes_count: number; liked: boolean };
 
 export type MapPlace = {
   id: string;
@@ -40,7 +41,8 @@ export type MapPlace = {
   average_rating: number;
   liked: boolean;
   photos: string[];
-  community_photos: string[];
+  community_photos: CommunityPhoto[];
+  featured_community_photo_url: string | null;
 };
 
 export type DestinationReview = {
@@ -203,6 +205,7 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
     liked: false,
     photos: [],
     community_photos: [],
+    featured_community_photo_url: null,
   };
 }
 
@@ -212,7 +215,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
     supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude').eq('status', 'published'),
     supabase.from('fauna_sanctuaries').select('id,name,province,location_name,description_es,description_en,verified').eq('verified', true).order('name'),
   ]);
-  const error = official.error ?? community.error ?? sanctuaries.error;
+  const error = official.error ?? community.error;
   if (error) throw error;
   const contributorIds = [...new Set((community.data ?? []).map((place) => place.user_id))];
   const contributors = contributorIds.length ? await supabase.from('users').select('id,username,full_name').in('id', contributorIds) : { data: [], error: null };
@@ -225,7 +228,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
     .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
     .map((place) => ({ ...place, latitude: Number(place.latitude), longitude: Number(place.longitude), price_national_crc: place.price_national_crc == null ? null : Number(place.price_national_crc) })) as ExplorePlace[];
   const knownIds = new Set(officialPlaces.map((place) => place.id));
-  const sanctuaryPlaces = ((sanctuaries.data ?? []) as VerifiedSanctuaryRow[])
+  const sanctuaryPlaces = ((sanctuaries.error ? [] : sanctuaries.data ?? []) as VerifiedSanctuaryRow[])
     .map(toExploreSanctuary)
     .filter((place): place is ExplorePlace => place !== null && !knownIds.has(place.id));
   return [...officialPlaces, ...sanctuaryPlaces];
@@ -253,7 +256,7 @@ export async function getPlacesForCategory(category: string, userId?: string): P
 async function getPlaces(filter: 'province' | 'category', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos(image_url,created_at)');
+    .select('id,name,province,region,category,description,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at)');
   if (filter === 'province') query = query.eq('province', value);
   else if (value === RESERVE_CATEGORY) query = query.in('id', [...RESERVE_IDS]);
   else if (value === REFUGE_CATEGORY) query = query.in('id', [...REFUGE_IDS]);
@@ -263,25 +266,25 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
   if (error) throw error;
   const ids = (data ?? []).map((place) => place.id);
   if (!ids.length) return [];
-  const [likes, reviews, mine] = await Promise.all([
+  const photoIds = (data ?? []).flatMap((place) => (place.destination_user_photos ?? []).map((photo) => photo.id));
+  const [likes, reviews, mine, photoLikes, myPhotoLikes] = await Promise.all([
     supabase.from('likes').select('target_id').eq('target_type', 'destination').in('target_id', ids),
     supabase.from('reviews').select('target_id,rating,photos').eq('target_type', 'destination').in('target_id', ids),
     userId
       ? supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'destination').in('target_id', ids)
       : Promise.resolve({ data: [], error: null }),
+    photoIds.length ? supabase.from('destination_photo_likes').select('photo_id,user_id').in('photo_id', photoIds) : Promise.resolve({ data: [], error: null }),
+    userId && photoIds.length ? supabase.from('destination_photo_likes').select('photo_id').eq('user_id', userId).in('photo_id', photoIds) : Promise.resolve({ data: [], error: null }),
   ]);
-  const socialError = likes.error ?? reviews.error ?? mine.error;
+  const socialError = likes.error ?? reviews.error ?? mine.error ?? photoLikes.error ?? myPhotoLikes.error;
   if (socialError) throw socialError;
   const likedIds = new Set((mine.data ?? []).map((row) => row.target_id));
+  const likedPhotoIds = new Set((myPhotoLikes.data ?? []).map((row) => row.photo_id));
   return (data ?? []).map((place) => {
     const rules = Array.isArray(place.normativas_destinos) ? place.normativas_destinos[0] : place.normativas_destinos;
     const hasOfficialSchedule = Boolean(place.verification_evidence_url && place.verification_checked_at && ((place.validated_by ?? []) as ValidationAuthority[]).length);
     const ratings = (reviews.data ?? []).filter((row) => row.target_id === place.id).map((row) => Number(row.rating));
-    const reviewPhotos = (reviews.data ?? []).filter((review) => review.target_id === place.id).flatMap((review) => review.photos ?? []);
-    const communityPhotos = [
-      ...(place.destination_user_photos ?? []).sort((a, b) => a.created_at.localeCompare(b.created_at)).map((photo) => photo.image_url),
-      ...reviewPhotos,
-    ];
+    const communityPhotos = (place.destination_user_photos ?? []).map((photo) => ({ ...photo, likes_count: (photoLikes.data ?? []).filter((like) => like.photo_id === photo.id).length, liked: likedPhotoIds.has(photo.id) })).sort((a, b) => b.likes_count - a.likes_count || a.created_at.localeCompare(b.created_at));
     return {
       ...place,
       category: classifiedCategory(place),
@@ -297,9 +300,10 @@ async function getPlaces(filter: 'province' | 'category', value: string, userId?
       average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : 0,
       liked: likedIds.has(place.id),
       community_photos: communityPhotos,
+      featured_community_photo_url: communityPhotos.find((photo) => photo.id === place.featured_community_photo_id)?.image_url ?? null,
       photos: [
         ...(place.destination_photos ?? []).sort((a, b) => a.sort_order - b.sort_order).map((photo) => photo.image_url),
-        ...communityPhotos,
+        ...communityPhotos.map((photo) => photo.image_url),
       ],
     };
   }) as MapPlace[];
@@ -360,10 +364,17 @@ export async function addDestinationPhoto(destinationId: string, userId: string,
   const upload = await supabase.storage.from('destination-user-photos').upload(path, bytes, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
   if (upload.error) throw upload.error;
   const imageUrl = supabase.storage.from('destination-user-photos').getPublicUrl(path).data.publicUrl;
-  const { error } = await supabase.from('destination_user_photos').insert({ destination_id: destinationId, user_id: userId, image_url: imageUrl });
+  const { data, error } = await supabase.from('destination_user_photos').insert({ destination_id: destinationId, user_id: userId, image_url: imageUrl }).select('id,image_url,user_id,created_at').single();
   if (error) {
     await supabase.storage.from('destination-user-photos').remove([path]);
     throw error;
   }
-  return imageUrl;
+  return { ...data, likes_count: 0, liked: false } as CommunityPhoto;
+}
+
+export async function toggleDestinationPhotoLike(photoId: string, userId: string, liked: boolean) {
+  const { error } = liked
+    ? await supabase.from('destination_photo_likes').delete().eq('photo_id', photoId).eq('user_id', userId)
+    : await supabase.from('destination_photo_likes').insert({ photo_id: photoId, user_id: userId });
+  if (error) throw error;
 }

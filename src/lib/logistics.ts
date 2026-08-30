@@ -5,7 +5,6 @@ import { offlineStorage } from '@/lib/query-storage';
 import { supabase } from '@/lib/supabase';
 
 export const WEATHER_STALE_TIME = 30 * 60 * 1000;
-export const TIDES_STALE_TIME = 3 * 60 * 60 * 1000;
 
 export type Destination = {
   id: string;
@@ -39,8 +38,6 @@ export type DayPlan = {
 };
 
 export type Weather = { temperature: number; temperatureUnit: 'C' | 'F'; description: string; icon: string; humidity: number };
-export type Tide = { nextHigh?: { date: string; height: number }; alert: boolean };
-export type DestinationAlert = { detail: string; level: 'info' | 'warning'; title: string };
 export type RoadTrafficAlert = { detail: string; id: string; name: string; status: 'closed' | 'heavy' | 'moderate' | 'clear'; statusLabel: string };
 
 export type FerryRoute = {
@@ -78,13 +75,6 @@ export const emergencyContacts = [
 ] as const;
 
 const destinationFields = 'id,name,province,category,latitude,longitude,has_high_tides_risk,cover_image_url,price_national_crc,difficulty,description,requires_sinac_booking,sinac_booking_url,normativas_destinos(horario_ingreso,dia_cierre)';
-
-export async function getFeaturedDestinations(): Promise<Destination[]> {
-  const names = ['Parque Nacional Marino Ballena', 'Parque Nacional Manuel Antonio', 'Parque Nacional Marino Las Baulas (Playa Grande)'];
-  const { data, error } = await supabase.from('destinations').select(destinationFields).in('name', names);
-  if (error) throw error;
-  return (data ?? []).map(normalizeDestination);
-}
 
 const ROAD_CORRIDORS = [
   { id: 'route-32', name: 'Ruta 32 (San José - Guápiles)', from: [-84.07486, 9.932607], to: [-83.78975, 10.21547] },
@@ -136,36 +126,6 @@ export async function getWeather(destination: Pick<Destination, 'latitude' | 'lo
   return { temperature: Math.round(body.main.temp), temperatureUnit: language === 'es' ? 'C' : 'F', humidity: body.main.humidity, description: body.weather?.[0]?.description ?? '', icon: body.weather?.[0]?.icon ?? '01d' };
 }
 
-export async function getTides(destination: Pick<Destination, 'latitude' | 'longitude' | 'has_high_tides_risk'>): Promise<Tide> {
-  const key = process.env.EXPO_PUBLIC_WORLDTIDES_API_KEY;
-  if (!key) throw new Error('WORLDTIDES_KEY_MISSING');
-  const params = new URLSearchParams({ lat: String(destination.latitude), lon: String(destination.longitude), key, date: 'today', days: '1', localtime: '' });
-  const response = await fetch(`https://www.worldtides.info/api/v3?extremes&${params}`);
-  if (!response.ok) throw new Error(`WorldTides ${response.status}`);
-  const body = await response.json() as { extremes?: { dt: number; date: string; height: number; type: string }[]; error?: string };
-  if (body.error) throw new Error(body.error);
-  const now = Date.now();
-  const high = body.extremes?.find((item) => item.type.toLowerCase() === 'high' && item.dt * 1000 >= now);
-  return {
-    nextHigh: high ? { date: high.date, height: high.height } : undefined,
-    alert: Boolean(destination.has_high_tides_risk && high && high.dt * 1000 - now <= 3 * 60 * 60 * 1000),
-  };
-}
-
-export function getDestinationAlert(weather: Weather | undefined, tide: Tide | undefined, language: 'es' | 'en', hasHighTidesRisk = false): DestinationAlert {
-  if (tide?.nextHigh) {
-    const time = new Date(tide.nextHigh.date).toLocaleTimeString(language === 'es' ? 'es-CR' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-    const height = tide.nextHigh.height.toFixed(1);
-    return tide.alert
-      ? { level: 'warning', title: language === 'es' ? 'Marea alta próxima' : 'High tide approaching', detail: language === 'es' ? `Pleamar de ${height} m a las ${time}. Evitá zonas bajas y cruces costeros.` : `${height} m high tide at ${time}. Avoid low areas and coastal crossings.` }
-      : { level: 'info', title: language === 'es' ? 'Próxima pleamar' : 'Next high tide', detail: language === 'es' ? `Marea alta estimada de ${height} m a las ${time}.` : `Estimated ${height} m high tide at ${time}.` };
-  }
-  if (hasHighTidesRisk) return { level: 'warning', title: language === 'es' ? 'Riesgo de marea alta' : 'High-tide risk', detail: language === 'es' ? 'Zona con pasos costeros sensibles a la pleamar. Revisá la marea antes de ingresar y evitá cruces con el agua en ascenso.' : 'Coastal crossings in this area are sensitive to high tide. Check tide times before entering and avoid crossings as water rises.' };
-  if (!weather) return { level: 'info', title: language === 'es' ? 'Consultando condiciones' : 'Checking conditions', detail: language === 'es' ? 'Actualizando clima y mareas del destino.' : 'Updating weather and tide conditions.' };
-  const severeWeather = /torment|thunder|lluvia fuerte|heavy rain/i.test(weather.description);
-  return { level: severeWeather ? 'warning' : 'info', title: severeWeather ? (language === 'es' ? 'Condiciones adversas' : 'Adverse conditions') : (language === 'es' ? 'Condiciones actuales' : 'Current conditions'), detail: `${weather.temperature}°${weather.temperatureUnit} · ${weather.description} · ${language === 'es' ? 'humedad' : 'humidity'} ${weather.humidity}%` };
-}
-
 export async function recommendDestinations(input: { latitude: number; longitude: number; hours: number; category: PlannerPreference; maxBudget: number; children: boolean; seniors: boolean; reducedMobility: boolean; hasVehicle: boolean; language: 'es' | 'en' }): Promise<DayPlan | null> {
   const broadRadius = input.hours <= 4 ? 50000 : input.hours <= 8 ? 120000 : 250000;
   const radius = Math.min(broadRadius, input.hours * (input.hasVehicle ? 12000 : 4000));
@@ -191,7 +151,6 @@ export async function recommendDestinations(input: { latitude: number; longitude
   ]);
   const visitMinutes = Math.max(60, input.hours * 60 - travelMinutes * 2 - 60);
   const warnings: string[] = [];
-  if (destination.has_high_tides_risk) warnings.push(input.language === 'es' ? 'Revisá la marea antes de entrar.' : 'Check the tide before entering.');
   if (!input.hasVehicle && (destination.dist_meters ?? 0) > 20000) warnings.push(input.language === 'es' ? 'Confirmá transporte de regreso antes de salir.' : 'Confirm return transportation before leaving.');
   if (input.children || input.seniors || input.reducedMobility) warnings.push(input.language === 'es' ? 'Confirmá accesibilidad, baños y condiciones del sendero con el operador.' : 'Confirm accessibility, restrooms and trail conditions with the operator.');
   if (destination.closed_day) warnings.push(`${input.language === 'es' ? 'Cierre indicado' : 'Listed closure'}: ${destination.closed_day}.`);

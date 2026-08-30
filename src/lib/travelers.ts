@@ -5,13 +5,15 @@ import { supabase } from '@/lib/supabase';
 
 export type TravelerProfile = { id: string; username: string | null; full_name: string | null; avatar_url: string | null };
 export type SharedLocation = { latitude: number; longitude: number };
-export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; latitude: number | null; longitude: number | null; created_at: string; user?: TravelerProfile };
+export type TravelerTopic = 'general' | 'moteros' | 'enduro' | 'convoy_4x4';
+export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; latitude: number | null; longitude: number | null; topic: TravelerTopic; created_at: string; user?: TravelerProfile };
 export type ReactionType = 'like' | 'love' | 'laugh' | 'angry' | 'wow' | 'sad';
 export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
 
-export async function getTravelerWall(userId?: string) {
+export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {
+  const postsQuery = supabase.from('traveler_posts').select('*, user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url)').eq('topic', topic).order('created_at', { ascending: false }).limit(40);
   const [posts, replies, reactions, follows] = await Promise.all([
-    supabase.from('traveler_posts').select('*, user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url)').order('created_at', { ascending: false }).limit(40),
+    postsQuery,
     supabase.from('traveler_replies').select('*, user:users(id,username,full_name,avatar_url)').order('created_at').limit(200),
     supabase.from('traveler_reactions').select('post_id,user_id,reaction'),
     userId ? supabase.from('user_follows').select('followed_id').eq('follower_id', userId) : Promise.resolve({ data: [], error: null }),
@@ -40,7 +42,7 @@ async function uploadPostImage(userId: string, asset: ImagePickerAsset) {
   return supabase.storage.from('traveler-posts').getPublicUrl(path).data.publicUrl;
 }
 
-export async function createTravelerPost(userId: string, body: string, asset?: ImagePickerAsset, location?: SharedLocation) {
+export async function createTravelerPost(userId: string, body: string, asset?: ImagePickerAsset, location?: SharedLocation, topic: TravelerTopic = 'general') {
   const imageUrl = asset ? await uploadPostImage(userId, asset) : null;
   const { error } = await supabase.from('traveler_posts').insert({
     user_id: userId,
@@ -48,6 +50,7 @@ export async function createTravelerPost(userId: string, body: string, asset?: I
     image_url: imageUrl,
     latitude: location?.latitude ?? null,
     longitude: location?.longitude ?? null,
+    topic,
   });
   if (error) throw error;
 }

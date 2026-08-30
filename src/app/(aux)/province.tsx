@@ -8,8 +8,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { InformationReportModal } from '@/components/information-report-modal';
-import { ferryRoutes, getDestinationAlert, getTides, getWeather, openNavigation, TIDES_STALE_TIME, WEATHER_STALE_TIME } from '@/lib/logistics';
-import { addDestinationPhoto, addDestinationReview, getDestinationReviews, getPlacesForCategory, getPlacesForProvince, type MapPlace, type ValidationAuthority, toggleDestinationLike } from '@/lib/places';
+import { ferryRoutes, getWeather, openNavigation, WEATHER_STALE_TIME } from '@/lib/logistics';
+import { addDestinationPhoto, addDestinationReview, getDestinationReviews, getPlacesForCategory, getPlacesForProvince, type CommunityPhoto, type MapPlace, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
@@ -179,7 +179,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
   const [comment, setComment] = useState('');
   const [rating, setRating] = useState(5);
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset>();
-  const [communityPhotos, setCommunityPhotos] = useState<string[]>(place?.community_photos ?? []);
+  const [communityPhotos, setCommunityPhotos] = useState<CommunityPhoto[]>(place?.community_photos ?? []);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const { width } = useWindowDimensions();
   const [sending, setSending] = useState(false);
@@ -187,9 +187,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
   const [reportOpen, setReportOpen] = useState(false);
   const reviews = useQuery({ queryKey: ['destination-reviews', place?.id], queryFn: () => getDestinationReviews(place!.id), enabled: Boolean(place && commentsOpen) });
   const weather = useQuery({ queryKey: ['weather', 'destination', place?.id, language], queryFn: () => getWeather(place!, language), enabled: Boolean(place), staleTime: WEATHER_STALE_TIME });
-  const tides = useQuery({ queryKey: ['tides', place?.latitude.toFixed(3), place?.longitude.toFixed(3)], queryFn: () => getTides(place!), enabled: Boolean(place?.has_high_tides_risk), staleTime: TIDES_STALE_TIME });
   if (!place) return null;
-  const destinationAlert = getDestinationAlert(weather.data, tides.data, language, place.has_high_tides_risk);
   const ferry = needsPaqueraFerry(place) ? ferryRoutes[0] : undefined;
   const documentedSource = Boolean(place.validated_by.length && place.verification_evidence_url && place.verification_checked_at);
   const visitPrice = visitorType === 'tico' ? (place.price_national_crc == null ? 'Consultar' : place.price_national_crc === 0 ? 'Gratis' : formatPrice(place.price_national_crc)) : (place.price_foreigner_usd == null ? 'Check price' : place.price_foreigner_usd === 0 ? 'Free' : `$${place.price_foreigner_usd.toFixed(2)}`);
@@ -215,11 +213,19 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
     if (result.canceled) return;
     setUploadingPhoto(true);
     try {
-      const imageUrl = await addDestinationPhoto(place.id, session.user.id, result.assets[0]);
-      setCommunityPhotos((current) => [...current, imageUrl]);
+      const newPhoto = await addDestinationPhoto(place.id, session.user.id, result.assets[0]);
+      setCommunityPhotos((current) => [...current, newPhoto]);
       await queryClient.invalidateQueries({ queryKey: ['places'] });
     } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo subir la foto.' : 'Could not upload the photo.')); }
     finally { setUploadingPhoto(false); }
+  };
+  const likePhoto = async (photo: CommunityPhoto) => {
+    if (!requireAuth(language === 'es' ? 'Dar me gusta a una fotografía' : 'Like a photo') || !session) return;
+    try {
+      await toggleDestinationPhotoLike(photo.id, session.user.id, photo.liked);
+      setCommunityPhotos((current) => current.map((item) => item.id === photo.id ? { ...item, liked: !item.liked, likes_count: Math.max(0, item.likes_count + (item.liked ? -1 : 1)) } : item));
+      await queryClient.invalidateQueries({ queryKey: ['places'] });
+    } catch (reason) { Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo actualizar el like.' : 'Could not update the like.')); }
   };
 
   return (
@@ -239,13 +245,12 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
               <View className="absolute bottom-0 left-0 right-0 bg-black/55 px-6 pb-6 pt-14"><View className="flex-row flex-wrap items-center gap-2"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-3 py-2"><Text className="font-black text-white">{categoryLabel(place.category, language)}</Text></View>{place.average_rating ? <View className="rounded-lg bg-[#ffac16] px-3 py-2"><Text className="font-black text-white">★ {place.average_rating.toFixed(1)} ({place.reviews_count})</Text></View> : null}<ValidationBadge authorities={place.validated_by} checkedAt={place.verification_checked_at} evidenceUrl={place.verification_evidence_url} language={language} /></View><Text className="mt-3 text-3xl font-black text-white md:text-4xl">{place.name}</Text></View>
             </View>
             {usesVerifiedCover(place) && place.image_source_url ? <Pressable className="self-end px-5 pt-3" onPress={() => void Linking.openURL(place.image_source_url!)}><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Foto' : 'Photo'}: {place.image_attribution || 'Wikimedia Commons'} · {place.image_license || (language === 'es' ? 'Ver licencia' : 'View license')}</Text></Pressable> : null}
-            <View className="pt-5"><View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <ActivityIndicator color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>{communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((url, index) => <Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} key={`${url}-${index}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}</View>
+            <View className="pt-5"><View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <ActivityIndicator color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>{communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((photo, index) => <View key={photo.id}><Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable><Pressable className="mt-1 flex-row self-start items-center rounded-full bg-ui-muted px-2 py-1 dark:bg-ui-dark-muted" onPress={() => void likePhoto(photo)}><MaterialCommunityIcons name={photo.liked ? 'heart' : 'heart-outline'} size={16} color={photo.liked ? '#ff557d' : '#0B6B4F'} /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{photo.likes_count}</Text></Pressable></View>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}</View>
             <View className="gap-6 p-5 md:p-8">
               <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={difficultyLabel(place.difficulty, language)} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
               <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{place.description || (language === 'es' ? 'Información en proceso de verificación.' : 'Information is being verified.')}</Text></View>
               <View className="rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5">
-                <View className={`mb-5 rounded-2xl border p-4 ${destinationAlert.level === 'warning' ? 'border-coral-500 bg-coral-50 dark:bg-coral-500/15' : 'border-ui-secondary/40 bg-ui-surface dark:bg-ui-dark-surface'}`}><View className="flex-row items-start"><MaterialCommunityIcons name={destinationAlert.level === 'warning' ? 'alert-circle' : 'weather-partly-cloudy'} size={24} color={destinationAlert.level === 'warning' ? '#ff5d52' : '#0077A8'} /><View className="ml-3 flex-1"><Text className={`font-black ${destinationAlert.level === 'warning' ? 'text-coral-600' : 'text-ui-secondary dark:text-ui-dark-secondary'}`}>{destinationAlert.title}</Text><Text className="mt-1 leading-5 text-ui-text dark:text-ui-dark-text">{destinationAlert.detail}</Text></View></View></View>
                 <InfoRow icon="clock-outline" label={language === 'es' ? 'Horario' : 'Hours'} value={place.schedule === 'Todo el día' && language === 'en' ? 'All day' : place.schedule || (language === 'es' ? 'Consultar fuente oficial' : 'Check official source')} />
                 <InfoRow icon="calendar-remove-outline" label={language === 'es' ? 'Cierre' : 'Closed'} value={place.closed_day || (language === 'es' ? 'Sin dato verificado' : 'No verified data')} />
                 <InfoRow icon="cash-multiple" label={language === 'es' ? 'Tu tarifa' : 'Your price'} value={visitPrice} />
@@ -270,7 +275,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
       </Modal>
       <Modal animationType="fade" onRequestClose={() => setSelectedPhotoIndex(null)} statusBarTranslucent transparent visible={selectedPhotoIndex !== null}>
         <View className="flex-1 bg-black">
-          <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{communityPhotos.map((url, index) => <View className="flex-1 items-center justify-center" key={`${url}-${index}`} style={{ width }}><Image accessibilityLabel={`Fotografía ${index + 1} de ${place.name}`} contentFit="contain" source={{ uri: url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
+          <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{communityPhotos.map((photo, index) => <View className="flex-1 items-center justify-center" key={photo.id} style={{ width }}><Image accessibilityLabel={`Fotografía ${index + 1} de ${place.name}`} contentFit="contain" source={{ uri: photo.image_url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
           <Pressable accessibilityLabel={language === 'es' ? 'Cerrar fotografías' : 'Close photos'} className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/65" onPress={() => setSelectedPhotoIndex(null)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
         </View>
       </Modal>

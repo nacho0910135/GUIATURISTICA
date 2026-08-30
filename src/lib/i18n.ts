@@ -2,7 +2,7 @@ export const copy = {
   es: {
     discover: '¿Qué querés descubrir?', today: 'Qué hacer hoy', seeAll: 'Ver todo', roadAlert: 'Alerta vial',
     roadMessage: 'Precaución en ruta 27 por obras.', explore: 'Explorar', fauna: 'Fauna CR', commerce: 'Comercios y Servicios',
-    logistics: 'Logística', profile: 'Perfil', save: 'Guardar', saved: 'Sitios guardados', signIn: 'Iniciar sesión',
+    logistics: 'Buses y Ferrys', profile: 'Perfil', save: 'Guardar', saved: 'Sitios guardados', signIn: 'Iniciar sesión',
     signUp: 'Crear cuenta', continueGoogle: 'Continuar con Google', email: 'Correo electrónico', password: 'Contraseña',
     close: 'Cerrar', authTitle: 'Tu aventura continúa aquí', authBody: 'Ingresá para guardar, comentar y compartir tus descubrimientos.',
     welcome: 'Explorá Costa Rica a tu ritmo', guestBody: 'Los mapas, lugares, fauna, asistencia y eventos están abiertos para vos.',
@@ -22,7 +22,7 @@ export const copy = {
   en: {
     discover: 'What would you like to discover?', today: 'Things to do today', seeAll: 'See all', roadAlert: 'Road alert',
     roadMessage: 'Use caution on Route 27 due to road works.', explore: 'Explore', fauna: 'CR Wildlife', commerce: 'Businesses & Services',
-    logistics: 'Logistics', profile: 'Profile', save: 'Save', saved: 'Saved places', signIn: 'Sign in', signUp: 'Create account',
+    logistics: 'Buses & Ferries', profile: 'Profile', save: 'Save', saved: 'Saved places', signIn: 'Sign in', signUp: 'Create account',
     continueGoogle: 'Continue with Google', email: 'Email', password: 'Password', close: 'Close',
     authTitle: 'Your adventure continues here', authBody: 'Sign in to save, comment and share your discoveries.',
     welcome: 'Explore Costa Rica at your pace', guestBody: 'Maps, places, wildlife, assistance and events are open for you.',
