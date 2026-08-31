@@ -2,7 +2,7 @@ import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { ArrowRightLeft, CircleUserRound, Moon, Sun } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -111,16 +111,31 @@ export function GlobalHeader() {
 
 function ThemeButton({ isSpanish, mode, onPress }: { isSpanish: boolean; mode: 'light' | 'dark'; onPress: () => void }) {
   const { colors } = useAppTheme();
+  const reduceMotion = useReducedMotion();
+  const position = useRef(new Animated.Value(mode === 'dark' ? 1 : 0)).current;
+
+  useEffect(() => {
+    const animation = Animated.timing(position, { duration: reduceMotion ? 0 : 180, toValue: mode === 'dark' ? 1 : 0, useNativeDriver: Platform.OS !== 'web' });
+    animation.start();
+    return () => animation.stop();
+  }, [mode, position, reduceMotion]);
+
   return (
-    <IconButton
+    <Pressable
       accessibilityLabel={mode === 'dark' ? (isSpanish ? 'Cambiar a tema claro' : 'Switch to light theme') : (isSpanish ? 'Cambiar a tema oscuro' : 'Switch to dark theme')}
       accessibilityRole="switch"
       accessibilityState={{ checked: mode === 'dark' }}
-      icon={mode === 'dark' ? <Moon color={colors.secondary} size={19} strokeWidth={1.9} /> : <Sun color={colors.warning} size={19} strokeWidth={1.9} />}
+      className="h-10 w-16 overflow-hidden rounded-full border border-ui-border p-1 focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:border-ui-dark-border dark:focus-visible:ring-ui-dark-focus"
+      hitSlop={4}
       onPress={onPress}
-      selected={mode === 'dark'}
-      size="sm"
-    />
+      style={{ backgroundColor: mode === 'dark' ? '#1E5B75' : '#F5D76E' }}
+    >
+      <Sun color="#B96708" size={15} strokeWidth={2.2} style={{ left: 10, position: 'absolute', top: 12 }} />
+      <Moon color="#DCEAF2" size={15} strokeWidth={2.2} style={{ position: 'absolute', right: 10, top: 12 }} />
+      <Animated.View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: mode === 'dark' ? '#102E40' : '#FFFFFF', transform: [{ translateX: position.interpolate({ inputRange: [0, 1], outputRange: [0, 24] }) }] }}>
+        {mode === 'dark' ? <Moon color="#DCEAF2" size={16} strokeWidth={2.1} /> : <Sun color={colors.warning} size={16} strokeWidth={2.1} />}
+      </Animated.View>
+    </Pressable>
   );
 }
 

@@ -147,7 +147,7 @@ export default function ExploreScreen() {
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180, zIndex: 10 }}>
-        <View className="mx-auto w-[94%] flex-row items-stretch gap-2">
+        <View className="w-full flex-row items-stretch gap-2">
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: Boolean(coordinates) }}
@@ -161,7 +161,7 @@ export default function ExploreScreen() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            className="min-h-12 min-w-20 flex-row items-center justify-center rounded-2xl border border-black bg-ui-primary-soft px-3 py-3 active:opacity-75 dark:bg-ui-dark-primary-soft"
+            className="min-h-12 w-32 flex-none flex-row items-center justify-center rounded-2xl border border-black bg-ui-primary-soft px-3 py-3 active:opacity-75 dark:bg-ui-dark-primary-soft"
             onPress={() => router.push({ pathname: '/(tabs)/fauna', params: { from: 'explore' } })}
           >
             <MaterialCommunityIcons name="paw" size={18} color="#087443" />
@@ -183,7 +183,7 @@ export default function ExploreScreen() {
             <Pressable
               accessibilityLabel={language === 'es' ? 'Agregar sitio' : 'Add place'}
               accessibilityRole="button"
-              className="min-h-12 flex-row items-center justify-center rounded-control bg-[#2A7B4C] px-3 active:bg-[#1E6038] active:opacity-75"
+              className="min-h-12 w-32 flex-none flex-row items-center justify-center rounded-control bg-[#2A7B4C] px-3 active:bg-[#1E6038] active:opacity-75"
               onPress={() => {
                 if (!requireAuth(language === 'es' ? 'Agregar un sitio' : 'Add a place') || !session) return;
                 setProposalOpen(true);
@@ -211,7 +211,7 @@ export default function ExploreScreen() {
                   key={category.id}
                   onPress={() => { router.push({ pathname: '/(aux)/province', params: { categoryId: category.id } }); void haptic('selection'); }}
                 >
-                  <View className="items-center justify-center overflow-hidden" style={{ backgroundColor: `${color}20`, borderRadius: (wide ? 64 : 51) / 2, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
+                  <View className="items-center justify-center" style={{ backgroundColor: `${color}20`, borderRadius: (wide ? 64 : 51) / 2, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
                     <MaterialCommunityIcons name={category.icon ?? 'map-marker-outline'} size={wide ? 34 : 27} color={color} />
                     <View className="absolute -bottom-1 -right-1 h-6 min-w-6 items-center justify-center rounded-full border-2 border-ui-background px-1 dark:border-ui-dark-background" style={{ backgroundColor: color }}>
                       <Text className="text-[10px] font-black text-white">{places.isPending ? '…' : count}</Text>
