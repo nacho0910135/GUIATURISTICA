@@ -77,7 +77,7 @@ export type FerryRoute = {
   adultFare: number | null;
   childFare: number | null;
   vehicleFare: number | null;
-  ticketUrl: string;
+  ticketUrl: string | null;
   arrivalMinutes: number;
   terminalName?: string;
   wazeUrl?: string;
@@ -114,27 +114,27 @@ export const ferryRoutes: FerryRoute[] = [
   {
     id: 'puntarenas-isla-chira', operator: 'Servicio marítimo local', route: 'Puntarenas → Isla Chira',
     schedules: { weekday: ['12:30'], saturday: ['12:30'], sunday: ['07:00'] }, departures: ['12:30'], scheduleNote: 'Horario referencial publicado por Yo Viajo CR. Confirmá antes de viajar.',
-    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: 'https://yoviajocr.com/bus/puntarenas-isla-chira', arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/puntarenas-isla-chira',
+    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: null, arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/puntarenas-isla-chira',
   },
   {
     id: 'isla-chira-puntarenas', operator: 'Servicio marítimo local', route: 'Isla Chira → Puntarenas',
     schedules: { weekday: ['06:00'], saturday: ['06:00'], sunday: ['06:00'] }, departures: ['06:00'], scheduleNote: 'Horario referencial publicado por Yo Viajo CR. Confirmá antes de viajar.',
-    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: 'https://yoviajocr.com/bus/isla-chira-puntarenas', arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/isla-chira-puntarenas',
+    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: null, arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/isla-chira-puntarenas',
   },
   {
     id: 'isla-chira-costa-de-pajaros', operator: 'Servicio marítimo local', route: 'Isla Chira → Costa de Pájaros',
     schedules: { weekday: ['06:00', '13:00'], saturday: ['06:00', '13:00'], sunday: ['06:00', '13:00'] }, departures: ['06:00', '13:00'], scheduleNote: 'Horario referencial publicado por Yo Viajo CR. Confirmá antes de viajar.',
-    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: 'https://yoviajocr.com/bus/isla-chira-costa-de-pajaros', arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/isla-chira-costa-de-pajaros',
+    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: null, arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/isla-chira-costa-de-pajaros',
   },
   {
     id: 'costa-de-pajaros-isla-chira', operator: 'Servicio marítimo local', route: 'Costa de Pájaros → Isla Chira',
     schedules: { weekday: ['07:50', '14:50'], saturday: ['07:50', '14:50'], sunday: ['07:50', '14:50'] }, departures: ['07:50', '14:50'], scheduleNote: 'Horario referencial publicado por Yo Viajo CR. Confirmá antes de viajar.',
-    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: 'https://yoviajocr.com/bus/costa-de-pajaros-isla-chira', arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/costa-de-pajaros-isla-chira',
+    adultFare: null, childFare: null, vehicleFare: null, ticketUrl: null, arrivalMinutes: 60, scheduleSourceUrl: 'https://yoviajocr.com/bus/costa-de-pajaros-isla-chira',
   },
 ];
 
 export async function getFerryRoutes(): Promise<FerryRoute[]> {
-  const { data, error } = await supabase.from('ferry_routes').select('source_key,route_name,operator,schedules,schedule_note,fare_adult_crc,fare_child_crc,fare_vehicle_crc,origin_terminal_name,origin_waze_url,schedule_source_url,fare_source_url,valid_until').eq('is_published', true).order('route_name');
+  const { data, error } = await supabase.from('ferry_routes').select('source_key,route_name,operator,schedules,schedule_note,fare_adult_crc,fare_child_crc,fare_vehicle_crc,origin_terminal_name,origin_waze_url,ticket_url,schedule_source_url,fare_source_url,valid_until').eq('is_published', true).order('route_name');
   if (error) throw error;
   return (data ?? []).map((route) => ({
     id: route.source_key,
@@ -148,7 +148,7 @@ export async function getFerryRoutes(): Promise<FerryRoute[]> {
     vehicleFare: route.fare_vehicle_crc === null ? null : Number(route.fare_vehicle_crc),
     terminalName: route.origin_terminal_name,
     wazeUrl: route.origin_waze_url,
-    ticketUrl: route.schedule_source_url,
+    ticketUrl: route.ticket_url,
     arrivalMinutes: route.operator === 'Naviera Tambor' ? 45 : 60,
     scheduleSourceUrl: route.schedule_source_url,
     fareSourceUrl: route.fare_source_url,

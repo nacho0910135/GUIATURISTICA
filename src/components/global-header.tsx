@@ -134,7 +134,7 @@ function ProfileButton({ avatarUrl, label, onPress }: { avatarUrl: string | null
       className="h-10 w-10 overflow-hidden rounded-full border border-ui-border bg-ui-surface focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:border-ui-dark-border dark:bg-ui-dark-surface dark:focus-visible:ring-ui-dark-focus"
       onPress={onPress}
     >
-      <Image cachePolicy="none" contentFit="cover" source={{ uri: avatarUrl }} style={{ height: 40, width: 40 }} />
+      <Image cachePolicy="none" contentFit="cover" contentPosition="top" source={{ uri: avatarUrl }} style={{ height: 40, width: 40 }} />
     </Pressable>
   ) : (
     <IconButton accessibilityLabel={label} accessibilityRole="link" icon={<CircleUserRound color={colors.primary} size={20} strokeWidth={1.9} />} onPress={onPress} size="sm" />

@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Text, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,8 +32,6 @@ export default function TabsLayout() {
   const { t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
-  const router = useRouter();
-
   return (
     <Tabs
       initialRouteName="explore"
@@ -49,21 +47,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="fauna" options={{ href: null }} />
       <Tabs.Screen name="friends" options={{ title: t('communityTitle').split(' Descubriendo')[0], tabBarIcon: icon('account-group') }} />
       <Tabs.Screen name="my-trip" options={{ title: 'Mi viaje', tabBarIcon: icon('map-marker-path') }} />
-      <Tabs.Screen
-        listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/explore', params: { reset: String(Date.now()) } }); } }}
-        name="explore"
-        options={{ title: t('explore'), tabBarIcon: exploreIcon }}
-      />
-      <Tabs.Screen
-        listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/commerce', params: { reset: String(Date.now()) } }); } }}
-        name="commerce"
-        options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }}
-      />
-      <Tabs.Screen
-        listeners={{ tabPress: (event) => { event.preventDefault(); router.replace({ pathname: '/(tabs)/logistics', params: { reset: String(Date.now()) } }); } }}
-        name="logistics"
-        options={{ title: 'Buses', tabBarIcon: icon('bus') }}
-      />
+      <Tabs.Screen name="explore" options={{ title: t('explore'), tabBarIcon: exploreIcon }} />
+      <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />
+      <Tabs.Screen name="logistics" options={{ title: 'Buses', tabBarIcon: icon('bus') }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );

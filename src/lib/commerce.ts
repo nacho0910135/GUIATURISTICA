@@ -77,6 +77,13 @@ export type CommerceService = {
 
 export type AssistanceService = CommerceService;
 export type CommerceDirectory = { featured: CommerceService[]; organic: CommerceService[] };
+export type CinemaMovie = {
+  id: string;
+  title_es: string;
+  title_en: string | null;
+  poster_url: string;
+  official_url: string;
+};
 export type ClaimableBusiness = Pick<CommerceService, 'id' | 'title' | 'is_claimed' | 'owner_id' | 'claim_status'>;
 
 type ServiceRow = Omit<CommerceService, 'phone' | 'latitude' | 'longitude' | 'distance_km' | 'photos' | 'payment_methods' | 'languages' | 'certifications'> & {
@@ -138,6 +145,16 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
     featured: services.filter((service) => service.is_sponsored).sort(byRelevance),
     organic: services.filter((service) => !service.is_sponsored).sort(byRelevance),
   };
+}
+
+export async function getCinemaMovies(): Promise<CinemaMovie[]> {
+  const { data, error } = await supabase
+    .from('cinema_movies')
+    .select('id,title_es,title_en,poster_url,official_url')
+    .eq('active', true)
+    .order('sort_order');
+  if (error) throw error;
+  return (data ?? []) as CinemaMovie[];
 }
 
 export async function getClaimableBusiness(serviceId: string): Promise<ClaimableBusiness | null> {

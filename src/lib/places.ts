@@ -37,6 +37,8 @@ export type MapPlace = {
   fee_type: string | null;
   requires_sinac_booking: boolean;
   sinac_booking_url: string | null;
+  requires_online_ticket: boolean;
+  online_ticket_url: string | null;
   has_high_tides_risk: boolean;
   source_url: string | null;
   source_checked_at: string | null;
@@ -67,7 +69,7 @@ export type DestinationReview = {
   author_role: string | null;
 };
 
-export type ExplorePlace = Pick<MapPlace, 'id' | 'name' | 'province' | 'category' | 'description' | 'difficulty' | 'price_national_crc' | 'latitude' | 'longitude' | 'cover_image_url' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at'> & { community: boolean; contributor_id: string | null; contributor_name: string | null };
+export type ExplorePlace = Pick<MapPlace, 'id' | 'name' | 'province' | 'category' | 'description' | 'difficulty' | 'price_national_crc' | 'latitude' | 'longitude' | 'cover_image_url' | 'photos' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at'> & { community: boolean; contributor_id: string | null; contributor_name: string | null };
 
 function mobileImageUrl(url: string | null | undefined) {
   if (!url?.includes('upload.wikimedia.org/wikipedia/commons/')) return url ?? null;
@@ -184,6 +186,7 @@ function toExploreSanctuary(row: VerifiedSanctuaryRow): ExplorePlace | null {
     latitude: details.latitude,
     longitude: details.longitude,
     cover_image_url: row.cover_image_url,
+    photos: [],
     validated_by: [],
     verification_evidence_url: null,
     verification_checked_at: null,
@@ -218,6 +221,8 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
     fee_type: details.feeType,
     requires_sinac_booking: false,
     sinac_booking_url: null,
+    requires_online_ticket: false,
+    online_ticket_url: null,
     has_high_tides_risk: false,
     source_url: details.sourceUrl,
     source_checked_at: null,
@@ -250,8 +255,8 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   if (contributors.error) throw contributors.error;
   const contributorNames = new Map((contributors.data ?? []).map((profile) => [profile.id, profile.full_name || profile.username]));
   const officialPlaces = [
-    ...(official.data ?? []).map((place) => ({ ...place, cover_image_url: mobileImageUrl(place.cover_image_url ?? place.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url), category: classifiedCategory(place), community: false, contributor_id: null, contributor_name: null })),
-    ...(community.data ?? []).map((place) => ({ ...place, cover_image_url: null, community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[], verification_evidence_url: null, verification_checked_at: null })),
+    ...(official.data ?? []).map((place) => ({ ...place, cover_image_url: mobileImageUrl(place.cover_image_url ?? place.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url), photos: (place.destination_photos ?? []).sort((a, b) => a.sort_order - b.sort_order).map((photo) => mobileImageUrl(photo.image_url)).filter((url): url is string => Boolean(url)), category: classifiedCategory(place), community: false, contributor_id: null, contributor_name: null })),
+    ...(community.data ?? []).map((place) => ({ ...place, cover_image_url: null, photos: [], community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[], verification_evidence_url: null, verification_checked_at: null })),
   ]
     .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
     .map((place) => ({ ...place, latitude: Number(place.latitude), longitude: Number(place.longitude), price_national_crc: place.price_national_crc == null ? null : Number(place.price_national_crc) })) as ExplorePlace[];
@@ -262,7 +267,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   return [...officialPlaces, ...sanctuaryPlaces];
 }
 
-export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'cover_image_url' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at'> & { user_id: string; district?: string }) {
+export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'cover_image_url' | 'photos' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at'> & { user_id: string; district?: string }) {
   const { error } = await supabase.from('destination_suggestions').insert({ ...input, status: 'published' });
   if (error) throw error;
 }
@@ -281,11 +286,34 @@ export async function getPlacesForCategory(category: string, userId?: string): P
   return [...places, ...sanctuaryPlaces].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-async function getPlaces(filter: 'province' | 'category', value: string, userId?: string): Promise<MapPlace[]> {
+export async function getPlacesForTargets(targets: string[], userId?: string): Promise<MapPlace[]> {
+  const normalizedTargets = targets.map(normalizedName).filter(Boolean);
+  const matches = (place: MapPlace) => {
+    const searchable = normalizedName(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`);
+    const words = searchable.split(/[^a-z0-9]+/).filter(Boolean);
+    return normalizedTargets.some((target) => target.includes(' ')
+      ? searchable.includes(target)
+      : words.some((word) => word === target || (target.length >= 4 && word.startsWith(target))));
+  };
+  const places = (await getPlaces('all', '', userId)).filter(matches);
+  if (!normalizedTargets.some((target) => target.includes('santuario') || target.includes('sanctuary'))) return places;
+  const knownIds = new Set(places.map((place) => place.id));
+  const sanctuaryPlaces = (await getVerifiedSanctuaryRows())
+    .map(toMapSanctuary)
+    .filter((place): place is MapPlace => place !== null && !knownIds.has(place.id));
+  return [...places, ...sanctuaryPlaces].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function getPlaceById(id: string, userId?: string): Promise<MapPlace | null> {
+  return (await getPlaces('id', id, userId))[0] ?? null;
+}
+
+async function getPlaces(filter: 'province' | 'category' | 'id' | 'all', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,description_en,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at)');
+    .select('id,name,province,region,category,description,description_en,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,requires_online_ticket,online_ticket_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at)');
   if (filter === 'province') query = query.eq('province', value);
+  else if (filter === 'id') query = query.eq('id', value);
   else if (value === RESERVE_CATEGORY) query = query.in('id', [...RESERVE_IDS]);
   else if (value === REFUGE_CATEGORY) query = query.in('id', [...REFUGE_IDS]);
   else if (value === 'Pozas / Lagos') query = query.or('category.ilike.%Poza%,category.ilike.%Lago%,category.ilike.%Laguna%');

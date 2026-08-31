@@ -96,7 +96,7 @@ export async function markMessageRead(messageId: string) {
 }
 
 export async function getSocialProfile(userId: string) {
-  const [profile, followers, following, posts, sightings, saved, notifications, conversations] = await Promise.all([
+  const [profile, followers, following, posts, sightings, saved, notifications] = await Promise.all([
     supabase.from('users').select('id,username,full_name,avatar_url,bio,contact_email').eq('id', userId).single(),
     supabase.from('user_follows').select('follower_id').eq('followed_id', userId),
     supabase.from('user_follows').select('followed_id').eq('follower_id', userId),
@@ -104,19 +104,16 @@ export async function getSocialProfile(userId: string) {
     supabase.from('fauna_photos').select('id,fauna_id,user_id,image_url,caption,likes_count,created_at,fauna_species(common_name_es,common_name_en)').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'destination'),
     supabase.from('notifications').select('id,recipient_id,actor_id,type,entity_type,entity_id,message,read_status,created_at,actor:users!notifications_actor_id_fkey(username,full_name,avatar_url)').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(50),
-    getPrivateConversations(userId),
   ]);
-  const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? sightings.error ?? saved.error ?? notifications.error;
-  if (error) throw error;
+  if (profile.error) throw profile.error;
   const savedIds = (saved.data ?? []).map((item) => item.target_id);
   const destinations = savedIds.length ? await supabase.from('destinations').select('id,name,province,cover_image_url,destination_photos(image_url,sort_order)').in('id', savedIds) : { data: [], error: null };
-  if (destinations.error) throw destinations.error;
   const savedDestinations = (destinations.data ?? []).map((destination) => ({ ...destination, cover_image_url: destination.cover_image_url ?? destination.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url ?? null }));
   const normalizedSightings = (sightings.data ?? []).map((photo) => ({
     ...photo,
     fauna_species: Array.isArray(photo.fauna_species) ? photo.fauna_species[0] : photo.fauna_species,
   }));
-  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: normalizedSightings, saved: savedDestinations, notifications: notifications.data ?? [], conversations };
+  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: normalizedSightings, saved: savedDestinations, notifications: notifications.data ?? [] };
 }
 
 async function uploadImage(bucket: 'profile-avatars' | 'destination-photos', owner: string, asset: ImagePickerAsset) {

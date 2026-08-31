@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
@@ -77,6 +78,13 @@ export function AppProvider({ children }: PropsWithChildren) {
       if (mounted) void syncSession(nextSession);
     });
     return () => { mounted = false; listener.subscription.unsubscribe(); };
+  }, [syncSession]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void supabase.auth.getSession().then(({ data }) => syncSession(data.session));
+    });
+    return () => subscription.remove();
   }, [syncSession]);
 
   useEffect(() => {

@@ -4,13 +4,14 @@ import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, 
 import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { reviewCommercialClaim } from '@/lib/commerce';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
-import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation, type PrivateMessage } from '@/lib/social-profile';
+import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation, type PrivateMessage } from '@/lib/social-profile';
 import { reportTypeLabel, updateInformationReportStatus } from '@/lib/reports';
+import { supabase } from '@/lib/supabase';
 import { useApp } from '@/providers/app-provider';
 
 type Dashboard = Awaited<ReturnType<typeof getSocialProfile>>;
@@ -22,7 +23,6 @@ export default function ProfileScreen() {
   const { avatarUrl, isAdmin, isAuthenticated, language, session, setAvatarUrl, signIn, signOut } = useApp();
   const [section, setSection] = useState<Section>();
   const [data, setData] = useState<Dashboard>();
-  const [admin, setAdmin] = useState<AdminDashboard>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [bio, setBio] = useState('');
@@ -39,6 +39,28 @@ export default function ProfileScreen() {
     queryFn: () => getAppOptions('notification_type'),
     staleTime: Infinity,
   });
+  const profileSummary = useQuery({
+    queryKey: ['profile-summary', userId],
+    queryFn: async () => {
+      const { data: profile, error: profileError } = await supabase.from('users').select('id,username,full_name,avatar_url,bio,contact_email').eq('id', userId).single();
+      if (profileError) throw profileError;
+      return profile;
+    },
+    enabled: Boolean(userId),
+    staleTime: 5 * 60 * 1000,
+  });
+  const conversations = useQuery({
+    queryKey: ['private-conversations', userId],
+    queryFn: () => getPrivateConversations(userId),
+    enabled: Boolean(userId) && section === 'messages',
+    staleTime: 60 * 1000,
+  });
+  const adminDashboard = useQuery({
+    queryKey: ['admin-dashboard', userId],
+    queryFn: getAdminDashboard,
+    enabled: Boolean(userId) && isAdmin && section === 'login',
+    staleTime: 60 * 1000,
+  });
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -50,15 +72,21 @@ export default function ProfileScreen() {
       setBio(next.profile?.bio || '');
       setContactEmail(next.profile?.contact_email || '');
       if (next.profile?.avatar_url) setAvatarUrl(next.profile.avatar_url);
-      if (isAdmin) setAdmin(await getAdminDashboard());
     } catch (reason) {
       setError(message(reason));
     }
-  }, [isAdmin, setAvatarUrl, userId]);
+  }, [setAvatarUrl, userId]);
+  useEffect(() => { setData(undefined); setError(undefined); }, [userId]);
+  useEffect(() => {
+    if (!profileSummary.data || editingProfile) return;
+    setUsername(profileSummary.data.username || '');
+    setBio(profileSummary.data.bio || '');
+    setContactEmail(profileSummary.data.contact_email || '');
+  }, [editingProfile, profileSummary.data]);
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load]),
+      if (section && section !== 'login' && section !== 'suggestions' && !data) void load();
+    }, [data, load, section]),
   );
 
   const run = async (action: () => Promise<void>) => {
@@ -80,7 +108,7 @@ export default function ProfileScreen() {
       aspect: [1, 1],
       quality: 0.9,
     });
-    const profile = data?.profile;
+    const profile = data?.profile ?? profileSummary.data;
     if (result.canceled || !profile) return;
     setAvatar(result.assets[0]);
     await run(async () => {
@@ -110,7 +138,12 @@ export default function ProfileScreen() {
       await load();
       Alert.alert(tr(language, 'Perfil', 'Profile'), tr(language, 'Tus cambios fueron guardados.', 'Your changes were saved.'));
     });
-  const name = data?.profile?.username || data?.profile?.full_name || (language === 'es' ? 'Viajero invitado' : 'Guest traveler');
+  const metadata = session?.user.user_metadata as Record<string, unknown> | undefined;
+  const metadataUsername = typeof metadata?.username === 'string' ? metadata.username : undefined;
+  const metadataName = metadataUsername ?? (typeof metadata?.full_name === 'string' ? metadata.full_name : typeof metadata?.name === 'string' ? metadata.name : undefined);
+  const displayProfile = data?.profile ?? profileSummary.data;
+  const profileAvatarUrl = avatar?.uri ?? displayProfile?.avatar_url ?? avatarUrl ?? (typeof metadata?.avatar_url === 'string' ? metadata.avatar_url : typeof metadata?.picture === 'string' ? metadata.picture : null);
+  const name = displayProfile?.username || displayProfile?.full_name || metadataName || (language === 'es' ? 'Viajero' : 'Traveler');
   const tabs: {
     key: Section;
     icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -121,7 +154,7 @@ export default function ProfileScreen() {
       key: 'notifications',
       icon: 'bell-outline',
       label: tr(language, 'Notificaciones', 'Notifications'),
-      count: data?.notifications.filter((n) => !n.read_status).length ?? 0,
+      count: data ? data.notifications.filter((n) => !n.read_status).length : undefined,
     },
     {
       key: 'community',
@@ -132,19 +165,19 @@ export default function ProfileScreen() {
       key: 'sightings',
       icon: 'camera-outline',
       label: tr(language, 'Mis avistamientos', 'My sightings'),
-      count: data?.sightings.length ?? 0,
+      count: data ? data.sightings.length : undefined,
     },
     {
       key: 'saved',
       icon: 'heart-outline',
       label: tr(language, 'Guardados', 'Saved'),
-      count: data?.saved.length ?? 0,
+      count: data ? data.saved.length : undefined,
     },
     {
       key: 'messages',
       icon: 'message-outline',
       label: tr(language, 'Mensajes', 'Messages'),
-      count: data?.conversations.reduce((total, item) => total + item.unread_count, 0) ?? 0,
+      count: conversations.data?.reduce((total, item) => total + item.unread_count, 0) ?? 0,
     },
     {
       key: 'suggestions',
@@ -185,10 +218,8 @@ export default function ProfileScreen() {
       <View className="mx-auto w-full max-w-5xl rounded-[24px] border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
         <View className="flex-row items-start">
           <Pressable accessibilityLabel={tr(language, 'Editar foto de perfil', 'Edit profile photo')} className="relative" onPress={() => void chooseAvatar()}>
-            {avatar ? (
-              <Image source={{ uri: avatar.uri }} style={{ borderRadius: 40, height: 80, width: 80 }} />
-            ) : data?.profile?.avatar_url ? (
-              <Image source={{ uri: data.profile.avatar_url }} style={{ borderRadius: 40, height: 80, width: 80 }} />
+            {profileAvatarUrl ? (
+              <Image cachePolicy="memory-disk" source={{ uri: profileAvatarUrl }} style={{ borderRadius: 40, height: 80, width: 80 }} />
             ) : (
               <View className="h-20 w-20 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary">
                 <MaterialCommunityIcons name="account" size={40} color="white" />
@@ -205,16 +236,16 @@ export default function ProfileScreen() {
                 <MaterialCommunityIcons name="pencil-outline" size={18} color="#0B6B4F" />
               </Pressable>
             </View>
-            <Text className="mt-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">@{data?.profile?.username || tr(language, 'sin nickname', 'no nickname')}</Text>
+            <Text className="mt-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">@{displayProfile?.username || metadataUsername || tr(language, 'sin nickname', 'no nickname')}</Text>
             <View className="mt-2 flex-row items-center">
-              {editingProfile ? <TextInput className="min-w-0 flex-1 rounded-xl bg-ui-muted px-3 py-2 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline onChangeText={setBio} placeholder={tr(language, 'Descripción', 'Description')} placeholderTextColor="#8f9bb2" value={bio} /> : <Text className="flex-1 text-ui-primary dark:text-ui-dark-primary">{data?.profile?.bio || tr(language, 'Explorando Costa Rica', 'Exploring Costa Rica')}</Text>}
+              {editingProfile ? <TextInput className="min-w-0 flex-1 rounded-xl bg-ui-muted px-3 py-2 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline onChangeText={setBio} placeholder={tr(language, 'Descripción', 'Description')} placeholderTextColor="#8f9bb2" value={bio} /> : <Text className="flex-1 text-ui-primary dark:text-ui-dark-primary">{displayProfile?.bio || tr(language, 'Explorando Costa Rica', 'Exploring Costa Rica')}</Text>}
               <Pressable accessibilityLabel={tr(language, 'Editar descripción', 'Edit description')} className="ml-2 p-2" onPress={() => setEditingProfile(true)}>
                 <MaterialCommunityIcons name="pencil-outline" size={19} color="#0B6B4F" />
               </Pressable>
             </View>
             <View className="mt-2 flex-row items-center">
               <MaterialCommunityIcons name="email-outline" size={18} color="#8f9bb2" />
-              {editingProfile ? <TextInput className="ml-2 min-w-0 flex-1 rounded-xl bg-ui-muted px-3 py-2 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="email-address" onChangeText={setContactEmail} placeholder={tr(language, 'Correo de contacto', 'Contact email')} placeholderTextColor="#8f9bb2" value={contactEmail} /> : <Text className="ml-2 flex-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{data?.profile?.contact_email || session?.user.email || tr(language, 'Agregar correo de contacto', 'Add contact email')}</Text>}
+              {editingProfile ? <TextInput className="ml-2 min-w-0 flex-1 rounded-xl bg-ui-muted px-3 py-2 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="email-address" onChangeText={setContactEmail} placeholder={tr(language, 'Correo de contacto', 'Contact email')} placeholderTextColor="#8f9bb2" value={contactEmail} /> : <Text className="ml-2 flex-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{displayProfile?.contact_email || session?.user.email || tr(language, 'Agregar correo de contacto', 'Add contact email')}</Text>}
               <Pressable accessibilityLabel={tr(language, 'Editar correo', 'Edit email')} className="ml-2 p-2" onPress={() => setEditingProfile(true)}>
                 <MaterialCommunityIcons name="pencil-outline" size={19} color="#0B6B4F" />
               </Pressable>
@@ -226,9 +257,9 @@ export default function ProfileScreen() {
                   label={tr(language, 'Cancelar', 'Cancel')}
                   outline
                   onPress={() => {
-                    setUsername(data?.profile?.username || '');
-                    setBio(data?.profile?.bio || '');
-                    setContactEmail(data?.profile?.contact_email || '');
+                    setUsername(displayProfile?.username || '');
+                    setBio(displayProfile?.bio || '');
+                    setContactEmail(displayProfile?.contact_email || '');
                     setAvatar(undefined);
                     setEditingProfile(false);
                   }}
@@ -236,10 +267,10 @@ export default function ProfileScreen() {
               </View>
             ) : null}
             <View className="mt-3 flex-row flex-wrap gap-3">
-              <Stat value={data?.followers.length ?? 0} label={tr(language, 'seguidores', 'followers')} />
-              <Stat value={data?.following.length ?? 0} label={tr(language, 'siguiendo', 'following')} />
-              <Stat value={data?.sightings.length ?? 0} label={tr(language, 'avistamientos', 'sightings')} />
-              <Stat value={data?.saved.length ?? 0} label={tr(language, 'guardados', 'saved')} />
+              <Stat value={data ? data.followers.length : '—'} label={tr(language, 'seguidores', 'followers')} />
+              <Stat value={data ? data.following.length : '—'} label={tr(language, 'siguiendo', 'following')} />
+              <Stat value={data ? data.sightings.length : '—'} label={tr(language, 'avistamientos', 'sightings')} />
+              <Stat value={data ? data.saved.length : '—'} label={tr(language, 'guardados', 'saved')} />
             </View>
           </View>
         </View>
@@ -263,7 +294,7 @@ export default function ProfileScreen() {
         </View>
       </View>
       <View className="mx-auto mt-5 w-full max-w-5xl rounded-[30px] border border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface p-5">
-        {!data && !error ? <ActivityIndicator color="#13bd83" /> : null}
+        {section && section !== 'login' && section !== 'suggestions' && !data && !error ? <ActivityIndicator color="#13bd83" /> : null}
         {error ? <Text className="text-red-400">{error}</Text> : null}
         {data && section === 'notifications' ? (
           <View>
@@ -339,7 +370,7 @@ export default function ProfileScreen() {
             ))}
           </ListEmpty>
         ) : null}
-        {data && section === 'messages' ? <MessagesPanel conversations={data.conversations} language={language} userId={userId} userAvatarUrl={data.profile?.avatar_url ?? avatarUrl} busy={busy} refresh={load} run={run} /> : null}
+        {data && section === 'messages' ? conversations.isPending ? <ActivityIndicator color="#13bd83" /> : <MessagesPanel conversations={conversations.data ?? []} language={language} userId={userId} userAvatarUrl={data.profile?.avatar_url ?? avatarUrl} busy={busy} refresh={async () => { await Promise.all([load(), conversations.refetch()]); }} run={run} /> : null}
         {section === 'suggestions' ? (
           <View>
             <Title>{tr(language, 'Sugerencias para el creador', 'Suggestions for the creator')}</Title>
@@ -384,7 +415,7 @@ export default function ProfileScreen() {
             <ProfileButton label={tr(language, 'Cerrar sesión', 'Sign out')} outline onPress={() => void signOut()} />
           </View>
         ) : null}
-        {section === 'login' && isAdmin ? <AdminPanel data={admin} busy={busy} language={language} refresh={load} run={run} signOut={signOut} /> : null}
+        {section === 'login' && isAdmin ? <AdminPanel data={adminDashboard.data} busy={busy} language={language} refresh={async () => { await Promise.all([load(), adminDashboard.refetch()]); }} run={run} signOut={signOut} /> : null}
       </View>
     </ScrollView>
   );
@@ -916,7 +947,7 @@ function ProfileButton({ label, onPress, outline, disabled }: { label: string; o
 function Title({ children }: { children: ReactNode }) {
   return <Text className="text-xl font-bold text-ui-text dark:text-ui-dark-text">{children}</Text>;
 }
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label }: { value: number | string; label: string }) {
   return (
     <Text className="font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">
       <Text className="text-ui-text dark:text-ui-dark-text">{value}</Text> {label}
@@ -949,8 +980,10 @@ function suggestionStatusLabel(status: string, language: 'es' | 'en') {
 function reportStatusLabel(status: string, language: 'es' | 'en') {
   return tr(language, status === 'open' ? 'Pendiente' : status === 'reviewing' ? 'Leída' : status === 'resolved' ? 'Resuelta' : 'Descartada', status === 'open' ? 'Pending' : status === 'reviewing' ? 'Read' : status === 'resolved' ? 'Resolved' : 'Dismissed');
 }
-function message(reason: unknown) {
-  return reason instanceof Error ? reason.message : 'Ocurrió un error inesperado.';
+function message(reason: unknown): string {
+  if (reason instanceof Error) return reason.message;
+  if (typeof reason === 'object' && reason !== null && 'message' in reason && typeof reason.message === 'string') return reason.message;
+  return 'Ocurrió un error inesperado.';
 }
 function profileName(value: { full_name?: string | null; username?: string | null } | { full_name?: string | null; username?: string | null }[] | null) {
   const profile = Array.isArray(value) ? value[0] : value;

@@ -41,7 +41,7 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
     enabled: !selectionMode,
     staleTime: WEATHER_STALE_TIME,
   })) });
-  const openProvince = (name: string) => router.push({ pathname: '/(tabs)/catalog', params: { province: name } });
+  const openProvince = (name: string) => router.push({ pathname: '/(aux)/province', params: { province: name } });
 
   return (
     <View

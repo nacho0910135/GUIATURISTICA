@@ -12,18 +12,24 @@ export type TravelerReply = { id: string; post_id: string; parent_reply_id: stri
 
 export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {
   const postsQuery = supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic).order('created_at', { ascending: false }).limit(40);
-  const [posts, replies, reactions, follows] = await Promise.all([
-    postsQuery,
-    supabase.from('traveler_replies').select('id,post_id,parent_reply_id,user_id,body,created_at,user:users(id,username,full_name,avatar_url,role)').order('created_at').limit(200),
-    supabase.from('traveler_reactions').select('post_id,user_id,reaction'),
+  const { data: postRows, error: postsError } = await postsQuery;
+  if (postsError) throw postsError;
+  const postIds = (postRows ?? []).map((post) => post.id);
+  const [replies, reactions, follows] = await Promise.all([
+    postIds.length
+      ? supabase.from('traveler_replies').select('id,post_id,parent_reply_id,user_id,body,created_at,user:users(id,username,full_name,avatar_url,role)').in('post_id', postIds).order('created_at').limit(200)
+      : Promise.resolve({ data: [], error: null }),
+    postIds.length
+      ? supabase.from('traveler_reactions').select('post_id,user_id,reaction').in('post_id', postIds)
+      : Promise.resolve({ data: [], error: null }),
     userId ? supabase.from('user_follows').select('followed_id').eq('follower_id', userId) : Promise.resolve({ data: [], error: null }),
   ]);
-  const error = posts.error ?? replies.error ?? reactions.error ?? follows.error;
+  const error = replies.error ?? reactions.error ?? follows.error;
   if (error) throw error;
   const oneProfile = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] : value;
   const reactionRows = (reactions.data ?? []) as { post_id: string; user_id: string; reaction: ReactionType }[];
   return {
-    posts: (posts.data ?? []).map((post) => ({ ...post, user: oneProfile(post.user) ?? undefined })) as TravelerPost[],
+    posts: (postRows ?? []).map((post) => ({ ...post, user: oneProfile(post.user) ?? undefined })) as TravelerPost[],
     replies: (replies.data ?? []).map((reply) => ({ ...reply, user: oneProfile(reply.user) ?? undefined })) as TravelerReply[],
     myReactions: reactionRows.reduce<Record<string, ReactionType>>((mine, row) => { if (row.user_id === userId) mine[row.post_id] = row.reaction; return mine; }, {}),
     followedUserIds: new Set((follows.data ?? []).map((row) => row.followed_id as string)),

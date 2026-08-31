@@ -66,7 +66,7 @@ export default function FriendsScreen() {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo cargar Comunidad Viajera.'); }
   }, [topic, userId]);
 
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useFocusEffect(useCallback(() => { if (!wall) void load(); }, [load, wall]));
 
   const choosePhoto = async () => {
     if (!requireAuth(language === 'es' ? 'Compartir una foto' : 'Share a photo')) return;
@@ -159,28 +159,28 @@ export default function FriendsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
-      <View className="w-full border-b border-ui-border bg-ui-surface px-5 py-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+      <View className="w-full border-b border-ui-border bg-ui-surface px-5 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface">
         <View className="mx-auto w-full max-w-3xl flex-row items-center">
-          <View className="h-11 w-11 items-center justify-center rounded-xl bg-caribbean-50 dark:bg-caribbean-900"><Text accessibilityLabel={language === 'es' ? 'Dos amigos' : 'Two friends'} className="text-2xl">🧑‍🤝‍🧑</Text></View>
+          <View className="h-10 w-10 items-center justify-center rounded-xl bg-caribbean-50 dark:bg-caribbean-900"><Text accessibilityLabel={language === 'es' ? 'Dos amigos' : 'Two friends'} className="text-xl">🧑‍🤝‍🧑</Text></View>
           <View className="ml-3 flex-1"><Text className="text-2xl font-extrabold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Comunidad Viajera' : 'Traveler Community'}</Text><Text className="text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Experiencias, fotos y conversaciones de viaje.' : 'Travel experiences, photos and conversations.'}</Text></View>
         </View>
-        <View className="mx-auto mt-4 w-full max-w-3xl flex-row flex-wrap gap-2">
+        <ScrollView horizontal className="mx-auto mt-2 w-full max-w-3xl" contentContainerStyle={{ gap: 8, paddingRight: 20 }} showsHorizontalScrollIndicator={false}>
           {topics.map((item) => (
             <MotionPressable
               accessibilityRole="tab"
               accessibilityState={{ selected: topic === item.id }}
-              className={topic === item.id ? 'flex-1 items-center rounded-full bg-ui-primary px-2 py-2.5 dark:bg-ui-dark-primary' : 'flex-1 items-center rounded-full border border-ui-border bg-ui-muted px-2 py-2.5 dark:border-ui-dark-border dark:bg-ui-dark-muted'}
-              containerStyle={{ flex: 1, minWidth: 96 }}
+              className={topic === item.id ? 'items-center rounded-full bg-ui-primary px-4 py-2 dark:bg-ui-dark-primary' : 'items-center rounded-full border border-ui-border bg-ui-muted px-4 py-2 dark:border-ui-dark-border dark:bg-ui-dark-muted'}
               key={item.id}
               onPress={() => {
                 void haptic('selection');
+                setWall(undefined);
                 setTopic(item.id);
               }}
             >
               <Text className={topic === item.id ? 'text-center text-xs font-black text-white' : 'text-center text-xs font-black text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? item.label_es : item.label_en}</Text>
             </MotionPressable>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
       <View className="w-full max-w-3xl px-4 pt-5">

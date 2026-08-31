@@ -1,9 +1,10 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { ThemedNotice } from '@/components/themed-notice';
 import { addFaunaSpecies, getFaunaHome, getVulnerabilityLabel, markFaunaSeen, type FaunaSanctuary } from '@/lib/fauna';
@@ -12,21 +13,23 @@ import { useAppTheme } from '@/theme/theme-provider';
 
 type FaunaHome = Awaited<ReturnType<typeof getFaunaHome>>;
 
-function SanctuaryImage({ sanctuary }: { sanctuary: FaunaSanctuary }) {
+function SanctuaryImage({ active, sanctuary }: { active: boolean; sanctuary: FaunaSanctuary }) {
   const photos = [...new Set([sanctuary.cover_image_url, ...sanctuary.photos].filter((url): url is string => Boolean(url)))];
   const [index, setIndex] = useState(0);
   useEffect(() => {
     setIndex(0);
-    if (photos.length < 2) return undefined;
+    if (!active || photos.length < 2) return undefined;
     const interval = setInterval(() => setIndex((current) => (current + 1) % photos.length), 2000);
     return () => clearInterval(interval);
-  }, [sanctuary.id, photos.length]);
+  }, [active, sanctuary.id, photos.length]);
   const source = photos[index];
   return source ? <Image cachePolicy="memory-disk" contentFit="cover" source={{ uri: source }} style={{ height: 146, width: '100%' }} transition={250} /> : <View className="h-[146px] items-center justify-center bg-ui-muted dark:bg-ui-dark-muted"><MaterialCommunityIcons name="image-off-outline" size={30} color="#68737A" /></View>;
 }
 
 export default function FaunaScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const { width } = useWindowDimensions();
   const { language, requireAuth, session } = useApp();
   const { colors } = useAppTheme();
@@ -38,6 +41,10 @@ export default function FaunaScreen() {
   const [addedSpecies, setAddedSpecies] = useState<string>();
   const [proposalOpen, setProposalOpen] = useState(false);
   const columns = width >= 1200 ? 4 : width >= 700 ? 2 : 1;
+  const leaveFauna = useCallback(() => {
+    if (from === 'explore' || !router.canGoBack()) router.replace('/(tabs)/explore');
+    else router.back();
+  }, [from, router]);
 
   const load = useCallback(async () => {
     try {
@@ -48,7 +55,15 @@ export default function FaunaScreen() {
     }
   }, [userId]);
 
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useFocusEffect(useCallback(() => { if (!home) void load(); }, [home, load]));
+  useFocusEffect(useCallback(() => {
+    if (Platform.OS !== 'android' || from !== 'explore') return undefined;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      leaveFauna();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [from, leaveFauna]));
 
   const markSeen = useCallback(async (speciesId: string) => {
     if (markingId) return;
@@ -76,8 +91,10 @@ export default function FaunaScreen() {
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 44 }} showsVerticalScrollIndicator={false}>
       <View className="border-b border-ui-border bg-ui-surface px-5 py-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
-        <View className="hidden" />
         <View className="flex-row items-center">
+          <Pressable accessibilityLabel={language === 'es' ? 'Volver a Explorar' : 'Back to Explore'} accessibilityRole="button" className="mr-3 h-11 w-11 items-center justify-center rounded-full bg-ui-muted dark:bg-ui-dark-muted" onPress={leaveFauna}>
+            <MaterialCommunityIcons name="arrow-left" size={23} color={colors.text} />
+          </Pressable>
           <View className="h-11 w-11 items-center justify-center rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
             <Text accessibilityLabel={language === 'es' ? 'Perezoso' : 'Sloth'} className="text-2xl">🦥</Text>
           </View>
@@ -155,7 +172,7 @@ export default function FaunaScreen() {
           <ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>
             {home.sanctuaries.map((sanctuary) => (
               <View className="w-64 overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface" key={sanctuary.id}>
-                <SanctuaryImage sanctuary={sanctuary} />
+                <SanctuaryImage active={isFocused} sanctuary={sanctuary} />
                 <View className="p-5">
                 <View className="flex-row items-center">
                   <MaterialCommunityIcons name="check-decagram" size={22} color="#78dfa1" />

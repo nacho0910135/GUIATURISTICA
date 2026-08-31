@@ -1,20 +1,23 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsFocused } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { InformationReportModal } from '@/components/information-report-modal';
+import { getAppOptions } from '@/lib/app-options';
 import { ferryRoutes, getFerryRoutes, getWeather, openNavigation, type FerryRoute, WEATHER_STALE_TIME } from '@/lib/logistics';
-import { addDestinationPhoto, addDestinationReview, getDestinationFreshness, getDestinationReviews, getMyDestinationFreshness, getPlacesForCategory, getPlacesForProvince, setDestinationFreshnessVote, type CommunityPhoto, type DestinationFreshness, type DestinationFreshnessCheck, type MapPlace, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
+import { addDestinationPhoto, addDestinationReview, getDestinationFreshness, getDestinationReviews, getMyDestinationFreshness, getPlaceById, getPlacesForCategory, getPlacesForProvince, getPlacesForTargets, setDestinationFreshnessVote, type CommunityPhoto, type DestinationFreshness, type DestinationFreshnessCheck, type MapPlace, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
 function DestinationCarousel({ height, place }: { height: number; place: MapPlace }) {
+  const isFocused = useIsFocused();
   const photos = [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))];
   const [photoIndex, setPhotoIndex] = useState(0);
   const [failedPhotos, setFailedPhotos] = useState<string[]>([]);
@@ -24,10 +27,10 @@ function DestinationCarousel({ height, place }: { height: number; place: MapPlac
     setFailedPhotos([]);
   }, [place.id]);
   useEffect(() => {
-    if (availablePhotos.length < 2) return undefined;
+    if (!isFocused || availablePhotos.length < 2) return undefined;
     const interval = setInterval(() => setPhotoIndex((current) => (current + 1) % availablePhotos.length), 2000);
     return () => clearInterval(interval);
-  }, [availablePhotos.length]);
+  }, [availablePhotos.length, isFocused]);
   const source = availablePhotos[photoIndex % availablePhotos.length];
   return source ? <Image cachePolicy="memory-disk" contentFit="cover" onError={() => setFailedPhotos((failed) => [...failed, source])} source={{ uri: source }} style={{ height, width: '100%' }} transition={300} /> : <View className="items-center justify-center bg-ui-muted dark:bg-ui-dark-muted" style={{ height }}><MaterialCommunityIcons name="image-off-outline" size={42} color="#68737A" /></View>;
 }
@@ -68,8 +71,17 @@ function distanceKm(from: Coordinates, to: Coordinates) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function matchesTargets(place: MapPlace, targets: string[]) {
+  const searchable = `${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const words = searchable.split(/[^a-z0-9]+/).filter(Boolean);
+  return targets.some((target) => {
+    const normalizedTarget = target.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return normalizedTarget.includes(' ') ? searchable.includes(normalizedTarget) : words.some((word) => word === normalizedTarget || (normalizedTarget.length >= 4 && word.startsWith(normalizedTarget)));
+  });
+}
+
 export default function ProvinceCatalogScreen() {
-  const { category: rawCategory, destinationId, province: rawProvince } = useLocalSearchParams<{ category?: string; destinationId?: string; province?: string }>();
+  const { category: rawCategory, categoryId, destinationId, province: rawProvince } = useLocalSearchParams<{ category?: string; categoryId?: string; destinationId?: string; province?: string }>();
   const { formatPrice, language, requireAuth, session, setVisitorType, visitorType } = useApp();
   const { colors } = useAppTheme();
   const router = useRouter();
@@ -77,27 +89,54 @@ export default function ProvinceCatalogScreen() {
   const [selected, setSelected] = useState<MapPlace>();
   const [userLocation, setUserLocation] = useState<Coordinates>();
   const [beachType, setBeachType] = useState<'family' | 'surf'>('family');
+  const [activeSubcategoryId, setActiveSubcategoryId] = useState<string>();
+  const categoryOptions = useQuery({ queryKey: ['app-options', 'destination_category', 'v2'], queryFn: () => getAppOptions('destination_category'), staleTime: 5 * 60 * 1000 });
+  const categoryOption = useMemo(() => categoryOptions.data?.find((option) => option.id === categoryId) ?? null, [categoryId, categoryOptions.data]);
+  const categorySubcategories = useMemo(() => categoryOptions.data?.filter((option) => option.parent_id === categoryId) ?? [], [categoryId, categoryOptions.data]);
+  const activeSubcategory = useMemo(() => categorySubcategories.find((option) => option.id === activeSubcategoryId) ?? null, [activeSubcategoryId, categorySubcategories]);
+  const categoryName = categoryOption ? (language === 'es' ? categoryOption.label_es : categoryOption.label_en) : rawCategory;
+  const isBeach = !categoryId && (rawCategory === 'Playa' || rawCategory === 'Playas');
+  const leaveCatalog = useCallback(() => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)/explore');
+  }, [router]);
+  const closeDestination = useCallback(() => {
+    setSelected(undefined);
+    if (!destinationId) return;
+    router.replace({
+      pathname: '/(aux)/province',
+      params: categoryId ? { categoryId } : rawCategory ? { category: rawCategory } : rawProvince ? { province: rawProvince } : {},
+    });
+  }, [categoryId, destinationId, rawCategory, rawProvince, router]);
   const province = provinces.find((item) => item.name === rawProvince) ?? provinces[0];
-  const scopeTitle = rawCategory ? categoryLabel(rawCategory, language) : province.name;
-  const scopeKey = rawCategory ? `category-${rawCategory}` : `province-${province.code}`;
+  const scopeTitle = categoryName ?? (categoryId ? (language === 'es' ? 'Cargando catálogo…' : 'Loading catalog…') : province.name);
+  const scopeKey = categoryName ? `category-${categoryId ?? categoryName}` : `province-${province.code}`;
   const places = useQuery({
-    queryKey: ['places', 'v2', scopeKey, session?.user.id],
-    queryFn: () => rawCategory ? getPlacesForCategory(rawCategory, session?.user.id) : getPlacesForProvince(province.name, session?.user.id),
+    queryKey: ['places', 'v2', scopeKey, categoryOption?.allowed_targets?.join('|') ?? null, destinationId ?? null, session?.user.id],
+    queryFn: async () => {
+      if (destinationId) {
+        const destination = await getPlaceById(destinationId, session?.user.id);
+        if (destination) return [destination];
+      }
+      return categoryOption ? getPlacesForTargets(categoryOption.allowed_targets ?? [], session?.user.id) : categoryName ? getPlacesForCategory(categoryName, session?.user.id) : getPlacesForProvince(province.name, session?.user.id);
+    },
+    networkMode: 'always',
+    enabled: !categoryId || Boolean(categoryOption),
     staleTime: 60 * 1000,
   });
   useFocusEffect(useCallback(() => {
-    const refresh = () => void queryClient.refetchQueries({ queryKey: ['places'], type: 'active' });
-    refresh();
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') refresh();
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      leaveCatalog();
+      return true;
     });
     return () => subscription.remove();
-  }, [queryClient]));
+  }, [leaveCatalog]));
   useEffect(() => {
     if (!destinationId || !places.data) return;
     const match = places.data.find((place) => place.id === destinationId);
     if (match) setSelected(match);
   }, [destinationId, places.data]);
+  useEffect(() => { setActiveSubcategoryId(undefined); }, [categoryId]);
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -118,10 +157,11 @@ export default function ProvinceCatalogScreen() {
   const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => userLocation
     ? distanceKm(userLocation, a) - distanceKm(userLocation, b)
     : 0), [places.data, userLocation]);
-  const displayedPlaces = useMemo(() => rawCategory !== 'Playa' ? sortedPlaces : sortedPlaces.filter((place) => {
+  const subcategoryPlaces = useMemo(() => !activeSubcategory ? sortedPlaces : sortedPlaces.filter((place) => matchesTargets(place, activeSubcategory.allowed_targets ?? [])), [activeSubcategory, sortedPlaces]);
+  const displayedPlaces = useMemo(() => !isBeach ? subcategoryPlaces : subcategoryPlaces.filter((place) => {
     const surf = place.category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('surf');
     return beachType === 'surf' ? surf : !surf;
-  }), [beachType, rawCategory, sortedPlaces]);
+  }), [beachType, isBeach, subcategoryPlaces]);
 
   const like = async (place: MapPlace) => {
     if (!requireAuth(language === 'es' ? 'Dar me gusta a un destino' : 'Like a destination') || !session) return;
@@ -138,18 +178,19 @@ export default function ProvinceCatalogScreen() {
     <View className="flex-1 bg-ui-background dark:bg-ui-dark-background">
       <View className="bg-ui-surface dark:bg-ui-dark-surface px-5 pb-6 pt-12">
         <View className="mx-auto w-full max-w-5xl flex-row items-center">
-          <Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted dark:bg-white/10" onPress={() => router.back()}>
+          <Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted dark:bg-white/10" onPress={leaveCatalog}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
           </Pressable>
-          <View className="ml-4 flex-1"><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{scopeTitle}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{rawCategory ? (language === 'es' ? 'Todo Costa Rica' : 'Across Costa Rica') : (language === 'es' ? 'Lugares para descubrir' : 'Places to discover')}</Text>{rawCategory === 'Playa' ? <View className="mt-3 flex-row self-start overflow-hidden rounded-xl border border-ui-border dark:border-ui-dark-border">{(['family', 'surf'] as const).map((type) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: beachType === type }} className={beachType === type ? 'flex-row items-center bg-ui-primary px-3 py-2 dark:bg-ui-dark-primary' : 'flex-row items-center px-3 py-2'} key={type} onPress={() => setBeachType(type)}><MaterialCommunityIcons name={type === 'family' ? 'umbrella-beach' : 'surfing'} size={17} color={beachType === type ? 'white' : '#087443'} /><Text className={beachType === type ? 'ml-1.5 text-xs font-black text-white' : 'ml-1.5 text-xs font-black text-ui-primary'}>{language === 'es' ? (type === 'family' ? 'Familiar' : 'Surf') : (type === 'family' ? 'Family' : 'Surf')}</Text></Pressable>)}</View> : null}</View>
+          <View className="ml-4 flex-1"><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{scopeTitle}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{categoryName ? (language === 'es' ? 'Todo Costa Rica' : 'Across Costa Rica') : (language === 'es' ? 'Lugares para descubrir' : 'Places to discover')}</Text>{isBeach ? <View className="mt-3 flex-row self-start overflow-hidden rounded-xl border border-ui-border dark:border-ui-dark-border">{(['family', 'surf'] as const).map((type) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: beachType === type }} className={beachType === type ? 'flex-row items-center bg-ui-primary px-3 py-2 dark:bg-ui-dark-primary' : 'flex-row items-center px-3 py-2'} key={type} onPress={() => setBeachType(type)}><MaterialCommunityIcons name={type === 'family' ? 'umbrella-beach' : 'surfing'} size={17} color={beachType === type ? 'white' : '#087443'} /><Text className={beachType === type ? 'ml-1.5 text-xs font-black text-white' : 'ml-1.5 text-xs font-black text-ui-primary'}>{language === 'es' ? (type === 'family' ? 'Familiar' : 'Surf') : (type === 'family' ? 'Family' : 'Surf')}</Text></Pressable>)}</View> : null}</View>
           <View className="flex-row overflow-hidden rounded-xl border border-ui-border dark:border-white/30">{(['tico', 'foreigner'] as const).map((item) => <Pressable accessibilityLabel={item === 'tico' ? 'Modo Tico' : 'Foreigner mode'} accessibilityRole="button" className={visitorType === item ? 'bg-white px-3 py-2' : 'px-3 py-2'} key={item} onPress={() => setVisitorType(item)}><Text className={visitorType === item ? 'text-xs font-black text-[#002b7f]' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{item === 'tico' ? 'Tico' : 'Foreigner'}</Text></Pressable>)}</View>
         </View>
       </View>
+      {categorySubcategories.length ? <View className="border-b border-ui-border bg-ui-surface py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface"><ScrollView horizontal contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}><Pressable accessibilityRole="button" accessibilityState={{ selected: !activeSubcategory }} className={!activeSubcategory ? 'min-h-11 justify-center rounded-full bg-ui-primary px-4 dark:bg-ui-dark-primary' : 'min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted'} onPress={() => setActiveSubcategoryId(undefined)}><Text className={!activeSubcategory ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? 'Todos' : 'All'}</Text></Pressable>{categorySubcategories.map((subcategory) => <Pressable accessibilityRole="button" accessibilityState={{ selected: activeSubcategoryId === subcategory.id }} className={activeSubcategoryId === subcategory.id ? 'min-h-11 justify-center rounded-full bg-ui-primary px-4 dark:bg-ui-dark-primary' : 'min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted'} key={subcategory.id} onPress={() => setActiveSubcategoryId((current) => current === subcategory.id ? undefined : subcategory.id)}><Text className={activeSubcategoryId === subcategory.id ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? subcategory.label_es : subcategory.label_en}</Text></Pressable>)}</ScrollView></View> : null}
       <FlatList
         contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 48, width: '100%', maxWidth: 1040, alignSelf: 'center' }}
         data={displayedPlaces}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? (language === 'es' ? 'No se pudieron cargar los sitios.' : 'Places could not be loaded.') : rawCategory === 'Playa' ? (language === 'es' ? `Aún no hay playas ${beachType === 'surf' ? 'de surf' : 'familiares'} publicadas.` : `There are no ${beachType === 'surf' ? 'surf' : 'family'} beaches published yet.`) : (language === 'es' ? 'Aún no hay sitios publicados aquí.' : 'There are no published places here yet.')}</Text>}
+        ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? (language === 'es' ? 'No se pudieron cargar los sitios.' : 'Places could not be loaded.') : isBeach ? (language === 'es' ? `Aún no hay playas ${beachType === 'surf' ? 'de surf' : 'familiares'} publicadas.` : `There are no ${beachType === 'surf' ? 'surf' : 'family'} beaches published yet.`) : (language === 'es' ? 'Aún no hay sitios publicados aquí.' : 'There are no published places here yet.')}</Text>}
         renderItem={({ item }) => (
           <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}`} accessibilityRole="button" className="overflow-hidden rounded-[30px] border border-ui-border bg-ui-surface active:opacity-90 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={() => setSelected(item)}>
             <View className="relative">
@@ -177,7 +218,7 @@ export default function ProvinceCatalogScreen() {
           </Pressable>
         )}
       />
-      <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={() => setSelected(undefined)} onLike={like} place={selected} />
+      <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} />
     </View>
   );
 }
@@ -205,6 +246,13 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
   if (!place) return null;
   const ferries = ferryAccess ? (ferryQuery.data ?? ferryRoutes).filter((route) => ferryAccess.routeIds.includes(route.id)) : [];
   const documentedSource = Boolean(place.validated_by.length);
+  const ticketUrl = place.requires_online_ticket
+    ? place.online_ticket_url
+    : place.requires_sinac_booking
+      ? place.sinac_booking_url
+      : null;
+  const hasOnlineTicket = Boolean(ticketUrl);
+  const ticketIssuer = place.requires_sinac_booking ? 'SINAC' : (language === 'es' ? 'el operador oficial' : 'the official operator');
   const visitPrice = visitorType === 'tico' ? (place.price_national_crc == null ? 'Consultar' : place.price_national_crc === 0 ? 'Gratis' : formatPrice(place.price_national_crc)) : (place.price_foreigner_usd == null ? 'Check price' : place.price_foreigner_usd === 0 ? 'Free' : `$${place.price_foreigner_usd.toFixed(2)}`);
 
   const pickPhoto = async () => {
@@ -279,12 +327,12 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
               <View className="rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5">
                 <InfoRow icon="calendar-remove-outline" label={language === 'es' ? 'Cierre' : 'Closed'} value={place.closed_day || (language === 'es' ? 'Sin dato verificado' : 'No verified data')} />
                 {ferries.length ? <InfoRow icon="ferry" label={language === 'es' ? 'Acceso' : 'Access'} value={language === 'es' ? 'Este destino requiere ferri. Consultá las salidas antes de viajar.' : 'This destination requires a ferry. Check departures before travelling.'} /> : null}
-                {place.requires_sinac_booking ? <InfoRow icon="ticket-confirmation-outline" label={language === 'es' ? 'Reserva oficial SINAC' : 'Official SINAC reservation'} value={language === 'es' ? 'Este parque requiere reserva. Prepará fecha, cantidad de visitantes y medio de pago en el sitio oficial.' : 'This park requires a reservation. Have your date, visitor count and payment method ready on the official site.'} /> : null}
+                {hasOnlineTicket ? <InfoRow icon="ticket-confirmation-outline" label={language === 'es' ? 'Compra de entradas en línea' : 'Online ticket purchase'} value={language === 'es' ? `Este sitio requiere compra previa. Serás redirigido a ${ticketIssuer}.` : `This site requires advance purchase. You will be redirected to ${ticketIssuer}.`} /> : null}
                 {place.notes ? <InfoRow icon="information-outline" label={language === 'es' ? 'Importante' : 'Important'} value={place.notes} /> : null}
                 <View className="mt-5 flex-row flex-wrap gap-3 border-t border-ui-border dark:border-ui-dark-border pt-5">
-                  {place.requires_sinac_booking && place.sinac_booking_url ? <Pressable className="flex-row items-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" onPress={() => void Linking.openURL(place.sinac_booking_url!)}><MaterialCommunityIcons name="ticket-confirmation-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Abrir reserva oficial SINAC' : 'Open official SINAC reservation'}</Text></Pressable> : null}
+                  {hasOnlineTicket ? <Pressable accessibilityRole="link" className="flex-row items-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary px-5 py-3" onPress={() => void Linking.openURL(ticketUrl!)}><MaterialCommunityIcons name="ticket-confirmation-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Comprar boleto' : 'Buy ticket'}</Text></Pressable> : null}
                   {place.source_url ? <Pressable className="flex-row items-center rounded-2xl border border-ui-border dark:border-white/20 px-5 py-3" onPress={() => void Linking.openURL(place.source_url!)}><MaterialCommunityIcons name="link-variant" size={21} color="#00e5a7" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{documentedSource ? (language === 'es' ? 'Consultar fuente oficial' : 'View official source') : (language === 'es' ? 'Consultar fuente registrada' : 'View registered source')}</Text></Pressable> : null}
-                  {place.requires_sinac_booking ? <Text className="w-full text-xs font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Descubriendo CR enlaza a SINAC; no vende entradas ni cobra comisión.' : 'Descubriendo CR links to SINAC; it does not sell tickets or charge a commission.'}</Text> : null}
+                  {hasOnlineTicket ? <Text className="w-full text-xs font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? `Descubriendo CR te redirige a ${ticketIssuer}; no procesa pagos ni cobra comisión.` : `Descubriendo CR redirects you to ${ticketIssuer}; it does not process payments or charge a fee.`}</Text> : null}
                   <Pressable className="flex-row items-center rounded-2xl border border-coral-500/40 px-5 py-3" onPress={() => setReportOpen(true)}><MaterialCommunityIcons name="flag-outline" size={21} color="#B42318" /><Text className="ml-2 font-black text-coral-600">{language === 'es' ? 'Reportar información incorrecta' : 'Report incorrect information'}</Text></Pressable>
                 </View>
               </View>
@@ -324,7 +372,7 @@ function CommentsPanel({ comment, language, onComment, onPhoto, onRating, onSend
 
 function FerryAccessPanel({ ferries, formatPrice, language }: { ferries: FerryRoute[]; formatPrice: (value: number) => string; language: 'es' | 'en' }) {
   const dayLabel = language === 'es' ? ['Lunes a viernes', 'Sábado', 'Domingo'] : ['Weekdays', 'Saturday', 'Sunday'];
-  return <View className="rounded-3xl border border-caribbean-500/40 bg-caribbean-50 p-5 dark:bg-caribbean-900/30"><View className="flex-row items-center"><MaterialCommunityIcons name="ferry" size={30} color="#0077A8" /><View className="ml-3 flex-1"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ferri para llegar' : 'Ferry to get there'}</Text><Text className="mt-0.5 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Horarios, terminal y operador' : 'Schedules, terminal and operator'}</Text></View></View>{ferries.map((ferry) => <View className="mt-5 border-t border-caribbean-500/20 pt-5 first:mt-4 first:border-t-0 first:pt-0" key={ferry.id}><Text className="font-black text-ui-text dark:text-ui-dark-text">{ferry.route}</Text><Text className="mt-1 text-sm font-bold text-caribbean-700 dark:text-caribbean-100">{ferry.operator}</Text>{([ferry.schedules.weekday, ferry.schedules.saturday, ferry.schedules.sunday] as string[][]).map((times, index) => <View className="mt-3" key={dayLabel[index]}><Text className="text-xs font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{dayLabel[index]}</Text><Text className="mt-1 font-bold text-ui-text dark:text-ui-dark-text">{times.length ? times.join(' · ') : (language === 'es' ? 'No publicado' : 'Not published')}</Text></View>)}{ferry.scheduleNote ? <Text className="mt-3 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{ferry.scheduleNote}</Text> : null}<Text className="mt-3 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Adulto' : 'Adult'}: {ferry.adultFare === null ? (language === 'es' ? 'No publicada' : 'Not published') : formatPrice(ferry.adultFare)}</Text>{ferry.terminalName ? <View className="mt-3 rounded-2xl bg-white/70 p-3 dark:bg-black/15"><Text className="font-bold text-ui-text dark:text-ui-dark-text">Terminal: {ferry.terminalName}</Text>{ferry.wazeUrl ? <Pressable className="mt-2 self-start" onPress={() => void Linking.openURL(ferry.wazeUrl!)}><Text className="font-black text-caribbean-700 dark:text-caribbean-100">{language === 'es' ? 'Abrir punto de espera en Waze' : 'Open boarding point in Waze'}</Text></Pressable> : null}</View> : null}<View className="mt-4 flex-row flex-wrap gap-4"><Pressable onPress={() => void Linking.openURL(ferry.scheduleSourceUrl)}><Text className="font-black text-caribbean-700 dark:text-caribbean-100">{language === 'es' ? 'Ver horario del operador' : 'View operator schedule'}</Text></Pressable>{ferry.ticketUrl ? <Pressable onPress={() => void Linking.openURL(ferry.ticketUrl)}><Text className="font-black text-caribbean-700 dark:text-caribbean-100">{language === 'es' ? 'Sitio del proveedor' : 'Provider website'}</Text></Pressable> : null}</View></View>)}</View>;
+  return <View className="rounded-3xl border border-caribbean-500/40 bg-caribbean-50 p-5 dark:bg-caribbean-900/30"><View className="flex-row items-center"><MaterialCommunityIcons name="ferry" size={30} color="#0077A8" /><View className="ml-3 flex-1"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ferri para llegar' : 'Ferry to get there'}</Text><Text className="mt-0.5 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Horarios, terminal y operador' : 'Schedules, terminal and operator'}</Text></View></View>{ferries.map((ferry) => <View className="mt-5 border-t border-caribbean-500/20 pt-5 first:mt-4 first:border-t-0 first:pt-0" key={ferry.id}><Text className="font-black text-ui-text dark:text-ui-dark-text">{ferry.route}</Text><Text className="mt-1 text-sm font-bold text-caribbean-700 dark:text-caribbean-100">{ferry.operator}</Text>{([ferry.schedules.weekday, ferry.schedules.saturday, ferry.schedules.sunday] as string[][]).map((times, index) => <View className="mt-3" key={dayLabel[index]}><Text className="text-xs font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{dayLabel[index]}</Text><Text className="mt-1 font-bold text-ui-text dark:text-ui-dark-text">{times.length ? times.join(' · ') : (language === 'es' ? 'No publicado' : 'Not published')}</Text></View>)}{ferry.scheduleNote ? <Text className="mt-3 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{ferry.scheduleNote}</Text> : null}<Text className="mt-3 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Adulto' : 'Adult'}: {ferry.adultFare === null ? (language === 'es' ? 'No publicada' : 'Not published') : formatPrice(ferry.adultFare)}</Text>{ferry.terminalName ? <View className="mt-3 rounded-2xl bg-white/70 p-3 dark:bg-black/15"><Text className="font-bold text-ui-text dark:text-ui-dark-text">Terminal: {ferry.terminalName}</Text>{ferry.wazeUrl ? <Pressable accessibilityRole="link" className="mt-2 self-start" onPress={() => void Linking.openURL(ferry.wazeUrl!)}><Text className="font-black text-caribbean-700 dark:text-caribbean-100">{language === 'es' ? 'Abrir punto de espera en Waze' : 'Open boarding point in Waze'}</Text></Pressable> : null}</View> : null}<View className="mt-4 flex-row flex-wrap gap-4"><Pressable accessibilityRole="link" onPress={() => void Linking.openURL(ferry.scheduleSourceUrl)}><Text className="font-black text-caribbean-700 dark:text-caribbean-100">{language === 'es' ? 'Ver horario del operador' : 'View operator schedule'}</Text></Pressable>{ferry.ticketUrl ? <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(ferry.ticketUrl!)}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Comprar boleto' : 'Buy ticket'}</Text></Pressable> : null}</View></View>)}</View>;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

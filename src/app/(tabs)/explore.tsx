@@ -1,10 +1,11 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsFocused } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { MapCanvas } from '@/components/explore/map-canvas';
 import { MotionPressable, Skeleton } from '@/components/motion';
@@ -22,12 +23,11 @@ const categoryColors = ['#159ed1', '#087443', '#ff5d52', '#ff8f52', '#8b5e34', '
 export default function ExploreScreen() {
   const { formatPrice, language, requireAuth, session } = useApp();
   const router = useRouter();
+  const isFocused = useIsFocused();
   const { reset: resetToken } = useLocalSearchParams<{ reset?: string }>();
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
   const [search, setSearch] = useState('');
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
-  const [activeSubcategoryId, setActiveSubcategoryId] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number }>();
   const [proposalOpen, setProposalOpen] = useState(false);
   const wide = width >= 900;
@@ -35,13 +35,11 @@ export default function ExploreScreen() {
     queryKey: ['explore-places', 'v3'],
     queryFn: getExplorePlaces,
     networkMode: 'always',
-    refetchOnMount: 'always',
     staleTime: 5 * 60 * 1000,
   });
   const destinationCategories = useQuery({
     queryKey: ['app-options', 'destination_category', 'v2'],
     queryFn: () => getAppOptions('destination_category'),
-    refetchOnMount: 'always',
     staleTime: 5 * 60 * 1000,
   });
   const followed = useQuery({
@@ -51,55 +49,38 @@ export default function ExploreScreen() {
   });
   const resetExplore = useCallback(() => {
     setSearch('');
-    setActiveCategoryId(null);
-    setActiveSubcategoryId(null);
     setCoordinates(undefined);
     setProposalOpen(false);
   }, []);
   useEffect(() => {
     if (resetToken) resetExplore();
   }, [resetExplore, resetToken]);
-  useFocusEffect(
-    useCallback(() => {
-      const refresh = () =>
-        void queryClient.refetchQueries({
-          queryKey: ['explore-places'],
-          type: 'active',
-        });
-      refresh();
-      const subscription = AppState.addEventListener('change', (state) => {
-        if (state === 'active') refresh();
-      });
-      return () => subscription.remove();
-    }, [queryClient]),
-  );
+  useEffect(() => {
+    if (!isFocused) setSearch('');
+  }, [isFocused]);
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (!proposalOpen && !search && !activeCategoryId && !coordinates) return false;
+        if (!proposalOpen && !search && !coordinates) return false;
         resetExplore();
         return true;
       });
       return () => subscription.remove();
-    }, [activeCategoryId, coordinates, proposalOpen, resetExplore, search]),
+    }, [coordinates, proposalOpen, resetExplore, search]),
   );
   const categoryOptions = useMemo(() => destinationCategories.data ?? [], [destinationCategories.data]);
   const rootCategories = useMemo(() => categoryOptions.filter((option) => option.parent_id === null), [categoryOptions]);
-  const activeCategory = useMemo(() => rootCategories.find((option) => option.id === activeCategoryId) ?? null, [activeCategoryId, rootCategories]);
-  const activeSubcategory = useMemo(() => categoryOptions.find((option) => option.id === activeSubcategoryId && option.parent_id === activeCategoryId) ?? null, [activeCategoryId, activeSubcategoryId, categoryOptions]);
-  const activeSubcategories = useMemo(() => categoryOptions.filter((option) => option.parent_id === activeCategoryId), [activeCategoryId, categoryOptions]);
   const visiblePlaces = useMemo(() => {
     const term = search.trim().toLocaleLowerCase(language === 'es' ? 'es' : 'en');
     const filtered = (places.data ?? []).filter((place) => {
       const searchable = `${place.name} ${place.province} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`;
       if (term && !searchable.toLocaleLowerCase(language === 'es' ? 'es' : 'en').includes(term)) return false;
-      if (activeCategory && !matchesOption(place, activeCategory)) return false;
-      if (activeSubcategory && !matchesOption(place, activeSubcategory)) return false;
-      return Boolean(term || activeCategory || coordinates);
+      return Boolean(term || coordinates);
     });
     return coordinates ? filtered.sort((a, b) => distanceKm(coordinates, a) - distanceKm(coordinates, b)) : filtered;
-  }, [activeCategory, activeSubcategory, coordinates, language, places.data, search]);
+  }, [coordinates, language, places.data, search]);
+  const hasSearch = Boolean(search.trim());
 
   const discover = async () => {
     if (coordinates) {
@@ -122,10 +103,49 @@ export default function ExploreScreen() {
     setCoordinates(position.coords);
     void haptic('success');
   };
+  const resultContent = (
+    <>
+      {places.isPending ? (
+        <PlaceResultsSkeleton large={false} language={language} />
+      ) : (
+        visiblePlaces.slice(0, hasSearch ? 5 : 20).map((place) => (
+          <PlaceResult
+            active={isFocused}
+            followed={Boolean(place.contributor_id && followed.data?.has(place.contributor_id))}
+            formatPrice={formatPrice}
+            key={`${place.community ? 'community' : 'official'}-${place.id}`}
+            large={false}
+            language={language}
+            onFollow={async () => {
+              if (!place.contributor_id || !requireAuth(language === 'es' ? 'Seguir a un viajero' : 'Follow a traveler') || !session) return;
+              try {
+                await toggleTravelerFollow(session.user.id, place.contributor_id, Boolean(followed.data?.has(place.contributor_id)));
+                await queryClient.invalidateQueries({ queryKey: ['followed-travelers', session.user.id] });
+                void haptic('success');
+              } catch (reason) {
+                Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo actualizar el seguimiento.' : 'Could not update follow.');
+              }
+            }}
+            onPress={() => router.push({ pathname: '/(aux)/province', params: { category: place.category, destinationId: place.id } })}
+            origin={coordinates}
+            ownContribution={place.contributor_id === session?.user.id}
+            place={place}
+          />
+        ))
+      )}
+      {places.isError ? (
+        <Pressable accessibilityRole="button" className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" onPress={() => void places.refetch()}>
+          <Text className="font-black text-white">{language === 'es' ? 'Reintentar cargar destinos' : 'Retry loading destinations'}</Text>
+        </Pressable>
+      ) : !places.isPending && !visiblePlaces.length ? (
+        <Text className="rounded-control bg-ui-surface py-6 text-center font-bold text-ui-text-muted dark:bg-ui-dark-surface dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con esa búsqueda.' : 'No places matched your search.'}</Text>
+      ) : null}
+    </>
+  );
 
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
-      <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180 }}>
+      <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180, zIndex: 10 }}>
         <View className="mx-auto w-[94%] flex-row items-stretch gap-2">
           <Pressable
             accessibilityRole="button"
@@ -141,50 +161,41 @@ export default function ExploreScreen() {
           <Pressable
             accessibilityRole="button"
             className="min-h-12 min-w-20 flex-row items-center justify-center rounded-2xl border border-black bg-ui-primary-soft px-3 py-3 active:opacity-75 dark:bg-ui-dark-primary-soft"
-            onPress={() => router.push('/(tabs)/fauna')}
+            onPress={() => router.push({ pathname: '/(tabs)/fauna', params: { from: 'explore' } })}
           >
             <MaterialCommunityIcons name="paw" size={18} color="#087443" />
             <Text className="ml-1.5 text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Fauna' : 'Wildlife'}</Text>
           </Pressable>
         </View>
         <Text className="mb-1.5 mt-3 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Busca un sitio por nombre' : 'Search for a place by name'}</Text>
-        <View className="flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
-          <MaterialCommunityIcons name="magnify" size={23} color="#68737A" />
-          <TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Buscar playas, cataratas, miradores, volcanes o senderos…' : 'Search beaches, waterfalls, viewpoints, volcanoes or trails…'} placeholderTextColor="#68737A" value={search} />
-          {search ? (
-            <Pressable accessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'} accessibilityRole="button" hitSlop={10} onPress={() => setSearch('')}>
-              <MaterialCommunityIcons name="close-circle" size={21} color="#68737A" />
+        <View className="relative">
+          <View className="flex-row items-stretch gap-2">
+            <View className="min-w-0 flex-1 flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+              <MaterialCommunityIcons name="magnify" size={23} color="#68737A" />
+              <TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Buscar playas, cataratas, miradores, volcanes o senderos…' : 'Search beaches, waterfalls, viewpoints, volcanoes or trails…'} placeholderTextColor="#68737A" value={search} />
+              {search ? (
+                <Pressable accessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'} accessibilityRole="button" hitSlop={10} onPress={() => setSearch('')}>
+                  <MaterialCommunityIcons name="close-circle" size={21} color="#68737A" />
+                </Pressable>
+              ) : null}
+            </View>
+            <Pressable
+              accessibilityLabel={language === 'es' ? 'Agregar sitio' : 'Add place'}
+              accessibilityRole="button"
+              className="min-h-12 flex-row items-center justify-center rounded-control bg-ui-primary px-3 active:opacity-75 dark:bg-ui-dark-primary"
+              onPress={() => {
+                if (!requireAuth(language === 'es' ? 'Agregar un sitio' : 'Add a place') || !session) return;
+                setProposalOpen(true);
+              }}
+            >
+              <MaterialCommunityIcons name="plus" size={19} color="white" />
+              <Text className="ml-1.5 text-center text-xs font-black leading-3 text-white">{language === 'es' ? 'Agregar\nnuevo sitio' : 'Add\nnew place'}</Text>
             </Pressable>
-          ) : null}
+          </View>
+          {hasSearch ? <View className="absolute left-0 right-0 z-20 gap-3" style={{ elevation: 20, marginTop: 12, top: '100%' }}>{resultContent}</View> : null}
         </View>
         {coordinates ? <Text className="mt-3 text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ordenados del más cercano al más lejano.' : 'Sorted from nearest to farthest.'}</Text> : null}
-        {activeCategory ? (
-          <ScrollView horizontal className="-mx-4 mt-3" contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }} showsHorizontalScrollIndicator={false}>
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: activeSubcategoryId === null }}
-              className={activeSubcategoryId === null ? 'rounded-full bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary' : 'rounded-full bg-ui-muted px-4 py-3 dark:bg-ui-dark-muted'}
-              onPress={() => { setActiveSubcategoryId(null); void haptic('selection'); }}
-            >
-              <Text className={activeSubcategoryId === null ? 'font-black text-white' : 'font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? 'Todos' : 'All'}</Text>
-            </MotionPressable>
-            {activeSubcategories.map((subcategory) => {
-              const selected = activeSubcategoryId === subcategory.id;
-              return (
-                <MotionPressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  className={selected ? 'rounded-full bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary' : 'rounded-full bg-ui-muted px-4 py-3 dark:bg-ui-dark-muted'}
-                  key={subcategory.id}
-                  onPress={() => { setActiveSubcategoryId(selected ? null : subcategory.id); void haptic('selection'); }}
-                >
-                  <Text className={selected ? 'font-black text-white' : 'font-bold text-ui-text dark:text-ui-dark-text'}>{optionLabel(subcategory, language)}</Text>
-                </MotionPressable>
-              );
-            })}
-          </ScrollView>
-        ) : null}
-        {!activeCategory && !search && !coordinates ? (
+        {!coordinates ? (
           <View className="mt-5 flex-row flex-wrap">
             {destinationCategories.isPending ? <CategoryGridSkeleton language={language} wide={wide} /> : null}
             {rootCategories.map((category, index) => {
@@ -197,7 +208,7 @@ export default function ExploreScreen() {
                   className="items-center px-1 py-3"
                   containerStyle={{ width: '25%' }}
                   key={category.id}
-                  onPress={() => { setActiveCategoryId(category.id); setActiveSubcategoryId(null); void haptic('selection'); }}
+                  onPress={() => { router.push({ pathname: '/(aux)/province', params: { categoryId: category.id } }); void haptic('selection'); }}
                 >
                   <View className="items-center justify-center rounded-full" style={{ backgroundColor: `${color}20`, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
                     <MaterialCommunityIcons name={category.icon ?? 'map-marker-outline'} size={wide ? 34 : 27} color={color} />
@@ -211,61 +222,7 @@ export default function ExploreScreen() {
             })}
           </View>
         ) : null}
-        {search || activeCategory || coordinates ? (
-          <View className="mt-4 gap-3">
-            {activeCategory ? (
-              <View className="flex-row items-center justify-between">
-                <Text className="text-base font-black text-ui-text dark:text-ui-dark-text">{optionLabel(activeCategory, language)}</Text>
-                <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { setActiveCategoryId(null); setActiveSubcategoryId(null); }}>
-                  <Text className="text-sm font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Ver categorías' : 'View categories'}</Text>
-                </Pressable>
-              </View>
-            ) : null}
-            {places.isPending ? (
-              <PlaceResultsSkeleton language={language} />
-            ) : (
-              visiblePlaces.slice(0, 20).map((place) => (
-                <PlaceResult
-                  followed={Boolean(place.contributor_id && followed.data?.has(place.contributor_id))}
-                  formatPrice={formatPrice}
-                  key={`${place.community ? 'community' : 'official'}-${place.id}`}
-                  language={language}
-                  onFollow={async () => {
-                    if (!place.contributor_id || !requireAuth(language === 'es' ? 'Seguir a un viajero' : 'Follow a traveler') || !session) return;
-                    try {
-                      await toggleTravelerFollow(session.user.id, place.contributor_id, Boolean(followed.data?.has(place.contributor_id)));
-                      await queryClient.invalidateQueries({
-                        queryKey: ['followed-travelers', session.user.id],
-                      });
-                      void haptic('success');
-                    } catch (reason) {
-                      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo actualizar el seguimiento.' : 'Could not update follow.');
-                    }
-                  }}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/(tabs)/catalog',
-                      params: {
-                        category: place.category,
-                        destinationId: place.id,
-                      },
-                    })
-                  }
-                  origin={coordinates}
-                  ownContribution={place.contributor_id === session?.user.id}
-                  place={place}
-                />
-              ))
-            )}
-            {places.isError ? (
-              <Pressable accessibilityRole="button" className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" onPress={() => void places.refetch()}>
-                <Text className="font-black text-white">{language === 'es' ? 'Reintentar cargar destinos' : 'Retry loading destinations'}</Text>
-              </Pressable>
-            ) : !places.isPending && !visiblePlaces.length ? (
-              <Text className="py-6 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con esa búsqueda.' : 'No places matched your search.'}</Text>
-            ) : null}
-          </View>
-        ) : null}
+        {coordinates && !hasSearch ? <View className="mt-4 gap-3">{resultContent}</View> : null}
       </View>
 
       <View className="w-full" style={{ maxWidth: 1180, paddingHorizontal: wide ? 20 : 0 }}>
@@ -273,7 +230,7 @@ export default function ExploreScreen() {
           <Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Mapa interactivo de CR' : 'Interactive map of Costa Rica'}</Text>
           <Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Presioná una provincia para acceder a los destinos.' : 'Tap a province to see its destinations.'}</Text>
         </View>
-        <MapCanvas />
+        {isFocused ? <MapCanvas /> : null}
       </View>
 
       <ProposalModal language={language} onClose={() => setProposalOpen(false)} onPublished={() => void queryClient.invalidateQueries({ queryKey: ['explore-places'] })} open={proposalOpen} session={session} />
@@ -281,16 +238,29 @@ export default function ExploreScreen() {
   );
 }
 
-function PlaceResultsSkeleton({ language }: { language: 'es' | 'en' }) {
+function PlaceResultsSkeleton({ language, large }: { language: 'es' | 'en'; large: boolean }) {
   return (
     <View accessibilityLabel={language === 'es' ? 'Cargando destinos' : 'Loading destinations'} accessibilityRole="progressbar" className="gap-3">
       {[0, 1, 2].map((item) => (
-        <View className="h-[78px] flex-row items-center rounded-control border border-ui-border bg-ui-surface p-3 dark:border-ui-dark-border dark:bg-ui-dark-surface" key={item}>
-          <Skeleton style={{ borderRadius: 16, height: 52, width: 52 }} />
-          <View className="ml-3 flex-1 gap-2">
-            <Skeleton style={{ height: 16, width: '68%' }} />
-            <Skeleton style={{ height: 12, width: '88%' }} />
-          </View>
+        <View className={large ? 'overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface' : 'h-[78px] flex-row items-center rounded-control border border-ui-border bg-ui-surface p-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={item}>
+          {large ? (
+            <>
+              <Skeleton style={{ height: 180, width: '100%' }} />
+              <View className="gap-2 p-4">
+                <Skeleton style={{ height: 18, width: '64%' }} />
+                <Skeleton style={{ height: 12, width: '92%' }} />
+                <Skeleton style={{ height: 12, width: '72%' }} />
+              </View>
+            </>
+          ) : (
+            <>
+              <Skeleton style={{ borderRadius: 16, height: 52, width: 52 }} />
+              <View className="ml-3 flex-1 gap-2">
+                <Skeleton style={{ height: 16, width: '68%' }} />
+                <Skeleton style={{ height: 12, width: '88%' }} />
+              </View>
+            </>
+          )}
         </View>
       ))}
     </View>
@@ -337,11 +307,45 @@ function normalizeCategory(value: string) {
     .toLowerCase();
 }
 
-function PlaceResult({ followed, formatPrice, language, onFollow, onPress, origin, ownContribution, place }: { followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; onFollow: () => void; onPress: () => void; origin?: { latitude: number; longitude: number }; ownContribution: boolean; place: ExplorePlace }) {
+function DestinationPreviewCarousel({ active, large, place }: { active: boolean; large: boolean; place: ExplorePlace }) {
+  const photos = [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))];
+  const [photoIndex, setPhotoIndex] = useState(0);
+  useEffect(() => { setPhotoIndex(0); }, [place.id]);
+  useEffect(() => {
+    if (!active || photos.length < 2) return undefined;
+    const interval = setInterval(() => setPhotoIndex((current) => (current + 1) % photos.length), 2000);
+    return () => clearInterval(interval);
+  }, [active, photos.length]);
+  const source = photos.length ? photos[photoIndex % photos.length] : undefined;
+  return <Image accessibilityLabel={place.name} cachePolicy="memory-disk" contentFit="cover" source={source ? { uri: source } : fallbackDestinationThumbnail} style={large ? { height: 180, width: '100%' } : { borderRadius: 16, flexShrink: 0, height: 52, width: 52 }} transition={300} />;
+}
+
+function PlaceResult({ active, followed, formatPrice, language, large, onFollow, onPress, origin, ownContribution, place }: { active: boolean; followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; large: boolean; onFollow: () => void; onPress: () => void; origin?: { latitude: number; longitude: number }; ownContribution: boolean; place: ExplorePlace }) {
   const documentedAuthorities = place.verification_evidence_url && place.verification_checked_at ? place.validated_by : [];
+  if (large) {
+    return (
+      <Pressable accessibilityRole="button" className="overflow-hidden rounded-card border border-ui-border bg-ui-surface active:opacity-85 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={onPress}>
+        <DestinationPreviewCarousel active={active} large place={place} />
+        <View className="p-4">
+          <View className="flex-row flex-wrap items-center">
+            <Text className="flex-shrink text-lg font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{place.name}</Text>
+            {place.community ? <Text className="ml-2 rounded-full bg-ui-primary-soft px-2 py-1 text-[10px] font-black text-ui-primary dark:bg-ui-dark-primary-soft dark:text-ui-dark-primary">{language === 'es' ? 'APORTE COMUNITARIO' : 'COMMUNITY CONTRIBUTION'}</Text> : null}
+            {documentedAuthorities.map((authority) => <Text className="ml-2 rounded-full bg-ui-primary px-2 py-1 text-[10px] font-black text-white dark:bg-ui-dark-primary" key={authority}>{language === 'es' ? 'FUENTE OFICIAL' : 'OFFICIAL SOURCE'} {authority}</Text>)}
+          </View>
+          <Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={2}>{place.description ?? (language === 'es' ? 'Descubrí este destino y planificá tu visita.' : 'Discover this destination and plan your visit.')}</Text>
+          <Text className="mt-3 text-sm font-bold text-ui-text dark:text-ui-dark-text">{place.province} · {place.category}</Text>
+          <View className="mt-1 flex-row items-center justify-between">
+            <Text className="text-sm font-black text-ui-primary dark:text-ui-dark-primary">{place.price_national_crc == null ? (language === 'es' ? 'Consultar precio' : 'Check price') : formatPrice(place.price_national_crc)}</Text>
+            {origin ? <Text className="font-black text-ui-secondary dark:text-ui-dark-secondary">{distanceKm(origin, place).toFixed(1)} km</Text> : <MaterialCommunityIcons name="arrow-right" size={21} color="#0077A8" />}
+          </View>
+          {place.community && place.contributor_name && !ownContribution ? <Pressable className="mt-3 self-start rounded-full bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft" onPress={(event) => { event.stopPropagation(); onFollow(); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{followed ? (language === 'es' ? 'Siguiendo' : 'Following') : language === 'es' ? `Seguir a ${place.contributor_name}` : `Follow ${place.contributor_name}`}</Text></Pressable> : null}
+        </View>
+      </Pressable>
+    );
+  }
   return (
     <Pressable accessibilityRole="button" className="flex-row items-center rounded-control border border-ui-border bg-ui-surface p-3 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={onPress}>
-      <Image accessibilityLabel={place.name} cachePolicy="memory-disk" contentFit="cover" source={place.cover_image_url ?? fallbackDestinationThumbnail} style={{ borderRadius: 16, flexShrink: 0, height: 52, width: 52 }} transition={150} />
+      <DestinationPreviewCarousel active={active} large={false} place={place} />
       <View className="ml-3 flex-1">
         <View className="flex-row flex-wrap items-center">
           <Text className="flex-shrink text-base font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>
@@ -385,12 +389,13 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   const categoryOptions = useQuery({
     queryKey: ['app-options', 'destination_category', 'v2'],
     queryFn: () => getAppOptions('destination_category'),
-    refetchOnMount: 'always',
+    enabled: open,
     staleTime: 5 * 60 * 1000,
   });
   const difficultyOptions = useQuery({
     queryKey: ['app-options', 'destination_difficulty'],
     queryFn: () => getAppOptions('destination_difficulty'),
+    enabled: open,
     staleTime: Infinity,
   });
   const [name, setName] = useState('');
