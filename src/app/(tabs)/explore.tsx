@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { MapCanvas } from '@/components/explore/map-canvas';
+import { AppFooter } from '@/components/app-footer';
 import { MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
@@ -233,6 +234,8 @@ export default function ExploreScreen() {
         </View>
         {isFocused ? <MapCanvas /> : null}
       </View>
+
+      <AppFooter language={language} />
 
       <ProposalModal language={language} onClose={() => setProposalOpen(false)} onPublished={() => void queryClient.invalidateQueries({ queryKey: ['explore-places'] })} open={proposalOpen} session={session} />
     </ScrollView>

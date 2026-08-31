@@ -10,6 +10,7 @@ import {
   PlusJakartaSans_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/plus-jakarta-sans';
+import { PatrickHand_400Regular } from '@expo-google-fonts/patrick-hand';
 import { QueryClientProvider } from '@tanstack/react-query';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
@@ -36,6 +37,7 @@ export default function RootLayout() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
+    PatrickHand_400Regular,
   });
   const onReady = useCallback(() => {
     if (fontsLoaded || fontError) void SplashScreen.hideAsync();
@@ -60,6 +62,8 @@ export default function RootLayout() {
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="subscriptions" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="claim-business" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="terms" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="privacy" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/traveler-profile" options={{ animation: 'slide_from_right' }} />
