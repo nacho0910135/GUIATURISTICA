@@ -4,10 +4,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { useIsFocused } from '@react-navigation/native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
+import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { ThemedNotice } from '@/components/themed-notice';
-import { addFaunaSpecies, getFaunaHome, getVulnerabilityLabel, markFaunaSeen, type FaunaSanctuary } from '@/lib/fauna';
+import { addFaunaSpecies, getFaunaHome, getVulnerabilityLabel, markFaunaSeen, removeFaunaSighting, type FaunaSanctuary } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -88,6 +89,40 @@ export default function FaunaScreen() {
     }
   }, [home?.species, language, markingId]);
 
+  const removeSeen = useCallback(async (speciesId: string) => {
+    if (markingId) return;
+    setMarkingId(speciesId);
+    try {
+      await removeFaunaSighting(speciesId);
+      setHome((current) => {
+        if (!current) return current;
+        const seenSpeciesIds = new Set(current.seenSpeciesIds);
+        seenSpeciesIds.delete(speciesId);
+        return { ...current, seenSpeciesIds };
+      });
+    } catch (reason) {
+      Alert.alert(
+        language === 'es' ? 'No se pudo eliminar' : 'Could not remove',
+        reason instanceof Error ? reason.message : (language === 'es' ? 'Intentá de nuevo.' : 'Please try again.'),
+      );
+    } finally {
+      setMarkingId(undefined);
+    }
+  }, [language, markingId]);
+
+  const confirmRemoveSeen = useCallback((speciesId: string) => {
+    const item = home?.species.find((species) => species.id === speciesId);
+    const name = language === 'es' ? item?.common_name_es : item?.common_name_en;
+    Alert.alert(
+      language === 'es' ? 'Eliminar avistamiento' : 'Remove sighting',
+      language === 'es' ? `¿Estás seguro de eliminar el avistamiento de ${name ?? 'este animal'}?` : `Are you sure you want to remove the sighting of ${name ?? 'this animal'}?`,
+      [
+        { text: language === 'es' ? 'Cancelar' : 'Cancel', style: 'cancel' },
+        { text: language === 'es' ? 'Eliminar' : 'Remove', style: 'destructive', onPress: () => void removeSeen(speciesId) },
+      ],
+    );
+  }, [home?.species, language, removeSeen]);
+
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 44 }} showsVerticalScrollIndicator={false}>
       <View className="border-b border-ui-border bg-ui-surface px-5 py-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
@@ -125,9 +160,9 @@ export default function FaunaScreen() {
       ) : null}
 
       {home ? <View className="px-5 pt-6">
-        <View className="rounded-card border border-ui-border bg-ui-surface p-6 dark:border-ui-dark-border dark:bg-ui-dark-surface md:p-8">
-          <View className="flex-row items-center justify-between"><View className="flex-1"><Text className="text-2xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Tu Life List de Costa Rica' : 'Your Costa Rica Life List'}</Text><Text className="mt-2 leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? `Has registrado ${home.seenSpeciesIds.size} de ${home.species.length} especies del catálogo.` : `You have recorded ${home.seenSpeciesIds.size} of ${home.species.length} catalog species.`}</Text></View><View className="ml-4 rounded-control bg-ui-primary-soft px-5 py-4 dark:bg-ui-dark-primary-soft"><Text className="text-2xl font-black text-ui-primary dark:text-ui-dark-primary">{home.seenSpeciesIds.size} / {home.species.length}</Text></View></View>
-          <View className="mt-5 h-2 overflow-hidden rounded-full bg-ui-muted dark:bg-ui-dark-muted"><View className="h-full rounded-full bg-ui-primary dark:bg-ui-dark-primary" style={{ width: `${home.species.length ? home.seenSpeciesIds.size / home.species.length * 100 : 0}%` }} /></View>
+        <View className="rounded-card border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface md:p-5">
+          <View className="flex-row items-center justify-between"><View className="flex-1"><Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Tu Life List de Costa Rica' : 'Your Costa Rica Life List'}</Text><Text className="mt-1 text-sm leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{language === 'es' ? `Has registrado ${home.seenSpeciesIds.size} de ${home.species.length} especies del catálogo.` : `You have recorded ${home.seenSpeciesIds.size} of ${home.species.length} catalog species.`}</Text></View><View className="ml-3 rounded-control bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft"><Text className="text-xl font-black text-ui-primary dark:text-ui-dark-primary">{home.seenSpeciesIds.size} / {home.species.length}</Text></View></View>
+          <View className="mt-3 h-2 overflow-hidden rounded-full bg-ui-muted dark:bg-ui-dark-muted"><View className="h-full rounded-full bg-ui-primary dark:bg-ui-dark-primary" style={{ width: `${home.species.length ? home.seenSpeciesIds.size / home.species.length * 100 : 0}%` }} /></View>
         </View>
         <View className="mt-5 flex-row flex-wrap gap-3">{home.species.map((item) => {
           const seen = home.seenSpeciesIds.has(item.id);
@@ -143,15 +178,15 @@ export default function FaunaScreen() {
             </Pressable>
             <View className="ml-2 gap-2">
               <Pressable
-                accessibilityLabel={seen ? (language === 'es' ? `${item.common_name_es} ya está en tu colección` : `${item.common_name_en} is in your collection`) : (language === 'es' ? `Marcar ${item.common_name_es} como visto` : `Mark ${item.common_name_en} as seen`)}
+                accessibilityLabel={seen ? (language === 'es' ? `Eliminar avistamiento de ${item.common_name_es}` : `Remove sighting of ${item.common_name_en}`) : (language === 'es' ? `Marcar ${item.common_name_es} como visto` : `Mark ${item.common_name_en} as seen`)}
                 accessibilityRole="checkbox"
-                accessibilityState={{ busy: marking, checked: seen, disabled: seen }}
+                accessibilityState={{ busy: marking, checked: seen, disabled: Boolean(markingId) }}
                 className={seen ? 'h-10 w-10 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary' : 'h-10 w-10 items-center justify-center rounded-full border-2 border-ui-primary bg-ui-primary-soft dark:border-ui-dark-primary dark:bg-ui-dark-primary-soft'}
-                disabled={seen || Boolean(markingId)}
+                disabled={Boolean(markingId)}
                 hitSlop={6}
-                onPress={() => void markSeen(item.id)}
+                onPress={() => seen ? confirmRemoveSeen(item.id) : void markSeen(item.id)}
               >
-                {marking ? <ActivityIndicator color={colors.primary} size="small" /> : <MaterialCommunityIcons name={seen ? 'check' : 'plus'} size={22} color={seen ? 'white' : colors.primary} />}
+                {marking ? <ActivityIndicator color={seen ? 'white' : colors.primary} size="small" /> : <MaterialCommunityIcons name={seen ? 'check' : 'plus'} size={22} color={seen ? 'white' : colors.primary} />}
               </Pressable>
               <Pressable accessibilityLabel={language === 'es' ? `Compartir foto de ${item.common_name_es}` : `Share a photo of ${item.common_name_en}`} accessibilityRole="button" className="h-10 w-10 items-center justify-center rounded-full bg-ui-muted dark:bg-ui-dark-muted" hitSlop={6} onPress={() => router.push({ pathname: '/(aux)/species', params: { id: item.id, share: '1' } })}>
                 <MaterialCommunityIcons name="camera-plus-outline" size={20} color={colors.primary} />

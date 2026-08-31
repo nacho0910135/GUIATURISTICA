@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
-import { Text, type ColorValue } from 'react-native';
+import { Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
@@ -15,17 +15,19 @@ const icon = (name: keyof typeof MaterialCommunityIcons.glyphMap) =>
   };
 
 const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }) => (
-  <MaterialCommunityIcons
-    name="compass"
-    color={focused ? 'white' : color}
-    size={24}
+  <View
     style={{
+      alignItems: 'center',
       backgroundColor: focused ? '#087443' : '#E7F5ED',
       borderRadius: 18,
-      padding: 7,
+      height: 38,
+      justifyContent: 'center',
       transform: [{ translateY: focused ? -4 : 0 }],
+      width: 38,
     }}
-  />
+  >
+    <MaterialCommunityIcons name="binoculars" color={focused ? 'white' : color} size={24} />
+  </View>
 );
 
 export default function TabsLayout() {
@@ -34,6 +36,7 @@ export default function TabsLayout() {
   const { bottom } = useSafeAreaInsets();
   return (
     <Tabs
+      backBehavior="initialRoute"
       initialRouteName="explore"
       screenOptions={{
         header: () => <GlobalHeader />,

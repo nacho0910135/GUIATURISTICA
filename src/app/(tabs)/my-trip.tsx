@@ -74,11 +74,11 @@ export default function MyTripScreen() {
   };
 
   return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 56 }} showsVerticalScrollIndicator={false}>
-    <View className="border-b border-ui-border bg-ui-surface px-5 pb-4 pt-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+    <View className="border-b border-ui-border bg-ui-surface px-5 py-2 dark:border-ui-dark-border dark:bg-ui-dark-surface">
       <Text className="text-xs font-black uppercase tracking-[2px] text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Planificador inteligente' : 'Smart planner'}</Text>
-      <View className="mt-2 flex-row items-center">
-        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-caribbean-50 dark:bg-caribbean-900"><MaterialCommunityIcons name="map-marker-path" size={27} color="#0077A8" /></View>
-        <View className="ml-3 flex-1"><Text className="text-3xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Mi viaje' : 'My trip'}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'De una idea a una ruta clara, parada por parada.' : 'From an idea to a clear, stop-by-stop route.'}</Text></View>
+      <View className="mt-1 flex-row items-center">
+        <View className="h-10 w-10 items-center justify-center rounded-2xl bg-caribbean-50 dark:bg-caribbean-900"><MaterialCommunityIcons name="map-marker-path" size={23} color="#0077A8" /></View>
+        <View className="ml-3 flex-1"><Text className="text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Mi viaje' : 'My trip'}</Text><Text className="mt-0.5 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{isSpanish ? 'De una idea a una ruta clara, parada por parada.' : 'From an idea to a clear, stop-by-stop route.'}</Text></View>
       </View>
     </View>
 

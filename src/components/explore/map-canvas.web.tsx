@@ -11,7 +11,7 @@ import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN ?? '';
-const provinceColors = ['match', ['get', 'code'], '1', '#ad2867', '2', '#247146', '3', '#6956b9', '4', '#30866d', '5', '#6689bd', '6', '#c23569', '7', '#d66b24', '#5b7f9e'] as const;
+const provinceColors = ['match', ['get', 'code'], '1', '#2A7B4C', '2', '#1E5B75', '3', '#4A9874', '4', '#326F8B', '5', '#82B99C', '6', '#568BA4', '7', '#1E6038', '#2A7B4C'] as const;
 const provinceShape: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
   features: provinces.map((province) => ({ type: 'Feature', id: province.code, properties: { code: province.code, name: province.name }, geometry: { type: 'MultiPolygon', coordinates: province.polygons.map((ring) => [ring]) } })),
@@ -70,12 +70,12 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
         return;
       }
       map.addSource('provinces', { type: 'geojson', data: provinceShape });
-      map.addLayer({ id: 'province-fills', type: 'fill', source: 'provinces', paint: { 'fill-color': [...provinceColors] as mapboxgl.Expression, 'fill-opacity': 0.78 } });
-      map.addLayer({ id: 'province-halo', type: 'line', source: 'provinces', paint: { 'line-color': '#48c5df', 'line-opacity': 0.7, 'line-width': 6 } });
-      map.addLayer({ id: 'province-lines', type: 'line', source: 'provinces', paint: { 'line-color': '#173f48', 'line-opacity': 1, 'line-width': 3 } });
+      map.addLayer({ id: 'province-fills', type: 'fill', source: 'provinces', paint: { 'fill-color': [...provinceColors] as mapboxgl.Expression, 'fill-opacity': 0.72 } });
+      map.addLayer({ id: 'province-halo', type: 'line', source: 'provinces', paint: { 'line-color': '#F8F6F0', 'line-opacity': 0.8, 'line-width': 6 } });
+      map.addLayer({ id: 'province-lines', type: 'line', source: 'provinces', paint: { 'line-color': '#1E5B75', 'line-opacity': 1, 'line-width': 3 } });
       map.addSource('province-weather', { type: 'geojson', data: initialWeatherShape });
-      map.addLayer({ id: 'province-weather-icons', type: 'symbol', source: 'province-weather', layout: { 'text-allow-overlap': true, 'text-field': ['get', 'icon'], 'text-offset': [0, -0.8], 'text-size': wide ? 34 : 25 }, paint: { 'text-color': '#ffd84d', 'text-halo-color': '#ffffff', 'text-halo-width': 2 } });
-      map.addLayer({ id: 'province-weather-labels', type: 'symbol', source: 'province-weather', layout: { 'text-allow-overlap': true, 'text-field': ['get', 'label'], 'text-offset': [0, 1], 'text-size': wide ? 15 : 12 }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#173f48', 'text-halo-width': 2 } });
+      map.addLayer({ id: 'province-weather-icons', type: 'symbol', source: 'province-weather', layout: { 'text-allow-overlap': true, 'text-field': ['get', 'icon'], 'text-offset': [0, -0.8], 'text-size': wide ? 34 : 25 }, paint: { 'text-color': '#F26A44', 'text-halo-color': '#F8F6F0', 'text-halo-width': 2 } });
+      map.addLayer({ id: 'province-weather-labels', type: 'symbol', source: 'province-weather', layout: { 'text-allow-overlap': true, 'text-field': ['get', 'label'], 'text-offset': [0, 1], 'text-size': wide ? 15 : 12 }, paint: { 'text-color': '#F8F6F0', 'text-halo-color': '#1E5B75', 'text-halo-width': 2 } });
       const handleMapClick = (event: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
         if (onLocationPickRef.current) {
           onLocationPickRef.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
@@ -101,7 +101,7 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
       locationMarkerRef.current = null;
       return;
     }
-    const marker = locationMarkerRef.current ?? new mapboxgl.Marker({ color: '#087443' });
+    const marker = locationMarkerRef.current ?? new mapboxgl.Marker({ color: '#F26A44' });
     marker.setLngLat([selectedLocation.longitude, selectedLocation.latitude]).addTo(map);
     locationMarkerRef.current = marker;
   }, [mapReady, selectedLocation]);
@@ -111,9 +111,9 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
   useEffect(() => { if (!selectionMode) (mapRef.current?.getSource('province-weather') as GeoJSONSource | undefined)?.setData(weatherShape); }, [selectionMode, weatherShape]);
 
   return (
-    <View className="relative overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#56c7e9', borderRadius: wide ? 28 : 0, borderWidth: 2, boxShadow: '0 10px 28px rgba(7, 72, 94, 0.28)', height: wide ? 530 : 460 }}>
+    <View className="relative overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, boxShadow: '0 10px 28px rgba(30, 91, 117, 0.28)', height: wide ? 530 : 460 }}>
       <div ref={mapContainer} style={{ height: '100%', inset: 0, position: 'absolute', width: '100%' }} />
-      {!mapReady ? <View className="absolute inset-0 items-center justify-center bg-[#dff4f4]"><MaterialCommunityIcons name={mapError ? 'map-marker-off-outline' : 'map-search-outline'} color="#087443" size={34} /><Text className="mt-2 px-8 text-center font-bold text-forest-700">{mapError ? (language === 'es' ? 'No se pudo cargar Mapbox. Revisá el token o la conexión.' : 'Mapbox could not load. Check the token or connection.') : (language === 'es' ? 'Cargando mapa de Costa Rica…' : 'Loading Costa Rica map…')}</Text></View> : null}
+      {!mapReady ? <View className="absolute inset-0 items-center justify-center bg-ui-background"><MaterialCommunityIcons name={mapError ? 'map-marker-off-outline' : 'map-search-outline'} color="#2A7B4C" size={34} /><Text className="mt-2 px-8 text-center font-bold text-forest-700">{mapError ? (language === 'es' ? 'No se pudo cargar Mapbox. Revisá el token o la conexión.' : 'Mapbox could not load. Check the token or connection.') : (language === 'es' ? 'Cargando mapa de Costa Rica…' : 'Loading Costa Rica map…')}</Text></View> : null}
     </View>
   );
 }

@@ -188,6 +188,11 @@ export async function markFaunaSeen(speciesId: string) {
   return Number(data);
 }
 
+export async function removeFaunaSighting(speciesId: string) {
+  const { error } = await supabase.from('user_fauna_sightings').delete().eq('fauna_id', speciesId);
+  if (error) throw error;
+}
+
 export async function toggleFaunaPhotoLike(photoId: string, userId: string, liked: boolean) {
   const query = liked
     ? supabase.from('likes').delete().eq('user_id', userId).eq('target_type', 'fauna_photo').eq('target_id', photoId)

@@ -30,11 +30,10 @@ export function GlobalHeader() {
       return;
     }
     const animation = Animated.loop(Animated.sequence([
-      Animated.delay(2200),
+      Animated.delay(660),
       Animated.timing(blink, { duration: 90, toValue: 1, useNativeDriver: Platform.OS !== 'web' }),
       Animated.delay(160),
       Animated.timing(blink, { duration: 90, toValue: 0, useNativeDriver: Platform.OS !== 'web' }),
-      Animated.delay(3200),
     ]));
     animation.start();
     return () => animation.stop();
@@ -133,8 +132,9 @@ function ProfileButton({ avatarUrl, label, onPress }: { avatarUrl: string | null
       accessibilityRole="link"
       className="h-10 w-10 overflow-hidden rounded-full border border-ui-border bg-ui-surface focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:border-ui-dark-border dark:bg-ui-dark-surface dark:focus-visible:ring-ui-dark-focus"
       onPress={onPress}
+      style={{ transform: [{ translateX: -5 }] }}
     >
-      <Image cachePolicy="none" contentFit="cover" contentPosition="top" source={{ uri: avatarUrl }} style={{ height: 40, width: 40 }} />
+      <Image cachePolicy="none" contentFit="cover" contentPosition="center" source={{ uri: avatarUrl }} style={{ height: 40, width: 40 }} />
     </Pressable>
   ) : (
     <IconButton accessibilityLabel={label} accessibilityRole="link" icon={<CircleUserRound color={colors.primary} size={20} strokeWidth={1.9} />} onPress={onPress} size="sm" />

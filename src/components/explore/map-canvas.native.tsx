@@ -8,7 +8,7 @@ import { getWeather, WEATHER_STALE_TIME } from '@/lib/logistics';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 
-const provinceColors = ['#ad2867', '#247146', '#6956b9', '#30866d', '#6689bd', '#c23569', '#d66b24'];
+const provinceColors = ['#2A7B4C', '#1E5B75', '#4A9874', '#326F8B', '#82B99C', '#568BA4', '#1E6038'];
 const cleanMapStyle = [{ elementType: 'labels', stylers: [{ visibility: 'off' }] }];
 const initialRegion: Region = { latitude: 9.65, longitude: -84.25, latitudeDelta: 5.8, longitudeDelta: 5.8 };
 
@@ -47,7 +47,7 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
     <View
       className="overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary"
       onLayout={({ nativeEvent }) => setMapSize({ height: nativeEvent.layout.height, width: nativeEvent.layout.width })}
-      style={{ borderColor: '#56c7e9', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 371 : 322, position: 'relative' }}
+      style={{ borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 371 : 322, position: 'relative' }}
     >
       <MapView
         key={wide ? 'wide-3.04-v7' : 'mobile-2.72-v7'}
@@ -62,14 +62,14 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
         rotateEnabled={false}
         style={StyleSheet.absoluteFill}
       >
-        {selectedLocation ? <Marker coordinate={selectedLocation} pinColor="#087443" /> : null}
+        {selectedLocation ? <Marker coordinate={selectedLocation} pinColor="#F26A44" /> : null}
         {!selectionMode ? provinces.flatMap((province, provinceIndex) => province.polygons.map((ring, ringIndex) => (
           <Polygon
             key={`${province.code}-${ringIndex}`}
             coordinates={ring.map(([longitude, latitude]) => ({ latitude, longitude }))}
-            fillColor={`${provinceColors[provinceIndex]}c7`}
+            fillColor={`${provinceColors[provinceIndex]}b8`}
             onPress={onLocationPick ? undefined : () => openProvince(province.name)}
-            strokeColor="#173f48"
+            strokeColor="#1E5B75"
             strokeWidth={3}
             tappable
           />
@@ -90,16 +90,16 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
               <Text
                 allowFontScaling={false}
                 numberOfLines={3}
-                style={{ backgroundColor: '#173f48ee', borderColor: '#ffffffcc', borderRadius: 14, borderWidth: 1, color: '#ffffff', fontSize: wide ? 15 : 12, fontWeight: '700', includeFontPadding: true, lineHeight: wide ? 19 : 16, paddingHorizontal: wide ? 10 : 7, paddingVertical: wide ? 7 : 5, textAlign: 'center', textShadowColor: '#173f48', textShadowRadius: 3 }}
+                style={{ backgroundColor: '#1E5B75ee', borderColor: '#F8F6F0cc', borderRadius: 14, borderWidth: 1, color: '#F8F6F0', fontSize: wide ? 15 : 12, fontWeight: '700', includeFontPadding: true, lineHeight: wide ? 19 : 16, paddingHorizontal: wide ? 10 : 7, paddingVertical: wide ? 7 : 5, textAlign: 'center', textShadowColor: '#1E5B75', textShadowRadius: 3 }}
               >
-                <Text style={{ color: '#ffd84d', fontSize: wide ? 28 : 21 }}>{weatherSymbol(current?.icon)}</Text>
+                <Text style={{ color: '#F26A44', fontSize: wide ? 28 : 21 }}>{weatherSymbol(current?.icon)}</Text>
                 {'\n'}{province.name}{'\n'}{current ? `${current.temperature}°${current.temperatureUnit}` : '…'}
               </Text>
             </Pressable>
           );
         }) : null}
       </View> : null}
-      {!selectionMode && weather.every(({ isPending }) => isPending) ? <View className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/90 p-2"><ActivityIndicator color="#087443" /></View> : null}
+      {!selectionMode && weather.every(({ isPending }) => isPending) ? <View className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/90 p-2"><ActivityIndicator color="#2A7B4C" /></View> : null}
     </View>
   );
 }

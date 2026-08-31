@@ -3,8 +3,9 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
+import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { ThemedNotice } from '@/components/themed-notice';
 import { addFaunaComment, getFaunaPhotoComments, getFaunaPhotoLikeIds, getFaunaPhotos, getFaunaSpecies, getVulnerabilityLabel, toggleFaunaPhotoLike, type FaunaComment, type FaunaPhoto, type FaunaSpecies, uploadFaunaPhoto } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';

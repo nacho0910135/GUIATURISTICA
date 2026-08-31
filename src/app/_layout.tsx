@@ -20,6 +20,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from 'nativewind';
 
 import { AnimatedSplash } from '@/components/animated-splash';
+import { ThemedAlertProvider } from '@/components/themed-alert';
 import { AppProvider } from '@/providers/app-provider';
 import { queryClient } from '@/lib/query-client';
 import { AppThemeProvider } from '@/theme/theme-provider';
@@ -52,20 +53,22 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <BottomSheetModalProvider>
             <AppProvider>
-          <View className="flex-1 bg-ui-background dark:bg-ui-dark-background" onLayout={onReady}>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="subscriptions" options={{ animation: 'slide_from_right' }} />
-              <Stack.Screen name="claim-business" options={{ animation: 'slide_from_right' }} />
-              <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
-              <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
-              <Stack.Screen name="(aux)/traveler-profile" options={{ animation: 'slide_from_right' }} />
-              <Stack.Screen name="(aux)/auth-modal" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
-            </Stack>
-          </View>
-          {showSplash ? <AnimatedSplash onFinish={() => setShowSplash(false)} /> : null}
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+              <ThemedAlertProvider>
+                <View className="flex-1 bg-ui-background dark:bg-ui-dark-background" onLayout={onReady}>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="subscriptions" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="claim-business" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="(aux)/traveler-profile" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="(aux)/auth-modal" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
+                  </Stack>
+                </View>
+                {showSplash ? <AnimatedSplash onFinish={() => setShowSplash(false)} /> : null}
+                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+              </ThemedAlertProvider>
           </AppProvider>
           </BottomSheetModalProvider>
         </QueryClientProvider>

@@ -2,8 +2,9 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { billingOffers, getMySubscriptions, openSubscriptionCheckout, type BillingOfferId } from '@/lib/billing';
 import { getOwnerDashboard } from '@/lib/commerce';
 import { useApp } from '@/providers/app-provider';
