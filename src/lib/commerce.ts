@@ -3,6 +3,7 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 
 import { supabase } from '@/lib/supabase';
 import { getAppOptions } from '@/lib/app-options';
+import { getOfflineCommerceServices } from '@/lib/offline-trip-pack';
 
 export type AssistanceCategoryId = string;
 
@@ -110,13 +111,19 @@ export async function getCommerceRegions() {
 
 export async function getCommerceDirectory(categoryId: CommerceCategoryId, origin: Coordinates, subcategory?: string, region?: CommerceRegion): Promise<CommerceDirectory> {
   const rows: ServiceRow[] = [];
-  for (let from = 0; ; from += 1000) {
-    let request = supabase.from('vw_ranked_commercial_services').select(RANKED_SERVICE_FIELDS).eq('category', categoryId);
-    if (subcategory) request = request.contains('subcategories', [subcategory]);
-    const { data, error } = await request.range(from, from + 999);
-    if (error) throw error;
-    rows.push(...(data as ServiceRow[] ?? []));
-    if ((data?.length ?? 0) < 1000) break;
+  try {
+    for (let from = 0; ; from += 1000) {
+      let request = supabase.from('vw_ranked_commercial_services').select(RANKED_SERVICE_FIELDS).eq('category', categoryId);
+      if (subcategory) request = request.contains('subcategories', [subcategory]);
+      const { data, error } = await request.range(from, from + 999);
+      if (error) throw error;
+      rows.push(...(data as ServiceRow[] ?? []));
+      if ((data?.length ?? 0) < 1000) break;
+    }
+  } catch (error) {
+    const cached = await getOfflineCommerceServices(categoryId) as ServiceRow[];
+    if (!cached.length) throw error;
+    rows.push(...cached.filter((service) => !subcategory || service.subcategories?.includes(subcategory)));
   }
 
   const services = rows

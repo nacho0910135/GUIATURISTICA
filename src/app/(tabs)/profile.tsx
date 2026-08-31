@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
@@ -35,6 +35,7 @@ export default function ProfileScreen() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const userId = session?.user.id ?? '';
+  const queryClient = useQueryClient();
   const notificationTypes = useQuery({
     queryKey: ['app-options', 'notification_type'],
     queryFn: () => getAppOptions('notification_type'),
@@ -416,7 +417,7 @@ export default function ProfileScreen() {
             <ProfileButton label={tr(language, 'Cerrar sesión', 'Sign out')} outline onPress={() => void signOut()} />
           </View>
         ) : null}
-        {section === 'login' && isAdmin ? <AdminPanel data={adminDashboard.data} busy={busy} language={language} refresh={async () => { await Promise.all([load(), adminDashboard.refetch()]); }} run={run} signOut={signOut} /> : null}
+        {section === 'login' && isAdmin ? <AdminPanel data={adminDashboard.data} busy={busy} language={language} refresh={async () => { await Promise.all([load(), adminDashboard.refetch(), queryClient.invalidateQueries({ queryKey: ['places'] }), queryClient.invalidateQueries({ queryKey: ['explore-places'] })]); }} run={run} signOut={signOut} /> : null}
       </View>
     </ScrollView>
   );
