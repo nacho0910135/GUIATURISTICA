@@ -79,6 +79,7 @@
     "sync:commerce": "node scripts/sync-official-commerce.mjs",
     "sync:destination-photos": "node --env-file=.env.local scripts/sync-destination-photos.mjs",
     "sync:quebuenlugar": "node --env-file=.env.local scripts/sync-quebuenlugar-places.mjs",
+    "sync:tripadvisor": "node --env-file=.env.local scripts/sync-tripadvisor-places.mjs",
     "sync:essential-directory": "node --env-file=.env.local scripts/sync-essential-directory.mjs",
     "sync:sanctuary-photos": "node --env-file=.env.local scripts/sync-sanctuary-photos.mjs",
     "cache:destination-photos": "node --env-file=.env.local scripts/cache-wikimedia-destination-photos.mjs",

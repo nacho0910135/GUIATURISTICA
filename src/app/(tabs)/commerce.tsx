@@ -62,6 +62,7 @@ const emptyProfileForm = (category: CommerceCategoryId = ''): CommercialProfileF
 });
 
 const categoryPastels = ['#2A7B4C20', '#1E5B7520', '#5F9EA020', '#B58A5A20', '#7D9E8A20', '#6F8FB320'];
+const COMMERCE_RESULTS_PER_CATEGORY = 50;
 
 const listToText = (values: string[] | null | undefined) => (values ?? []).join(', ');
 const textToList = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
@@ -278,7 +279,7 @@ export default function CommerceScreen() {
   const registrationOrigin = userLocation ?? (selectedRegion ? { latitude: selectedRegion.latitude, longitude: selectedRegion.longitude } : undefined);
   const isCinemaCategory = category === 'cinemas';
   const cinemaCatalog = useMemo(() => [...(directory.data?.featured ?? []), ...(directory.data?.organic ?? [])].sort((a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) || a.title.localeCompare(b.title)), [directory.data]);
-  const catalog = isCinemaCategory ? cinemaCatalog : directory.data?.organic ?? [];
+  const catalog = (isCinemaCategory ? cinemaCatalog : directory.data?.organic ?? []).slice(0, COMMERCE_RESULTS_PER_CATEGORY);
   const catalogTitle = isCinemaCategory ? (language === 'es' ? 'Cines cerca de vos' : 'Cinemas near you') : (language === 'es' ? 'Resultados para vos' : 'Results for you');
   const catalogDescription = isCinemaCategory ? (language === 'es' ? 'Ordenados de más cercano a más lejano. La cartelera y compra abren en el sitio oficial.' : 'Ordered from nearest to farthest. Showtimes and purchase open on the official site.') : (language === 'es' ? 'Ordenados por cercanía y calificación.' : 'Ordered by proximity and rating.');
 
@@ -464,6 +465,8 @@ export default function CommerceScreen() {
     <View className="flex-1 bg-[#F8F6F0] dark:bg-ui-dark-background">
       <FlatList
         data={catalog}
+        initialNumToRender={COMMERCE_RESULTS_PER_CATEGORY}
+        maxToRenderPerBatch={COMMERCE_RESULTS_PER_CATEGORY}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <View className="px-5"><ServiceCard service={item} onOpen={setDetail} /></View>}
         contentContainerStyle={{ paddingBottom: 28 }}

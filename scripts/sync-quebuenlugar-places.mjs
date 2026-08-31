@@ -23,6 +23,23 @@ const CATEGORY_BY_TYPE = {
   'Parques Nacionales': 'Parques Nacionales', Playa: 'Playas', Río: 'Ríos y Pozas',
   Aventura: 'Senderismo', Camping: 'Senderismo', Extremo: 'Senderismo', Paseo: 'Senderismo',
 };
+const CATEGORY_OVERRIDES = new Map([
+  // The source page documents a mountain hike to former mines, not a beach.
+  [229, 'Senderismo'],
+]);
+const DESTINATION_MATCH_OVERRIDES = new Map([
+  // Audited individually: the historical catalogue record "Catarata del Toro"
+  // was incorrectly linked to QBL 129 (Caída del Cielo). QBL 47 is the source
+  // whose title and narrative identify Catarata del Toro.
+  [47, 'ff2a2c1f-bcc1-426c-8616-bcb76e67f1ed'],
+  // Audited individually: the protected-area record includes the legal
+  // qualifier "Mixto" while the source omits it.
+  [268, 'da01f59f-0045-4aa2-b4ea-79ef67f4b8fd'],
+]);
+const EXCLUDED_FUZZY_SOURCE_IDS = new Set([
+  // A separate waterfall near Bajos del Toro; never merge it into Catarata del Toro.
+  129,
+]);
 const args = new Set(process.argv.slice(2));
 const apply = args.has('--apply');
 const descriptionsOnly = args.has('--descriptions-only');
@@ -36,6 +53,13 @@ if (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_
 const supabase = createClient(process.env.EXPO_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 const normalize = (value = '') => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, ' ').trim().toLowerCase();
 const clean = (value = '') => String(value).replace(/[#*_`>]/g, '').replace(/\[([^\]]+)]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim();
+const cleanNarrative = (value = '') => String(value)
+  .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
+  .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+  .replace(/<[^>]+>/g, ' ')
+  .replace(/[#*_`>]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim();
 const translated = (entity, language) => entity?.translations?.find((item) => item.languages_code?.startsWith(language)) ?? entity ?? {};
 const relationValues = (rows, key, language) => (rows ?? []).map((row) => clean(translated(row[key], language).title)).filter(Boolean);
 const sourceUrl = (place) => {
@@ -83,50 +107,24 @@ function difficulty(values) {
   return 'Fácil';
 }
 
-function category(types) {
+function category(place, types) {
+  if (CATEGORY_OVERRIDES.has(place.id)) return CATEGORY_OVERRIDES.get(place.id);
+  const title = normalize(translated(place, 'es').title || place.title);
+  if (/\bparque nacional\b/.test(title)) return 'Parques Nacionales';
+  if (/\bcataratas?\b/.test(title)) return 'Cataratas';
+  if (/\bplayas?\b/.test(title)) return 'Playas';
+  if (/\b(rios?|lagunas?|lagos?)\b/.test(title)) return 'Ríos y Pozas';
+  if (/\bmirador\b/.test(title)) return 'Miradores';
   const categories = [...new Set(types.map((type) => CATEGORY_BY_TYPE[type]).filter(Boolean))];
-  const priority = ['Parques Nacionales', 'Playas', 'Cataratas', 'Ríos y Pozas', 'Miradores', 'Senderismo'];
-  return priority.find((item) => categories.includes(item)) ?? 'Senderismo';
+  return categories.length === 1 ? categories[0] : 'Por clasificar';
 }
 
-function editorialName(title) {
-  const cleanTitle = clean(title)
-    .replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return cleanTitle.split(/\s*(?:\||–|—|:)\s*/)[0].trim() || cleanTitle;
-}
-
-function descriptionCategory(category) {
-  if (/catarata/i.test(category)) return 'Cataratas';
-  if (/r[ií]o|poza|laguna/i.test(category)) return 'Ríos y Pozas';
-  if (/mirador/i.test(category)) return 'Miradores';
-  if (/parque nacional/i.test(category)) return 'Parques Nacionales';
-  if (/playa/i.test(category)) return 'Playas';
-  return 'Senderismo';
-}
-
-function description(name, province, category, language) {
-  const destinationName = editorialName(name);
-  const destinationCategory = descriptionCategory(category);
-  const descriptions = language === 'es'
-    ? {
-      'Cataratas': `${destinationName} es una catarata ubicada en ${province}, Costa Rica, rodeada de un entorno natural.`,
-      'Ríos y Pozas': `${destinationName} es un espacio de río y pozas naturales ubicado en ${province}, Costa Rica.`,
-      Miradores: `${destinationName} es un mirador ubicado en ${province}, Costa Rica, con vistas del paisaje de la zona.`,
-      'Parques Nacionales': `${destinationName} es un espacio natural en ${province}, Costa Rica, para conocer los paisajes y la biodiversidad de la zona.`,
-      Playas: `${destinationName} es una playa de ${province}, Costa Rica, para disfrutar la costa y su entorno natural.`,
-      Senderismo: `${destinationName} es un destino de senderismo en ${province}, Costa Rica, para recorrer y conocer el entorno natural.`,
-    }
-    : {
-      'Cataratas': `${destinationName} is a waterfall in ${province}, Costa Rica, surrounded by a natural setting.`,
-      'Ríos y Pozas': `${destinationName} is a river and natural swimming-hole destination in ${province}, Costa Rica.`,
-      Miradores: `${destinationName} is a viewpoint in ${province}, Costa Rica, with views of the surrounding landscape.`,
-      'Parques Nacionales': `${destinationName} is a natural area in ${province}, Costa Rica, where visitors can explore the region's landscapes and biodiversity.`,
-      Playas: `${destinationName} is a beach in ${province}, Costa Rica, for enjoying the coast and its natural surroundings.`,
-      Senderismo: `${destinationName} is a hiking destination in ${province}, Costa Rica, for exploring the natural surroundings.`,
-    };
-  return descriptions[destinationCategory] ?? descriptions.Senderismo;
+function sourceDescription(place, language) {
+  const localized = translated(place, language);
+  const narrative = cleanNarrative(localized.introduction || localized.description);
+  if (narrative) return narrative;
+  if (language === 'en') return 'An English source description is not available. Read the registered Spanish source for visit details.';
+  throw new Error(`La fuente no tiene una descripción en español para ${place.id}.`);
 }
 
 function photoUrls(place) {
@@ -149,24 +147,62 @@ function nameSimilarity(left, right) {
   return common / Math.max(1, Math.min(a.size, b.size));
 }
 
+function containsDestinationName(left, right) {
+  const a = normalize(left);
+  const b = normalize(right);
+  const shortest = a.length <= b.length ? a : b;
+  const words = shortest.split(' ').filter(Boolean);
+  return words.length >= 2 && (a.includes(b) || b.includes(a));
+}
+
 function matchExisting(place, existing, sourcePhotoOwners) {
   const url = sourceUrl(place);
   const title = clean(translated(place, 'es').title || place.title);
+  const overrideId = DESTINATION_MATCH_OVERRIDES.get(place.id);
+  if (overrideId) return existing.find((item) => item.id === overrideId) ?? null;
+  if (EXCLUDED_FUZZY_SOURCE_IDS.has(place.id)) return null;
   const imported = existing.find((item) => item.id === stableId(place.id));
   if (imported) return imported;
   const sourced = existing.find((item) => item.source_url === url);
   if (sourced && nameSimilarity(title, sourced.name) >= 0.5) return sourced;
   const sourcePhotoOwner = sourcePhotoOwners.has(url) ? existing.find((item) => item.id === sourcePhotoOwners.get(url)) : null;
-  if (sourcePhotoOwner && nameSimilarity(title, sourcePhotoOwner.name) >= 0.5) return sourcePhotoOwner;
-  const nearby = existing.filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude) && distanceKm(place, item) <= 5);
-  return nearby.find((item) => nameSimilarity(title, item.name) >= 0.8)
-    ?? nearby.find((item) => distanceKm(place, item) <= 0.2 && nameSimilarity(title, item.name) >= 0.5);
+  if (sourcePhotoOwner && containsDestinationName(title, sourcePhotoOwner.name)) return sourcePhotoOwner;
+  // Do not fuzzy-match a different Qué Buen Lugar record onto an already
+  // linked one; exact source identity above is required for those records.
+  const nearby = existing.filter((item) => (
+    !item.source_url?.startsWith(`${SITE}/`)
+    && Number.isFinite(item.latitude)
+    && Number.isFinite(item.longitude)
+    && distanceKm(place, item) <= 5
+  ));
+  return nearby.find((item) => containsDestinationName(title, item.name));
+}
+
+function potentialLegacyMatch(place, existing, sourcePhotoOwners) {
+  if (EXCLUDED_FUZZY_SOURCE_IDS.has(place.id) || matchExisting(place, existing, sourcePhotoOwners)) return null;
+  const title = clean(translated(place, 'es').title || place.title);
+  const nearby = existing.filter((item) => (
+    !item.source_url?.startsWith(`${SITE}/`)
+    && Number.isFinite(item.latitude)
+    && Number.isFinite(item.longitude)
+    && distanceKm(place, item) <= 5
+  ));
+  const item = nearby.find((candidate) => nameSimilarity(title, candidate.name) >= 0.8)
+    ?? nearby.find((candidate) => distanceKm(place, candidate) <= 0.2 && nameSimilarity(title, candidate.name) >= 0.5);
+  return item ? {
+    id: item.id,
+    destinationName: item.name,
+    previousSourceUrl: item.source_url,
+    distanceKm: Number(distanceKm(place, item).toFixed(2)),
+    nameSimilarity: Number(nameSimilarity(title, item.name).toFixed(2)),
+    sourcePlace: { id: place.id, title, sourceUrl: sourceUrl(place) },
+  } : null;
 }
 
 async function sourcePlaces() {
   const fields = [
     'id', 'title', 'slug', 'featured_image', 'youtube_video', 'map_coordinates',
-    'translations.languages_code', 'translations.title', 'translations.slug', 'translations.specifications',
+    'translations.languages_code', 'translations.title', 'translations.slug', 'translations.introduction', 'translations.description', 'translations.specifications',
     'gallery.directus_files_id.id', 'tipo.Tipo_id.title', 'tipo.Tipo_id.translations.languages_code', 'tipo.Tipo_id.translations.title',
     'provincia.Provincia_id.title', 'carro.Carro_id.title', 'carro.Carro_id.translations.languages_code', 'carro.Carro_id.translations.title',
     'dificultad.Dificultad_id.title', 'dificultad.Dificultad_id.translations.languages_code', 'dificultad.Dificultad_id.translations.title',
@@ -219,16 +255,52 @@ if (Number.isFinite(limit) && limit > 0) places = places.slice(0, limit);
 
 if (descriptionsOnly) {
   const imported = existing.filter((item) => item.source_url?.startsWith(`${SITE}/`));
-  const updates = imported.map((item) => ({
-    id: item.id,
-    patch: {
-      description: description(item.name, item.province, item.category, 'es'),
-      description_en: description(item.name, item.province, item.category, 'en'),
-    },
-  }));
+  const matchedById = new Map();
+  const ambiguousMatches = [];
+  const updates = places.flatMap((place) => {
+    const item = matchExisting(place, existing, sourcePhotoOwners);
+    if (!item) return [];
+    const title = clean(translated(place, 'es').title || place.title);
+    if (matchedById.has(item.id)) {
+      ambiguousMatches.push({
+        destinationId: item.id,
+        destinationName: item.name,
+        firstSourcePlace: matchedById.get(item.id),
+        secondSourcePlace: { id: place.id, title, sourceUrl: sourceUrl(place) },
+      });
+      return [];
+    }
+    matchedById.set(item.id, { id: place.id, title, sourceUrl: sourceUrl(place) });
+    const importedFromThisSource = item.source_url === sourceUrl(place) || item.id === stableId(place.id);
+    return [{
+      id: item.id,
+      patch: {
+        // Existing destinations retain their editorial category. The sole
+        // exception is a previous individually audited correction.
+        ...(importedFromThisSource && CATEGORY_OVERRIDES.has(place.id) ? { category: CATEGORY_OVERRIDES.get(place.id) } : {}),
+        description: sourceDescription(place, 'es'),
+        description_en: sourceDescription(place, 'en'),
+        source_url: sourceUrl(place),
+        source_checked_at: new Date().toISOString(),
+      },
+      importedFromThisSource,
+      previousSourceUrl: item.source_url,
+      destinationName: item.name,
+      sourcePlace: { id: place.id, title, sourceUrl: sourceUrl(place) },
+    }];
+  });
+  const missingSource = imported.filter((item) => !matchedById.has(item.id));
+  if (missingSource.length) throw new Error(`No se encontró una fuente individual para ${missingSource.length} destinos de Qué Buen Lugar: ${JSON.stringify(missingSource.map((item) => ({ id: item.id, name: item.name, sourceUrl: item.source_url })))}.`);
+  if (ambiguousMatches.length) throw new Error(`Hay ${ambiguousMatches.length} coincidencias ambiguas que requieren auditoría individual: ${JSON.stringify(ambiguousMatches)}`);
+  const matchedFromOtherSources = updates.filter((update) => !update.importedFromThisSource);
+  const potentialLegacyMatches = places.map((place) => potentialLegacyMatch(place, existing, sourcePhotoOwners)).filter(Boolean);
   console.log(JSON.stringify({
     mode: apply ? 'apply' : 'dry-run', descriptionsOnly, source: PROVIDER,
     sourceRecords: source.length, costaRicaPlaces: places.length, updatedDescriptions: updates.length,
+    matchedExistingFromOtherSources: matchedFromOtherSources.length,
+    matchedExistingFromOtherSourcesDetail: matchedFromOtherSources.map(({ id, destinationName, previousSourceUrl, sourcePlace }) => ({ id, destinationName, previousSourceUrl, sourcePlace })),
+    excludedPotentialMatchesNeedingAudit: potentialLegacyMatches,
+    categoryCorrections: updates.filter(({ id, patch }) => patch.category && existing.find((item) => item.id === id)?.category !== patch.category).length,
   }, null, 2));
   if (!apply) process.exit(0);
   for (const update of updates) {
@@ -263,9 +335,9 @@ for (const place of places) {
     name: title,
     province: place.province,
     region: REGION_BY_PROVINCE[place.province],
-    category: category(types),
-    description: description(title, place.province, category(types), 'es'),
-    description_en: description(title, place.province, category(types), 'en'),
+    category: category(place, types),
+    description: sourceDescription(place, 'es'),
+    description_en: sourceDescription(place, 'en'),
     location: `POINT(${place.longitude} ${place.latitude})`,
     difficulty: difficulty(relationValues(place.dificultad, 'Dificultad_id', 'es')),
     price_national_crc: price(specs.join('\n')),
@@ -285,10 +357,14 @@ for (const place of places) {
     matchedExisting += 1;
     const importedFromThisSource = matched.source_url === sourceUrl(place) || matched.id === stableId(place.id);
     const patch = {
-      ...(importedFromThisSource ? { description: shared.description, description_en: shared.description_en } : {}),
+      ...(importedFromThisSource && CATEGORY_OVERRIDES.has(place.id) ? { category: shared.category } : {}),
+      description: shared.description,
+      description_en: shared.description_en,
+      source_url: shared.source_url,
+      source_checked_at: shared.source_checked_at,
       ...Object.fromEntries(['cover_image_url', 'waze_url', 'source_url'].filter((key) => !matched[key] && shared[key]).map((key) => [key, shared[key]])),
     };
-    if (importedFromThisSource) updatedDescriptions += 1;
+    updatedDescriptions += 1;
     if (Object.keys(patch).length) updates.push({ id: destinationId, patch });
   }
   const current = photosByDestination.get(destinationId) ?? [];
