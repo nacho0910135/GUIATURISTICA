@@ -16,7 +16,7 @@ import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from 'nativewind';
 
@@ -30,7 +30,7 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
   const [fontsLoaded, fontError] = useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
@@ -64,6 +64,7 @@ export default function RootLayout() {
                     <Stack.Screen name="claim-business" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="terms" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="privacy" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="delete-account" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/traveler-profile" options={{ animation: 'slide_from_right' }} />

@@ -14,6 +14,7 @@ import { MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
+import { getLiveRoadAlerts, type RoadTrafficAlert } from '@/lib/logistics';
 import { getExplorePlaces, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
@@ -37,6 +38,7 @@ export default function ExploreScreen() {
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number }>();
   const [proposalOpen, setProposalOpen] = useState(false);
   const [roadReportOpen, setRoadReportOpen] = useState(false);
+  const [reportingRoad, setReportingRoad] = useState<RoadTrafficAlert | null>(null);
   const wide = width >= 900;
   const places = useQuery({
     queryKey: ['explore-places', 'v3'],
@@ -48,6 +50,12 @@ export default function ExploreScreen() {
     queryKey: ['app-options', 'destination_category', 'v2'],
     queryFn: () => getAppOptions('destination_category'),
     staleTime: 5 * 60 * 1000,
+  });
+  const roadAlerts = useQuery({
+    queryKey: ['mapbox-road-alerts', language],
+    queryFn: () => getLiveRoadAlerts(language),
+    refetchInterval: 8 * 60 * 1000,
+    staleTime: 8 * 60 * 1000,
   });
   const followed = useQuery({
     queryKey: ['followed-travelers', session?.user.id],
@@ -238,6 +246,13 @@ export default function ExploreScreen() {
           <Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Presioná una provincia para acceder a los destinos.' : 'Tap a province to see its destinations.'}</Text>
         </View>
         {isFocused ? <MapCanvas /> : null}
+        <View className="mx-5 mt-4 rounded-card border border-[#ffac16]/40 bg-ui-surface p-4 dark:bg-ui-dark-surface">
+          <View className="flex-row items-center"><MaterialCommunityIcons name="alert-outline" size={24} color="#d97706" /><View className="ml-2.5 flex-1"><Text className="text-base font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Alertas viales actuales' : 'Current road alerts'}</Text><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">Mapbox Traffic · {roadAlerts.data ? new Date(roadAlerts.data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (language === 'es' ? 'actualizando…' : 'updating…')}</Text></View></View>
+          {roadAlerts.isPending ? <ActivityIndicator className="my-4" color="#d97706" /> : null}
+          {roadAlerts.isError ? <View accessibilityRole="alert" className="mt-3"><Text className="font-bold text-coral-600">{language === 'es' ? 'No se pudo consultar Mapbox Traffic.' : 'Mapbox Traffic could not be reached.'}</Text><Pressable accessibilityRole="button" className="min-h-11 justify-center self-start" onPress={() => void roadAlerts.refetch()}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : null}
+          <View className="mt-2 gap-2">{roadAlerts.data?.alerts.map((alert) => <RoadAlertRow alert={alert} key={alert.id} language={language} onReport={setReportingRoad} />)}</View>
+          <Text className="mt-3 text-[10px] leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Congestión, cierres e incidentes de Mapbox. Actualización aproximada cada 8 minutos.' : 'Congestion, closures, and incidents from Mapbox. Updated approximately every 8 minutes.'}</Text>
+        </View>
         <Pressable accessibilityRole="button" className="mx-5 mb-5 mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-coral-500/40 px-5 py-3" onPress={() => setRoadReportOpen(true)}>
           <MaterialCommunityIcons name="road-variant" size={21} color="#B42318" />
           <Text className="ml-2 font-black text-coral-600">{language === 'es' ? 'Reportar carretera afectada' : 'Report an affected road'}</Text>
@@ -247,9 +262,14 @@ export default function ExploreScreen() {
       <AppFooter language={language} />
 
       <ProposalModal language={language} onClose={() => setProposalOpen(false)} onPublished={() => void queryClient.invalidateQueries({ queryKey: ['explore-places'] })} open={proposalOpen} session={session} />
-      <InformationReportModal language={language} onClose={() => setRoadReportOpen(false)} open={roadReportOpen} targetKey="costa-rica-road-network" targetLabel={language === 'es' ? 'Carreteras de Costa Rica' : 'Costa Rica road network'} targetType="road" />
+      <InformationReportModal language={language} onClose={() => { setRoadReportOpen(false); setReportingRoad(null); }} open={roadReportOpen || Boolean(reportingRoad)} targetKey={reportingRoad?.id ?? 'costa-rica-road-network'} targetLabel={reportingRoad?.name ?? (language === 'es' ? 'Carreteras de Costa Rica' : 'Costa Rica road network')} targetType="road" />
     </ScrollView>
   );
+}
+
+function RoadAlertRow({ alert, language, onReport }: { alert: RoadTrafficAlert; language: 'es' | 'en'; onReport: (alert: RoadTrafficAlert) => void }) {
+  const colors = alert.status === 'closed' ? ['#7f1d1d', '#fee2e2'] : alert.status === 'heavy' ? ['#b45309', '#fff7ed'] : alert.status === 'moderate' ? ['#a16207', '#fefce8'] : ['#047857', '#ecfdf5'];
+  return <View className="rounded-2xl border border-ui-border bg-ui-muted p-3 dark:border-ui-dark-border dark:bg-ui-dark-muted"><View className="flex-row items-start"><Text className="flex-1 font-black text-ui-text dark:text-ui-dark-text">{alert.name}</Text><View className="ml-2 rounded-xl px-2.5 py-1.5" style={{ backgroundColor: colors[1] }}><Text className="text-xs font-black" style={{ color: colors[0] }}>{alert.statusLabel}</Text></View></View><Text className="mt-1 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{alert.detail}</Text><Pressable accessibilityRole="button" className="mt-2 min-h-11 justify-center self-start rounded-xl border border-ui-border px-3 dark:border-ui-dark-border" onPress={() => onReport(alert)}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Reportar carretera afectada' : 'Report affected road'}</Text></Pressable></View>;
 }
 
 function PlaceResultsSkeleton({ language, large }: { language: 'es' | 'en'; large: boolean }) {

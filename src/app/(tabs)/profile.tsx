@@ -5,12 +5,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { reviewCommercialClaim } from '@/lib/commerce';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
-import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation, type PrivateMessage } from '@/lib/social-profile';
+import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, reviewUserSubmission, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation, type PrivateMessage } from '@/lib/social-profile';
 import { reportTypeLabel, updateInformationReportStatus } from '@/lib/reports';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/providers/app-provider';
@@ -276,14 +276,15 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-        <Pressable accessibilityRole="link" className="mt-4 flex-row items-center justify-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => router.push('/subscriptions')}>
+        {Platform.OS === 'web' ? <Pressable accessibilityRole="link" className="mt-4 flex-row items-center justify-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => router.push('/subscriptions')}>
           <MaterialCommunityIcons name="crown-outline" size={20} color="white" />
           <Text className="ml-2 font-black text-white">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
-        </Pressable>
+        </Pressable> : null}
         <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950" onPress={() => void signOut()}>
           <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
           <Text className="ml-2 font-black text-red-600 dark:text-red-400">{tr(language, 'Cerrar sesión', 'Sign out')}</Text>
         </Pressable>
+        <Pressable accessibilityRole="link" className="mt-3 items-center py-2" onPress={() => router.push('/delete-account' as never)}><Text className="font-bold text-red-600 dark:text-red-400">{tr(language, 'Eliminar cuenta y datos', 'Delete account and data')}</Text></Pressable>
         <View className="mt-4 gap-2">
           {tabs.map((tab) => (
             <Pressable accessibilityRole="button" accessibilityState={{ expanded: section === tab.key }} className={section === tab.key ? 'flex-row items-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary' : 'flex-row items-center rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={tab.key} onPress={() => setSection((current) => (current === tab.key ? undefined : tab.key))}>
@@ -469,10 +470,24 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
         <View className="ml-3 flex-1">
           <Text className="font-black text-ui-text dark:text-ui-dark-text">{tr(language, 'Pendientes de aprobación', 'Pending approvals')}</Text>
           <Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">
-            {data.commercialClaims.length + data.reports.length + data.suggestions.filter((item) => item.status !== 'resolved').length} {tr(language, 'elementos requieren revisión', 'items require review')}
+            {data.pendingSubmissions.length + data.commercialClaims.length + data.reports.length + data.suggestions.filter((item) => item.status !== 'resolved').length} {tr(language, 'elementos requieren revisión', 'items require review')}
           </Text>
         </View>
       </View>
+      <Text className="mb-3 mt-6 text-lg font-bold text-ui-text dark:text-ui-dark-text">{tr(language, 'Nuevas inserciones', 'New submissions')}</Text>
+      <ListEmpty empty={!data.pendingSubmissions.length} language={language}>
+        {data.pendingSubmissions.map((item) => (
+          <View className="mb-3 rounded-2xl border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted" key={`${item.kind}-${item.id}`}>
+            <Text className="font-black text-ui-text dark:text-ui-dark-text">{item.title}</Text>
+            <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{item.detail}</Text>
+            <Text className="mt-1 text-xs font-bold text-ui-primary">{new Date(item.created_at).toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text>
+            <View className="mt-3 flex-row gap-2">
+              <ProfileButton label={tr(language, 'Aprobar', 'Approve')} disabled={busy} onPress={() => void run(async () => { await reviewUserSubmission(item.kind, item.id, 'approved'); await refresh(); })} />
+              <ProfileButton label={tr(language, 'Rechazar', 'Reject')} outline disabled={busy} onPress={() => void run(async () => { await reviewUserSubmission(item.kind, item.id, 'rejected'); await refresh(); })} />
+            </View>
+          </View>
+        ))}
+      </ListEmpty>
       <Text className="mb-3 mt-6 text-lg font-bold text-ui-text dark:text-ui-dark-text">{tr(language, 'Reclamos de comercios', 'Business ownership claims')}</Text>
       <ListEmpty empty={!data.commercialClaims.length} language={language}>
         {data.commercialClaims.map((claim) => (

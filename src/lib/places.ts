@@ -279,7 +279,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
 }
 
 export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'cover_image_url' | 'photos' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at' | 'description_en'> & { user_id: string; district?: string }) {
-  const { error } = await supabase.from('destination_suggestions').insert({ ...input, status: 'published' });
+  const { error } = await supabase.from('destination_suggestions').insert({ ...input, status: 'pending' });
   if (error) throw error;
 }
 

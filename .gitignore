@@ -7,6 +7,9 @@ node_modules/
 .expo/
 dist/
 web-build/
+.codex-audit-dist/
+.codex-play-web/
+.codex-bundle-test/
 expo-env.d.ts
 
 # Native

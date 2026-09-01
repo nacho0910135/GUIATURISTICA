@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 
@@ -44,6 +45,7 @@ export async function getMySubscriptions(): Promise<Subscription[]> {
 }
 
 export async function openSubscriptionCheckout({ offerId, serviceId }: { offerId: BillingOfferId; serviceId?: string }) {
+  if (Platform.OS !== 'web') throw new Error('Las compras de planes están disponibles únicamente en la versión web.');
   const returnUrl = Linking.createURL('subscriptions');
   const localCheckoutUrl = process.env.EXPO_PUBLIC_BILLING_URL?.trim();
   let checkoutUrl: string | undefined;

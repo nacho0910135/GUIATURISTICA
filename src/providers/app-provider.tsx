@@ -1,11 +1,12 @@
 import type { Session } from '@supabase/supabase-js';
-import * as Linking from 'expo-linking';
+import * as AuthSession from 'expo-auth-session';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
+import { registerAdminPushToken } from '@/lib/admin-push-notifications';
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAppTheme } from '@/theme/theme-provider';
@@ -34,7 +35,7 @@ type AppContextValue = {
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<boolean>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<boolean>;
   signOut: () => Promise<void>;
   setAvatarUrl: (value: string | null) => void;
 };
@@ -88,6 +89,10 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [syncSession]);
 
   useEffect(() => {
+    if (isAdmin && session?.user.id) void registerAdminPushToken(session.user.id).catch((error) => console.warn('No se pudo registrar el push administrativo.', error));
+  }, [isAdmin, session?.user.id]);
+
+  useEffect(() => {
     void Location.requestForegroundPermissionsAsync()
       .then(async (permission) => {
         if (!permission.granted) return;
@@ -113,24 +118,33 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [syncSession]);
 
   const signInWithGoogle = useCallback(async () => {
-    const redirectTo = Linking.createURL('auth/callback');
+    const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.location.origin
+      : AuthSession.makeRedirectUri({ scheme: 'descubriendocr', path: 'auth/callback' });
     const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } });
     if (error) throw error;
     if (!data.url) throw new Error('No se pudo iniciar Google OAuth.');
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') return;
+    if (Platform.OS === 'web') {
+      window.location.assign(data.url);
+      return false;
+    }
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo, { showInRecents: true });
+    if (result.type !== 'success') return false;
     const callback = new URL(result.url.replace('#', '?'));
+    const oauthError = callback.searchParams.get('error_description') ?? callback.searchParams.get('error');
+    if (oauthError) throw new Error(oauthError);
     const code = callback.searchParams.get('code');
     if (code) {
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
       if (exchangeError) throw exchangeError;
-      return;
+      return true;
     }
     const access_token = callback.searchParams.get('access_token');
     const refresh_token = callback.searchParams.get('refresh_token');
-    if (!access_token || !refresh_token) throw new Error('Google no devolvió una sesión válida.');
+    if (!access_token || !refresh_token) throw new Error('Google completó el acceso, pero no fue posible crear la sesión. Intentá nuevamente.');
     const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token });
     if (sessionError) throw sessionError;
+    return true;
   }, []);
 
   const signOut = useCallback(async () => {

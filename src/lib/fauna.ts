@@ -141,6 +141,7 @@ export async function addFaunaSpecies(input: { commonName: string; scientificNam
     image_url: imageUrl,
     created_by: input.userId,
     community_submitted: true,
+    moderation_status: 'pending',
   };
   const { error } = await supabase.from('fauna_species').insert(shared);
   if (error) {

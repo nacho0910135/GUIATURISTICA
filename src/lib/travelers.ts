@@ -11,9 +11,13 @@ export type ReactionType = string;
 export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
 
 export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {
-  const postsQuery = supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic).order('created_at', { ascending: false }).limit(40);
-  const { data: postRows, error: postsError } = await postsQuery;
-  if (postsError) throw postsError;
+  const [postsResult, blocksResult] = await Promise.all([
+    supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic).order('created_at', { ascending: false }).limit(40),
+    userId ? supabase.from('user_blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`) : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (postsResult.error || blocksResult.error) throw postsResult.error ?? blocksResult.error;
+  const blockedIds = new Set((blocksResult.data ?? []).map((row) => row.blocker_id === userId ? row.blocked_id : row.blocker_id));
+  const postRows = (postsResult.data ?? []).filter((post) => !blockedIds.has(post.user_id));
   const postIds = (postRows ?? []).map((post) => post.id);
   const [replies, reactions, follows] = await Promise.all([
     postIds.length
@@ -83,6 +87,13 @@ export async function toggleTravelerFollow(userId: string, followedId: string, f
     ? supabase.from('user_follows').delete().eq('follower_id', userId).eq('followed_id', followedId)
     : supabase.from('user_follows').insert({ follower_id: userId, followed_id: followedId });
   const { error } = await query;
+  if (error) throw error;
+}
+
+export async function blockTraveler(blockedId: string) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user || auth.user.id === blockedId) throw new Error('No se puede bloquear esta cuenta.');
+  const { error } = await supabase.from('user_blocks').upsert({ blocker_id: auth.user.id, blocked_id: blockedId });
   if (error) throw error;
 }
 

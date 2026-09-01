@@ -15,6 +15,13 @@
         "buildType": "apk"
       }
     },
+    "ios-simulator": {
+      "extends": "production",
+      "environment": "production",
+      "ios": {
+        "simulator": true
+      }
+    },
     "production": {
       "autoIncrement": true,
       "environment": "production",

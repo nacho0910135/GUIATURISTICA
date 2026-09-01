@@ -60,7 +60,7 @@ export function GlobalHeader() {
               </Animated.View>
             </View>
             <View className="ml-3">
-              <Text className="font-display text-lg tracking-tight text-ui-text dark:text-ui-dark-text">Descubriendo <Text style={{ color: '#0077A8', fontFamily: 'PatrickHand_400Regular', fontSize: 23 }}>C</Text><Text style={{ color: '#E8494A', fontFamily: 'PatrickHand_400Regular', fontSize: 23 }}>R</Text></Text>
+              <Text className="font-display text-lg tracking-tight text-ui-text dark:text-ui-dark-text">Descubriendo <Text style={{ color: '#0077A8', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 21, fontWeight: '800' }}>C</Text><Text style={{ color: '#E8494A', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 21, fontWeight: '800' }}>R</Text></Text>
               <Text className="font-sans text-[10px] uppercase tracking-[1.4px] text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Explorá distinto 🇨🇷' : 'Explore differently 🇨🇷'}</Text>
             </View>
           </Pressable>

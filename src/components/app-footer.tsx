@@ -15,7 +15,7 @@ export function AppFooter({ language }: { language: 'es' | 'en' }) {
       <View className="mx-auto w-full" style={{ maxWidth: 760 }}>
         <View className="flex-row items-center">
           <View className="h-11 w-11 overflow-hidden rounded-2xl bg-[#0A3B2E]"><Image accessibilityLabel="Descubriendo CR" contentFit="contain" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: '100%', width: '100%' }} /></View>
-          <Text className="ml-3 text-xl font-black text-[#E7FFF7]">Descubriendo <Text style={{ color: '#58C3DF', fontFamily: 'PatrickHand_400Regular', fontSize: 25 }}>C</Text><Text style={{ color: '#F07171', fontFamily: 'PatrickHand_400Regular', fontSize: 25 }}>R</Text></Text>
+          <Text className="ml-3 text-xl font-black text-[#E7FFF7]">Descubriendo <Text style={{ color: '#58C3DF', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 23, fontWeight: '800' }}>C</Text><Text style={{ color: '#F07171', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 23, fontWeight: '800' }}>R</Text></Text>
         </View>
         <Text className="mt-4 text-sm leading-6 text-[#C1D8D0]">{text('Plataforma turística y ecológica comunitaria para explorar Costa Rica de forma informada.', 'A community tourism and ecology platform for informed travel across Costa Rica.')}</Text>
 

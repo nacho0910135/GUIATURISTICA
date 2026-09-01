@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
@@ -13,6 +13,23 @@ import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
 type FaunaHome = Awaited<ReturnType<typeof getFaunaHome>>;
+
+const categoryOrder = ['mammal', 'bird', 'amphibian', 'reptile'];
+const categoryKey = (value: string) => {
+  const normalized = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (normalized.includes('mamif') || normalized.includes('mammal')) return 'mammal';
+  if (normalized.includes('ave') || normalized.includes('bird') || normalized.includes('pajaro')) return 'bird';
+  if (normalized.includes('anfib') || normalized.includes('amphib')) return 'amphibian';
+  if (normalized.includes('rept')) return 'reptile';
+  return normalized.trim();
+};
+
+const categoryLabel = (key: string, source: string, language: 'es' | 'en') => ({
+  mammal: language === 'es' ? 'Mamífero' : 'Mammal',
+  bird: language === 'es' ? 'Ave' : 'Bird',
+  amphibian: language === 'es' ? 'Anfibio' : 'Amphibian',
+  reptile: language === 'es' ? 'Reptil' : 'Reptile',
+}[key] ?? source);
 
 function SanctuaryImage({ active, sanctuary }: { active: boolean; sanctuary: FaunaSanctuary }) {
   const photos = [...new Set([sanctuary.cover_image_url, ...sanctuary.photos].filter((url): url is string => Boolean(url)))];
@@ -41,7 +58,18 @@ export default function FaunaScreen() {
   const [seenNotice, setSeenNotice] = useState<string>();
   const [addedSpecies, setAddedSpecies] = useState<string>();
   const [proposalOpen, setProposalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const columns = width >= 1200 ? 4 : width >= 700 ? 2 : 1;
+  const categoryOptions = useMemo(() => {
+    const sources = new Map<string, string>();
+    for (const species of home?.species ?? []) if (!sources.has(categoryKey(species.category))) sources.set(categoryKey(species.category), species.category);
+    return [...sources.entries()].sort(([a], [b]) => {
+      const aIndex = categoryOrder.indexOf(a); const bIndex = categoryOrder.indexOf(b);
+      if (aIndex >= 0 || bIndex >= 0) return (aIndex < 0 ? 99 : aIndex) - (bIndex < 0 ? 99 : bIndex);
+      return a.localeCompare(b);
+    }).map(([id, source]) => ({ id, label: categoryLabel(id, source, language) }));
+  }, [home?.species, language]);
+  const filteredSpecies = useMemo(() => selectedCategory === 'all' ? (home?.species ?? []) : (home?.species ?? []).filter((species) => categoryKey(species.category) === selectedCategory), [home?.species, selectedCategory]);
   const leaveFauna = useCallback(() => {
     if (from === 'explore' || !router.canGoBack()) router.replace('/(tabs)/explore');
     else router.back();
@@ -164,7 +192,14 @@ export default function FaunaScreen() {
           <View className="flex-row items-center justify-between"><View className="flex-1"><Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Tu Life List de Costa Rica' : 'Your Costa Rica Life List'}</Text><Text className="mt-1 text-sm leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{language === 'es' ? `Has registrado ${home.seenSpeciesIds.size} de ${home.species.length} especies del catálogo.` : `You have recorded ${home.seenSpeciesIds.size} of ${home.species.length} catalog species.`}</Text></View><View className="ml-3 rounded-control bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft"><Text className="text-xl font-black text-ui-primary dark:text-ui-dark-primary">{home.seenSpeciesIds.size} / {home.species.length}</Text></View></View>
           <View className="mt-3 h-2 overflow-hidden rounded-full bg-ui-muted dark:bg-ui-dark-muted"><View className="h-full rounded-full bg-ui-primary dark:bg-ui-dark-primary" style={{ width: `${home.species.length ? home.seenSpeciesIds.size / home.species.length * 100 : 0}%` }} /></View>
         </View>
-        <View className="mt-5 flex-row flex-wrap gap-3">{home.species.map((item) => {
+        <ScrollView accessibilityRole="tablist" horizontal className="-mx-5 mt-5" contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>
+          {[{ id: 'all', label: language === 'es' ? 'Todos' : 'All' }, ...categoryOptions].map((option) => {
+            const selected = selectedCategory === option.id;
+            return <Pressable accessibilityRole="tab" accessibilityState={{ selected }} className={selected ? 'min-h-11 items-center justify-center rounded-full bg-ui-primary px-5 dark:bg-ui-dark-primary' : 'min-h-11 items-center justify-center rounded-full border border-ui-border bg-ui-muted px-5 dark:border-ui-dark-border dark:bg-ui-dark-muted'} key={option.id} onPress={() => setSelectedCategory(option.id)}><Text className={selected ? 'font-black text-white' : 'font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{option.label}</Text></Pressable>;
+          })}
+        </ScrollView>
+        <Text accessibilityLiveRegion="polite" className="mt-3 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? `${filteredSpecies.length} especies` : `${filteredSpecies.length} species`}</Text>
+        <View className="mt-3 flex-row flex-wrap gap-3">{filteredSpecies.map((item) => {
           const seen = home.seenSpeciesIds.has(item.id);
           const marking = markingId === item.id;
           return <View className={seen ? 'flex-row items-center rounded-card border-2 border-ui-primary bg-ui-primary-soft p-3 dark:border-ui-dark-primary dark:bg-ui-dark-primary-soft' : 'flex-row items-center rounded-card border border-ui-border bg-ui-surface p-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={item.id} style={{ width: columns === 1 ? '100%' : columns === 2 ? '49%' : '24%' }}>
@@ -266,5 +301,5 @@ function FaunaProposalModal({ language, onClose, onPublished, open, userId }: { 
     { label: language === 'es' ? 'Hábitat' : 'Habitat', value: habitat, onChangeText: setHabitat, placeholder: language === 'es' ? 'Bosque seco, humedal…' : 'Dry forest, wetland…' },
     { label: language === 'es' ? 'Descripción' : 'Description', value: description, onChangeText: setDescription, placeholder: language === 'es' ? 'Cómo reconocerlo…' : 'How to identify it…', multiline: true },
   ];
-  return <Modal animationType="slide" onRequestClose={onClose} transparent visible={open}><View className="flex-1 items-center justify-center bg-black/60 p-4"><View className="max-h-[92%] w-full max-w-2xl overflow-hidden rounded-modal bg-ui-surface dark:bg-ui-dark-surface"><View className="flex-row items-center border-b border-ui-border p-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="paw" size={27} color="#0B6B4F" /><Text className="ml-3 flex-1 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} accessibilityRole="button" onPress={onClose}><MaterialCommunityIcons name="close" size={26} color="#68737A" /></Pressable></View><ScrollView contentContainerStyle={{ gap: 15, padding: 20 }}>{fields.map((field) => <View key={field.label}><Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{field.label}</Text><TextInput className="rounded-control border border-ui-border bg-ui-muted px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline={field.multiline} onChangeText={field.onChangeText} placeholder={field.placeholder} placeholderTextColor="#68737A" style={field.multiline ? { minHeight: 90, textAlignVertical: 'top' } : undefined} value={field.value} /></View>)}<Pressable className="overflow-hidden rounded-control border border-dashed border-ui-border p-3 dark:border-ui-dark-border" onPress={() => void pickImage()}>{image ? <Image source={{ uri: image.uri }} contentFit="cover" style={{ borderRadius: 12, height: 170, width: '100%' }} /> : <View className="flex-row items-center justify-center py-4"><MaterialCommunityIcons name="image-plus" size={24} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-primary">{language === 'es' ? 'Agregar foto del animal' : 'Add animal photo'}</Text></View>}</Pressable><View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'El animal se publicará para todos. Después podrás abrir su ficha y compartir fotografías reales.' : 'The animal will be published for everyone. You can then open its profile and share real photos.'}</Text></View><Pressable className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>{sending ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar para todos' : 'Publish for everyone'}</Text>}</Pressable></ScrollView></View></View></Modal>;
+  return <Modal animationType="slide" onRequestClose={onClose} transparent visible={open}><View className="flex-1 items-center justify-center bg-black/60 p-4"><View className="max-h-[92%] w-full max-w-2xl overflow-hidden rounded-modal bg-ui-surface dark:bg-ui-dark-surface"><View className="flex-row items-center border-b border-ui-border p-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="paw" size={27} color="#0B6B4F" /><Text className="ml-3 flex-1 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} accessibilityRole="button" onPress={onClose}><MaterialCommunityIcons name="close" size={26} color="#68737A" /></Pressable></View><ScrollView contentContainerStyle={{ gap: 15, padding: 20 }}>{fields.map((field) => <View key={field.label}><Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{field.label}</Text><TextInput className="rounded-control border border-ui-border bg-ui-muted px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" multiline={field.multiline} onChangeText={field.onChangeText} placeholder={field.placeholder} placeholderTextColor="#68737A" style={field.multiline ? { minHeight: 90, textAlignVertical: 'top' } : undefined} value={field.value} /></View>)}<Pressable className="overflow-hidden rounded-control border border-dashed border-ui-border p-3 dark:border-ui-dark-border" onPress={() => void pickImage()}>{image ? <Image source={{ uri: image.uri }} contentFit="cover" style={{ borderRadius: 12, height: 170, width: '100%' }} /> : <View className="flex-row items-center justify-center py-4"><MaterialCommunityIcons name="image-plus" size={24} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-primary">{language === 'es' ? 'Agregar foto del animal' : 'Add animal photo'}</Text></View>}</Pressable><View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'El animal será revisado por un administrador antes de aparecer para todos.' : 'An administrator will review the animal before it appears publicly.'}</Text></View><Pressable className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>{sending ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Enviar a revisión' : 'Send for review'}</Text>}</Pressable></ScrollView></View></View></Modal>;
 }

@@ -158,7 +158,7 @@ export async function updateCreatorSuggestionStatus(id: string, status: CreatorS
 }
 
 export async function getAdminDashboard() {
-  const [suggestions, destinations, photos, sanctuaries, communityDestinations, posts, reports, commercialClaims] = await Promise.all([
+  const [suggestions, destinations, photos, sanctuaries, communityDestinations, posts, reports, commercialClaims, pendingDestinations, pendingFauna, pendingCommerce] = await Promise.all([
     supabase.from('creator_suggestions').select('id,user_id,message,status,created_at,user:users(username,full_name)').order('created_at', { ascending: false }).limit(50),
     supabase.from('destinations').select('id,name,province').order('name'),
     supabase.from('destination_photos').select('id,destination_id,image_url,sort_order').order('sort_order'),
@@ -167,15 +167,28 @@ export async function getAdminDashboard() {
     supabase.from('traveler_posts').select('id,body,created_at,user:users!traveler_posts_user_id_fkey(username,full_name)').order('created_at', { ascending: false }).limit(50),
     getInformationReportsForAdmin(),
     getAdminCommercialClaims(),
+    supabase.from('destination_suggestions').select('id,name,province,category,created_at').eq('status', 'pending').order('created_at', { ascending: false }),
+    supabase.from('fauna_species').select('id,common_name_es,scientific_name,province,created_at').eq('moderation_status', 'pending').order('created_at', { ascending: false }),
+    supabase.from('commercial_services').select('id,title,category,created_at').eq('moderation_status', 'pending').order('created_at', { ascending: false }),
   ]);
-  const error = suggestions.error ?? destinations.error ?? photos.error ?? sanctuaries.error ?? communityDestinations.error ?? posts.error;
+  const error = suggestions.error ?? destinations.error ?? photos.error ?? sanctuaries.error ?? communityDestinations.error ?? posts.error ?? pendingDestinations.error ?? pendingFauna.error ?? pendingCommerce.error;
   if (error) throw error;
   const oneProfile = <T,>(value: T | T[]) => Array.isArray(value) ? value[0] : value;
   return {
     suggestions: (suggestions.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })),
     destinations: destinations.data ?? [], photos: photos.data ?? [], sanctuaries: sanctuaries.data ?? [], communityDestinations: communityDestinations.data ?? [],
     posts: (posts.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })), reports, commercialClaims,
+    pendingSubmissions: [
+      ...(pendingDestinations.data ?? []).map((item) => ({ id: item.id, kind: 'destination' as const, title: item.name, detail: `${item.category} · ${item.province}`, created_at: item.created_at })),
+      ...(pendingFauna.data ?? []).map((item) => ({ id: item.id, kind: 'fauna' as const, title: item.common_name_es, detail: `${item.scientific_name} · ${item.province ?? ''}`, created_at: item.created_at })),
+      ...(pendingCommerce.data ?? []).map((item) => ({ id: item.id, kind: 'commerce' as const, title: item.title, detail: item.category ?? '', created_at: item.created_at })),
+    ].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)),
   };
+}
+
+export async function reviewUserSubmission(kind: 'destination' | 'fauna' | 'commerce', id: string, decision: 'approved' | 'rejected') {
+  const { error } = await supabase.rpc('review_user_submission', { p_kind: kind, p_id: id, p_decision: decision });
+  if (error) throw error;
 }
 
 export async function addDestinationPhoto(destinationId: string, asset: ImagePickerAsset, sortOrder: number) {

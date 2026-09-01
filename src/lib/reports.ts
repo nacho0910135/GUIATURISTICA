@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-export type ReportTargetType = 'destination' | 'commercial_service' | 'road';
+export type ReportTargetType = 'destination' | 'commercial_service' | 'road' | 'traveler' | 'traveler_post';
 export type ReportType = string;
 export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
 

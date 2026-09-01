@@ -12,6 +12,7 @@ import { MotionPressable, MotionReveal, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
+import { submitInformationReport } from '@/lib/reports';
 import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
@@ -161,6 +162,11 @@ export default function FriendsScreen() {
     await Share.share({ message: `${displayName(post)} · Comunidad Viajera\n${post.body || ''}${locationUrl}${post.image_url ? `\n${post.image_url}` : ''}`.trim(), url: post.image_url ?? undefined });
   };
 
+  const reportPost = (post: TravelerPost) => {
+    if (!requireAuth(language === 'es' ? 'reportar contenido' : 'report content')) return;
+    Alert.alert(language === 'es' ? 'Reportar publicación' : 'Report post', language === 'es' ? 'El equipo de moderación revisará esta publicación.' : 'The moderation team will review this post.', [{ text: language === 'es' ? 'Cancelar' : 'Cancel' }, { text: language === 'es' ? 'Reportar' : 'Report', onPress: () => void submitInformationReport({ targetType: 'traveler_post', targetId: post.id, targetLabel: displayName(post), reportType: 'abusive_content', details: post.body.slice(0, 500) }).then(() => Alert.alert(language === 'es' ? 'Reporte enviado' : 'Report sent')) }]);
+  };
+
   return (
     <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
       <View className="w-full border-b border-ui-border bg-ui-surface px-5 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface">
@@ -251,6 +257,7 @@ export default function FriendsScreen() {
               </View>
               <Pressable className="flex-1 flex-row items-center justify-center rounded-xl py-2" onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><MaterialCommunityIcons name="comment-outline" size={21} color="#68737A" /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Comentar' : 'Comment'}</Text></Pressable>
               <Pressable className="flex-1 flex-row items-center justify-center rounded-xl py-2" onPress={() => void sharePost(post)}><MaterialCommunityIcons name="share-outline" size={22} color="#68737A" /><Text className="ml-2 font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Compartir' : 'Share'}</Text></Pressable>
+              {post.user_id !== userId ? <Pressable accessibilityLabel={language === 'es' ? 'Reportar publicación' : 'Report post'} className="h-11 w-11 items-center justify-center" onPress={() => reportPost(post)}><MaterialCommunityIcons name="flag-outline" size={21} color="#B42318" /></Pressable> : null}
               </View>
             </View>
             {replying === post.id ? <View className="border-t border-ui-border bg-ui-background p-4 dark:border-ui-dark-border dark:bg-ui-dark-background">{postReplies.map((item) => <View className={item.parent_reply_id ? 'mb-3 ml-7 rounded-control border-l-4 border-ui-primary bg-ui-surface p-3 dark:border-ui-dark-primary dark:bg-ui-dark-surface' : 'mb-3 rounded-control bg-ui-surface p-3 dark:bg-ui-dark-surface'} key={item.id}><View className="flex-row items-center"><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{item.user?.username || item.user?.full_name || `Viajero ${item.user_id.slice(0, 5)}`}</Text>{item.user?.role === 'admin' ? <AdminBadge /> : null}</View><Text className="mt-1 text-ui-text dark:text-ui-dark-text">{item.body}</Text><Pressable className="mt-2 self-start" onPress={() => { setParentReplyId(item.id); setReply(''); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Responder comentario' : 'Reply to comment'}</Text></Pressable></View>)}{parentReplyId ? <View className="mb-2 flex-row items-center"><Text className="flex-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Respondiendo a un comentario' : 'Replying to a comment'}</Text><Pressable onPress={() => setParentReplyId(undefined)}><Text className="font-black text-ui-danger dark:text-ui-dark-danger">×</Text></Pressable></View> : null}<View className="flex-row items-end"><TextInput className="mr-2 flex-1 rounded-control bg-ui-surface px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text" maxLength={1000} multiline onChangeText={setReply} placeholder={language === 'es' ? 'Escribí una respuesta…' : 'Write a reply…'} placeholderTextColor="#68737A" value={reply} /><Pressable className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary disabled:opacity-40 dark:bg-ui-dark-primary" disabled={busy || !reply.trim()} onPress={() => void respond(post.id)}><MaterialCommunityIcons name="send" size={20} color="white" /></Pressable></View></View> : null}

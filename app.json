@@ -12,6 +12,7 @@
       "buildNumber": "1",
       "supportsTablet": true,
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
           "waze"
         ]
@@ -40,7 +41,15 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "asyncRoutes": {
+            "web": true,
+            "default": false
+          }
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -88,6 +97,18 @@
     },
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true,
+          "default": false
+        }
+      },
+      "eas": {
+        "projectId": "f8b9f3a3-0224-4327-b108-711751fd4688"
+      }
+    },
+    "owner": "nacho091011"
   }
 }

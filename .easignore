@@ -1,0 +1,35 @@
+# Dependencies and local tooling
+node_modules/
+.git/
+.expo/
+.playwright*/
+.playwright*_profile/
+.playwright-session/
+.brave-yoviajo-profile/
+
+# Generated and audit outputs
+dist/
+web-build/
+.codex-audit-dist/
+.codex-play-web/
+.codex-bundle-test/
+tmp/
+coverage/
+
+# Local credentials and caches
+.env*.local
+*.log
+*.tsbuildinfo
+
+# Source datasets already reduced into src/data/provinces.json
+assets/CR_distritos_geojson-master/
+
+# Unused heavyweight splash source; runtime uses startup-transition.gif
+assets/images/startup-entry.gif
+
+# Repository-only material
+docs/
+scripts/
+supabase/
+*.pdf
+*.md
