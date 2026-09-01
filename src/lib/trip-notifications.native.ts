@@ -10,7 +10,7 @@ export async function scheduleTripReminders(plan: TripPlan, ferry?: FerryRoute |
   const Notifications = await import('expo-notifications');
   Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }) });
   const permission = await Notifications.requestPermissionsAsync();
-  if (!permission.granted) throw new Error('PERMISSION_DENIED');
+  if (permission.status !== 'granted') throw new Error('PERMISSION_DENIED');
   if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('trip', { name: 'Mi viaje', importance: Notifications.AndroidImportance.HIGH });
   const schedule = async (date: Date, title: string, body: string) => {
     if (date.getTime() <= Date.now() + 30_000) return;

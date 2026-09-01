@@ -1,14 +1,15 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused, useScrollToTop } from 'expo-router/react-navigation';
 import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { MapCanvas } from '@/components/explore/map-canvas';
 import { AppFooter } from '@/components/app-footer';
+import { InformationReportModal } from '@/components/information-report-modal';
 import { MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
@@ -19,11 +20,14 @@ import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
 const fallbackDestinationThumbnail = require('../../../assets/images/startup-rainforest.gif');
+const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
 
 const categoryColors = ['#2A7B4C', '#1E5B75', '#5F9EA0', '#B58A5A', '#7D9E8A', '#6F8FB3'];
 
 export default function ExploreScreen() {
   const { formatPrice, language, requireAuth, session } = useApp();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
   const router = useRouter();
   const isFocused = useIsFocused();
   const { reset: resetToken } = useLocalSearchParams<{ reset?: string }>();
@@ -32,6 +36,7 @@ export default function ExploreScreen() {
   const [search, setSearch] = useState('');
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number }>();
   const [proposalOpen, setProposalOpen] = useState(false);
+  const [roadReportOpen, setRoadReportOpen] = useState(false);
   const wide = width >= 900;
   const places = useQuery({
     queryKey: ['explore-places', 'v3'],
@@ -146,7 +151,7 @@ export default function ExploreScreen() {
   );
 
   return (
-    <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180, zIndex: 10 }}>
         <View className="w-full flex-row items-stretch gap-2">
           <Pressable
@@ -233,11 +238,16 @@ export default function ExploreScreen() {
           <Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Presioná una provincia para acceder a los destinos.' : 'Tap a province to see its destinations.'}</Text>
         </View>
         {isFocused ? <MapCanvas /> : null}
+        <Pressable accessibilityRole="button" className="mx-5 mb-5 mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-coral-500/40 px-5 py-3" onPress={() => setRoadReportOpen(true)}>
+          <MaterialCommunityIcons name="road-variant" size={21} color="#B42318" />
+          <Text className="ml-2 font-black text-coral-600">{language === 'es' ? 'Reportar carretera afectada' : 'Report an affected road'}</Text>
+        </Pressable>
       </View>
 
       <AppFooter language={language} />
 
       <ProposalModal language={language} onClose={() => setProposalOpen(false)} onPublished={() => void queryClient.invalidateQueries({ queryKey: ['explore-places'] })} open={proposalOpen} session={session} />
+      <InformationReportModal language={language} onClose={() => setRoadReportOpen(false)} open={roadReportOpen} targetKey="costa-rica-road-network" targetLabel={language === 'es' ? 'Carreteras de Costa Rica' : 'Costa Rica road network'} targetType="road" />
     </ScrollView>
   );
 }
@@ -313,15 +323,10 @@ function normalizeCategory(value: string) {
 
 function DestinationPreviewCarousel({ active, large, place }: { active: boolean; large: boolean; place: ExplorePlace }) {
   const photos = [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))];
-  const [photoIndex, setPhotoIndex] = useState(0);
-  useEffect(() => { setPhotoIndex(0); }, [place.id]);
-  useEffect(() => {
-    if (!active || photos.length < 2) return undefined;
-    const interval = setInterval(() => setPhotoIndex((current) => (current + 1) % photos.length), 2000);
-    return () => clearInterval(interval);
-  }, [active, photos.length]);
-  const source = photos.length ? photos[photoIndex % photos.length] : undefined;
-  return <Image accessibilityLabel={place.name} cachePolicy="memory-disk" contentFit="cover" source={source ? { uri: source } : fallbackDestinationThumbnail} style={large ? { height: 180, width: '100%' } : { borderRadius: 16, flexShrink: 0, height: 52, width: 52 }} transition={300} />;
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [place.id]);
+  const source = !failed && photos[0] ? { uri: photos[0] } : fallbackDestinationThumbnail;
+  return <Image accessibilityLabel={place.name} cachePolicy="memory-disk" contentFit="cover" onError={() => setFailed(true)} placeholder={destinationPlaceholder} placeholderContentFit="cover" priority={active ? 'high' : 'normal'} source={source} style={large ? { height: 180, width: '100%' } : { borderRadius: 16, flexShrink: 0, height: 52, width: 52 }} transition={160} />;
 }
 
 function PlaceResult({ active, followed, formatPrice, language, large, onFollow, onPress, origin, ownContribution, place }: { active: boolean; followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; large: boolean; onFollow: () => void; onPress: () => void; origin?: { latitude: number; longitude: number }; ownContribution: boolean; place: ExplorePlace }) {

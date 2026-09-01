@@ -376,7 +376,7 @@ export async function scheduleFerryReminder(route: FerryRoute, minutes = route.a
   }
   const Notifications = await import('expo-notifications');
   const permission = await Notifications.requestPermissionsAsync();
-  if (!permission.granted) throw new Error('PERMISSION_DENIED');
+  if (permission.status !== 'granted') throw new Error('PERMISSION_DENIED');
   if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('ferries', { name: 'Ferris', importance: Notifications.AndroidImportance.HIGH });
   const departure = nextDeparture(route.departures);
   const reminder = new Date(departure.getTime() - minutes * 60 * 1000);

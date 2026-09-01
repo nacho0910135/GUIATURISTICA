@@ -1,7 +1,8 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps, ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { AppCard, PrimaryButton } from '@/components/ui';
@@ -13,6 +14,8 @@ import { useApp } from '@/providers/app-provider';
 
 export default function MyTripScreen() {
   const { exchangeRate, language, userLocation } = useApp();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
   const [time, setTime] = useState('8');
   const [timeUnit, setTimeUnit] = useState<'hours' | 'days'>('hours');
   const [budget, setBudget] = useState('25000');
@@ -73,7 +76,7 @@ export default function MyTripScreen() {
     finally { setBusy(false); }
   };
 
-  return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 56 }} showsVerticalScrollIndicator={false}>
+  return <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 56 }} showsVerticalScrollIndicator={false}>
     <View className="border-b border-ui-border bg-ui-surface px-5 py-2 dark:border-ui-dark-border dark:bg-ui-dark-surface">
       <Text className="text-xs font-black uppercase tracking-[2px] text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Planificador inteligente' : 'Smart planner'}</Text>
       <View className="mt-1 flex-row items-center">

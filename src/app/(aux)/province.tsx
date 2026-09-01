@@ -1,39 +1,43 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View, type ViewToken } from 'react-native';
 
 import { InformationReportModal } from '@/components/information-report-modal';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions } from '@/lib/app-options';
 import { ferryRoutes, getFerryRoutes, getWeather, openNavigation, type FerryRoute, WEATHER_STALE_TIME } from '@/lib/logistics';
-import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerification, getDestinationReviews, getMyCommunitySuggestionVerification, getPlaceById, getPlacesForCategory, getPlacesForProvince, getPlacesForTargets, setCommunitySuggestionVerification, type CommunityPhoto, type CommunitySuggestionAccessDifficulty, type CommunitySuggestionVerification, type MapPlace, type MyCommunitySuggestionVerification, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
+import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerification, getDestinationFreshness, getDestinationReviews, getMyCommunitySuggestionVerification, getMyDestinationFreshness, getPlaceById, getPlacesForCategory, getPlacesForProvince, getPlacesForTargets, setCommunitySuggestionVerification, setDestinationFreshnessVote, type CommunityPhoto, type CommunitySuggestionAccessDifficulty, type CommunitySuggestionVerification, type DestinationFreshnessCheck, type MapPlace, type MyCommunitySuggestionVerification, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
-function DestinationCarousel({ height, place }: { height: number; place: MapPlace }) {
+const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
+
+function DestinationCarousel({ autoplay = true, height, place }: { autoplay?: boolean; height: number; place: MapPlace }) {
   const isFocused = useIsFocused();
-  const photos = [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))];
+  const photos = useMemo(() => [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))], [place.cover_image_url, place.photos]);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [failedPhotos, setFailedPhotos] = useState<string[]>([]);
-  const availablePhotos = photos.filter((url) => !failedPhotos.includes(url));
+  const availablePhotos = useMemo(() => photos.filter((url) => !failedPhotos.includes(url)), [failedPhotos, photos]);
   useEffect(() => {
     setPhotoIndex(0);
     setFailedPhotos([]);
   }, [place.id]);
   useEffect(() => {
-    if (!isFocused || availablePhotos.length < 2) return undefined;
-    const interval = setInterval(() => setPhotoIndex((current) => (current + 1) % availablePhotos.length), 2000);
-    return () => clearInterval(interval);
-  }, [availablePhotos.length, isFocused]);
+    if (!autoplay || !isFocused || availablePhotos.length < 2) return undefined;
+    const nextIndex = (photoIndex + 1) % availablePhotos.length;
+    void Image.prefetch(availablePhotos[nextIndex], 'memory-disk');
+    const timeout = setTimeout(() => setPhotoIndex(nextIndex), 2000);
+    return () => clearTimeout(timeout);
+  }, [autoplay, availablePhotos, isFocused, photoIndex]);
   const source = availablePhotos[photoIndex % availablePhotos.length];
-  return source ? <Image cachePolicy="memory-disk" contentFit="cover" onError={() => setFailedPhotos((failed) => [...failed, source])} source={{ uri: source }} style={{ height, width: '100%' }} transition={300} /> : <View className="items-center justify-center bg-ui-muted dark:bg-ui-dark-muted" style={{ height }}><MaterialCommunityIcons name="image-off-outline" size={42} color="#68737A" /></View>;
+  return source ? <Image cachePolicy="memory-disk" contentFit="cover" onError={() => setFailedPhotos((failed) => failed.includes(source) ? failed : [...failed, source])} placeholder={destinationPlaceholder} placeholderContentFit="cover" priority={autoplay ? 'high' : 'normal'} source={{ uri: source }} style={{ height, width: '100%' }} transition={160} /> : <View className="items-center justify-center bg-ui-primary-soft dark:bg-ui-dark-primary-soft" style={{ height }}><MaterialCommunityIcons name="image-off-outline" size={42} color="#087443" /></View>;
 }
 
 function usesVerifiedCover(place: MapPlace) {
@@ -64,6 +68,8 @@ function tourismRegion(place: MapPlace) {
 
 type Coordinates = { latitude: number; longitude: number };
 
+const CATALOG_BATCH_SIZE = 5;
+
 function distanceKm(from: Coordinates, to: Coordinates) {
   const radians = (degrees: number) => degrees * Math.PI / 180;
   const lat = radians(to.latitude - from.latitude);
@@ -91,6 +97,12 @@ export default function ProvinceCatalogScreen() {
   const [userLocation, setUserLocation] = useState<Coordinates>();
   const [beachType, setBeachType] = useState<'family' | 'surf'>('family');
   const [activeSubcategoryId, setActiveSubcategoryId] = useState<string>();
+  const [visiblePlaceCount, setVisiblePlaceCount] = useState(CATALOG_BATCH_SIZE);
+  const [visiblePlaceIds, setVisiblePlaceIds] = useState<Set<string>>(() => new Set());
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 });
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<MapPlace>[] }) => {
+    setVisiblePlaceIds(new Set(viewableItems.filter((item) => item.isViewable).map((item) => item.item.id)));
+  });
   const isCommunitySubmission = communityParam === '1';
   const categoryOptions = useQuery({ queryKey: ['app-options', 'destination_category', 'v2'], queryFn: () => getAppOptions('destination_category'), staleTime: 5 * 60 * 1000 });
   const categoryOption = useMemo(() => categoryOptions.data?.find((option) => option.id === categoryId) ?? null, [categoryId, categoryOptions.data]);
@@ -168,6 +180,13 @@ export default function ProvinceCatalogScreen() {
     const surf = place.category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('surf');
     return beachType === 'surf' ? surf : !surf;
   }), [beachType, isBeach, subcategoryPlaces]);
+  const visiblePlaces = useMemo(() => displayedPlaces.slice(0, visiblePlaceCount), [displayedPlaces, visiblePlaceCount]);
+  const loadNextPlaces = useCallback(() => {
+    setVisiblePlaceCount((current) => Math.min(current + CATALOG_BATCH_SIZE, displayedPlaces.length));
+  }, [displayedPlaces.length]);
+  useEffect(() => {
+    setVisiblePlaceCount(CATALOG_BATCH_SIZE);
+  }, [activeSubcategoryId, beachType, scopeKey]);
 
   const like = async (place: MapPlace) => {
     if (!requireAuth(language === 'es' ? 'Dar me gusta a un destino' : 'Like a destination') || !session) return;
@@ -194,13 +213,19 @@ export default function ProvinceCatalogScreen() {
       {visibleCategorySubcategories.length ? <View className="border-b border-ui-border bg-ui-surface py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface"><ScrollView horizontal contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}><Pressable accessibilityRole="button" accessibilityState={{ selected: !activeSubcategory }} className={!activeSubcategory ? 'min-h-11 justify-center rounded-full bg-ui-primary px-4 dark:bg-ui-dark-primary' : 'min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted'} onPress={() => setActiveSubcategoryId(undefined)}><Text className={!activeSubcategory ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? 'Todos' : 'All'}</Text></Pressable>{visibleCategorySubcategories.map((subcategory) => <Pressable accessibilityRole="button" accessibilityState={{ selected: activeSubcategoryId === subcategory.id }} className={activeSubcategoryId === subcategory.id ? 'min-h-11 justify-center rounded-full bg-ui-primary px-4 dark:bg-ui-dark-primary' : 'min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted'} key={subcategory.id} onPress={() => setActiveSubcategoryId((current) => current === subcategory.id ? undefined : subcategory.id)}><Text className={activeSubcategoryId === subcategory.id ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? subcategory.label_es : subcategory.label_en}</Text></Pressable>)}</ScrollView></View> : null}
       <FlatList
         contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 48, width: '100%', maxWidth: 1040, alignSelf: 'center' }}
-        data={displayedPlaces}
+        data={visiblePlaces}
+        extraData={visiblePlaceIds}
+        initialNumToRender={CATALOG_BATCH_SIZE}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? (language === 'es' ? 'No se pudieron cargar los sitios.' : 'Places could not be loaded.') : isBeach ? (language === 'es' ? `Aún no hay playas ${beachType === 'surf' ? 'de surf' : 'familiares'} publicadas.` : `There are no ${beachType === 'surf' ? 'surf' : 'family'} beaches published yet.`) : (language === 'es' ? 'Aún no hay sitios publicados aquí.' : 'There are no published places here yet.')}</Text>}
+        maxToRenderPerBatch={CATALOG_BATCH_SIZE}
+        onEndReached={visiblePlaces.length < displayedPlaces.length ? loadNextPlaces : undefined}
+        onEndReachedThreshold={0.35}
+        onViewableItemsChanged={onViewableItemsChanged.current}
         renderItem={({ item }) => (
           <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}`} accessibilityRole="button" className="overflow-hidden rounded-[30px] border border-ui-border bg-ui-surface active:opacity-90 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={() => setSelected(item)}>
             <View className="relative">
-              <DestinationCarousel height={210} place={item} />
+              <DestinationCarousel autoplay={!selected && visiblePlaceIds.has(item.id)} height={210} place={item} />
               <View className="absolute inset-0 bg-black/15" />
               <View className="absolute left-5 top-5 rounded-full bg-black/55 px-4 py-2"><Text className="font-black text-white">{item.province}</Text></View>
               {usesVerifiedCover(item) && item.image_attribution ? <View className="absolute right-4 top-4 max-w-[55%] rounded-lg bg-black/65 px-3 py-2"><Text className="text-right text-[10px] font-bold text-white" numberOfLines={1}>{language === 'es' ? 'Foto' : 'Photo'}: {item.image_attribution}</Text></View> : null}
@@ -214,6 +239,7 @@ export default function ProvinceCatalogScreen() {
             </View>
           </Pressable>
         )}
+        viewabilityConfig={viewabilityConfig.current}
       />
       <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} />
     </View>
@@ -321,6 +347,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
               <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{destinationDescription(place, language)}</Text></View>
               <VisitQuickFacts closedDay={place.closed_day} language={language} price={visitPrice} schedule={place.schedule} onNavigate={() => void openNavigation(place.latitude, place.longitude)} />
+              <DestinationFreshnessPanel destinationId={place.id} language={language} />
               {place.is_community_submission ? <CommunitySuggestionVerificationPanel busy={communityVerificationBusy} canVerify={place.community_contributor_id !== session?.user.id} language={language} mine={myCommunityVerification.data} onSubmit={submitCommunityVerification} verifiedAt={place.community_verified_at} verification={communityVerification.data} /> : null}
               <View className="rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5">
                 <InfoRow icon="calendar-remove-outline" label={language === 'es' ? 'Cierre' : 'Closed'} value={place.closed_day || (language === 'es' ? 'Sin dato verificado' : 'No verified data')} />
@@ -355,6 +382,41 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
 
 function VisitQuickFacts({ closedDay, language, onNavigate, price, schedule }: { closedDay: string | null; language: 'es' | 'en'; onNavigate: () => void; price: string; schedule: string | null }) {
   return <View className="flex-row flex-wrap gap-3"><View className="flex-1 rounded-2xl border border-ui-primary/40 bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft" style={{ minWidth: 150 }}><Text className="text-[10px] font-black uppercase tracking-wider text-ui-primary">{language === 'es' ? 'Tarifa' : 'Price'}</Text><Text className="mt-1 text-xl font-black text-ui-primary">{price}</Text><Text className="mt-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Según tu tipo de visitante' : 'Based on your visitor type'}</Text></View><View className="flex-1 rounded-2xl border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted" style={{ minWidth: 150 }}><Text className="text-[10px] font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Horario' : 'Hours'}</Text><Text className="mt-1 font-black text-ui-text dark:text-ui-dark-text">{schedule === 'Todo el día' && language === 'en' ? 'All day' : schedule || (language === 'es' ? 'Consultar' : 'Check')}</Text>{closedDay ? <Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? `Cierra: ${closedDay}` : `Closed: ${closedDay}`}</Text> : null}</View><Pressable accessibilityRole="link" className="flex-1 rounded-2xl border border-ui-secondary/60 bg-ui-secondary/10 p-4" style={{ minWidth: 150 }} onPress={onNavigate}><Text className="text-[10px] font-black uppercase tracking-wider text-ui-secondary">{language === 'es' ? 'Cómo llegar' : 'Directions'}</Text><Text className="mt-1 font-black text-ui-text dark:text-ui-dark-text">Waze</Text><View className="mt-2 flex-row self-start items-center rounded-xl bg-ui-secondary px-3 py-2"><MaterialCommunityIcons name="waze" size={17} color="white" /><Text className="ml-1.5 text-xs font-black text-white">{language === 'es' ? 'Abrir navegador' : 'Open navigation'}</Text></View></Pressable></View>;
+}
+
+function DestinationFreshnessPanel({ destinationId, language }: { destinationId: string; language: 'es' | 'en' }) {
+  const { requireAuth, session } = useApp();
+  const [busy, setBusy] = useState<DestinationFreshnessCheck>();
+  const freshness = useQuery({ queryKey: ['destination-freshness', destinationId], queryFn: () => getDestinationFreshness(destinationId) });
+  const mine = useQuery({ queryKey: ['my-destination-freshness', destinationId, session?.user.id], queryFn: () => getMyDestinationFreshness(destinationId, session!.user.id), enabled: Boolean(session) });
+  const checks: { id: DestinationFreshnessCheck; es: string; en: string }[] = [
+    { id: 'open', es: 'Sigue abierto', en: 'Still open' },
+    { id: 'price', es: 'Tarifa correcta', en: 'Price is correct' },
+    { id: 'cards', es: 'Aceptan tarjeta', en: 'Cards accepted' },
+  ];
+  const vote = async (check: DestinationFreshnessCheck, confirmed: boolean) => {
+    if (!requireAuth(language === 'es' ? 'Confirmar información reciente' : 'Confirm recent information') || !session) return;
+    setBusy(check);
+    try {
+      await setDestinationFreshnessVote(destinationId, session.user.id, check, confirmed);
+      await Promise.all([freshness.refetch(), mine.refetch()]);
+    } finally {
+      setBusy(undefined);
+    }
+  };
+  return (
+    <View className="rounded-3xl border border-ui-border bg-ui-muted p-5 dark:border-ui-dark-border dark:bg-ui-dark-muted">
+      <Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Información reciente de viajeros' : 'Recent traveller information'}</Text>
+      <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Confirmá solamente lo que verificaste durante tu visita.' : 'Only confirm what you verified during your visit.'}</Text>
+      <View className="mt-4 gap-3">
+        {checks.map((check) => {
+          const counts = freshness.data?.[check.id];
+          const myVote = mine.data?.[check.id];
+          return <View className="flex-row flex-wrap items-center justify-between gap-2" key={check.id}><View className="flex-1" style={{ minWidth: 150 }}><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? check.es : check.en}</Text><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{counts?.confirmed ?? 0} {language === 'es' ? 'confirmaciones' : 'confirmations'}</Text></View><View className="flex-row gap-2"><Pressable accessibilityRole="button" className={myVote === true ? 'rounded-xl bg-ui-primary px-3 py-2' : 'rounded-xl border border-ui-primary px-3 py-2'} disabled={busy === check.id} onPress={() => void vote(check.id, true)}><Text className={myVote === true ? 'font-black text-white' : 'font-black text-ui-primary'}>Sí</Text></Pressable><Pressable accessibilityRole="button" className={myVote === false ? 'rounded-xl bg-coral-600 px-3 py-2' : 'rounded-xl border border-coral-500/50 px-3 py-2'} disabled={busy === check.id} onPress={() => void vote(check.id, false)}><Text className={myVote === false ? 'font-black text-white' : 'font-black text-coral-600'}>No</Text></Pressable></View></View>;
+        })}
+      </View>
+    </View>
+  );
 }
 
 function CommunitySuggestionVerificationPanel({ busy, canVerify, language, mine, onSubmit, verification, verifiedAt }: { busy: boolean; canVerify: boolean; language: 'es' | 'en'; mine?: MyCommunitySuggestionVerification; onSubmit: (verification: NonNullable<MyCommunitySuggestionVerification>) => void; verification?: CommunitySuggestionVerification; verifiedAt?: string | null }) {

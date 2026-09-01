@@ -3,6 +3,8 @@ module.exports = ({ config }) => {
   plugins.push('expo-asset');
   plugins.push('expo-sqlite');
   plugins.push('expo-secure-store');
-  plugins.push(['expo-location', { locationWhenInUsePermission: 'Permitir que Descubriendo CR comparta tu ubicación cuando vos lo elijás.' }]);
+  plugins.push('expo-image');
+  plugins.push('expo-web-browser');
+  plugins.push('expo-status-bar');
   return { ...config, plugins };
 };

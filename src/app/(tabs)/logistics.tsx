@@ -1,7 +1,8 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
@@ -13,6 +14,8 @@ type ViewName = 'home' | 'buses' | 'ferries';
 
 export default function LogisticsScreen() {
   const { formatPrice, language } = useApp();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
   const { reset } = useLocalSearchParams<{ reset?: string }>();
   const [view, setView] = useState<ViewName>('home');
   const [query, setQuery] = useState('');
@@ -22,6 +25,15 @@ export default function LogisticsScreen() {
   useEffect(() => { if (reset) { setView('home'); setQuery(''); setCommittedQuery(''); setOpenRoute(null); setGroup('tourist'); } }, [reset]);
   useEffect(() => { const timer = setTimeout(() => setCommittedQuery(query.trim()), 300); return () => clearTimeout(timer); }, [query]);
   const buses = useQuery({ queryKey: ['bus-routes', group, committedQuery], queryFn: () => getBusRoutes(committedQuery, group), enabled: view === 'buses', staleTime: 5 * 60 * 1000 });
+  const homeBusSearch = useQuery({
+    queryKey: ['bus-routes', 'home-search', committedQuery, language],
+    queryFn: async () => {
+      const [tourist, cantonal] = await Promise.all([getBusRoutes(committedQuery, 'tourist'), getBusRoutes(committedQuery, 'cantonal')]);
+      return [...tourist, ...cantonal].sort((a, b) => a.route_name.localeCompare(b.route_name, language === 'es' ? 'es-CR' : 'en-US'));
+    },
+    enabled: view === 'home' && Boolean(committedQuery),
+    staleTime: 5 * 60 * 1000,
+  });
   const ferries = useQuery({ queryKey: ['ferry-routes'], queryFn: getFerryRoutes, enabled: view === 'ferries', staleTime: 30 * 60 * 1000 });
   const title = language === 'es' ? 'Buses y ferris' : 'Buses & ferries';
   const viewTitle = view === 'home'
@@ -39,13 +51,20 @@ export default function LogisticsScreen() {
         ? (language === 'es' ? 'Conexiones entre los destinos más visitados.' : 'Connections between the most visited destinations.')
         : (language === 'es' ? 'Traslados locales dentro de cada cantón.' : 'Local connections within each canton.');
 
-  return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 56 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+  return <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 56 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
     <View className="border-b border-ui-border bg-ui-surface px-5 py-2 dark:border-ui-dark-border dark:bg-ui-dark-surface">
       {view !== 'home' ? <Pressable accessibilityLabel={language === 'es' ? 'Volver a transporte' : 'Back to transport'} accessibilityRole="button" className="mb-3 min-h-11 flex-row items-center self-start" onPress={() => setView('home')}><MaterialCommunityIcons name="arrow-left" size={22} color="#0077A8" /><Text className="ml-2 font-black text-caribbean-700 dark:text-caribbean-100">{title}</Text></Pressable> : <Text className="text-xs font-black uppercase tracking-[2px] text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Moverse por Costa Rica' : 'Getting around Costa Rica'}</Text>}
       <View className={view === 'home' ? 'mt-1 flex-row items-center' : 'flex-row items-center'}><View className="h-10 w-10 items-center justify-center rounded-2xl bg-caribbean-50 dark:bg-caribbean-900"><MaterialCommunityIcons name={view === 'ferries' ? 'ferry' : 'bus'} size={23} color="#0077A8" /></View><View className="ml-3 flex-1"><Text className="text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{viewTitle}</Text><Text className="mt-0.5 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{viewSubtitle}</Text></View></View>
     </View>
 
-    {view === 'home' ? <View className="px-5 pt-6"><Text className="mb-3 text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Elegí una opción' : 'Choose an option'}</Text><View className="gap-4"><MainCard icon="bus" eyebrow={language === 'es' ? 'Entre destinos' : 'Between destinations'} subtitle={language === 'es' ? 'Rutas seleccionadas para recorrer Costa Rica' : 'Selected routes for travelling across Costa Rica'} title={language === 'es' ? 'Buses turísticos' : 'Tourist buses'} onPress={() => { setGroup('tourist'); setView('buses'); }} /><MainCard icon="bus-clock" eyebrow={language === 'es' ? 'Traslados locales' : 'Local connections'} subtitle={language === 'es' ? 'Rutas para moverte dentro del cantón' : 'Routes for moving within a canton'} title={language === 'es' ? 'Buses cantonales' : 'Local buses'} onPress={() => { setGroup('cantonal'); setView('buses'); }} /><MainCard icon="ferry" eyebrow={language === 'es' ? 'Golfo de Nicoya' : 'Gulf of Nicoya'} subtitle={language === 'es' ? 'Salidas, terminales y tarifas publicadas' : 'Published departures, terminals, and fares'} title={language === 'es' ? 'Ferris' : 'Ferries'} onPress={() => setView('ferries')} /></View></View> : null}
+    {view === 'home' ? <View className="px-5 pt-6">
+      <Text className="mb-2 text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Buscar una ruta' : 'Find a route'}</Text>
+      <View className="min-h-12 flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="magnify" size={21} color="#68737A" /><TextInput accessibilityLabel={language === 'es' ? 'Buscar rutas provinciales y cantonales' : 'Search provincial and local bus routes'} className="ml-2 flex-1 py-3 text-ui-text dark:text-ui-dark-text" onChangeText={(value) => { setQuery(value); setOpenRoute(null); }} placeholder={language === 'es' ? 'Nombre de la ruta' : 'Route name'} placeholderTextColor="#68737A" returnKeyType="search" value={query} />{query ? <Pressable accessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'} accessibilityRole="button" className="h-11 w-11 items-center justify-center" onPress={() => { setQuery(''); setCommittedQuery(''); setOpenRoute(null); }}><MaterialCommunityIcons name="close-circle" size={21} color="#68737A" /></Pressable> : null}</View>
+      {committedQuery ? <View className="mt-3 overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface">
+        {homeBusSearch.isPending ? <View className="min-h-24 items-center justify-center"><Text className="font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Buscando rutas…' : 'Finding routes…'}</Text></View> : homeBusSearch.isError ? <View className="min-h-24 items-center justify-center p-4"><Text accessibilityRole="alert" className="text-center font-bold text-ui-danger">{language === 'es' ? 'No pudimos buscar las rutas.' : 'Routes could not be searched.'}</Text><Pressable accessibilityRole="button" className="mt-2 min-h-11 justify-center px-4" onPress={() => homeBusSearch.refetch()}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Reintentar' : 'Try again'}</Text></Pressable></View> : homeBusSearch.data?.length ? homeBusSearch.data.map((route, index) => <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${route.route_name}`} accessibilityRole="button" className={index ? 'min-h-16 flex-row items-center border-t border-ui-border px-4 py-3 active:bg-ui-muted dark:border-ui-dark-border dark:active:bg-ui-dark-muted' : 'min-h-16 flex-row items-center px-4 py-3 active:bg-ui-muted dark:active:bg-ui-dark-muted'} key={`${route.route_group}-${route.source_key}`} onPress={() => { setGroup(route.route_group); setOpenRoute(route.source_key); setView('buses'); }}><View className="h-10 w-10 items-center justify-center rounded-xl bg-ui-muted dark:bg-ui-dark-muted"><MaterialCommunityIcons name={route.route_group === 'tourist' ? 'bus' : 'bus-clock'} size={21} color="#1E5B75" /></View><View className="ml-3 flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{route.route_name}</Text><Text className="mt-0.5 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{route.route_group === 'tourist' ? (language === 'es' ? 'Provincial' : 'Provincial') : (language === 'es' ? 'Cantonal' : 'Local')}</Text></View><MaterialCommunityIcons name="chevron-right" size={22} color="#1E5B75" /></Pressable>) : <View className="min-h-24 items-center justify-center p-4"><Text className="text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos rutas con ese nombre.' : 'No routes matched that name.'}</Text></View>}
+      </View> : null}
+      <Text className="mb-3 mt-6 text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Elegí una opción' : 'Choose an option'}</Text><View className="gap-4"><MainCard icon="bus" eyebrow={language === 'es' ? 'Entre destinos' : 'Between destinations'} subtitle={language === 'es' ? 'Rutas seleccionadas para recorrer Costa Rica' : 'Selected routes for travelling across Costa Rica'} title={language === 'es' ? 'Buses turísticos' : 'Tourist buses'} onPress={() => { setGroup('tourist'); setView('buses'); }} /><MainCard icon="bus-clock" eyebrow={language === 'es' ? 'Traslados locales' : 'Local connections'} subtitle={language === 'es' ? 'Rutas para moverte dentro del cantón' : 'Routes for moving within a canton'} title={language === 'es' ? 'Buses cantonales' : 'Local buses'} onPress={() => { setGroup('cantonal'); setView('buses'); }} /><MainCard icon="ferry" eyebrow={language === 'es' ? 'Golfo de Nicoya' : 'Gulf of Nicoya'} subtitle={language === 'es' ? 'Salidas, terminales y tarifas publicadas' : 'Published departures, terminals, and fares'} title={language === 'es' ? 'Ferris' : 'Ferries'} onPress={() => setView('ferries')} /></View>
+    </View> : null}
 
     {view === 'buses' ? <View className="px-5 pt-5">
       <View className="min-h-12 flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="magnify" size={21} color="#68737A" /><TextInput accessibilityLabel={language === 'es' ? 'Buscar rutas de bus' : 'Search bus routes'} className="ml-2 flex-1 py-3 text-ui-text dark:text-ui-dark-text" onChangeText={(value) => { setQuery(value); setOpenRoute(null); }} placeholder={language === 'es' ? 'Origen, destino o terminal' : 'Origin, destination, or terminal'} placeholderTextColor="#68737A" returnKeyType="search" value={query} />{query ? <Pressable accessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'} accessibilityRole="button" className="h-11 w-11 items-center justify-center" onPress={() => { setQuery(''); setCommittedQuery(''); setOpenRoute(null); }}><MaterialCommunityIcons name="close-circle" size={21} color="#68737A" /></Pressable> : null}</View>

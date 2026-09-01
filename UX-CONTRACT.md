@@ -58,7 +58,8 @@
 ## Dataset navigation
 
 - **Admin data:** paginación de servidor cuando se introduzcan tablas extensas.
-- **Exploratory lists:** Load more para catálogos; infinite scroll sólo para feed social con alternativa accesible.
+- **Catálogos de destinos:** provincias y categorías ordenan primero por cercanía y presentan lotes automáticos de 5 destinos; al acercarse al final se incorporan los siguientes 5, sin botón y conservando el mismo criterio de cercanía.
+- **Feed social:** infinite scroll con alternativa accesible.
 - **URL/route state:** conservar filtros, sort y contexto al volver cuando Expo Router lo permita; no persistir búsqueda sensible.
 - **Empty/no-results/error/loading:** `EmptyState`, retry explícito, indicador estable; `Skeleton` sólo cuando coincide con geometría final.
 - **Back/scroll restoration:** volver conserva el contexto de origen; un refresh explícito no debe saltar la posición sin necesidad.
@@ -77,11 +78,14 @@
 | Soft-delete | Archivar / Desactivar | dialog busy | lista válida | Undo sólo si es real | dialog conserva contexto | siguiente elemento | pendiente de política mantenida |
 | Hard-delete | Eliminar permanentemente | dialog danger busy | lista válida | confirmación persistente | verificar resultado antes de retry | siguiente elemento | bloqueado sin política mantenida |
 
+- **Búsqueda de transporte:** la portada de Buses y ferris busca por nombre simultáneamente en rutas provinciales y cantonales; los ferris quedan explícitamente fuera de este buscador.
+
 ## Navigation and responsive behavior
 
 - **Document title:** `{Pantalla} — Descubriendo CR` en web; loading/error deben reemplazar títulos obsoletos.
 - **Route errors:** 404, 403 y error general se distinguen y mantienen navegación accesible.
 - **Tabs/routes:** rutas independientes usan navegación; tabs sólo para vistas pares del mismo contexto.
+- **Repetir pestaña activa:** al volver a presionar un botón de la barra inferior, la vista de esa pestaña sube de forma animada a su contenido principal; no cambia filtros ni datos seleccionados.
 - **Bottom sheets:** elecciones cortas/contextuales; contenido largo o formularios con teclado usan pantalla/modal completa.
 - **Responsive data:** tarjetas para registros independientes; scroll horizontal sólo cuando comparar columnas sea esencial.
 - **Truncation:** valores importantes envuelven o ofrecen acceso explícito al valor completo, nunca sólo hover.

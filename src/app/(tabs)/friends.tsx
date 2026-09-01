@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -43,6 +44,8 @@ function TravelerWallSkeleton({ language }: { language: 'es' | 'en' }) {
 export default function FriendsScreen() {
   const router = useRouter();
   const { avatarUrl, language, requireAuth, session } = useApp();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
   const userId = session?.user.id;
   const [wall, setWall] = useState<Wall>();
   const [body, setBody] = useState('');
@@ -159,7 +162,7 @@ export default function FriendsScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
       <View className="w-full border-b border-ui-border bg-ui-surface px-5 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface">
         <View className="mx-auto w-full max-w-3xl flex-row items-center">
           <View className="h-10 w-10 items-center justify-center rounded-xl bg-caribbean-50 dark:bg-caribbean-900"><Text accessibilityLabel={language === 'es' ? 'Dos amigos' : 'Two friends'} className="text-xl">🧑‍🤝‍🧑</Text></View>

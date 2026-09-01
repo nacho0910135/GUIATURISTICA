@@ -1,9 +1,10 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useGlobalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { InformationReportModal } from '@/components/information-report-modal';
@@ -231,6 +232,8 @@ function ProfileEditorFields({
 
 export default function CommerceScreen() {
   const { language, requireAuth, session, userLocation } = useApp();
+  const scrollRef = useRef<FlatList<CommerceService>>(null);
+  useScrollToTop(scrollRef);
   const router = useRouter();
   const [category, setCategory] = useState<CommerceCategoryId>('cinemas');
   const [subcategory, setSubcategory] = useState<string>();
@@ -464,6 +467,7 @@ export default function CommerceScreen() {
   return (
     <View className="flex-1 bg-[#F8F6F0] dark:bg-ui-dark-background">
       <FlatList
+        ref={scrollRef}
         data={catalog}
         initialNumToRender={COMMERCE_RESULTS_PER_CATEGORY}
         maxToRenderPerBatch={COMMERCE_RESULTS_PER_CATEGORY}
