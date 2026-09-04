@@ -456,7 +456,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   }, [difficulty, difficultyOptions.data]);
   const submit = async () => {
     if (!session || name.trim().length < 3 || description.trim().length < 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Agregá un nombre y una descripción de al menos 10 caracteres.' : 'Add a name and a description of at least 10 characters.');
-    if (categories.length < 1 || categories.length > 2) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná una o dos categorías.' : 'Select one or two categories.');
+    if (categories.length < 1 || categories.length > 3) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná entre una y tres categorías.' : 'Select between one and three categories.');
     if (locationMode === 'manual' && !manualLocation) return Alert.alert('Descubriendo CR', language === 'es' ? 'Mové el mapa y tocá el punto donde está el sitio.' : 'Move the map and tap where the place is located.');
     setSending(true);
     try {
@@ -607,13 +607,13 @@ function CategoryChoiceField({ language, onChange, options, value }: { language:
   const toggle = (option: string) => {
     void haptic('selection');
     if (value.includes(option)) return onChange(value.filter((item) => item !== option));
-    if (value.length === 2) return Alert.alert('Descubriendo CR', language === 'es' ? 'Podés seleccionar un máximo de dos categorías.' : 'You can select up to two categories.');
+    if (value.length === 3) return Alert.alert('Descubriendo CR', language === 'es' ? 'Podés seleccionar un máximo de tres categorías.' : 'You can select up to three categories.');
     onChange([...value, option]);
   };
   return (
     <View>
       <Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Categorías' : 'Categories'}</Text>
-      <Text className="mb-2 mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Elegí una o dos.' : 'Choose one or two.'}</Text>
+      <Text className="mb-2 mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Elegí hasta tres.' : 'Choose up to three.'}</Text>
       <ScrollView horizontal contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>
         {options.map((option) => {
           const selected = value.includes(option.id);

@@ -22,30 +22,17 @@ export async function getAppOptions(kind: string) {
 }
 
 export async function getPlannerOptions() {
-  const [{ data: rows, error }, { data: provinces, error: provinceError }] =
-    await Promise.all([
-      supabase.from("destinations").select("category").eq("status", "Activo"),
-      supabase
-        .from("destinations")
-        .select("province")
-        .eq("status", "Activo")
-        .order("province"),
-    ]);
-  if (error) throw error;
+  const [categories, { data: provinces, error: provinceError }] = await Promise.all([
+    getAppOptions("destination_category"),
+    supabase
+      .from("destinations")
+      .select("province")
+      .eq("status", "Activo")
+      .order("province"),
+  ]);
   if (provinceError) throw provinceError;
-  const styles = [
-    ...new Set(
-      (rows ?? [])
-        .flatMap(({ category }) =>
-          String(category)
-            .split("/")
-            .map((value) => value.trim()),
-        )
-        .filter(Boolean),
-    ),
-  ].sort();
   return {
-    styles: ["Todo", ...styles],
+    categories: categories.filter((option) => option.parent_id === null),
     provinces: [
       ...new Set(
         (provinces ?? []).map(({ province }) => province).filter(Boolean),
