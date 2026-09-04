@@ -1,0 +1,3549 @@
+{
+  "reason": {
+    "status": "En revisión editorial",
+    "why_not_visible": "La pantalla Explorar y la política RLS para invitados solo permiten destinos con status Activo.",
+    "individual_reason_note": "La tabla destinations no tiene una columna que detalle la razón editorial de cada registro.",
+    "individual_reason_available": false
+  },
+  "metadata": {
+    "count": 62,
+    "exported_at": "2026-09-03T14:25:06.490924+00:00",
+    "source_table": "public.destinations"
+  },
+  "destinations": [
+    {
+      "id": "da9f4b97-48c3-4d1b-a922-b1ce39ba8de9",
+      "name": "Aguas Termales de Tabacón",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Termales",
+      "fee_type": "De Pago",
+      "latitude": 10.4878,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.7222,
+          10.4878
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.4878,-84.7222",
+      "legacy_id": 23,
+      "longitude": -84.7222,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Aguas Termales de Tabacón in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.7222,
+          10.4878
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 25000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 85,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "a850c60f-2007-4032-86e0-c491fe66cf27",
+      "name": "Basílica de Nuestra Señora de los Ángeles",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Cultura / Religioso",
+      "fee_type": "Gratuito",
+      "latitude": 9.8642,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.9131,
+          9.8642
+        ]
+      },
+      "province": "Cartago",
+      "waze_url": "https://waze.com/ul?ll=9.8642,-83.9131",
+      "legacy_id": 6,
+      "longitude": -83.9131,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Basílica de Nuestra Señora de los Ángeles in Cartago, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/cfbba51c-60dd-48ee-9c18-2ba2b4ee2449.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Basilica_de_los_Angeles.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.9131,
+          9.8642
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Magalhães",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "4f625302-a1db-486a-a387-a716bd6a6516",
+      "name": "Catarata Dinamarca",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Catarata",
+      "fee_type": "De Pago",
+      "latitude": 10.2431,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.2211,
+          10.2431
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.2431,-84.2211",
+      "legacy_id": 43,
+      "longitude": -84.2211,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Catarata Dinamarca in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/120042ec-2625-4734-98a3-93d7826e8c82.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Geograf%C3%ADa.-Historia_universal.-Historia_de_America_(IA_geografiahistori00unse).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.2211,
+          10.2431
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Internet Archive identifier : geografiahistori00unse https://archive.org/download/geografiahistori00unse/geografiahistori00unse.pdf",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 3000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 8,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "1fc1f83f-03fe-4c96-b3cb-a9a0595110f3",
+      "name": "Catarata La Paz Waterfall Gardens",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Catarata / Senderismo",
+      "fee_type": "De Pago",
+      "latitude": 10.2081,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.1628,
+          10.2081
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.2081,-84.1628",
+      "legacy_id": 17,
+      "longitude": -84.1628,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Catarata La Paz Waterfall Gardens in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.1628,
+          10.2081
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 15000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 48,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "705c251d-6936-4d48-987f-4c5f4a337337",
+      "name": "Catarata Llanos del Cortés (Bagaces)",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Catarata",
+      "fee_type": "De Pago",
+      "latitude": 10.5281,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.2281,
+          10.5281
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.5281,-85.2281",
+      "legacy_id": 73,
+      "longitude": -85.2281,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Catarata Llanos del Cortés (Bagaces) in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/376cbfb5-1ec8-4636-9699-487484b22c25.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Llanos_de_Cortes.JPG",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.2281,
+          10.5281
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Yricordel",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 2000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 7,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "9f91ff95-0924-4acd-afcb-be6e6d30fd0c",
+      "name": "Catarata Los Chorros (Grecia)",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Catarata",
+      "fee_type": "De Pago",
+      "latitude": 10.0469,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.3014,
+          10.0469
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.0469,-84.3014",
+      "legacy_id": 15,
+      "longitude": -84.3014,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 4.0",
+      "description_en": "Discover Catarata Los Chorros (Grecia) in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/6f40bd2e-57b5-4f27-81b3-781a84514491.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Chorros_waterfall,_Grecia,_Costa_Rica.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.3014,
+          10.0469
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Rodtico21",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 2000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 5,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "45688e18-9f24-4b5f-b324-34a478a1f6d2",
+      "name": "Catarata Opendola",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Catarata",
+      "fee_type": "De Pago",
+      "latitude": 10.7511,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.3481,
+          10.7511
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.7511,-85.3481",
+      "legacy_id": 47,
+      "longitude": -85.3481,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Catarata Opendola in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.3481,
+          10.7511
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 3000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 10,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "dfa9f30c-0ac8-485d-b2c8-b9855782497e",
+      "name": "Catarata Río Celeste (PN Volcán Tenorio)",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Catarata / Parque Nacional / Volcán",
+      "fee_type": "De Pago",
+      "latitude": 10.7138,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.9875,
+          10.7138
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.7138,-84.9875",
+      "legacy_id": 27,
+      "longitude": -84.9875,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Catarata Río Celeste (PN Volcán Tenorio) in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Cumanda.djvu/page1-1920px-Cumanda.djvu.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Cumanda.djvu",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.9875,
+          10.7138
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Juan León Mera",
+      "online_ticket_url": "https://serviciosboletaje.sinac.go.cr",
+      "sinac_booking_url": "https://serviciosboletaje.sinac.go.cr",
+      "source_checked_at": null,
+      "price_national_crc": 900,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 12,
+      "requires_online_ticket": true,
+      "requires_sinac_booking": true,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "3ff4aa09-8505-40f2-af64-ff9f86fc39df",
+      "name": "Catarata Vuelta del Cañón",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Catarata",
+      "fee_type": "De Pago",
+      "latitude": 10.2511,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.2411,
+          10.2511
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.2511,-84.2411",
+      "legacy_id": 44,
+      "longitude": -84.2411,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Catarata Vuelta del Cañón in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/4c31cbee-aa5f-4386-bd2b-860293251f2c.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Caminos_posibles_para_descubrir_Am%C3%A9rica_y_causas_de_haber_sido_el_m%C3%A1s_improbable_el_m%C3%A1s_r%C3%A1pido_y_fecundo_-_conferencia_de_d._Eduardo_L%C3%A9on_y_Ortiz_pronunciada_el_d%C3%ADa_5_de_mayo_de_1892_(IA_b2488246x).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.2411,
+          10.2511
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "León y Ortiz, Eduardo, 1846-",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 8000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 20,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "2016be0d-d730-47c2-a370-7d342c12af86",
+      "name": "Cataratas Las Gemelas",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Catarata",
+      "fee_type": "De Pago",
+      "latitude": 10.2319,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.2806,
+          10.2319
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.2319,-84.2806",
+      "legacy_id": 40,
+      "longitude": -84.2806,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Cataratas Las Gemelas in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/98de1ca7-7f15-4903-80fd-63d27cffe291.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:El_medico_de_San_Luis_-_Eduarda_Mansilla_de_Garcia.pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.2806,
+          10.2319
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Eduarda Mansilla",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 5000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 12,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "afe982d6-2bcc-4fce-8fa2-3d17a5ce29ee",
+      "name": "Cavernas de Venado",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Senderismo",
+      "fee_type": "De Pago",
+      "latitude": 10.5628,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.7878,
+          10.5628
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.5628,-84.7878",
+      "legacy_id": 29,
+      "longitude": -84.7878,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Cavernas de Venado in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/481db844-d9d7-4d1c-b00f-50bbe55db5f2.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Cavernas_venado-01.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.7878,
+          10.5628
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "MongeNajera",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 12000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 28,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "4b7fb57a-7d3a-4682-9e89-0f64ffc14835",
+      "name": "Centro de Rescate Las Pumas (Cañas)",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Santuarios de animales",
+      "fee_type": "De Pago",
+      "latitude": 10.4319,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.1219,
+          10.4319
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.4319,-85.1219",
+      "legacy_id": 74,
+      "longitude": -85.1219,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY 3.0",
+      "description_en": "Discover Centro de Rescate Las Pumas (Cañas) in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/ccbdf445-3048-4225-be68-aaf608849a41.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Keel-billed_toucan,_costa_rica.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.1219,
+          10.4319
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Donar Reiskoffer",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 3000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 12,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "7c972607-b322-44e8-aba3-f8358e09d021",
+      "name": "Cerro Amigos (Mirador Monteverde)",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Mirador",
+      "fee_type": "Gratuito",
+      "latitude": 10.3236,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.7911,
+          10.3236
+        ]
+      },
+      "province": "Puntarenas",
+      "waze_url": "https://waze.com/ul?ll=10.3236,-84.7911",
+      "legacy_id": 36,
+      "longitude": -84.7911,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Cerro Amigos (Mirador Monteverde) in Puntarenas, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/fa414328-334a-48a1-9881-7ef6fe697ffa.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Cuentos_grises.djvu",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.7911,
+          10.3236
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Carlos Gagini",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "ef6f47bf-79a6-4a63-a51a-d36ee1c2272d",
+      "name": "Cerro de la Muerte / Cerro Buenavista",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Senderismo / Mirador",
+      "fee_type": "Gratuito",
+      "latitude": 9.5636,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.7547,
+          9.5636
+        ]
+      },
+      "province": "San José",
+      "waze_url": "https://waze.com/ul?ll=9.5636,-83.7547",
+      "legacy_id": 12,
+      "longitude": -83.7547,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Cerro de la Muerte / Cerro Buenavista in San José, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/a99caaa6-8fc6-494b-a784-7a06fe7d0a2d.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Apuntes_para_la_zoolog%C3%ADa_de_Tabasco_-_vertebrados_observados_en_el_territorio_de_Mascuspana_(IA_apuntesparalazo00rovi).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.7547,
+          9.5636
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "José Narciso Rovirosa Andrade",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "e4280af7-8ace-4da4-87c4-85f81bfcb8b1",
+      "name": "El Tigre Waterfalls (Monteverde)",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Senderismo / Cataratas",
+      "fee_type": "De Pago",
+      "latitude": 10.3589,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.8519,
+          10.3589
+        ]
+      },
+      "province": "Puntarenas",
+      "waze_url": "https://waze.com/ul?ll=10.3589,-84.8519",
+      "legacy_id": 35,
+      "longitude": -84.8519,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover El Tigre Waterfalls (Monteverde) in Puntarenas, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/bf87fb04-a596-43a4-b059-6b50d30779ce.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Bulletin_of_the_Pan_American_Union_1912-_Vol_34_Index_(IA_sim_bulletin-of-the-pan-american-union_1912_34_index).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.8519,
+          10.3589
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Internet Archive identifier : sim_bulletin-of-the-pan-american-union_1912_34_index https://archive.org/download/sim_bulletin-of-the-pan-american-union_1912_34_index/sim_bulletin-of-the-pan-american-union_1912_34_index.pdf IA contributor: Internet Archive IA digitizing sponsor: Kahle/Austin Foundation",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 15000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 30,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "ed8912bc-b01c-41fe-b08e-3d6ee4831c6e",
+      "name": "Isla Chira (Golfo de Nicoya)",
+      "region": "Puntarenas y Golfo",
+      "status": "En revisión editorial",
+      "category": "Cultura / Playa",
+      "fee_type": "Gratuito",
+      "latitude": 10.1011,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.1519,
+          10.1011
+        ]
+      },
+      "province": "Puntarenas",
+      "waze_url": "https://waze.com/ul?ll=10.1011,-85.1519",
+      "legacy_id": 75,
+      "longitude": -85.1519,
+      "region_id": 4,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Isla Chira (Golfo de Nicoya) in Puntarenas, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/6ddf1843-eedc-4be1-998f-29b94c197f08.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Geograf%C3%ADa_de_la_Am%C3%A9rica-Central;_(IA_geografadelaam00gonz).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.1519,
+          10.1011
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "González, Darío",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "6c24c898-2a98-4b86-bdc1-af950bb36e53",
+      "name": "Lago Arenal (Represa)",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Lago / Aventura",
+      "fee_type": "Gratuito",
+      "latitude": 10.5317,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.8239,
+          10.5317
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.5317,-84.8239",
+      "legacy_id": 26,
+      "longitude": -84.8239,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Lago Arenal (Represa) in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/ea39d4e9-aeac-4870-bf2a-790d908957d6.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Lago_Arenal_visto_desde_la_represa_-_panoramio.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.8239,
+          10.5317
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Andrés Berrocal Soto",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "6f546a5a-0c36-4baf-8c24-d3f41cb5f145",
+      "name": "Las Hornillas Geothermal Park",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Volcán / Termales",
+      "fee_type": "De Pago",
+      "latitude": 10.7228,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.1639,
+          10.7228
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.7228,-85.1639",
+      "legacy_id": 32,
+      "longitude": -85.1639,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Las Hornillas Geothermal Park in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.1639,
+          10.7228
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 8000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 18,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "886f1226-92cd-4748-ab78-68a06b001d4e",
+      "name": "Mercado Central de San José",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Gastronomía / Cultura",
+      "fee_type": "Gratuito",
+      "latitude": 9.9351,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.0818,
+          9.9351
+        ]
+      },
+      "province": "San José",
+      "waze_url": "https://waze.com/ul?ll=9.9351,-84.0818",
+      "legacy_id": 3,
+      "longitude": -84.0818,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY 2.0",
+      "description_en": "Discover Mercado Central de San José in San José, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/bca26fd4-2752-4696-a7b2-b67390583520.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:San_Jose_Central_Market1.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.0818,
+          9.9351
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Puroticorico",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "7c4b512f-accb-4f4b-b21e-8541c1548191",
+      "name": "Mirador de Orosi",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Mirador",
+      "fee_type": "Gratuito",
+      "latitude": 9.7969,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.8569,
+          9.7969
+        ]
+      },
+      "province": "Cartago",
+      "waze_url": "https://waze.com/ul?ll=9.7969,-83.8569",
+      "legacy_id": 14,
+      "longitude": -83.8569,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Mirador de Orosi in Cartago, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/abb3f77f-522a-4d3f-967d-7aee58838054.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Vista_del_Valle_de_Orosi.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.8569,
+          9.7969
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "André Oliva",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "a3a2dab4-d909-4c86-a041-836b5c4637f8",
+      "name": "Místico Arenal Hanging Bridges",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Senderismo / Mirador",
+      "fee_type": "De Pago",
+      "latitude": 10.4881,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.7522,
+          10.4881
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.4881,-84.7522",
+      "legacy_id": 25,
+      "longitude": -84.7522,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Místico Arenal Hanging Bridges in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.7522,
+          10.4881
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 12000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 32,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "534056b5-bffa-4621-8b09-7f44015c3f8f",
+      "name": "Museo del Oro Precolombino",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Cultura",
+      "fee_type": "De Pago",
+      "latitude": 9.9336,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.0772,
+          9.9336
+        ]
+      },
+      "province": "San José",
+      "waze_url": "https://waze.com/ul?ll=9.9336,-84.0772",
+      "legacy_id": 2,
+      "longitude": -84.0772,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Museo del Oro Precolombino in San José, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/c78a589d-a4b6-4ccd-bac5-a202b65bb615.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Costa_Rica_precolombina.JPG",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.0772,
+          9.9336
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Rodtico21",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 3000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 16,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "053a8d2e-be00-4e6d-a89e-e70fa6909e74",
+      "name": "Parque Nacional Braulio Carrillo (Sector Quebrada González)",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional",
+      "fee_type": "De Pago",
+      "latitude": 10.1603,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.9386,
+          10.1603
+        ]
+      },
+      "province": "Limón",
+      "waze_url": "https://waze.com/ul?ll=10.1603,-83.9386",
+      "legacy_id": 19,
+      "longitude": -83.9386,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Parque Nacional Braulio Carrillo (Sector Quebrada González) in Limón, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/2f4b3601-5369-4d25-9960-9147d4b76753.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:BraulioCarrilloLogsApr03.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.9386,
+          10.1603
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Tim Ross",
+      "online_ticket_url": "https://serviciosboletaje.sinac.go.cr",
+      "sinac_booking_url": "https://serviciosboletaje.sinac.go.cr",
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 12,
+      "requires_online_ticket": true,
+      "requires_sinac_booking": true,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "aeefa29b-fbac-4502-89e7-24173e767027",
+      "name": "Parque Nacional Chirripó",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Montaña",
+      "fee_type": "De Pago",
+      "latitude": 9.4842,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.4886,
+          9.4842
+        ]
+      },
+      "province": "San José",
+      "waze_url": "https://waze.com/ul?ll=9.4842,-83.4886",
+      "legacy_id": 13,
+      "longitude": -83.4886,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Parque Nacional Chirripó in San José, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/476b2e36-f40a-4b39-bdb7-3e2ab8b433c4.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Chirrip%C3%B3.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.4886,
+          9.4842
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Peter Andersen",
+      "online_ticket_url": "https://serviciosboletaje.sinac.go.cr",
+      "sinac_booking_url": "https://serviciosboletaje.sinac.go.cr",
+      "source_checked_at": null,
+      "price_national_crc": 4000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 18,
+      "requires_online_ticket": true,
+      "requires_sinac_booking": true,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "5fe2bb28-f908-4fde-84b0-31845ed903b3",
+      "name": "Parque Nacional Guanacaste (Sector Junquillal)",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Playa",
+      "fee_type": "De Pago",
+      "latitude": 10.9583,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.6083,
+          10.9583
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.9583,-85.6083",
+      "legacy_id": 51,
+      "longitude": -85.6083,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Parque Nacional Guanacaste (Sector Junquillal) in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/b90582e8-a202-43ab-93da-b6f2c2e1323f.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Trimorphodon.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.6083,
+          10.9583
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Franz Xaver",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 10,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "5348f4c1-8357-43d8-9bb6-2e1f2153d772",
+      "name": "Parque Nacional Irazú (Cráter Principal)",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Volcán",
+      "fee_type": "De Pago",
+      "latitude": 9.9792,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.8528,
+          9.9792
+        ]
+      },
+      "province": "Cartago",
+      "waze_url": "https://waze.com/ul?ll=9.9792,-83.8528",
+      "legacy_id": 4,
+      "longitude": -83.8528,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Parque Nacional Irazú (Cráter Principal) in Cartago, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Irazu_Volcano.JPG/960px-Irazu_Volcano.JPG",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Irazu_Volcano.JPG",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.8528,
+          9.9792
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Rafael Golan",
+      "online_ticket_url": "https://serviciosboletaje.sinac.go.cr",
+      "sinac_booking_url": "https://serviciosboletaje.sinac.go.cr",
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 15,
+      "requires_online_ticket": true,
+      "requires_sinac_booking": true,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "36e04479-6479-4474-ae51-1e90a8a56faf",
+      "name": "Parque Nacional Los Quetzales",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional",
+      "fee_type": "De Pago",
+      "latitude": 9.6456,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.9051,
+          9.6456
+        ]
+      },
+      "province": "San José",
+      "waze_url": "https://waze.com/ul?ll=9.6456,-83.9051",
+      "legacy_id": 11,
+      "longitude": -83.9051,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY 2.0",
+      "description_en": "Discover Parque Nacional Los Quetzales in San José, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/fcb3b800-dee5-43a6-97af-ac8f53ed1d30.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Pharomachrus_mocinno_-_Parque_Nacional_Los_Quetzales_01.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.9051,
+          9.6456
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Frank Vassen",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 10,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "d2ff6614-0fbb-4a2f-8546-694d016f9e22",
+      "name": "Parque Nacional Marino Las Baulas (Playa Grande)",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Playa",
+      "fee_type": "De Pago",
+      "latitude": 10.3319,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.8389,
+          10.3319
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.3319,-85.8389",
+      "legacy_id": 60,
+      "longitude": -85.8389,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Parque Nacional Marino Las Baulas (Playa Grande) in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Las_Baulas_National_Marine_Park_Panorama_3_CRI_08_2009.jpg/960px-Las_Baulas_National_Marine_Park_Panorama_3_CRI_08_2009.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Las_Baulas_National_Marine_Park_Panorama_3_CRI_08_2009.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.8389,
+          10.3319
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Mario Roberto Duran Ortiz",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": true,
+      "price_foreigner_usd": 12,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "b54a63ad-0032-4aff-a175-345ad9de3e12",
+      "name": "Parque Nacional Palo Verde",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Aves",
+      "fee_type": "De Pago",
+      "latitude": 10.3519,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.3519,
+          10.3519
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.3519,-85.3519",
+      "legacy_id": 72,
+      "longitude": -85.3519,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY 2.0",
+      "description_en": "Discover Parque Nacional Palo Verde in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/2470383e-ac2e-4c4c-9bfa-86bb5380b771.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Ardea_alba_-Palo_Verde_National_Park,_Costa_Rica-8.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.3519,
+          10.3519
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Paul Kehrer",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 12,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "0e9f1614-d0da-4b50-af1a-19eed64d70fc",
+      "name": "Parque Nacional Santa Rosa (Sector Cocalino / Héroes)",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Histórico",
+      "fee_type": "De Pago",
+      "latitude": 10.8381,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.6128,
+          10.8381
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.8381,-85.6128",
+      "legacy_id": 49,
+      "longitude": -85.6128,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Parque Nacional Santa Rosa (Sector Cocalino / Héroes) in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/b79604ca-735b-47a4-a9ca-7370a1146f9a.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Cochlospermum-vitifolium.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.6128,
+          10.8381
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Cochlospermum-vitifolium.jpg",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 15,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "90168df9-d141-4ff5-9683-49b6e1ff3517",
+      "name": "Parque Nacional Volcán Arenal",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Volcán / Senderismo",
+      "fee_type": "De Pago",
+      "latitude": 10.4626,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.7032,
+          10.4626
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.4626,-84.7032",
+      "legacy_id": 21,
+      "longitude": -84.7032,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 4.0",
+      "description_en": "Discover Parque Nacional Volcán Arenal in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Arenal_volcano_%2870785p%29_%28cropped%29.jpg/960px-Arenal_volcano_%2870785p%29_%28cropped%29.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Arenal_volcano_(70785p)_(cropped).jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.7032,
+          10.4626
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Rhododendrites",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 15,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "99d9908b-a8f2-482b-b36b-5faee279c84e",
+      "name": "Parque Nacional Volcán Miravalles",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Volcán / Termales",
+      "fee_type": "De Pago",
+      "latitude": 10.7486,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.1531,
+          10.7486
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.7486,-85.1531",
+      "legacy_id": 31,
+      "longitude": -85.1531,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Parque Nacional Volcán Miravalles in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.1531,
+          10.7486
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 10,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "a7bc2b3b-8fd3-44c8-a263-477f937b3021",
+      "name": "Parque Nacional Volcán Rincón de la Vieja",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Volcán / Senderismo",
+      "fee_type": "De Pago",
+      "latitude": 10.7681,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.3283,
+          10.7681
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.7681,-85.3283",
+      "legacy_id": 46,
+      "longitude": -85.3283,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY 2.0",
+      "description_en": "Discover Parque Nacional Volcán Rincón de la Vieja in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/78d02d2b-6ec1-4c35-aeb2-2e26995e62c8.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Eupsittula_canicularis,_pair,_Rincon_de_la_Vieja_Volcano_National_Park,_Costa_Rica_1.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.3283,
+          10.7681
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Brian Ralphs from Berkhamsted, Hertfordshire, UK",
+      "online_ticket_url": "https://serviciosboletaje.sinac.go.cr",
+      "sinac_booking_url": "https://serviciosboletaje.sinac.go.cr",
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 15,
+      "requires_online_ticket": true,
+      "requires_sinac_booking": true,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "92bb87bb-e42a-415d-b468-50be2b62ba18",
+      "name": "Paseo de los Turistas (Puntarenas)",
+      "region": "Puntarenas y Golfo",
+      "status": "En revisión editorial",
+      "category": "Cultura / Gastronomía",
+      "fee_type": "Gratuito",
+      "latitude": 9.9781,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.8281,
+          9.9781
+        ]
+      },
+      "province": "Puntarenas",
+      "waze_url": "https://waze.com/ul?ll=9.9781,-84.8281",
+      "legacy_id": 76,
+      "longitude": -84.8281,
+      "region_id": 4,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 2.0",
+      "description_en": "Discover Paseo de los Turistas (Puntarenas) in Puntarenas, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/412902a7-d83f-48d4-97dd-99793c0c3718.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Costa_Rica_Puntarenas_Vista_de_la_Playa-Paseo_de_los_Turistas.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.8281,
+          9.9781
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Rodrigo Morales Corrales Rodtico21",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "2e03c9d7-407b-4fda-b3fc-5cca4d0dc14b",
+      "name": "Playa Avellanas",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Surf",
+      "fee_type": "Gratuito",
+      "latitude": 10.2289,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.8361,
+          10.2289
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.2289,-85.8361",
+      "legacy_id": 61,
+      "longitude": -85.8361,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Playa Avellanas in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/3646987f-19d0-4f87-b264-b5354d465720.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Playa_Avellanas_-_panoramio.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.8361,
+          10.2289
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Hiram Montiel Calder…",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "8c5902bc-5b1e-4477-973f-ec5995513c91",
+      "name": "Playa Cocles",
+      "region": "Caribe",
+      "status": "En revisión editorial",
+      "category": "Playa / Surf",
+      "fee_type": "Gratuito",
+      "latitude": 9.6481,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -82.7381,
+          9.6481
+        ]
+      },
+      "province": "Limón",
+      "waze_url": "https://waze.com/ul?ll=9.6481,-82.7381&navigate=yes",
+      "legacy_id": 124,
+      "longitude": -82.7381,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Playa Cocles in Limón, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/6e0afe3b-b4a1-4bfd-afd9-9a191e69a6d7.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Geograf%C3%ADa_del_istmo_de_Panam%C3%A1_(IA_geografadelist00vald).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -82.7381,
+          9.6481
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Valdés, Ramón M., 1867-1918",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "f52c5754-d104-471d-8355-ad8c28530ceb",
+      "name": "Playa Conchal",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa",
+      "fee_type": "Gratuito",
+      "latitude": 10.3983,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.8083,
+          10.3983
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.3983,-85.8083",
+      "legacy_id": 55,
+      "longitude": -85.8083,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Playa Conchal in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/ff47f86a-d338-417d-82f5-1167bbf48e26.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Playa_Conchal.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.8083,
+          10.3983
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Haakon S. Krohn",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "26f2a11c-0886-4a9d-93db-cc052b12fc54",
+      "name": "Playa Danta y Dantita",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa",
+      "fee_type": "Gratuito",
+      "latitude": 10.4781,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.7847,
+          10.4781
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.4781,-85.7847",
+      "legacy_id": 57,
+      "longitude": -85.7847,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Playa Danta y Dantita in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.7847,
+          10.4781
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "81598a1c-680e-4066-a9d6-9eef7f0b786b",
+      "name": "Playa Garza",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Pesca",
+      "fee_type": "Gratuito",
+      "latitude": 9.9139,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.6419,
+          9.9139
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=9.9139,-85.6419",
+      "legacy_id": 67,
+      "longitude": -85.6419,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Playa Garza in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/c6c1b9cc-5f78-4ef2-9488-f88b7a297477.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:El_arbol_(Poema).djvu",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.6419,
+          9.9139
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "José Joaquín de Olmedo",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "60ed13c3-a610-4d42-a551-242db34155d8",
+      "name": "Playa Guiones",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Surf",
+      "fee_type": "Gratuito",
+      "latitude": 9.9511,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.6681,
+          9.9511
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=9.9511,-85.6681",
+      "legacy_id": 66,
+      "longitude": -85.6681,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Playa Guiones in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/5ebd8fdc-e244-440c-8cfe-05ec2e190761.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Guiones.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.6681,
+          9.9511
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "VanTucky",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "0a67fcab-9e5a-456f-8c45-f40008bc8467",
+      "name": "Playa Hermosa (Guanacaste)",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa",
+      "fee_type": "Gratuito",
+      "latitude": 10.5847,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.6761,
+          10.5847
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.5847,-85.6761",
+      "legacy_id": 52,
+      "longitude": -85.6761,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Playa Hermosa (Guanacaste) in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/a58b6968-aff5-4a82-b49e-efc17d9bd6b7.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Playa_Hermosa.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.6761,
+          10.5847
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Tizianok",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "036b75cf-b194-4445-be8c-eb670cb10421",
+      "name": "Playa Junquillal",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa",
+      "fee_type": "Gratuito",
+      "latitude": 10.1611,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.8119,
+          10.1611
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.1611,-85.8119",
+      "legacy_id": 63,
+      "longitude": -85.8119,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Playa Junquillal in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/2e6c03f8-b8cb-4ebc-88cb-3a9a15b1b148.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Coragyps_atratus_Junquillal_beach.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.8119,
+          10.1611
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Gaendalf",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "3c522d26-fee4-415e-9284-6763a83a3ccd",
+      "name": "Playa Langosta",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa",
+      "fee_type": "Gratuito",
+      "latitude": 10.2881,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.8519,
+          10.2881
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.2881,-85.8519",
+      "legacy_id": 59,
+      "longitude": -85.8519,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Playa Langosta in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/c0300a4e-b576-48cb-a1e4-e44358ed1586.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Costa_Rica_Playa_Langosta_and_Isla_Capitan_2007_Aerial_Photograph_Tamarindowiki_02.JPG",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.8519,
+          10.2881
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Tamarindowiki",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "e15772f9-e498-469d-98b3-c71b90c0bf19",
+      "name": "Playa Naranjo / Roca Bruja",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Surf",
+      "fee_type": "De Pago",
+      "latitude": 10.7931,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.6669,
+          10.7931
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.7931,-85.6669",
+      "legacy_id": 50,
+      "longitude": -85.6669,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Difícil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Playa Naranjo / Roca Bruja in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.6669,
+          10.7931
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 15,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "706178a4-1fa7-46d6-89eb-2cf6adfca3fb",
+      "name": "Playa Negra",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Surf / Arena negra",
+      "fee_type": "Gratuito",
+      "latitude": 10.1983,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.8319,
+          10.1983
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.1983,-85.8319",
+      "legacy_id": 62,
+      "longitude": -85.8319,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Playa Negra in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/52d5a2ff-8956-4892-b44a-5069d87733a6.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Playa_Negra,_Puerto_Viejo.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.8319,
+          10.1983
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Jsfouche",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "cbdf2e14-283c-4cc4-b333-c2070d6da084",
+      "name": "Playa Nosara y Pelada",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Bienestar",
+      "fee_type": "Gratuito",
+      "latitude": 9.9781,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.6781,
+          9.9781
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=9.9781,-85.6781",
+      "legacy_id": 65,
+      "longitude": -85.6781,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 2.0",
+      "description_en": "Discover Playa Nosara y Pelada in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/c42bbfab-977e-4427-b758-9136a500840a.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Fisherman_playa_Nosara.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.6781,
+          9.9781
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Carlos Adampol Galindo",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "27d30b09-3423-40c9-8ad4-ad87629e8326",
+      "name": "Playa Ocotal",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa",
+      "fee_type": "Gratuito",
+      "latitude": 10.5475,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.7183,
+          10.5475
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.5475,-85.7183",
+      "legacy_id": 54,
+      "longitude": -85.7183,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 4.0",
+      "description_en": "Discover Playa Ocotal in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/3cde61a4-4df0-41cd-936c-0f1a8b5766d9.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Tola_Costa_Pacifico.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.7183,
+          10.5475
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Martin Kulldorff",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "58e6e984-102e-4b29-8efd-f7a1bf2438da",
+      "name": "Playa Sámara",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Familiar",
+      "fee_type": "Gratuito",
+      "latitude": 9.8819,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.5281,
+          9.8819
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=9.8819,-85.5281",
+      "legacy_id": 68,
+      "longitude": -85.5281,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Playa Sámara in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/3f473e54-0fc9-42d9-b7ce-8878017022d0.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Playa_S%C3%A1mara.JPG",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.5281,
+          9.8819
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "No machine-readable author provided. Rauldmo assumed (based on copyright claims).",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "2948830e-6cb2-4e1b-bc5f-528e66d9f3ad",
+      "name": "Playa San Miguel y Coyote",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Aislada",
+      "fee_type": "Gratuito",
+      "latitude": 9.7611,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.2981,
+          9.7611
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=9.7611,-85.2981",
+      "legacy_id": 70,
+      "longitude": -85.2981,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Playa San Miguel y Coyote in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/95186b94-1a34-4eae-b580-49c1cfd1bbb7.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:California_names_and_their_literal_meanings_(IA_californianamest00drak).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.2981,
+          9.7611
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Drake, C. M",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "6255a13f-4a71-4a43-b811-607c30fbe7eb",
+      "name": "Playa Tamarindo",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Playa / Surf",
+      "fee_type": "Gratuito",
+      "latitude": 10.2992,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.8422,
+          10.2992
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=10.2992,-85.8422",
+      "legacy_id": 58,
+      "longitude": -85.8422,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Playa Tamarindo in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/e276f90d-7bae-4eed-97ba-1f9aea8b86b4.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Costa_Rica_Playa_Tamarindo_and_Grande_2007_aerial_photograph_tamarindowiki.JPG",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.8422,
+          10.2992
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Tamarindowiki",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "dee4df23-7e17-4496-8378-b99d223057a2",
+      "name": "Pozas Azules de Río Agrio",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Catarata / Pozas",
+      "fee_type": "De Pago",
+      "latitude": 10.2228,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.2758,
+          10.2228
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.2228,-84.2758",
+      "legacy_id": 39,
+      "longitude": -84.2758,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Pozas Azules de Río Agrio in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/de0a19d9-3ad6-463a-bd34-c88287bf3a5e.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Los_notarios_-_juguete_c%C3%B3mico-l%C3%ADrico_en_un_acto_y_en_prosa_(IA_losnotariosjugue3891mart).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.2758,
+          10.2228
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Martínez, Manuel Navarro Gonzalvo, Eduardo, 1846-1902 Rojas, Mariano de",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 3500,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 10,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "4e66c108-7ed0-4265-b12c-41ca17547271",
+      "name": "Proyecto Asís (Centro de Rescate)",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Santuarios de animales",
+      "fee_type": "De Pago",
+      "latitude": 10.3664,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.5122,
+          10.3664
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.3664,-84.5122",
+      "legacy_id": 30,
+      "longitude": -84.5122,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0 cl",
+      "description_en": "Discover Proyecto Asís (Centro de Rescate) in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/3fc53cc2-5419-476b-8e91-350b43ee9705.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:ECH_1826_9_-_D%C3%A1vila_Espinoza,_Carlos,_Presidencia_Provisional_de_la_Rep%C3%BAblica.djvu",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.5122,
+          10.3664
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Unknown author Unknown author",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 35,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "7cc91f6c-81a4-475b-8f76-640d84bbe216",
+      "name": "Refugio Nacional de Vida Silvestre Ostional",
+      "region": "Guanacaste",
+      "status": "En revisión editorial",
+      "category": "Senderismo / Playa",
+      "fee_type": "De Pago",
+      "latitude": 9.9981,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -85.7003,
+          9.9981
+        ]
+      },
+      "province": "Guanacaste",
+      "waze_url": "https://waze.com/ul?ll=9.9981,-85.7003",
+      "legacy_id": 64,
+      "longitude": -85.7003,
+      "region_id": 2,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Refugio Nacional de Vida Silvestre Ostional in Guanacaste, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -85.7003,
+          9.9981
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": true,
+      "price_foreigner_usd": 10,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "4d287a05-ab6a-4172-930f-1ae7280a3a6d",
+      "name": "Reserva Biológica Caño Negro",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Senderismo / Pozas / Lagos",
+      "fee_type": "De Pago",
+      "latitude": 10.8931,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.7958,
+          10.8931
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.8931,-84.7958",
+      "legacy_id": 28,
+      "longitude": -84.7958,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Reserva Biológica Caño Negro in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/1e8eb692-6131-47c4-ba7b-5537cf8ad788.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Las_estepas_de_Espa%C3%B1a_y_su_vegetaci%C3%B3n_(IA_lasestepasdeespa00reye).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.7958,
+          10.8931
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "Reyes Prósper, Eduardo, 1860-1921",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 10,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "c4449fdb-0f4c-49b4-9389-504edecacafc",
+      "name": "Reserva Santa Elena",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Senderismo",
+      "fee_type": "De Pago",
+      "latitude": 10.3447,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.7953,
+          10.3447
+        ]
+      },
+      "province": "Puntarenas",
+      "waze_url": "https://waze.com/ul?ll=10.3447,-84.7953",
+      "legacy_id": 34,
+      "longitude": -84.7953,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Reserva Santa Elena in Puntarenas, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/ff4d95f2-07e2-4d11-a583-69c1e4778795.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:A_White-nosed_Coati.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.7953,
+          10.3447
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Benjamin Keen",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 3000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 18,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "19f22053-3581-44a3-9cee-4e1a6025dbdc",
+      "name": "Río Chollín (Termales Gratuitas Tabacón)",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Termales / Libre",
+      "fee_type": "Gratuito",
+      "latitude": 10.4889,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.7235,
+          10.4889
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.4889,-84.7235",
+      "legacy_id": 24,
+      "longitude": -84.7235,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": null,
+      "description_en": "Discover Río Chollín (Termales Gratuitas Tabacón) in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": false,
+      "cover_image_url": null,
+      "image_source_url": null,
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.7235,
+          10.4889
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": null,
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "0302a0ee-f48f-428a-a2d5-d2d5986a42ee",
+      "name": "Ruinas de Ujarrás y Mirador",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Histórico / Mirador",
+      "fee_type": "Gratuito",
+      "latitude": 9.8267,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.8297,
+          9.8267
+        ]
+      },
+      "province": "Cartago",
+      "waze_url": "https://waze.com/ul?ll=9.8267,-83.8297",
+      "legacy_id": 8,
+      "longitude": -83.8297,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Ruinas de Ujarrás y Mirador in Cartago, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/f9ba6b99-e519-44f4-910b-8ffee1818bae.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:La_Alpujarra;_(IA_laalpujarra00alar).pdf",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.8297,
+          9.8267
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Alarcón, Pedro Antonio de, 1833-1891",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "73c70ca5-4437-4e5c-964a-3edea8c86142",
+      "name": "San Gerardo de Dota (Avistamiento de Quetzales)",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Senderismo",
+      "fee_type": "Gratuito",
+      "latitude": 9.5539,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -83.8058,
+          9.5539
+        ]
+      },
+      "province": "San José",
+      "waze_url": "https://waze.com/ul?ll=9.5539,-83.8058",
+      "legacy_id": 10,
+      "longitude": -83.8058,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover San Gerardo de Dota (Avistamiento de Quetzales) in San José, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/2b68ce8f-ee4a-4d36-a7ce-920168aaa16f.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:San_Gerardo_Dota.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -83.8058,
+          9.5539
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "MongeNajera",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "a5e9d74a-399c-43ce-a634-929ac33d9ba5",
+      "name": "Teatro Nacional de Costa Rica",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Cultura",
+      "fee_type": "De Pago",
+      "latitude": 9.9331,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.0768,
+          9.9331
+        ]
+      },
+      "province": "San José",
+      "waze_url": "https://waze.com/ul?ll=9.9331,-84.0768",
+      "legacy_id": 1,
+      "longitude": -84.0768,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "CC BY-SA 3.0",
+      "description_en": "Discover Teatro Nacional de Costa Rica in San José, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/e73afe65-f329-4227-8fa0-37fc7d16f464.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Teatro_National_de_Costa_Rica_-_front.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.0768,
+          9.9331
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Teatro National de Costa Rica - front.jpg",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 3500,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 15,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "5600ca34-2f45-43d7-86d6-6df202b7ba0b",
+      "name": "Termales de San Carlos (La Marina)",
+      "region": "Zona Norte",
+      "status": "En revisión editorial",
+      "category": "Termales",
+      "fee_type": "De Pago",
+      "latitude": 10.3981,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.3411,
+          10.3981
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.3981,-84.3411",
+      "legacy_id": 45,
+      "longitude": -84.3411,
+      "region_id": 6,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Fácil",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Termales de San Carlos (La Marina) in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/6cc6dc30-9e77-47b1-830a-5c65b160a0b0.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Charles_Darwin_-_Diario_del_viaje_de_un_naturalista_alrededor_del_mundo_-_Tomo_II.djvu",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.3411,
+          10.3981
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Madrid : Calpe",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 3000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 8,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "f5504c6b-1d94-49a1-bee0-c6e2e6aa20b4",
+      "name": "Valle de Bajos del Toro",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Catarata / Senderismo",
+      "fee_type": "Gratuito",
+      "latitude": 10.2119,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.2936,
+          10.2119
+        ]
+      },
+      "province": "Alajuela",
+      "waze_url": "https://waze.com/ul?ll=10.2119,-84.2936",
+      "legacy_id": 37,
+      "longitude": -84.2936,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Valle de Bajos del Toro in Alajuela, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/1ded6c4b-901b-4fea-9bbe-bc4c06f82080.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Don_Diego_de_Pe%C3%B1alosa_y_su_descubrimiento_del_reino_de_Quivira.djvu",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.2936,
+          10.2119
+        ]
+      },
+      "sinac_restricted": false,
+      "image_attribution": "Cesáreo Fernández Duro",
+      "online_ticket_url": null,
+      "sinac_booking_url": null,
+      "source_checked_at": null,
+      "price_national_crc": 0,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 0,
+      "requires_online_ticket": false,
+      "requires_sinac_booking": false,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    },
+    {
+      "id": "265b68c2-77d1-412e-aa44-1517119f90d7",
+      "name": "Volcán Barva (PN Braulio Carrillo)",
+      "region": "Valle Central",
+      "status": "En revisión editorial",
+      "category": "Parque Nacional / Volcán / Senderismo",
+      "fee_type": "De Pago",
+      "latitude": 10.1344,
+      "location": {
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "EPSG:4326"
+          }
+        },
+        "type": "Point",
+        "coordinates": [
+          -84.1039,
+          10.1344
+        ]
+      },
+      "province": "Heredia",
+      "waze_url": "https://waze.com/ul?ll=10.1344,-84.1039",
+      "legacy_id": 18,
+      "longitude": -84.1039,
+      "region_id": 1,
+      "created_at": "2026-08-26T06:12:13.688785+00:00",
+      "difficulty": "Moderado",
+      "source_url": null,
+      "description": null,
+      "validated_by": [],
+      "image_license": "Public domain",
+      "description_en": "Discover Volcán Barva (PN Braulio Carrillo) in Heredia, Costa Rica. Check current access, opening hours, weather, and local safety conditions before visiting.",
+      "image_verified": true,
+      "cover_image_url": "https://dxqezvkguswleoisxikz.supabase.co/storage/v1/object/public/destination-photos/commons/1d0412df-7227-4ca4-99da-e8464c5967c4.jpg",
+      "image_source_url": "https://commons.wikimedia.org/wiki/File:Barva.jpg",
+      "location_geojson": {
+        "type": "Point",
+        "coordinates": [
+          -84.1039,
+          10.1344
+        ]
+      },
+      "sinac_restricted": true,
+      "image_attribution": "William Melson (Smithsonian Institution)",
+      "online_ticket_url": "https://serviciosboletaje.sinac.go.cr",
+      "sinac_booking_url": "https://serviciosboletaje.sinac.go.cr",
+      "source_checked_at": null,
+      "price_national_crc": 1000,
+      "has_high_tides_risk": false,
+      "price_foreigner_usd": 12,
+      "requires_online_ticket": true,
+      "requires_sinac_booking": true,
+      "verification_checked_at": null,
+      "verification_evidence_url": null,
+      "featured_community_photo_id": null
+    }
+  ]
+}

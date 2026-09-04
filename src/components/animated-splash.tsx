@@ -29,7 +29,7 @@ export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
           source={require('@/assets/images/startup-transition.gif')}
           autoplay
           contentFit="contain"
-          style={StyleSheet.absoluteFill}
+          style={styles.image}
         />
       </View>
     </Animated.View>
@@ -45,9 +45,12 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   frame: {
-    aspectRatio: 800 / 1417,
     borderColor: '#000000',
     borderWidth: 8,
     width: '77%',
+  },
+  image: {
+    aspectRatio: 800 / 1422,
+    width: '100%',
   },
 });

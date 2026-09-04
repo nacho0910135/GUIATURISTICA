@@ -79,6 +79,7 @@
 | Hard-delete | Eliminar permanentemente | dialog danger busy | lista válida | confirmación persistente | verificar resultado antes de retry | siguiente elemento | bloqueado sin política mantenida |
 
 - **Búsqueda de transporte:** la portada de Buses y ferris busca por nombre simultáneamente en rutas provinciales y cantonales; los ferris quedan explícitamente fuera de este buscador.
+- **Búsqueda de destinos en Explorar:** las sugerencias forman una sola superficie; seleccionar un sitio abre su ficha en superposición, y cerrarla vuelve a Explorar con la consulta limpia, sin pasar por el catálogo.
 
 ## Navigation and responsive behavior
 

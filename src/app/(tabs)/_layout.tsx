@@ -31,7 +31,7 @@ const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }
 );
 
 export default function TabsLayout() {
-  const { t } = useApp();
+  const { language, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
   return (
@@ -48,7 +48,18 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="catalog" options={{ headerShown: false, href: null }} />
       <Tabs.Screen name="fauna" options={{ href: null }} />
-      <Tabs.Screen name="friends" options={{ title: t('communityTitle').split(' Descubriendo')[0], tabBarIcon: icon('account-group') }} />
+      <Tabs.Screen
+        name="friends"
+        options={{
+          title: language === 'es' ? 'Foro Comunidad' : 'Community Forum',
+          tabBarIcon: icon('account-group'),
+          tabBarLabel: ({ color }) => (
+            <Text style={{ color, fontSize: 9, fontWeight: '800', lineHeight: 10, textAlign: 'center' }}>
+              {language === 'es' ? 'Foro\nComunidad' : 'Community\nForum'}
+            </Text>
+          ),
+        }}
+      />
       <Tabs.Screen name="my-trip" options={{ title: 'Mi viaje', tabBarIcon: icon('map-marker-path') }} />
       <Tabs.Screen name="explore" options={{ title: t('explore'), tabBarIcon: exploreIcon }} />
       <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />

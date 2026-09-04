@@ -130,8 +130,9 @@ function ThemeButton({ isSpanish, mode, onPress }: { isSpanish: boolean; mode: '
       onPress={onPress}
       style={{ backgroundColor: mode === 'dark' ? '#1E5B75' : '#F5D76E' }}
     >
-      <Sun color="#B96708" size={15} strokeWidth={2.2} style={{ left: 10, position: 'absolute', top: 12 }} />
-      <Moon color="#DCEAF2" size={15} strokeWidth={2.2} style={{ position: 'absolute', right: 10, top: 12 }} />
+      {mode === 'dark'
+        ? <Sun color="#B96708" size={15} strokeWidth={2.2} style={{ left: 10, position: 'absolute', top: 12 }} />
+        : <Moon color="#DCEAF2" size={15} strokeWidth={2.2} style={{ position: 'absolute', right: 10, top: 12 }} />}
       <Animated.View className="h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: mode === 'dark' ? '#102E40' : '#FFFFFF', transform: [{ translateX: position.interpolate({ inputRange: [0, 1], outputRange: [0, 24] }) }] }}>
         {mode === 'dark' ? <Moon color="#DCEAF2" size={16} strokeWidth={2.1} /> : <Sun color={colors.warning} size={16} strokeWidth={2.1} />}
       </Animated.View>

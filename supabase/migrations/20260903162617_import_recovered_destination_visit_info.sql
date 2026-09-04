@@ -1,0 +1,652 @@
+-- Imports the complete and unambiguous visit information recoverable from 48 caraterist.json.
+-- The source file is truncated in record 25; Cerro Pelón (Zarcero) is excluded because it does not match the distinct active Cerro Pelón record.
+begin;
+
+create schema if not exists private;
+
+create table if not exists private.destination_visit_info_backups (
+  batch_key text not null,
+  destination_id uuid not null,
+  snapshot jsonb not null,
+  backed_up_at timestamptz not null default now(),
+  primary key (batch_key, destination_id)
+);
+revoke all on table private.destination_visit_info_backups from public, anon, authenticated;
+
+create temporary table recovered_destination_visit_info_payload (
+  destination_id uuid primary key,
+  expected_name text not null,
+  source_id integer not null,
+  source_name text not null,
+  tipo_acceso text,
+  estado_camino text,
+  duracion_estimada text,
+  mejor_temporada text,
+  recomendaciones_seguridad text,
+  enlace_web text,
+  reserva_requerida boolean,
+  horario_atencion text,
+  estacionamiento text,
+  servicios_sanitarios boolean,
+  restaurante_o_soda boolean,
+  acceso_para_discapacitados text,
+  se_permite_mascotas text,
+  camping_permitido text,
+  codigo_local text,
+  relevancia_cultural text
+) on commit drop;
+
+insert into recovered_destination_visit_info_payload
+select *
+from jsonb_to_recordset($recovered_visit_info$[
+  {
+    "destination_id": "69a8d7b7-fb4e-4cd3-af49-7d291f4e81db",
+    "expected_name": "Cerro Urán",
+    "source_id": 2,
+    "source_name": "Cerro Urán",
+    "tipo_acceso": "Caminata de alta montaña (travesía de varios días), requiere guía autorizado",
+    "estado_camino": "Sendero de montaña en parque nacional, condición variable",
+    "duracion_estimada": "Varios días (parte de travesía Herradura-Urán-Chirripó)",
+    "mejor_temporada": "Época seca (diciembre a abril), condiciones más estables",
+    "recomendaciones_seguridad": "Excelente condición física, guía autorizado, reserva previa en SINAC, ropa térmica y equipo de alta montaña",
+    "enlace_web": null,
+    "reserva_requerida": true,
+    "horario_atencion": "Sujeto a regulación del Parque Nacional Chirripó",
+    "estacionamiento": "No aplica (acceso desde San Jerónimo o San Gerardo)",
+    "servicios_sanitarios": false,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": "No permitido",
+    "camping_permitido": "Solo en zonas autorizadas (refugios y campamentos)",
+    "codigo_local": "CH005",
+    "relevancia_cultural": "Segunda altura de Cartago, cumbre icónica para senderismo de alta montaña en la Cordillera de Talamanca"
+  },
+  {
+    "destination_id": "2fb439fc-c6b2-49ba-aa21-39e2160563eb",
+    "expected_name": "Viento Fresco - Tilarán",
+    "source_id": 3,
+    "source_name": "Cataratas Viento Fresco - Tilarán",
+    "tipo_acceso": "Carro normal (último tramo en vehículo 4x4 del operador)",
+    "estado_camino": "Lastre, transitable con precaución",
+    "duracion_estimada": "Medio día (2-3 horas el recorrido de cataratas)",
+    "mejor_temporada": "Época seca (diciembre a abril)",
+    "recomendaciones_seguridad": "Calzado para senderos húmedos, precaución en escaleras y tramos resbaladizos, no nadar en zonas no autorizadas",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Recepción con horario diurno",
+    "estacionamiento": "Sí, en la entrada",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": true,
+    "acceso_para_discapacitados": "No accesible (escaleras y senderos irregulares)",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "GT002",
+    "relevancia_cultural": "Parada tradicional entre La Fortuna y Monteverde, con senderos que recorren múltiples cataratas en la zona de Quebrada Grande de Tilarán"
+  },
+  {
+    "destination_id": "b69fa451-50c7-4855-a660-86011352871a",
+    "expected_name": "Cerro Vueltas Lodge",
+    "source_id": 4,
+    "source_name": "Cerro Vueltas Lodge",
+    "tipo_acceso": "Carro 4x4 recomendado (últimos tramos de lastre y montaña)",
+    "estado_camino": "Lastre con condiciones variables por lluvia y neblina",
+    "duracion_estimada": "1-2 días (hospedaje y senderos)",
+    "mejor_temporada": "Época seca (diciembre a abril) para mejor acceso y visibilidad",
+    "recomendaciones_seguridad": "Ropa abrigada y cortavientos por altura y neblina, calzado impermeable para senderos húmedos",
+    "enlace_web": null,
+    "reserva_requerida": true,
+    "horario_atencion": "Atención con reserva",
+    "estacionamiento": "Sí, en el lodge",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": true,
+    "acceso_para_discapacitados": "No accesible (terreno montañoso)",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "DT001",
+    "relevancia_cultural": "Eco-lodge y finca orgánica educativa en Copey de Dota, conservación de bosque nuboso, hábitat del quetzal"
+  },
+  {
+    "destination_id": "8c11d2c3-ebe3-421f-a48a-2e3d64c91c1e",
+    "expected_name": "Monte Sky – Cataratas escondidas en Orosí",
+    "source_id": 5,
+    "source_name": "Monte Sky – Cataratas escondidas en Orosí",
+    "tipo_acceso": "Carro normal (último tramo de lastre, vehículo alto recomendado)",
+    "estado_camino": "Lastre transitable con precaución, 3.5 km de camino de lastre",
+    "duracion_estimada": "Medio día",
+    "mejor_temporada": "Época seca (diciembre a abril)",
+    "recomendaciones_seguridad": "Calzado de agarre para senderos húmedos y neblina, precaución en lluvia",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Visitas de un día con horario diurno",
+    "estacionamiento": "Sí",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "CA004",
+    "relevancia_cultural": "Finca privada de conservación en montañas de Orosí, alta biodiversidad y miradores al Valle de Orosí"
+  },
+  {
+    "destination_id": "38c7b7ff-6e7d-4071-adae-7d31e4498ca8",
+    "expected_name": "Cascada Rana Roja",
+    "source_id": 6,
+    "source_name": "Cascada Rana Roja",
+    "tipo_acceso": "Carro 4x4 recomendado (camino de lastre)",
+    "estado_camino": "Lastre, puede volverse difícil en época lluviosa",
+    "duracion_estimada": "Medio día o día completo (con hospedaje)",
+    "mejor_temporada": "Época seca (diciembre a abril)",
+    "recomendaciones_seguridad": "Calzado para senderos rurales, precaución con niños cerca de pozas y estanques",
+    "enlace_web": null,
+    "reserva_requerida": true,
+    "horario_atencion": "Coordinación previa para visita",
+    "estacionamiento": "Sí, en la finca",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": true,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "PZ001",
+    "relevancia_cultural": "Proyecto familiar de finca regenerativa, experiencia gastronómica con tilapia, observación de ranas de colores"
+  },
+  {
+    "destination_id": "e9071a5b-e9bf-42e7-aa2f-6220124483fd",
+    "expected_name": "Catarata San Fernando – Cinchona",
+    "source_id": 7,
+    "source_name": "Catarata San Fernando – Cinchona",
+    "tipo_acceso": "Carro normal (último tramo de lastre), caminata técnica de 4.5 km",
+    "estado_camino": "Lastre y sendero con barro y pendientes",
+    "duracion_estimada": "Medio día (2-4 horas de caminata)",
+    "mejor_temporada": "Época seca (diciembre a abril) para mejor estado del sendero",
+    "recomendaciones_seguridad": "Calzado con tracción, guía recomendado por tramos con cuerdas y barro, no apto para principiantes o niños pequeños",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno, entrada ₡5000 para nacionales",
+    "estacionamiento": "Sí, en la entrada",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "AL003",
+    "relevancia_cultural": "Proyecto Cinchona Waterfalls Trails, recuperación turística tras el terremoto de Cinchona. Catarata de casi 100 m de caída."
+  },
+  {
+    "destination_id": "7a601433-a58c-4b92-a1ca-f3aa53f30d57",
+    "expected_name": "Finca Manglar – Sierpe",
+    "source_id": 8,
+    "source_name": "Finca Manglar – Sierpe",
+    "tipo_acceso": "Carro 4x4 hasta Sábalo de Sierpe, luego lancha (propia o tour)",
+    "estado_camino": "Lastre, accesible con 4x4",
+    "duracion_estimada": "1-3 días (hospedaje rural con actividades)",
+    "mejor_temporada": "Época seca (diciembre a abril) para mejor acceso y navegación",
+    "recomendaciones_seguridad": "Repelente de insectos, protección solar, chaleco salvavidas en actividades acuáticas",
+    "enlace_web": null,
+    "reserva_requerida": true,
+    "horario_atencion": "Coordinación previa",
+    "estacionamiento": "Sí, en la finca",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": true,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "OS005",
+    "relevancia_cultural": "Hospedaje rural junto al Humedal Nacional Térraba-Sierpe, base para tours a Corcovado e Isla del Caño"
+  },
+  {
+    "destination_id": "79b9ae59-07c6-4549-aaae-f6ba8fad0816",
+    "expected_name": "Reserva Targuá",
+    "source_id": 9,
+    "source_name": "Reserva Targuá",
+    "tipo_acceso": "Carro normal (acceso pavimentado y último tramo rural)",
+    "estado_camino": "Pavimento y camino rural en buen estado",
+    "duracion_estimada": "Medio día (2-3 horas de senderos)",
+    "mejor_temporada": "Época seca (diciembre a abril) para senderos secos",
+    "recomendaciones_seguridad": "Calzado cómodo para caminata, protección solar, agua",
+    "enlace_web": null,
+    "reserva_requerida": true,
+    "horario_atencion": "Martes a domingo, horario diurno",
+    "estacionamiento": "Sí, limitado",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "Parcialmente accesible (senderos cortos)",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "SJ001",
+    "relevancia_cultural": "Reserva privada en la Zona Protectora Cerros de Escazú, cercana a San José, ideal para escapada familiar"
+  },
+  {
+    "destination_id": "93ee328f-99e7-46e1-ac30-7b4d0e91a43a",
+    "expected_name": "Restaurante Senderos",
+    "source_id": 10,
+    "source_name": "Restaurante Senderos",
+    "tipo_acceso": "Carro normal (acceso en Alajuela)",
+    "estado_camino": "Camino rural señalizado, transitable con precaución",
+    "duracion_estimada": "Medio día (comida + senderos)",
+    "mejor_temporada": "Época seca (diciembre a abril)",
+    "recomendaciones_seguridad": "Calzado cómodo, protección solar, hidratación",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno, atiende con reserva para grupos",
+    "estacionamiento": "Sí",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": true,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "SR002",
+    "relevancia_cultural": "Combina gastronomía típica costarricense con senderos"
+  },
+  {
+    "destination_id": "cb27fa50-d606-4651-aeb3-0f60d5919a73",
+    "expected_name": "Talamanca Nature Reserve",
+    "source_id": 11,
+    "source_name": "Talamanca Nature Reserve",
+    "tipo_acceso": "Carro 4x4 recomendado (acceso a San Gerardo de Rivas)",
+    "estado_camino": "Lastre y pavimento, condiciones variables en montaña",
+    "duracion_estimada": "Medio día o día completo",
+    "mejor_temporada": "Época seca (diciembre a abril)",
+    "recomendaciones_seguridad": "Calzado impermeable, ropa para clima frío y húmedo, protección solar en miradores",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno",
+    "estacionamiento": "Sí, en la entrada",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": true,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "PZ002",
+    "relevancia_cultural": "Reserva privada de bosque nuboso al pie del Chirripó, reconocida por su alta diversidad de aves (300+ especies)"
+  },
+  {
+    "destination_id": "dd0584ce-290d-4aac-a9d3-35a1da7e0055",
+    "expected_name": "La Marta – Refugio de Vida Silvestre",
+    "source_id": 12,
+    "source_name": "La Marta – Refugio de Vida Silvestre",
+    "tipo_acceso": "Carro normal (acceso por lastre hasta la entrada)",
+    "estado_camino": "Lastre, en buen estado general",
+    "duracion_estimada": "Día completo (más de 17 km de senderos)",
+    "mejor_temporada": "Época seca (diciembre a abril)",
+    "recomendaciones_seguridad": "Calzado de montaña, repelente, hidratación, senderos de dificultad variable",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno",
+    "estacionamiento": "Sí",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "Parcialmente accesible (sendero de concreto)",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "CA001",
+    "relevancia_cultural": "Uno de los primeros refugios privados de vida silvestre del país, con patrimonio histórico (antiguo beneficio, trapiche y planta hidroeléctrica)"
+  },
+  {
+    "destination_id": "8f269da5-dad4-44f4-a830-c0e7165da02f",
+    "expected_name": "Playa Rosada – Nosara",
+    "source_id": 13,
+    "source_name": "Playa Rosada – Nosara (No verificada)",
+    "tipo_acceso": "Caminata a pie desde Playa Guiones/Pelada (acceso en marea baja)",
+    "estado_camino": "Costa rocosa accesible solo en marea baja",
+    "duracion_estimada": "Medio día (con marea baja)",
+    "mejor_temporada": "Época seca (diciembre a abril), marea baja",
+    "recomendaciones_seguridad": "Calzado adecuado para roca, revisar horarios de marea, no apta para natación abierta",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Acceso natural (depende de marea)",
+    "estacionamiento": "No (acceso desde Guiones o Pelada)",
+    "servicios_sanitarios": false,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": "No permitido",
+    "codigo_local": "GT003",
+    "relevancia_cultural": "Playas de arena rosada por conchas trituradas y cuarzo, punto fotográfico único en el Pacífico norte - SUJETO A VERIFICACIÓN"
+  },
+  {
+    "destination_id": "2bf7b271-a55b-4480-a802-1f320b6d1530",
+    "expected_name": "Playas de La Cruz – Guanacaste",
+    "source_id": 14,
+    "source_name": "Playas de La Cruz – Guanacaste",
+    "tipo_acceso": "Carro normal (acceso a comunidades pesqueras y playas)",
+    "estado_camino": "Pavimento y lastre, variable según zona",
+    "duracion_estimada": "Día completo (recorrido de varias playas)",
+    "mejor_temporada": "Época seca (diciembre a abril), temporada de avistamiento de ballenas (agosto-octubre)",
+    "recomendaciones_seguridad": "Protección solar, hidratación, precaución con oleaje en playas abiertas, respetar señalización de Bandera Azul",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Acceso libre",
+    "estacionamiento": "Sí, en sectores habilitados",
+    "servicios_sanitarios": null,
+    "restaurante_o_soda": null,
+    "acceso_para_discapacitados": "Variable según playa",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "GT004",
+    "relevancia_cultural": "Cantón norteño con playas de bandera azul, pesca artesanal y avistamiento de tortugas, delfines y ballenas"
+  },
+  {
+    "destination_id": "359aad09-8101-41b7-ac24-016c2da1f96a",
+    "expected_name": "Bahía Drake – Península de Osa",
+    "source_id": 15,
+    "source_name": "Bahía Drake – Península de Osa",
+    "tipo_acceso": "Lancha desde Sierpe, avioneta, o vehículo 4x4 en época seca (sin carreteras asfaltadas)",
+    "estado_camino": "Caminos de lastre, acceso terrestre limitado, depende de condiciones de marea",
+    "duracion_estimada": "Varios días (base para tours a Corcovado e Isla del Caño)",
+    "mejor_temporada": "Época seca (diciembre a abril) para mejor acceso, avistamiento de ballenas (agosto-octubre)",
+    "recomendaciones_seguridad": "Chaleco salvavidas en tours marítimos, repelente, protección solar, llevar efectivo (sin cajeros automáticos)",
+    "enlace_web": null,
+    "reserva_requerida": true,
+    "horario_atencion": "Coordinación con operadores",
+    "estacionamiento": "En zonas habilitadas",
+    "servicios_sanitarios": null,
+    "restaurante_o_soda": null,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "OS006",
+    "relevancia_cultural": "Principal base de acceso al Parque Nacional Corcovado y la Isla del Caño, con tradición pesquera y conservación"
+  },
+  {
+    "destination_id": "105f48e4-902d-49fe-aec0-bd348b3b96f4",
+    "expected_name": "Laguna de Plata",
+    "source_id": 16,
+    "source_name": "Laguna de Plata",
+    "tipo_acceso": "Carro normal (acceso pavimentado y rural)",
+    "estado_camino": "Pavimento y acceso rural en buenas condiciones",
+    "duracion_estimada": "Medio día",
+    "mejor_temporada": "Época seca (diciembre a abril)",
+    "recomendaciones_seguridad": "Precaución con niños cerca de la laguna, protección solar",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno",
+    "estacionamiento": "Sí",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": true,
+    "acceso_para_discapacitados": "Parcialmente accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "HE001",
+    "relevancia_cultural": "Finca familiar de día de campo en montañas de Heredia, tradicional destino de recreación"
+  },
+  {
+    "destination_id": "95eadbc1-6e41-407b-a0e4-81d09c45b6d8",
+    "expected_name": "Cerro Caballito",
+    "source_id": 17,
+    "source_name": "Cerro Caballito",
+    "tipo_acceso": "Carro 4x4 recomendado (último tramo de lastre y pendiente)",
+    "estado_camino": "Lastre y sendero rocoso, transitable con 4x4",
+    "duracion_estimada": "Medio día (3 km de senderos)",
+    "mejor_temporada": "Época seca (diciembre a abril), atardeceres",
+    "recomendaciones_seguridad": "Calzado de montaña, protección solar, hidratación, precaución en el mirador de 360 grados",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno, mejor al atardecer",
+    "estacionamiento": "Sí",
+    "servicios_sanitarios": null,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": "Sí (zona de camping)",
+    "codigo_local": "GT005",
+    "relevancia_cultural": "Emprendimiento familiar con miradores de 360°, caverna y zonas arqueológicas, punto de parapente"
+  },
+  {
+    "destination_id": "b622d853-3eb1-44f9-a26d-e782a63400af",
+    "expected_name": "Refugio de Vida Silvestre Curú",
+    "source_id": 18,
+    "source_name": "Refugio de Vida Silvestre Curú",
+    "tipo_acceso": "Carro normal y caminata (senderos de baja a media dificultad)",
+    "estado_camino": "Pavimento y caminos internos de lastre en la reserva",
+    "duracion_estimada": "Día completo o medio día",
+    "mejor_temporada": "Época seca (diciembre a abril), mejor visibilidad de fauna",
+    "recomendaciones_seguridad": "Calzado para senderos, repelente, protección solar, guía recomendado para avistamiento de fauna",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno",
+    "estacionamiento": "Sí, en la entrada",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "PN001",
+    "relevancia_cultural": "Reserva privada con bosque tropical seco y húmedo, manglares y playas, importante para la conservación de monos y aves"
+  },
+  {
+    "destination_id": "ef5e9eba-69ee-4d59-a974-4fb300bc0b44",
+    "expected_name": "Tierra de Quetzales",
+    "source_id": 19,
+    "source_name": "Tierra de Quetzales",
+    "tipo_acceso": "Carro 4x4 recomendado (acceso rural en Cerro de la Muerte)",
+    "estado_camino": "Lastre y camino rural, condiciones variables por neblina",
+    "duracion_estimada": "Medio día (senderos cortos guiados)",
+    "mejor_temporada": "Época seca (diciembre a abril), mejor avistamiento del quetzal",
+    "recomendaciones_seguridad": "Ropa abrigada y cortavientos, calzado impermeable, guía local para mejor observación",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno",
+    "estacionamiento": "Sí",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "DT002",
+    "relevancia_cultural": "Proyecto privado en la Reserva Forestal Los Santos, hábitat del quetzal y otras aves de altura"
+  },
+  {
+    "destination_id": "cf5467fc-f12b-49d3-a9d6-e907911a3e17",
+    "expected_name": "Corcovado – Sector La Leona",
+    "source_id": 20,
+    "source_name": "Corcovado – Sector La Leona",
+    "tipo_acceso": "Caminata desde Carate (3.5 km por playa), acceso en 4x4 o transporte desde Puerto Jiménez",
+    "estado_camino": "Playas y senderos de selva, condiciones variables según marea",
+    "duracion_estimada": "Día completo o varios días (conexión a Sirena)",
+    "mejor_temporada": "Época seca (diciembre a abril) para mejor acceso y menor lluvia",
+    "recomendaciones_seguridad": "Guía certificado requerido, reserva previa en SINAC, calzado para playa y selva, protección solar e hidratación",
+    "enlace_web": null,
+    "reserva_requerida": true,
+    "horario_atencion": "Coordinación con SINAC y guías",
+    "estacionamiento": "Sí, en Carate",
+    "servicios_sanitarios": null,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": "No permitido",
+    "camping_permitido": "No permitido (parque nacional)",
+    "codigo_local": "OS007",
+    "relevancia_cultural": "Principal acceso terrestre al Parque Nacional Corcovado, alta biodiversidad y anidación de tortugas"
+  },
+  {
+    "destination_id": "3362a6d6-81b9-498d-aca3-ac53a428089f",
+    "expected_name": "Esterillos Oeste",
+    "source_id": 21,
+    "source_name": "Esterillos Oeste",
+    "tipo_acceso": "Carro normal (acceso pavimentado hasta la playa)",
+    "estado_camino": "Pavimento en buen estado",
+    "duracion_estimada": "Medio día o día completo",
+    "mejor_temporada": "Época seca (diciembre a abril), mareas bajas para pozas",
+    "recomendaciones_seguridad": "Precaución con corrientes de resaca, no hay guardavidas permanentes, calzado para roca en marea baja",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Acceso libre",
+    "estacionamiento": "Sí, en la playa",
+    "servicios_sanitarios": false,
+    "restaurante_o_soda": null,
+    "acceso_para_discapacitados": "Parcialmente accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "PN004",
+    "relevancia_cultural": "Escultura de bronce La Sirena y piscinas naturales en marea baja"
+  },
+  {
+    "destination_id": "4a2d9ce2-3e27-4f84-a920-8d5d72fe0ff4",
+    "expected_name": "Wildlife Rescue Center (ZooAve)",
+    "source_id": 22,
+    "source_name": "Wildlife Rescue Center (ZooAve)",
+    "tipo_acceso": "Carro normal (acceso pavimentado desde La Garita de Alajuela)",
+    "estado_camino": "Pavimento en buen estado",
+    "duracion_estimada": "Medio día (2-3 horas de visita)",
+    "mejor_temporada": "Todo el año (área cubierta y senderos)",
+    "recomendaciones_seguridad": "Respetar distancias de los animales, no alimentar, seguir indicaciones del personal",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Abierto todos los días",
+    "estacionamiento": "Sí",
+    "servicios_sanitarios": true,
+    "restaurante_o_soda": true,
+    "acceso_para_discapacitados": "Sí, senderos accesibles",
+    "se_permite_mascotas": "No permitido",
+    "camping_permitido": "No permitido",
+    "codigo_local": "AL004",
+    "relevancia_cultural": "Centro de rescate de fauna sin fines de lucro, programas de rehabilitación y conservación, santuario de animales no liberables"
+  },
+  {
+    "destination_id": "69afefb7-d7ad-4c34-a494-33bfc132fbf0",
+    "expected_name": "Las Gemelas – Blue Falls, Bajos del Toro",
+    "source_id": 23,
+    "source_name": "Las Gemelas – Blue Falls, Bajos del Toro",
+    "tipo_acceso": "Carro 4x4 recomendado (acceso rural y senderos privados)",
+    "estado_camino": "Lastre y senderos húmedos, requieren guía",
+    "duracion_estimada": "Medio día",
+    "mejor_temporada": "Época seca (diciembre a abril) para mejor color del agua",
+    "recomendaciones_seguridad": "Guía local requerido, calzado antideslizante, precaución en cruces de río, baño solo con indicación del guía",
+    "enlace_web": null,
+    "reserva_requerida": true,
+    "horario_atencion": "Coordinación con el operador",
+    "estacionamiento": "Sí, en la entrada de la propiedad",
+    "servicios_sanitarios": false,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "AL005",
+    "relevancia_cultural": "Cataratas de agua turquesa por minerales volcánicos, atractivo principal de Bajos del Toro"
+  },
+  {
+    "destination_id": "b8f3ccf4-91d7-48be-a4cc-7827cc0b8079",
+    "expected_name": "Catarata del Río Pozo Azul – La Virgen de Sarapiquí",
+    "source_id": 24,
+    "source_name": "Catarata del Río Pozo Azul – La Virgen de Sarapiquí",
+    "tipo_acceso": "Carro normal (acceso desde propiedad privada, sendero corto)",
+    "estado_camino": "Camino rural y sendero en bosque denso",
+    "duracion_estimada": "Medio día",
+    "mejor_temporada": "Época seca (diciembre a abril)",
+    "recomendaciones_seguridad": "No visitar en lluvias intensas por crecidas repentinas, calzado antideslizante",
+    "enlace_web": null,
+    "reserva_requerida": false,
+    "horario_atencion": "Horario diurno",
+    "estacionamiento": "Sí, en la propiedad",
+    "servicios_sanitarios": false,
+    "restaurante_o_soda": false,
+    "acceso_para_discapacitados": "No accesible",
+    "se_permite_mascotas": null,
+    "camping_permitido": null,
+    "codigo_local": "HE002",
+    "relevancia_cultural": "Catarata local en bosque húmedo caribeño, popular para baño en temporada seca"
+  }
+]$recovered_visit_info$::jsonb)
+  as item(
+    destination_id uuid,
+    expected_name text,
+    source_id integer,
+    source_name text,
+    tipo_acceso text,
+    estado_camino text,
+    duracion_estimada text,
+    mejor_temporada text,
+    recomendaciones_seguridad text,
+    enlace_web text,
+    reserva_requerida boolean,
+    horario_atencion text,
+    estacionamiento text,
+    servicios_sanitarios boolean,
+    restaurante_o_soda boolean,
+    acceso_para_discapacitados text,
+    se_permite_mascotas text,
+    camping_permitido text,
+    codigo_local text,
+    relevancia_cultural text
+  );
+
+do $$
+begin
+  if (select count(*) from recovered_destination_visit_info_payload) <> 23 then
+    raise exception 'Expected 23 recovered visit-information records';
+  end if;
+
+  if (select count(*)
+      from recovered_destination_visit_info_payload payload
+      join public.destinations destination
+        on destination.id = payload.destination_id
+       and destination.name = payload.expected_name
+       and destination.status = 'Activo') <> 23 then
+    raise exception 'All 23 recovered visit-information targets must remain active and match their expected names';
+  end if;
+end
+$$;
+
+insert into private.destination_visit_info_backups (batch_key, destination_id, snapshot)
+select '20260903_recovered_visit_info', visit_info.destination_id, to_jsonb(visit_info)
+from public.destination_visit_info visit_info
+join recovered_destination_visit_info_payload payload on payload.destination_id = visit_info.destination_id
+on conflict (batch_key, destination_id) do nothing;
+
+insert into public.destination_visit_info (
+  destination_id, tipo_acceso, estado_camino, duracion_estimada, mejor_temporada,
+  recomendaciones_seguridad, enlace_web, reserva_requerida, horario_atencion, estacionamiento,
+  servicios_sanitarios, restaurante_o_soda, acceso_para_discapacitados, se_permite_mascotas,
+  camping_permitido, codigo_local, relevancia_cultural
+)
+select
+  destination_id, tipo_acceso, estado_camino, duracion_estimada, mejor_temporada,
+  recomendaciones_seguridad, enlace_web, reserva_requerida, horario_atencion, estacionamiento,
+  servicios_sanitarios, restaurante_o_soda, acceso_para_discapacitados, se_permite_mascotas,
+  camping_permitido, codigo_local, relevancia_cultural
+from recovered_destination_visit_info_payload
+on conflict (destination_id) do update set
+  tipo_acceso = excluded.tipo_acceso,
+  estado_camino = excluded.estado_camino,
+  duracion_estimada = excluded.duracion_estimada,
+  mejor_temporada = excluded.mejor_temporada,
+  recomendaciones_seguridad = excluded.recomendaciones_seguridad,
+  enlace_web = excluded.enlace_web,
+  reserva_requerida = excluded.reserva_requerida,
+  horario_atencion = excluded.horario_atencion,
+  estacionamiento = excluded.estacionamiento,
+  servicios_sanitarios = excluded.servicios_sanitarios,
+  restaurante_o_soda = excluded.restaurante_o_soda,
+  acceso_para_discapacitados = excluded.acceso_para_discapacitados,
+  se_permite_mascotas = excluded.se_permite_mascotas,
+  camping_permitido = excluded.camping_permitido,
+  codigo_local = excluded.codigo_local,
+  relevancia_cultural = excluded.relevancia_cultural,
+  updated_at = now();
+
+do $$
+begin
+  if (select count(*)
+      from public.destination_visit_info visit_info
+      join recovered_destination_visit_info_payload payload on payload.destination_id = visit_info.destination_id
+      where visit_info.tipo_acceso is not distinct from payload.tipo_acceso
+        and visit_info.estado_camino is not distinct from payload.estado_camino
+        and visit_info.duracion_estimada is not distinct from payload.duracion_estimada
+        and visit_info.mejor_temporada is not distinct from payload.mejor_temporada
+        and visit_info.recomendaciones_seguridad is not distinct from payload.recomendaciones_seguridad
+        and visit_info.enlace_web is not distinct from payload.enlace_web
+        and visit_info.reserva_requerida is not distinct from payload.reserva_requerida
+        and visit_info.horario_atencion is not distinct from payload.horario_atencion
+        and visit_info.estacionamiento is not distinct from payload.estacionamiento
+        and visit_info.servicios_sanitarios is not distinct from payload.servicios_sanitarios
+        and visit_info.restaurante_o_soda is not distinct from payload.restaurante_o_soda
+        and visit_info.acceso_para_discapacitados is not distinct from payload.acceso_para_discapacitados
+        and visit_info.se_permite_mascotas is not distinct from payload.se_permite_mascotas
+        and visit_info.camping_permitido is not distinct from payload.camping_permitido
+        and visit_info.codigo_local is not distinct from payload.codigo_local
+        and visit_info.relevancia_cultural is not distinct from payload.relevancia_cultural) <> 23 then
+    raise exception 'Recovered visit-information verification failed';
+  end if;
+end
+$$;
+
+commit;

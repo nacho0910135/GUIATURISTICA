@@ -15,6 +15,24 @@ export type CommunitySuggestionVerification = {
   parking: { confirmed: number; notConfirmed: number };
 };
 export type MyCommunitySuggestionVerification = { location_correct: boolean; access_difficulty: CommunitySuggestionAccessDifficulty; has_parking: boolean } | null;
+export type DestinationVisitInfo = {
+  tipo_acceso: string | null;
+  estado_camino: string | null;
+  duracion_estimada: string | null;
+  mejor_temporada: string | null;
+  recomendaciones_seguridad: string | null;
+  enlace_web: string | null;
+  reserva_requerida: boolean | null;
+  horario_atencion: string | null;
+  estacionamiento: string | null;
+  servicios_sanitarios: boolean | null;
+  restaurante_o_soda: boolean | null;
+  acceso_para_discapacitados: string | null;
+  se_permite_mascotas: string | null;
+  camping_permitido: string | null;
+  codigo_local: string | null;
+  relevancia_cultural: string | null;
+};
 
 const emptyDestinationFreshness = (): DestinationFreshness => ({
   open: { confirmed: 0, notConfirmed: 0 },
@@ -65,6 +83,7 @@ export type MapPlace = {
   is_community_submission?: boolean;
   community_contributor_id?: string | null;
   community_verified_at?: string | null;
+  visit_info: DestinationVisitInfo | null;
 };
 
 export type DestinationReview = {
@@ -160,6 +179,17 @@ function normalizedName(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
+export function matchesSearchTargets(searchableText: string, targets: string[]) {
+  const words = normalizedName(searchableText).split(/[^a-z0-9]+/).filter(Boolean);
+  return targets.some((target) => {
+    const targetWords = normalizedName(target).split(/[^a-z0-9]+/).filter(Boolean);
+    return targetWords.length > 0 && words.some((_, start) => targetWords.every((targetWord, offset) => {
+      const word = words[start + offset];
+      return Boolean(word) && (word === targetWord || (word.length >= 4 && targetWord.length >= 4 && (word.startsWith(targetWord) || targetWord.startsWith(word))));
+    }));
+  });
+}
+
 function initialDestinationRating(id: string) {
   return 4.1 + (Array.from(id).reduce((total, character) => total + character.charCodeAt(0), 0) % 10) / 10;
 }
@@ -250,6 +280,7 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
     photos: [],
     community_photos: [],
     featured_community_photo_url: null,
+    visit_info: null,
   };
 }
 
@@ -298,16 +329,8 @@ export async function getPlacesForCategory(category: string, userId?: string): P
 }
 
 export async function getPlacesForTargets(targets: string[], userId?: string): Promise<MapPlace[]> {
-  const normalizedTargets = targets.map(normalizedName).filter(Boolean);
-  const matches = (place: MapPlace) => {
-    const searchable = normalizedName(place.category);
-    const words = searchable.split(/[^a-z0-9]+/).filter(Boolean);
-    return normalizedTargets.some((target) => target.includes(' ')
-      ? searchable.includes(target)
-      : words.some((word) => word === target || (target.length >= 4 && word.startsWith(target))));
-  };
-  const places = (await getPlaces('all', '', userId)).filter(matches);
-  if (!normalizedTargets.some((target) => target.includes('santuario') || target.includes('sanctuary'))) return places;
+  const places = (await getPlaces('all', '', userId)).filter((place) => matchesSearchTargets(place.category, targets));
+  if (!targets.some((target) => normalizedName(target).includes('santuario') || normalizedName(target).includes('sanctuary'))) return places;
   const knownIds = new Set(places.map((place) => place.id));
   const sanctuaryPlaces = (await getVerifiedSanctuaryRows())
     .map(toMapSanctuary)
@@ -380,13 +403,14 @@ async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPl
     is_community_submission: true,
     community_contributor_id: suggestion.user_id,
     community_verified_at: suggestion.community_verified_at,
+    visit_info: null,
   };
 }
 
 async function getPlaces(filter: 'province' | 'category' | 'id' | 'all', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,description_en,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,requires_online_ticket,online_ticket_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at)');
+    .select('id,name,province,region,category,description,description_en,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,requires_online_ticket,online_ticket_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_visit_info(tipo_acceso,estado_camino,duracion_estimada,mejor_temporada,recomendaciones_seguridad,enlace_web,reserva_requerida,horario_atencion,estacionamiento,servicios_sanitarios,restaurante_o_soda,acceso_para_discapacitados,se_permite_mascotas,camping_permitido,codigo_local,relevancia_cultural),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at)');
   if (filter === 'province') query = query.eq('province', value);
   else if (filter === 'id') query = query.eq('id', value);
   else if (value === RESERVE_CATEGORY) query = query.in('id', [...RESERVE_IDS]);
@@ -418,6 +442,7 @@ async function getPlaces(filter: 'province' | 'category' | 'id' | 'all', value: 
     const communityPhotos = (place.destination_user_photos ?? []).map((photo) => ({ ...photo, likes_count: (photoLikes.data ?? []).filter((like) => like.photo_id === photo.id).length, liked: likedPhotoIds.has(photo.id) })).sort((a, b) => b.likes_count - a.likes_count || a.created_at.localeCompare(b.created_at));
     return {
       ...place,
+      visit_info: (Array.isArray(place.destination_visit_info) ? place.destination_visit_info[0] : place.destination_visit_info) ?? null,
       category: classifiedCategory(place),
       latitude: Number(place.latitude),
       longitude: Number(place.longitude),

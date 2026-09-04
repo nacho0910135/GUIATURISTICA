@@ -1,9 +1,11 @@
 import type { Session } from '@supabase/supabase-js';
 import * as AuthSession from 'expo-auth-session';
+import Constants from 'expo-constants';
+import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
 import { registerAdminPushToken } from '@/lib/admin-push-notifications';
@@ -42,6 +44,23 @@ type AppContextValue = {
 
 const AppContext = createContext<AppContextValue | null>(null);
 const FALLBACK_USD_CRC = 503.84;
+const NATIVE_OAUTH_REDIRECT_URI = 'descubriendocr://auth/callback';
+
+function getOAuthRedirectUri() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') return window.location.origin;
+
+  // Expo Go cannot open the custom scheme registered by the standalone app.
+  // Its callback must point back to the currently running Expo development URL.
+  if (Constants.appOwnership === 'expo' || Constants.expoGoConfig) {
+    return Linking.createURL('auth/callback', { scheme: 'exp' });
+  }
+
+  return AuthSession.makeRedirectUri({
+    native: NATIVE_OAUTH_REDIRECT_URI,
+    scheme: 'descubriendocr',
+    path: 'auth/callback',
+  });
+}
 
 export function AppProvider({ children }: PropsWithChildren) {
   const { mode } = useAppTheme();
@@ -53,9 +72,30 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [userSession, setUserSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+  const locationRefreshInFlight = useRef(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const session = userSession;
   const isAuthenticated = Boolean(userSession);
+
+  const refreshUserLocation = useCallback(async () => {
+    if (locationRefreshInFlight.current) return;
+    locationRefreshInFlight.current = true;
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted) return;
+
+      const cached = await Location.getLastKnownPositionAsync({
+        maxAge: 2 * 60 * 1000,
+        requiredAccuracy: 1000,
+      });
+      if (cached) setUserLocation(cached.coords);
+
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setUserLocation(current.coords);
+    } finally {
+      locationRefreshInFlight.current = false;
+    }
+  }, []);
 
   const syncSession = useCallback(async (nextSession: Session | null) => {
     setUserSession(nextSession);
@@ -70,6 +110,28 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAvatarUrl(data?.avatar_url ?? (typeof metadataAvatar === 'string' ? metadataAvatar : null));
   }, []);
 
+  const createSessionFromUrl = useCallback(async (url: string) => {
+    const callback = new URL(url.replace('#', url.includes('?') ? '&' : '?'));
+    const oauthError = callback.searchParams.get('error_description') ?? callback.searchParams.get('error');
+    if (oauthError) throw new Error(oauthError);
+
+    const code = callback.searchParams.get('code');
+    if (code) {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+      await syncSession(data.session);
+      return Boolean(data.session);
+    }
+
+    const access_token = callback.searchParams.get('access_token');
+    const refresh_token = callback.searchParams.get('refresh_token');
+    if (!access_token || !refresh_token) return false;
+    const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
+    if (error) throw error;
+    await syncSession(data.session);
+    return Boolean(data.session);
+  }, [syncSession]);
+
   useEffect(() => {
     let mounted = true;
     void supabase.auth.getSession().then(({ data }) => {
@@ -82,27 +144,32 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [syncSession]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const handleCallback = (url: string) => {
+      if (!url.includes('auth/callback')) return;
+      void createSessionFromUrl(url).catch((error) => console.warn('No se pudo completar Google OAuth.', error));
+    };
+    const subscription = Linking.addEventListener('url', ({ url }) => handleCallback(url));
+    void Linking.getInitialURL().then((url) => { if (url) handleCallback(url); });
+    return () => subscription.remove();
+  }, [createSessionFromUrl]);
+
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void supabase.auth.getSession().then(({ data }) => syncSession(data.session));
+      if (state !== 'active') return;
+      void supabase.auth.getSession().then(({ data }) => syncSession(data.session));
+      void refreshUserLocation().catch(() => undefined);
     });
     return () => subscription.remove();
-  }, [syncSession]);
+  }, [refreshUserLocation, syncSession]);
 
   useEffect(() => {
     if (isAdmin && session?.user.id) void registerAdminPushToken(session.user.id).catch((error) => console.warn('No se pudo registrar el push administrativo.', error));
   }, [isAdmin, session?.user.id]);
 
   useEffect(() => {
-    void Location.requestForegroundPermissionsAsync()
-      .then(async (permission) => {
-        if (!permission.granted) return;
-        const cached = await Location.getLastKnownPositionAsync({ maxAge: 10 * 60 * 1000, requiredAccuracy: 5000 });
-        if (cached) setUserLocation(cached.coords);
-        const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        setUserLocation(current.coords);
-      })
-      .catch(() => undefined);
-  }, []);
+    void refreshUserLocation().catch(() => undefined);
+  }, [refreshUserLocation]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -118,9 +185,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [syncSession]);
 
   const signInWithGoogle = useCallback(async () => {
-    const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined'
-      ? window.location.origin
-      : AuthSession.makeRedirectUri({ scheme: 'descubriendocr', path: 'auth/callback' });
+    const redirectTo = getOAuthRedirectUri();
     const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } });
     if (error) throw error;
     if (!data.url) throw new Error('No se pudo iniciar Google OAuth.');
@@ -130,22 +195,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     }
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo, { showInRecents: true });
     if (result.type !== 'success') return false;
-    const callback = new URL(result.url.replace('#', '?'));
-    const oauthError = callback.searchParams.get('error_description') ?? callback.searchParams.get('error');
-    if (oauthError) throw new Error(oauthError);
-    const code = callback.searchParams.get('code');
-    if (code) {
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-      if (exchangeError) throw exchangeError;
-      return true;
-    }
-    const access_token = callback.searchParams.get('access_token');
-    const refresh_token = callback.searchParams.get('refresh_token');
-    if (!access_token || !refresh_token) throw new Error('Google completó el acceso, pero no fue posible crear la sesión. Intentá nuevamente.');
-    const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token });
-    if (sessionError) throw sessionError;
-    return true;
-  }, []);
+    const sessionCreated = await createSessionFromUrl(result.url);
+    if (!sessionCreated) throw new Error('Google completó el acceso, pero no fue posible crear la sesión. Intentá nuevamente.');
+    return sessionCreated;
+  }, [createSessionFromUrl]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();

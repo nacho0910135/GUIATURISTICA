@@ -15,7 +15,7 @@ import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
 import { getLiveRoadAlerts, type RoadTrafficAlert } from '@/lib/logistics';
-import { getExplorePlaces, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
+import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
@@ -23,7 +23,8 @@ import { useApp } from '@/providers/app-provider';
 const fallbackDestinationThumbnail = require('../../../assets/images/startup-rainforest.gif');
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
 
-const categoryColors = ['#2A7B4C', '#1E5B75', '#5F9EA0', '#B58A5A', '#7D9E8A', '#6F8FB3'];
+const volcanoColor = '#5F9EA0';
+const categoryColors = ['#2A7B4C', '#1E5B75', volcanoColor, '#B58A5A', '#7D9E8A', '#6F8FB3'];
 
 export default function ExploreScreen() {
   const { formatPrice, language, requireAuth, session } = useApp();
@@ -87,13 +88,13 @@ export default function ExploreScreen() {
   const categoryOptions = useMemo(() => destinationCategories.data ?? [], [destinationCategories.data]);
   const rootCategories = useMemo(() => categoryOptions.filter((option) => option.parent_id === null), [categoryOptions]);
   const visiblePlaces = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase(language === 'es' ? 'es' : 'en');
-    const filtered = (places.data ?? []).filter((place) => {
-      const searchable = `${place.name} ${place.province} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`;
-      if (term && !searchable.toLocaleLowerCase(language === 'es' ? 'es' : 'en').includes(term)) return false;
-      return Boolean(term || coordinates);
+    const term = normalizeSearchText(search);
+    const matches = (places.data ?? []).flatMap((place) => {
+      const score = term ? nameSearchScore(place.name, term) : 0;
+      return score === null || (!term && !coordinates) ? [] : [{ place, score }];
     });
-    return coordinates ? filtered.sort((a, b) => distanceKm(coordinates, a) - distanceKm(coordinates, b)) : filtered;
+    if (coordinates) return matches.sort((a, b) => distanceKm(coordinates, a.place) - distanceKm(coordinates, b.place) || a.score - b.score).map(({ place }) => place);
+    return matches.sort((a, b) => a.score - b.score || a.place.name.localeCompare(b.place.name, language === 'es' ? 'es' : 'en')).map(({ place }) => place);
   }, [coordinates, language, places.data, search]);
   const hasSearch = Boolean(search.trim());
 
@@ -119,7 +120,7 @@ export default function ExploreScreen() {
     void haptic('success');
   };
   const resultContent = (
-    <>
+    <View className="overflow-hidden rounded-control border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface">
       {places.isPending ? (
         <PlaceResultsSkeleton large={false} language={language} />
       ) : (
@@ -141,7 +142,10 @@ export default function ExploreScreen() {
                 Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo actualizar el seguimiento.' : 'Could not update follow.');
               }
             }}
-            onPress={() => router.push({ pathname: '/(aux)/province', params: { category: place.category, destinationId: place.id, ...(place.community ? { community: '1' } : {}) } })}
+            onPress={() => {
+              setSearch('');
+              router.push({ pathname: '/(aux)/province', params: { category: place.category, destinationId: place.id, direct: '1', ...(place.community ? { community: '1' } : {}) } });
+            }}
             origin={coordinates}
             ownContribution={place.contributor_id === session?.user.id}
             place={place}
@@ -149,13 +153,13 @@ export default function ExploreScreen() {
         ))
       )}
       {places.isError ? (
-        <Pressable accessibilityRole="button" className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" onPress={() => void places.refetch()}>
+        <Pressable accessibilityRole="button" className="items-center bg-ui-primary p-4 dark:bg-ui-dark-primary" onPress={() => void places.refetch()}>
           <Text className="font-black text-white">{language === 'es' ? 'Reintentar cargar destinos' : 'Retry loading destinations'}</Text>
         </Pressable>
       ) : !places.isPending && !visiblePlaces.length ? (
-        <Text className="rounded-control bg-ui-surface py-6 text-center font-bold text-ui-text-muted dark:bg-ui-dark-surface dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con esa búsqueda.' : 'No places matched your search.'}</Text>
+        <Text className="py-6 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con esa búsqueda.' : 'No places matched your search.'}</Text>
       ) : null}
-    </>
+    </View>
   );
 
   return (
@@ -167,7 +171,7 @@ export default function ExploreScreen() {
             accessibilityState={{ selected: Boolean(coordinates) }}
             className="relative min-h-12 flex-1 flex-row items-center justify-center overflow-hidden rounded-2xl border border-white/60 px-3 py-3"
             onPress={() => void discover()}
-            style={{ backgroundColor: '#1E5B75dd', elevation: 8, shadowColor: '#1E5B75', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.3, shadowRadius: 12 }}
+            style={{ backgroundColor: volcanoColor, elevation: 8, shadowColor: volcanoColor, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.3, shadowRadius: 12 }}
           >
             <View className="absolute left-5 right-5 top-0 h-[2px] rounded-full bg-white/80" />
             <MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" />
@@ -187,7 +191,7 @@ export default function ExploreScreen() {
           <View className="flex-row items-stretch gap-2">
             <View className="min-w-0 flex-1 flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
               <MaterialCommunityIcons name="magnify" size={23} color="#68737A" />
-              <TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Buscar playas, cataratas, miradores, volcanes o senderos…' : 'Search beaches, waterfalls, viewpoints, volcanoes or trails…'} placeholderTextColor="#68737A" value={search} />
+              <TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Ej. Playa Doña Ana' : 'E.g. Doña Ana Beach'} placeholderTextColor="#68737A" value={search} />
               {search ? (
                 <Pressable accessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'} accessibilityRole="button" hitSlop={10} onPress={() => setSearch('')}>
                   <MaterialCommunityIcons name="close-circle" size={21} color="#68737A" />
@@ -207,7 +211,7 @@ export default function ExploreScreen() {
               <Text className="ml-1.5 text-center text-xs font-black leading-3 text-white">{language === 'es' ? 'Agregar\nnuevo sitio' : 'Add\nnew place'}</Text>
             </Pressable>
           </View>
-          {hasSearch ? <View className="absolute left-0 right-0 z-20 gap-3" style={{ elevation: 20, marginTop: 12, top: '100%' }}>{resultContent}</View> : null}
+          {hasSearch ? <View className="absolute left-0 right-0 z-20" style={{ elevation: 20, marginTop: 8, top: '100%' }}>{resultContent}</View> : null}
         </View>
         {coordinates ? <Text className="mt-3 text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ordenados del más cercano al más lejano.' : 'Sorted from nearest to farthest.'}</Text> : null}
         {!coordinates ? (
@@ -316,14 +320,24 @@ function CategoryGridSkeleton({ language, wide }: { language: 'es' | 'en'; wide:
 }
 
 function matchesOption(place: ExplorePlace, option: AppOption) {
-  const searchable = normalizeCategory(place.category);
   const terms = option.allowed_targets?.length ? option.allowed_targets : [option.label_es, option.label_en];
-  const words = searchable.split(/[^a-z0-9]+/).filter(Boolean);
-  return terms.some((term) => {
-    const normalizedTerm = normalizeCategory(term);
-    if (normalizedTerm.includes(' ')) return searchable.includes(normalizedTerm);
-    return words.some((word) => word === normalizedTerm || (normalizedTerm.length >= 4 && word.startsWith(normalizedTerm)));
-  });
+  return matchesSearchTargets(place.category, terms);
+}
+
+function normalizeSearchText(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().trim();
+}
+
+function nameSearchScore(name: string, term: string) {
+  const normalizedName = normalizeSearchText(name);
+  const nameWords = normalizedName.split(/[^a-z0-9]+/).filter(Boolean);
+  const termWords = term.split(/[^a-z0-9]+/).filter(Boolean);
+  if (!termWords.length) return null;
+  if (normalizedName === term) return 0;
+  if (normalizedName.startsWith(term)) return 1;
+  if (termWords.every((word) => nameWords.includes(word))) return 2;
+  if (termWords.every((word) => nameWords.some((nameWord) => nameWord.startsWith(word)))) return 3;
+  return normalizedName.includes(term) ? 4 : null;
 }
 
 function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }) {
@@ -334,12 +348,6 @@ function distanceKm(from: { latitude: number; longitude: number }, to: { latitud
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function normalizeCategory(value: string) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
 
 function DestinationPreviewCarousel({ active, large, place }: { active: boolean; large: boolean; place: ExplorePlace }) {
   const photos = [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))];
@@ -375,7 +383,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
     );
   }
   return (
-    <Pressable accessibilityRole="button" className="flex-row items-center rounded-control border border-ui-border bg-ui-surface p-3 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={onPress}>
+    <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir ficha de' : 'Open details for'} ${place.name}`} accessibilityRole="button" className="flex-row items-center border-b border-ui-border p-3 active:bg-ui-muted last:border-b-0 dark:border-ui-dark-border dark:active:bg-ui-dark-muted" onPress={onPress}>
       <DestinationPreviewCarousel active={active} large={false} place={place} />
       <View className="ml-3 flex-1">
         <View className="flex-row flex-wrap items-center">

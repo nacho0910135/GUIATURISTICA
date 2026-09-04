@@ -65,6 +65,7 @@ export default function RootLayout() {
                     <Stack.Screen name="terms" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="privacy" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="delete-account" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="auth/callback" options={{ animation: 'fade' }} />
                     <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/traveler-profile" options={{ animation: 'slide_from_right' }} />

@@ -12,7 +12,7 @@ import { InformationReportModal } from '@/components/information-report-modal';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions } from '@/lib/app-options';
 import { ferryRoutes, getFerryRoutes, getWeather, openNavigation, type FerryRoute, WEATHER_STALE_TIME } from '@/lib/logistics';
-import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerification, getDestinationFreshness, getDestinationReviews, getMyCommunitySuggestionVerification, getMyDestinationFreshness, getPlaceById, getPlacesForCategory, getPlacesForProvince, getPlacesForTargets, setCommunitySuggestionVerification, setDestinationFreshnessVote, type CommunityPhoto, type CommunitySuggestionAccessDifficulty, type CommunitySuggestionVerification, type DestinationFreshnessCheck, type MapPlace, type MyCommunitySuggestionVerification, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
+import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerification, getDestinationFreshness, getDestinationReviews, getMyCommunitySuggestionVerification, getMyDestinationFreshness, getPlaceById, getPlacesForCategory, getPlacesForProvince, getPlacesForTargets, matchesSearchTargets, setCommunitySuggestionVerification, setDestinationFreshnessVote, type CommunityPhoto, type CommunitySuggestionAccessDifficulty, type CommunitySuggestionVerification, type DestinationFreshnessCheck, type MapPlace, type MyCommunitySuggestionVerification, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
@@ -78,17 +78,8 @@ function distanceKm(from: Coordinates, to: Coordinates) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function matchesTargets(place: MapPlace, targets: string[]) {
-  const searchable = `${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const words = searchable.split(/[^a-z0-9]+/).filter(Boolean);
-  return targets.some((target) => {
-    const normalizedTarget = target.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    return normalizedTarget.includes(' ') ? searchable.includes(normalizedTarget) : words.some((word) => word === normalizedTarget || (normalizedTarget.length >= 4 && word.startsWith(normalizedTarget)));
-  });
-}
-
 export default function ProvinceCatalogScreen() {
-  const { category: rawCategory, categoryId, community: communityParam, destinationId, province: rawProvince } = useLocalSearchParams<{ category?: string; categoryId?: string; community?: string; destinationId?: string; province?: string }>();
+  const { category: rawCategory, categoryId, community: communityParam, destinationId, direct: directParam, province: rawProvince } = useLocalSearchParams<{ category?: string; categoryId?: string; community?: string; destinationId?: string; direct?: string; province?: string }>();
   const { formatPrice, language, requireAuth, session, setVisitorType, visitorType } = useApp();
   const { colors } = useAppTheme();
   const router = useRouter();
@@ -104,6 +95,7 @@ export default function ProvinceCatalogScreen() {
     setVisiblePlaceIds(new Set(viewableItems.filter((item) => item.isViewable).map((item) => item.item.id)));
   });
   const isCommunitySubmission = communityParam === '1';
+  const directDestination = directParam === '1';
   const categoryOptions = useQuery({ queryKey: ['app-options', 'destination_category', 'v2'], queryFn: () => getAppOptions('destination_category'), staleTime: 5 * 60 * 1000 });
   const categoryOption = useMemo(() => categoryOptions.data?.find((option) => option.id === categoryId) ?? null, [categoryId, categoryOptions.data]);
   const categorySubcategories = useMemo(() => categoryOptions.data?.filter((option) => option.parent_id === categoryId) ?? [], [categoryId, categoryOptions.data]);
@@ -114,13 +106,17 @@ export default function ProvinceCatalogScreen() {
     else router.replace('/(tabs)/explore');
   }, [router]);
   const closeDestination = useCallback(() => {
+    if (directDestination) {
+      leaveCatalog();
+      return;
+    }
     setSelected(undefined);
     if (!destinationId) return;
     router.replace({
       pathname: '/(aux)/province',
       params: categoryId ? { categoryId } : rawCategory ? { category: rawCategory } : rawProvince ? { province: rawProvince } : {},
     });
-  }, [categoryId, destinationId, rawCategory, rawProvince, router]);
+  }, [categoryId, destinationId, directDestination, leaveCatalog, rawCategory, rawProvince, router]);
   const province = provinces.find((item) => item.name === rawProvince) ?? provinces[0];
   const scopeTitle = categoryName ?? (categoryId ? (language === 'es' ? 'Cargando catálogo…' : 'Loading catalog…') : province.name);
   const scopeKey = categoryName ? `category-${categoryId ?? categoryName}` : `province-${province.code}`;
@@ -171,11 +167,11 @@ export default function ProvinceCatalogScreen() {
     ? distanceKm(userLocation, a) - distanceKm(userLocation, b)
     : 0), [places.data, userLocation]);
   const visibleCategorySubcategories = useMemo(
-    () => categorySubcategories.filter((subcategory) => sortedPlaces.some((place) => matchesTargets(place, subcategory.allowed_targets ?? []))),
+    () => categorySubcategories.filter((subcategory) => sortedPlaces.some((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, subcategory.allowed_targets ?? []))),
     [categorySubcategories, sortedPlaces],
   );
   const activeSubcategory = useMemo(() => visibleCategorySubcategories.find((option) => option.id === activeSubcategoryId) ?? null, [activeSubcategoryId, visibleCategorySubcategories]);
-  const subcategoryPlaces = useMemo(() => !activeSubcategory ? sortedPlaces : sortedPlaces.filter((place) => matchesTargets(place, activeSubcategory.allowed_targets ?? [])), [activeSubcategory, sortedPlaces]);
+  const subcategoryPlaces = useMemo(() => !activeSubcategory ? sortedPlaces : sortedPlaces.filter((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, activeSubcategory.allowed_targets ?? [])), [activeSubcategory, sortedPlaces]);
   const displayedPlaces = useMemo(() => !isBeach ? subcategoryPlaces : subcategoryPlaces.filter((place) => {
     const surf = place.category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes('surf');
     return beachType === 'surf' ? surf : !surf;
@@ -198,6 +194,13 @@ export default function ProvinceCatalogScreen() {
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo actualizar el like.' : 'Could not update the like.'));
     }
   };
+
+  if (directDestination && !selected) {
+    if (places.isPending || places.data?.some((place) => place.id === destinationId)) {
+      return <View accessibilityLabel={language === 'es' ? 'Cargando ficha del sitio' : 'Loading place details'} accessibilityRole="progressbar" className="flex-1 items-center justify-center bg-ui-background dark:bg-ui-dark-background"><ActivityIndicator color="#00c98d" size="large" /></View>;
+    }
+    return <View className="flex-1 items-center justify-center bg-ui-background p-6 dark:bg-ui-dark-background"><View accessibilityRole="alert" className="w-full max-w-md rounded-card border border-ui-border bg-ui-surface p-6 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="map-marker-alert-outline" size={34} color={colors.textMuted} /><Text className="mt-4 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No pudimos abrir la ficha' : 'We could not open this place'}</Text><Text className="mt-2 leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Revisá tu conexión e intentá de nuevo.' : 'Check your connection and try again.'}</Text><View className="mt-5 flex-row gap-3"><Pressable accessibilityRole="button" className="min-h-11 flex-1 items-center justify-center rounded-control bg-ui-primary px-4 dark:bg-ui-dark-primary" onPress={() => void places.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable><Pressable accessibilityRole="button" className="min-h-11 flex-1 items-center justify-center rounded-control border border-ui-border px-4 dark:border-ui-dark-border" onPress={leaveCatalog}><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Volver' : 'Back'}</Text></Pressable></View></View></View>;
+  }
 
   return (
     <View className="flex-1 bg-ui-background dark:bg-ui-dark-background">
@@ -329,7 +332,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
       <Modal animationType="fade" onRequestClose={onClose} transparent visible>
       <View className="flex-1 items-center justify-center bg-black/75 p-3 md:p-8">
         <View className="max-h-full w-full max-w-5xl overflow-hidden rounded-[30px] bg-ui-surface dark:bg-ui-dark-surface">
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
             <View className="relative">
               <DestinationCarousel height={340} place={place} />
               <View className="absolute inset-0 bg-black/20" />
@@ -346,6 +349,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
               <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={difficultyLabel(place.difficulty, language)} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
               <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{destinationDescription(place, language)}</Text></View>
+              <DestinationVisitInfoPanel language={language} place={place} />
               <VisitQuickFacts closedDay={place.closed_day} language={language} price={visitPrice} schedule={place.schedule} onNavigate={() => void openNavigation(place.latitude, place.longitude)} />
               <DestinationFreshnessPanel destinationId={place.id} language={language} />
               {place.is_community_submission ? <CommunitySuggestionVerificationPanel busy={communityVerificationBusy} canVerify={place.community_contributor_id !== session?.user.id} language={language} mine={myCommunityVerification.data} onSubmit={submitCommunityVerification} verifiedAt={place.community_verified_at} verification={communityVerification.data} /> : null}
@@ -378,6 +382,51 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
       <InformationReportModal open={reportOpen} targetType="destination" targetId={place.id} targetLabel={place.name} language={language} onClose={() => setReportOpen(false)} />
     </>
   );
+}
+
+function DestinationVisitInfoPanel({ language, place }: { language: 'es' | 'en'; place: MapPlace }) {
+  const info = place.visit_info;
+  if (!info) return null;
+  const yesNo = (value: boolean) => language === 'es' ? (value ? 'Sí' : 'No') : (value ? 'Yes' : 'No');
+  type VisitInfoRow = { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; es: string; en: string; value: string | null };
+  const rows: VisitInfoRow[] = [
+    { icon: 'car-outline', es: 'Tipo de acceso', en: 'Access', value: info.tipo_acceso },
+    { icon: 'road-variant', es: 'Estado del camino', en: 'Road conditions', value: info.estado_camino },
+    { icon: 'clock-outline', es: 'Duración estimada', en: 'Estimated duration', value: info.duracion_estimada },
+    { icon: 'weather-sunny', es: 'Mejor temporada', en: 'Best season', value: info.mejor_temporada },
+    { icon: 'shield-alert-outline', es: 'Seguridad', en: 'Safety', value: info.recomendaciones_seguridad },
+    { icon: 'calendar-clock-outline', es: 'Horario de atención', en: 'Opening hours', value: info.horario_atencion },
+    { icon: 'calendar-check-outline', es: 'Reserva requerida', en: 'Reservation required', value: info.reserva_requerida === null ? null : yesNo(info.reserva_requerida) },
+    { icon: 'parking', es: 'Estacionamiento', en: 'Parking', value: info.estacionamiento },
+    { icon: 'toilet', es: 'Servicios sanitarios', en: 'Restrooms', value: info.servicios_sanitarios === null ? null : yesNo(info.servicios_sanitarios) },
+    { icon: 'silverware-fork-knife', es: 'Restaurante o soda', en: 'Food on site', value: info.restaurante_o_soda === null ? null : yesNo(info.restaurante_o_soda) },
+    { icon: 'wheelchair-accessibility', es: 'Accesibilidad', en: 'Accessibility', value: info.acceso_para_discapacitados },
+    { icon: 'paw-outline', es: 'Mascotas', en: 'Pets', value: info.se_permite_mascotas },
+    { icon: 'tent', es: 'Camping', en: 'Camping', value: info.camping_permitido },
+    { icon: 'account-group-outline', es: 'Relevancia cultural', en: 'Cultural significance', value: info.relevancia_cultural },
+    { icon: 'identifier', es: 'Código local', en: 'Local code', value: info.codigo_local },
+  ];
+
+  const populatedRows = rows.filter((row) => Boolean(row.value));
+  const visitRows = rows.slice(0, 7).filter((row) => Boolean(row.value));
+  const amenityRows = rows.slice(7, 13).filter((row) => Boolean(row.value));
+  const contextRows = rows.slice(13).filter((row) => Boolean(row.value));
+  if (!populatedRows.length && !info.enlace_web) return null;
+  return <View className="rounded-3xl border border-ui-border bg-ui-surface p-5 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+    <View className="mb-5 flex-row items-center"><View className="h-11 w-11 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="map-marker-check-outline" size={24} color="#0B6B4F" /></View><View className="ml-3 flex-1"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Imprescindible saber' : 'Good to know'}</Text><Text className="mt-0.5 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Detalles prácticos antes de salir' : 'Practical details before you go'}</Text></View></View>
+    {visitRows.length ? <View className="overflow-hidden rounded-2xl border border-ui-border dark:border-ui-dark-border">{visitRows.map((row, index) => <VisitInfoRow divider={index < visitRows.length - 1} icon={row.icon} key={row.es} label={language === 'es' ? row.es : row.en} value={row.value!} />)}</View> : null}
+    {amenityRows.length ? <View className="mt-6"><Text className="text-xs font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Servicios y accesibilidad' : 'Services & accessibility'}</Text><View className="mt-3 flex-row flex-wrap gap-3">{amenityRows.map((row) => <VisitInfoFact icon={row.icon} key={row.es} label={language === 'es' ? row.es : row.en} value={row.value!} />)}</View></View> : null}
+    {contextRows.length ? <View className="mt-6"><Text className="mb-3 text-xs font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Contexto del lugar' : 'About this place'}</Text><View className="overflow-hidden rounded-2xl border border-ui-border dark:border-ui-dark-border">{contextRows.map((row, index) => <VisitInfoRow divider={index < contextRows.length - 1} icon={row.icon} key={row.es} label={language === 'es' ? row.es : row.en} value={row.value!} />)}</View></View> : null}
+    {info.enlace_web ? <Pressable accessibilityRole="link" className="mt-6 min-h-11 flex-row items-center self-start rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => void Linking.openURL(info.enlace_web!)}><MaterialCommunityIcons name="web" size={20} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Visitar sitio web' : 'Visit website'}</Text></Pressable> : null}
+  </View>;
+}
+
+function VisitInfoRow({ divider, icon, label, value }: { divider: boolean; icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; value: string }) {
+  return <View className={divider ? 'flex-row items-start border-b border-ui-border p-4 dark:border-ui-dark-border' : 'flex-row items-start p-4'}><View className="h-9 w-9 items-center justify-center rounded-xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name={icon} size={20} color="#0B6B4F" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{label}</Text><Text className="mt-1 text-base leading-6 text-ui-text dark:text-ui-dark-text">{value}</Text></View></View>;
+}
+
+function VisitInfoFact({ icon, label, value }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; value: string }) {
+  return <View className="flex-1 rounded-2xl border border-ui-border bg-ui-muted p-3 dark:border-ui-dark-border dark:bg-ui-dark-muted" style={{ minWidth: 132 }}><View className="flex-row items-center"><MaterialCommunityIcons name={icon} size={20} color="#0B6B4F" /><Text className="ml-2 flex-1 text-[10px] font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{label}</Text></View><Text className="mt-2 text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{value}</Text></View>;
 }
 
 function VisitQuickFacts({ closedDay, language, onNavigate, price, schedule }: { closedDay: string | null; language: 'es' | 'en'; onNavigate: () => void; price: string; schedule: string | null }) {

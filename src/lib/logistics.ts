@@ -166,7 +166,7 @@ const destinationFields = 'id,name,province,category,latitude,longitude,has_high
 
 const ROAD_CORRIDORS = [
   { id: 'route-32', name: 'Ruta 32 (San José - Guápiles)', from: [-84.07486, 9.932607], to: [-83.78975, 10.21547] },
-  { id: 'route-2', name: 'Ruta 2 (Cartago - San Isidro)', from: [-83.91655, 9.864186], to: [-83.70457, 9.371303] },
+  { id: 'route-1', name: 'Ruta 1 (San José - San Ramón)', from: [-84.07486, 9.932607], to: [-84.4703, 10.0879] },
   { id: 'route-27', name: 'Ruta 27 (San José - Caldera)', from: [-84.07486, 9.932607], to: [-84.70942, 9.924575] },
 ] as const;
 
