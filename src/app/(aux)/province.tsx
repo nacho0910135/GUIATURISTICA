@@ -1,12 +1,14 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { BlurTargetView, BlurView } from 'expo-blur';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, useWindowDimensions, View, type ViewToken } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
+import { ActivityIndicator, BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { InformationReportModal } from '@/components/information-report-modal';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
@@ -225,29 +227,114 @@ export default function ProvinceCatalogScreen() {
         onEndReached={visiblePlaces.length < displayedPlaces.length ? loadNextPlaces : undefined}
         onEndReachedThreshold={0.35}
         onViewableItemsChanged={onViewableItemsChanged.current}
-        renderItem={({ item }) => (
-          <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}`} accessibilityRole="button" className="overflow-hidden rounded-[30px] border border-ui-border bg-ui-surface active:opacity-90 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={() => setSelected(item)}>
-            <View className="relative">
-              <DestinationCarousel autoplay={!selected && visiblePlaceIds.has(item.id)} height={210} place={item} />
-              <View className="absolute inset-0 bg-black/15" />
-              <View className="absolute left-5 top-5 rounded-full bg-black/55 px-4 py-2"><Text className="font-black text-white">{item.province}</Text></View>
-              {usesVerifiedCover(item) && item.image_attribution ? <View className="absolute right-4 top-4 max-w-[55%] rounded-lg bg-black/65 px-3 py-2"><Text className="text-right text-[10px] font-bold text-white" numberOfLines={1}>{language === 'es' ? 'Foto' : 'Photo'}: {item.image_attribution}</Text></View> : null}
-              <View className="absolute bottom-4 left-5 rounded-full bg-ui-primary dark:bg-ui-dark-primary px-4 py-2"><Text className="font-black text-white">{tourismRegion(item)}</Text></View>
-              <View className="absolute bottom-4 right-5 rounded-full bg-black/60 px-4 py-2"><Text className="font-black text-white">{difficultyLabel(item.difficulty, language)}</Text></View>
-            </View>
-            <View className="p-5">
-              <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{item.name}</Text>
-              <Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={2}>{destinationDescription(item, language)}</Text>
-              <View className="mt-3 flex-row flex-wrap gap-2"><View className="flex-row items-center rounded-xl bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="map-marker-distance" size={17} color="#0B6B4F" /><Text className="ml-1.5 text-xs font-black text-ui-text dark:text-ui-dark-text">{userLocation ? `${distanceKm(userLocation, item).toFixed(1)} km` : (language === 'es' ? 'Calculando distancia…' : 'Calculating distance…')}</Text></View><View className="flex-row items-center rounded-xl bg-ui-muted px-3 py-2 dark:bg-ui-dark-muted"><MaterialCommunityIcons name="hiking" size={17} color="#087443" /><Text className="ml-1.5 text-xs font-black text-ui-text dark:text-ui-dark-text">{difficultyLabel(item.difficulty, language)}</Text></View><View className="flex-row items-center rounded-xl bg-ui-muted px-3 py-2 dark:bg-ui-dark-muted"><MaterialCommunityIcons name="ticket-confirmation-outline" size={17} color="#087443" /><Text className="ml-1.5 text-xs font-black text-ui-text dark:text-ui-dark-text">{visitorType === 'tico' ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc)) : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`)}</Text></View>{ferryAccessFor(item) ? <View className="flex-row items-center rounded-xl bg-caribbean-50 px-3 py-2 dark:bg-caribbean-900"><MaterialCommunityIcons name="ferry" size={17} color="#0077A8" /><Text className="ml-1.5 text-xs font-black text-caribbean-700 dark:text-caribbean-100">{language === 'es' ? 'Requiere ferri' : 'Ferry required'}</Text></View> : null}</View>
-            </View>
-          </Pressable>
-        )}
+        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} userLocation={userLocation} visitorType={visitorType} />}
         viewabilityConfig={viewabilityConfig.current}
       />
       <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} />
     </View>
   );
 }
+
+function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, userLocation, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; userLocation?: Coordinates; visitorType: 'tico' | 'foreigner' }) {
+  const blurTarget = useRef<View | null>(null);
+  const price = visitorType === 'tico'
+    ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
+    : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
+  const decisionFacts = destinationDecisionFacts(item, language, price, userLocation);
+  const reservationUrl = destinationReservationUrl(item);
+
+  return (
+    <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}`} accessibilityRole="button" className="overflow-hidden rounded-[30px] border border-white/20 bg-ui-primary active:opacity-90" onPress={onPress}>
+      <View className="relative h-[430px]">
+        <BlurTargetView ref={blurTarget} style={StyleSheet.absoluteFill}>
+          <DestinationCarousel autoplay={autoplay} height={430} place={item} />
+        </BlurTargetView>
+        <View className="absolute inset-0 bg-black/20" pointerEvents="none" />
+        <View className="absolute left-5 top-5 rounded-full bg-black/60 px-4 py-2"><Text className="font-black text-white">{item.province}</Text></View>
+        {usesVerifiedCover(item) && item.image_attribution ? <View className="absolute right-4 top-4 max-w-[55%] rounded-lg bg-black/65 px-3 py-2"><Text className="text-right text-[10px] font-bold text-white" numberOfLines={1}>{language === 'es' ? 'Foto' : 'Photo'}: {item.image_attribution}</Text></View> : null}
+        <View className="absolute left-5 top-[168px] rounded-full bg-[#3B4231]/90 px-4 py-2"><Text className="font-black text-white">{tourismRegion(item)}</Text></View>
+        <View className="absolute right-5 top-[168px] rounded-full bg-black/65 px-4 py-2"><Text className="font-black text-white">{difficultyLabel(item.difficulty, language)}</Text></View>
+        <BlurView blurMethod="dimezisBlurViewSdk31Plus" blurTarget={blurTarget} intensity={46} className="px-5 pb-5 pt-4" style={styles.destinationCardOverlay}>
+          <Svg height="100%" pointerEvents="none" preserveAspectRatio="none" style={StyleSheet.absoluteFill} width="100%">
+            <Defs>
+              <LinearGradient id="destination-overlay" x1="0" x2="0" y1="0" y2="1">
+                <Stop offset="0" stopColor="#071B15" stopOpacity="0.08" />
+                <Stop offset="0.38" stopColor="#071B15" stopOpacity="0.42" />
+                <Stop offset="1" stopColor="#03110D" stopOpacity="0.78" />
+              </LinearGradient>
+            </Defs>
+            <Rect fill="url(#destination-overlay)" height="100%" width="100%" />
+          </Svg>
+          <Text className="text-xl font-black leading-7 text-white" numberOfLines={2}>{item.name}</Text>
+          <Text className="mt-1 text-sm leading-5 text-white/75" numberOfLines={1}>{destinationDescription(item, language)}</Text>
+          <View className="mt-3 flex-row flex-wrap gap-2">
+            {decisionFacts.map((fact) => <DestinationFact accessibilityLabel={fact.action === 'reservation' ? (reservationUrl ? (language === 'es' ? `Reservar ${item.name}` : `Book ${item.name}`) : (language === 'es' ? `Ver cómo reservar ${item.name}` : `See how to book ${item.name}`)) : undefined} icon={fact.icon} key={`${fact.icon}-${fact.label}`} label={fact.label} onPress={fact.action === 'reservation' ? (reservationUrl ? () => void Linking.openURL(reservationUrl) : onPress) : undefined} urgent={fact.urgent} />)}
+          </View>
+        </BlurView>
+      </View>
+    </Pressable>
+  );
+}
+
+type DestinationFactItem = { action?: 'reservation'; icon: ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; urgent?: boolean };
+
+function destinationReservationUrl(item: MapPlace) {
+  if (item.requires_online_ticket && item.online_ticket_url) return item.online_ticket_url;
+  if (item.requires_sinac_booking && item.sinac_booking_url) return item.sinac_booking_url;
+  if (item.visit_info?.reserva_requerida && item.visit_info.enlace_web) return item.visit_info.enlace_web;
+  return null;
+}
+
+function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, userLocation?: Coordinates) {
+  const facts: DestinationFactItem[] = [];
+  if (item.has_high_tides_risk) facts.push({ icon: 'waves-arrow-up', label: language === 'es' ? 'Revisar mareas' : 'Check tides', urgent: true });
+  if (item.visit_info?.reserva_requerida || item.requires_online_ticket || item.requires_sinac_booking) facts.push({ action: 'reservation', icon: 'calendar-check-outline', label: destinationReservationUrl(item) ? (language === 'es' ? 'Reservar ahora ↗' : 'Book now ↗') : (language === 'es' ? 'Ver cómo reservar ›' : 'How to book ›'), urgent: true });
+  if (ferryAccessFor(item)) facts.push({ icon: 'ferry', label: language === 'es' ? 'Requiere ferri' : 'Ferry required', urgent: true });
+  const access = conciseAccess(item.visit_info?.tipo_acceso, language);
+  if (access) facts.push({ icon: 'car-outline', label: access, urgent: /4x4|lancha|boat/i.test(access) });
+  const duration = item.visit_info?.duracion_estimada?.replace(/\s*\(.*/, '').trim();
+  if (duration) facts.push({ icon: 'clock-outline', label: duration });
+  facts.push({ icon: 'ticket-confirmation-outline', label: price });
+  facts.push({ icon: 'map-marker-distance', label: userLocation ? `${distanceKm(userLocation, item).toFixed(1)} km` : (language === 'es' ? 'Calculando distancia…' : 'Calculating distance…') });
+  return facts.slice(0, 4);
+}
+
+function conciseAccess(access: string | null | undefined, language: 'es' | 'en') {
+  if (!access) return null;
+  const fourByFour = /4x4/i.test(access);
+  const boat = /lancha|bote|boat/i.test(access);
+  if (fourByFour && boat) return language === 'es' ? '4x4 + lancha' : '4x4 + boat';
+  if (fourByFour) return /recomendad/i.test(access) ? (language === 'es' ? '4x4 recomendado' : '4x4 recommended') : (language === 'es' ? 'Requiere 4x4' : '4x4 required');
+  if (/carro normal|sed[aá]n|pavimentad/i.test(access)) return language === 'es' ? 'Acceso en sedán' : 'Sedan access';
+  return access.split(/[,(]/, 1)[0].trim();
+}
+
+function DestinationFact({ accessibilityLabel, icon, label, onPress, urgent = false }: DestinationFactItem & { accessibilityLabel?: string; onPress?: () => void }) {
+  const className = urgent ? 'min-h-10 flex-row items-center rounded-xl border border-[#FFD27A]/55 bg-[#5A3512]/55 px-3 py-2' : 'min-h-10 flex-row items-center rounded-xl border border-white/15 bg-black/25 px-3 py-2';
+  const content = <><MaterialCommunityIcons name={icon} size={17} color={urgent ? '#FFD27A' : '#FFFFFF'} /><Text className="ml-1.5 text-xs font-black text-white">{label}</Text></>;
+  if (!onPress) return <View className={className}>{content}</View>;
+  const handlePress = (event: GestureResponderEvent) => {
+    event.stopPropagation();
+    onPress();
+  };
+  return <Pressable accessibilityLabel={accessibilityLabel} accessibilityRole="link" className={`${className} focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75`} onPress={handlePress}>{content}</Pressable>;
+}
+
+const styles = StyleSheet.create({
+  destinationCardOverlay: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    left: 0,
+    paddingTop: 16,
+    paddingRight: 20,
+    paddingBottom: 20,
+    paddingLeft: 20,
+    overflow: 'hidden',
+    borderTopColor: 'rgba(255,255,255,0.2)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+});
 
 function DestinationModal({ language, onClose, onLike, place }: { language: 'es' | 'en'; onClose: () => void; onLike: (place: MapPlace) => Promise<void>; place?: MapPlace }) {
   const { formatPrice, requireAuth, session, visitorType } = useApp();
@@ -396,7 +483,10 @@ function DestinationVisitInfoPanel({ language, place }: { language: 'es' | 'en';
     { icon: 'weather-sunny', es: 'Mejor temporada', en: 'Best season', value: info.mejor_temporada },
     { icon: 'shield-alert-outline', es: 'Seguridad', en: 'Safety', value: info.recomendaciones_seguridad },
     { icon: 'calendar-clock-outline', es: 'Horario de atención', en: 'Opening hours', value: info.horario_atencion },
-    { icon: 'calendar-check-outline', es: 'Reserva requerida', en: 'Reservation required', value: info.reserva_requerida === null ? null : yesNo(info.reserva_requerida) },
+    { icon: 'calendar-check-outline', es: 'Reserva requerida', en: 'Reservation required', value: info.reserva_requerida ? yesNo(true) : null },
+    { icon: 'cash', es: 'Precio de entrada', en: 'Entry price', value: info.booking_price },
+    { icon: 'phone-outline', es: 'Contacto para reservar', en: 'Booking contact', value: info.booking_contact },
+    { icon: 'information-outline', es: 'Reserva y entrada', en: 'Booking and admission', value: info.booking_notes },
     { icon: 'parking', es: 'Estacionamiento', en: 'Parking', value: info.estacionamiento },
     { icon: 'toilet', es: 'Servicios sanitarios', en: 'Restrooms', value: info.servicios_sanitarios === null ? null : yesNo(info.servicios_sanitarios) },
     { icon: 'silverware-fork-knife', es: 'Restaurante o soda', en: 'Food on site', value: info.restaurante_o_soda === null ? null : yesNo(info.restaurante_o_soda) },
@@ -408,16 +498,16 @@ function DestinationVisitInfoPanel({ language, place }: { language: 'es' | 'en';
   ];
 
   const populatedRows = rows.filter((row) => Boolean(row.value));
-  const visitRows = rows.slice(0, 7).filter((row) => Boolean(row.value));
-  const amenityRows = rows.slice(7, 13).filter((row) => Boolean(row.value));
-  const contextRows = rows.slice(13).filter((row) => Boolean(row.value));
+  const visitRows = rows.slice(0, 10).filter((row) => Boolean(row.value));
+  const amenityRows = rows.slice(10, 16).filter((row) => Boolean(row.value));
+  const contextRows = rows.slice(16).filter((row) => Boolean(row.value));
   if (!populatedRows.length && !info.enlace_web) return null;
   return <View className="rounded-3xl border border-ui-border bg-ui-surface p-5 dark:border-ui-dark-border dark:bg-ui-dark-surface">
     <View className="mb-5 flex-row items-center"><View className="h-11 w-11 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="map-marker-check-outline" size={24} color="#0B6B4F" /></View><View className="ml-3 flex-1"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Imprescindible saber' : 'Good to know'}</Text><Text className="mt-0.5 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Detalles prácticos antes de salir' : 'Practical details before you go'}</Text></View></View>
     {visitRows.length ? <View className="overflow-hidden rounded-2xl border border-ui-border dark:border-ui-dark-border">{visitRows.map((row, index) => <VisitInfoRow divider={index < visitRows.length - 1} icon={row.icon} key={row.es} label={language === 'es' ? row.es : row.en} value={row.value!} />)}</View> : null}
     {amenityRows.length ? <View className="mt-6"><Text className="text-xs font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Servicios y accesibilidad' : 'Services & accessibility'}</Text><View className="mt-3 flex-row flex-wrap gap-3">{amenityRows.map((row) => <VisitInfoFact icon={row.icon} key={row.es} label={language === 'es' ? row.es : row.en} value={row.value!} />)}</View></View> : null}
     {contextRows.length ? <View className="mt-6"><Text className="mb-3 text-xs font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Contexto del lugar' : 'About this place'}</Text><View className="overflow-hidden rounded-2xl border border-ui-border dark:border-ui-dark-border">{contextRows.map((row, index) => <VisitInfoRow divider={index < contextRows.length - 1} icon={row.icon} key={row.es} label={language === 'es' ? row.es : row.en} value={row.value!} />)}</View></View> : null}
-    {info.enlace_web ? <Pressable accessibilityRole="link" className="mt-6 min-h-11 flex-row items-center self-start rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => void Linking.openURL(info.enlace_web!)}><MaterialCommunityIcons name="web" size={20} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Visitar sitio web' : 'Visit website'}</Text></Pressable> : null}
+    {info.enlace_web ? <Pressable accessibilityRole="link" className="mt-6 min-h-11 flex-row items-center self-start rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => void Linking.openURL(info.enlace_web!)}><MaterialCommunityIcons name={info.reserva_requerida ? 'calendar-check-outline' : 'web'} size={20} color="white" /><Text className="ml-2 font-black text-white">{info.reserva_requerida ? (language === 'es' ? 'Reservar en sitio web' : 'Book on website') : (language === 'es' ? 'Visitar sitio web' : 'Visit website')}</Text></Pressable> : null}
   </View>;
 }
 

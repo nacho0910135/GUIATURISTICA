@@ -8,7 +8,22 @@ type StripeSubscription = {
   items?: { data?: { price?: { unit_amount?: number | null; currency?: string } }[] };
 };
 
+type StripeCheckoutSession = {
+  id: string;
+  created?: number;
+  payment_status?: string;
+  amount_total?: number | null;
+  currency?: string | null;
+  subscription?: string;
+  metadata?: Record<string, string | undefined>;
+};
+
 const offers = {
+  universal_monthly: { plan: 'no_ads', amount: 2, currency: 'usd' },
+  universal_annual: { plan: 'no_ads', amount: 20, currency: 'usd' },
+  visitor_pass_30d: { plan: 'no_ads', amount: 5, currency: 'usd' },
+  business_monthly: { plan: 'business', amount: 9.99, currency: 'usd' },
+  // Keep validating pre-migration subscriptions until they naturally end.
   travel_pass_national_monthly: { plan: 'no_ads', amount: 1900, currency: 'crc' },
   travel_pass_national_annual: { plan: 'no_ads', amount: 9900, currency: 'crc' },
   travel_pass_foreign_30d: { plan: 'no_ads', amount: 5.99, currency: 'usd' },
@@ -25,10 +40,13 @@ Deno.serve(async (request) => {
 
   const payload = await request.text();
   if (!await validSignature(payload, request.headers.get('stripe-signature'), signingSecret)) return new Response('invalid_signature', { status: 400 });
-  const event = JSON.parse(payload) as { type?: string; data?: { object?: StripeSubscription | { subscription?: string } } };
-  if (!['checkout.session.completed', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type ?? '')) return new Response('ignored', { status: 200 });
+  const event = JSON.parse(payload) as { type?: string; data?: { object?: StripeSubscription | StripeCheckoutSession } };
+  if (!['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type ?? '')) return new Response('ignored', { status: 200 });
   const object = event.data?.object;
-  const subscriptionId = event.type === 'checkout.session.completed' ? (object as { subscription?: string } | undefined)?.subscription : (object as StripeSubscription | undefined)?.id;
+  if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && !(object as StripeCheckoutSession | undefined)?.subscription) {
+    return handleOneTimePass(object as StripeCheckoutSession, supabaseUrl, serviceKey);
+  }
+  const subscriptionId = event.type?.startsWith('checkout.session.') ? (object as StripeCheckoutSession | undefined)?.subscription : (object as StripeSubscription | undefined)?.id;
   if (!subscriptionId) return new Response('ignored', { status: 200 });
 
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
@@ -69,6 +87,30 @@ Deno.serve(async (request) => {
   }
   return new Response('ok', { status: 200 });
 });
+
+async function handleOneTimePass(session: StripeCheckoutSession, supabaseUrl: string, serviceKey: string) {
+  const offerId = session.metadata?.offer_id;
+  const userId = session.metadata?.user_id;
+  const offer = offerId && isOffer(offerId) ? offers[offerId] : undefined;
+  if (!offer || offerId !== 'visitor_pass_30d' || !userId || session.payment_status !== 'paid') return new Response('ignored', { status: 200 });
+  if (session.amount_total !== offer.amount * 100 || session.currency?.toLowerCase() !== offer.currency) return new Response('unexpected_price', { status: 400 });
+  const startsAt = (session.created ?? Math.floor(Date.now() / 1000)) * 1000;
+  const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const { error } = await supabase.from('subscriptions').upsert({
+    user_id: userId,
+    service_id: null,
+    plan: offer.plan,
+    offer_id: offerId,
+    status: 'active',
+    price_amount: session.amount_total / 100,
+    price_currency: offer.currency.toUpperCase(),
+    provider: 'stripe',
+    provider_subscription_id: session.id,
+    current_period_end: new Date(startsAt + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'provider_subscription_id' });
+  return new Response(error ? 'subscription_write_failed' : 'ok', { status: error ? 500 : 200 });
+}
 
 function isPlan(value: unknown): value is 'no_ads' | 'business' | 'sponsored' {
   return value === 'no_ads' || value === 'business' || value === 'sponsored';

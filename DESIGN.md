@@ -95,7 +95,7 @@ La interfaz debe sentirse como entrar a un lodge contemporáneo en un bosque nub
 - **Locales:** español de Costa Rica e inglés internacional. El selector `CR / Global` cambia idioma y moneda como una sola preferencia de visitante.
 - **Usage scene:** uso móvil, con luz exterior, conectividad variable y decisiones breves durante recorridos. Los objetivos táctiles críticos miden al menos 44 px.
 - **Register:** híbrido. La exploración puede expresar marca; logística, formularios, perfil y administración priorizan claridad de producto.
-- **Memorable signature:** superficies de navegación translúcidas como neblina sobre el dosel, acompañadas por la rana de marca. El blur se reserva para header y overlays.
+- **Memorable signature:** superficies translúcidas como neblina sobre el dosel, acompañadas por la rana de marca. El blur se reserva para navegación y overlays; las fichas de exploración pueden usarlo como panel legible sobre una fotografía full-bleed.
 - **Restraint:** datos, formularios, listados y tarjetas permanecen silenciosos; una sola acción primaria por bloque.
 - **Anti-references:** neón tropical, gradientes saturados, sombras pesadas, glassmorphism en cada tarjeta, iconos de múltiples familias y decoración de selva que compita con el contenido.
 - **Token ownership/runtime mapping:** modelo B. `src/theme/tokens.json` es la fuente canónica; `src/theme/theme.ts` la expone a React Native y `tailwind.config.js` adapta roles semánticos a NativeWind. Este archivo refleja valores aceptados y explica su intención.
@@ -136,7 +136,7 @@ Todo control interactivo cubre reposo, foco visible, presionado, deshabilitado y
 
 ### Navigation and data display
 
-El header usa la firma translúcida, conserva el logotipo y agrupa cambio de visitante, tipo de cambio, tema y perfil. Tarjetas de datos son outlined por defecto; raised sólo cuando el contenido flota sobre otro nivel. Un empty state explica qué falta y ofrece una acción real cuando existe.
+El header usa la firma translúcida, conserva el logotipo y agrupa cambio de visitante, tipo de cambio, tema y perfil. Tarjetas de datos son outlined por defecto; raised sólo cuando el contenido flota sobre otro nivel. Las fichas de previsualización de destinos son la excepción editorial: fotografía full-bleed, scrim oscuro y un único panel inferior difuminado con degradado de opacidad —ligero arriba y más denso abajo— para título, resumen y hasta cuatro datos que afecten la decisión. Se priorizan alertas de marea, reserva y ferri; luego acceso vehicular y duración; precio y distancia completan el espacio disponible. Una indicación de reserva es accionable: abre el canal oficial cuando existe y, si no hay uno registrado, lleva al detalle con lenguaje honesto de orientación. Un empty state explica qué falta y ofrece una acción real cuando existe.
 
 ### Forms and overlays
 

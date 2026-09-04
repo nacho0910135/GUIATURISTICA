@@ -1,11 +1,10 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const offers = {
-  travel_pass_national_monthly: { plan: 'no_ads', priceEnv: 'STRIPE_PRICE_TRAVEL_PASS_NATIONAL_MONTHLY' },
-  travel_pass_national_annual: { plan: 'no_ads', priceEnv: 'STRIPE_PRICE_TRAVEL_PASS_NATIONAL_ANNUAL' },
-  travel_pass_foreign_30d: { plan: 'no_ads', priceEnv: 'STRIPE_PRICE_TRAVEL_PASS_FOREIGN_30D' },
-  business_pro: { plan: 'business', priceEnv: 'STRIPE_PRICE_BUSINESS_PRO' },
-  business_growth: { plan: 'sponsored', priceEnv: 'STRIPE_PRICE_GROWTH' },
+  universal_monthly: { plan: 'no_ads', priceEnv: 'STRIPE_PRICE_UNIVERSAL_MONTHLY', mode: 'subscription' },
+  universal_annual: { plan: 'no_ads', priceEnv: 'STRIPE_PRICE_UNIVERSAL_ANNUAL', mode: 'subscription' },
+  visitor_pass_30d: { plan: 'no_ads', priceEnv: 'STRIPE_PRICE_VISITOR_PASS_30D', mode: 'payment' },
+  business_monthly: { plan: 'business', priceEnv: 'STRIPE_PRICE_BUSINESS_MONTHLY', mode: 'subscription' },
 } as const;
 
 const corsHeaders = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
@@ -42,7 +41,7 @@ Deno.serve(async (request) => {
   const successUrl = withCheckoutStatus(returnUrl, 'success');
   const cancelUrl = withCheckoutStatus(returnUrl, 'cancel');
   const form = new URLSearchParams({
-    mode: 'subscription',
+    mode: offer.mode,
     success_url: successUrl,
     cancel_url: cancelUrl,
     'line_items[0][price]': priceId,
@@ -51,14 +50,16 @@ Deno.serve(async (request) => {
     'metadata[user_id]': user.id,
     'metadata[plan]': offer.plan,
     'metadata[offer_id]': offerId,
-    'subscription_data[metadata][user_id]': user.id,
-    'subscription_data[metadata][plan]': offer.plan,
-    'subscription_data[metadata][offer_id]': offerId,
   });
+  if (offer.mode === 'subscription') {
+    form.set('subscription_data[metadata][user_id]', user.id);
+    form.set('subscription_data[metadata][plan]', offer.plan);
+    form.set('subscription_data[metadata][offer_id]', offerId);
+  }
   if (user.email) form.set('customer_email', user.email);
   if (serviceId) {
     form.set('metadata[service_id]', serviceId);
-    form.set('subscription_data[metadata][service_id]', serviceId);
+    if (offer.mode === 'subscription') form.set('subscription_data[metadata][service_id]', serviceId);
   }
   const stripe = await fetch('https://api.stripe.com/v1/checkout/sessions', { method: 'POST', headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: form });
   const result = await stripe.json();

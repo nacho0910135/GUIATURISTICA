@@ -9,15 +9,14 @@ export type SubscriptionPlan = (typeof subscriptionPlans)[number];
 export type SubscriptionStatus = 'pending' | 'active' | 'past_due' | 'canceled' | 'expired';
 
 export const billingOffers = {
-  travel_pass_national_monthly: { plan: 'no_ads', business: false, icon: 'map-marker-star-outline', title: ['Travel Pass nacional', 'Costa Rica Travel Pass'], detail: ['Acceso Pro para viajes dentro de Costa Rica.', 'Pro access for travel around Costa Rica.'], price: ['₡1.900 / mes', 'CRC 1,900 / month'] },
-  travel_pass_national_annual: { plan: 'no_ads', business: false, icon: 'calendar-star', title: ['Travel Pass anual', 'Annual Travel Pass'], detail: ['El mejor precio para viajar todo el año.', 'The best value for a full year of travel.'], price: ['₡9.900 / año', 'CRC 9,900 / year'] },
-  travel_pass_foreign_30d: { plan: 'no_ads', business: false, icon: 'passport', title: ['Travel Pass extranjero', 'Visitor Travel Pass'], detail: ['Acceso Pro por 30 días para tu visita.', '30 days of Pro access for your visit.'], price: ['US$5,99 / 30 días', 'US$5.99 / 30 days'] },
-  business_pro: { plan: 'business', business: true, icon: 'store-check-outline', title: ['Negocio Pro', 'Business Pro'], detail: ['Para sodas, guías y cabinas locales.', 'For local sodas, guides, and cabins.'], price: ['₡4.900 / mes', 'CRC 4,900 / month'] },
-  business_growth: { plan: 'sponsored', business: true, icon: 'rocket-launch-outline', title: ['Negocio Growth', 'Business Growth'], detail: ['Impulso para hoteles, tours y comercios con mayor margen.', 'Growth for hotels, tours, and higher-margin businesses.'], price: ['US$24,99 / mes', 'US$24.99 / month'] },
+  universal_monthly: { plan: 'no_ads', business: false, featured: false, icon: 'calendar-month-outline', title: ['Mensual', 'Monthly'], detail: ['Acceso completo; se renueva automáticamente.', 'Full access; renews automatically.'], price: ['US$2 / mes', 'US$2 / month'] },
+  universal_annual: { plan: 'no_ads', business: false, featured: true, icon: 'calendar-star', title: ['Anual', 'Annual'], detail: ['Ahorrás US$4 frente al plan mensual.', 'Save US$4 compared with monthly billing.'], price: ['US$20 / año', 'US$20 / year'] },
+  visitor_pass_30d: { plan: 'no_ads', business: false, featured: false, icon: 'passport', title: ['Pase visitante', 'Visitor Pass'], detail: ['30 días de acceso; pago único, no se renueva.', '30 days of access; one-time payment, no renewal.'], price: ['US$5 / 30 días', 'US$5 / 30 days'] },
+  business_monthly: { plan: 'business', business: true, featured: false, icon: 'store-check-outline', title: ['Comercio o servicio', 'Business or service'], detail: ['Para administrar un comercio o servicio reclamado o registrado.', 'For a claimed or registered business or service.'], price: ['US$9,99 / mes', 'US$9.99 / month'] },
 } as const;
 
 export type BillingOfferId = keyof typeof billingOffers;
-type LegacySubscriptionOfferId = 'legacy_no_ads' | 'legacy_business' | 'legacy_sponsored';
+type LegacySubscriptionOfferId = 'legacy_no_ads' | 'legacy_business' | 'legacy_sponsored' | 'travel_pass_national_monthly' | 'travel_pass_national_annual' | 'travel_pass_foreign_30d' | 'business_pro' | 'business_growth';
 
 export type Subscription = {
   id: string;
@@ -29,6 +28,16 @@ export type Subscription = {
   price_currency: 'CRC' | 'USD';
   current_period_end: string | null;
 };
+
+const TRIAL_DAYS = 15;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function getAccessStatus(accountCreatedAt: string, subscriptions: Subscription[], now = Date.now()) {
+  const trialEndsAt = new Date(accountCreatedAt).getTime() + TRIAL_DAYS * DAY_MS;
+  const trialDaysRemaining = Math.max(0, Math.ceil((trialEndsAt - now) / DAY_MS));
+  const hasPersonalPlan = subscriptions.some((item) => item.plan === 'no_ads' && item.status === 'active' && (!item.current_period_end || new Date(item.current_period_end).getTime() > now));
+  return { hasAccess: hasPersonalPlan || trialDaysRemaining > 0, hasPersonalPlan, trialDaysRemaining, trialEndsAt: new Date(trialEndsAt).toISOString(), showTrialWarning: !hasPersonalPlan && trialDaysRemaining > 0 && trialDaysRemaining <= 5 };
+}
 
 export async function getMySubscriptions(): Promise<Subscription[]> {
   const { data: auth, error: authError } = await supabase.auth.getUser();

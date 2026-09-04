@@ -1,6 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowRightLeft, CircleUserRound, Moon, Sun } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,6 +9,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/ui/button';
+import { getAccessStatus, getMySubscriptions } from '@/lib/billing';
 import { useApp, type VisitorType } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -17,12 +19,14 @@ const visitorOptions: readonly { id: VisitorType; label: string; labelEs: string
 ];
 
 export function GlobalHeader() {
-  const { avatarUrl, exchangeRate, language, setVisitorType, visitorType } = useApp();
+  const { avatarUrl, exchangeRate, language, session, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const [blink] = useState(() => new Animated.Value(0));
   const formattedRate = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(exchangeRate);
+  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
+  const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
 
   useEffect(() => {
     if (reduceMotion) {
@@ -104,6 +108,7 @@ export function GlobalHeader() {
             <ProfileButton avatarUrl={avatarUrl} label={isSpanish ? 'Abrir perfil y planes Pro' : 'Open profile and Pro plans'} onPress={() => router.push('/(tabs)/profile')} />
           </View>
         </View>
+        {access && !access.hasPersonalPlan ? <Pressable accessibilityRole="link" className={access.showTrialWarning || !access.hasAccess ? 'mt-2 self-center rounded-full bg-amber-100 px-3 py-1.5' : 'mt-2 self-center rounded-full bg-ui-primary-soft px-3 py-1.5 dark:bg-ui-dark-primary-soft'} onPress={() => router.push('/subscriptions')}><Text className={access.showTrialWarning || !access.hasAccess ? 'text-xs font-bold text-amber-800' : 'text-xs font-bold text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `Prueba gratis · ${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día restante' : 'días restantes'}` : `Free trial · ${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Prueba finalizada · Elegí un plan' : 'Trial ended · Choose a plan')}</Text></Pressable> : null}
       </View>
     </SafeAreaView>
   );

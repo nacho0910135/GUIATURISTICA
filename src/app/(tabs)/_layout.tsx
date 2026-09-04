@@ -1,9 +1,11 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Tabs } from 'expo-router';
-import { Text, View, type ColorValue } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { Redirect, Tabs } from 'expo-router';
+import { Platform, Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
+import { getAccessStatus, getMySubscriptions } from '@/lib/billing';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -31,9 +33,12 @@ const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }
 );
 
 export default function TabsLayout() {
-  const { language, t } = useApp();
+  const { language, session, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
+  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
+  const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
+  if (Platform.OS === 'web' && access && !access.hasAccess && !subscriptions.isLoading) return <Redirect href="/subscriptions" />;
   return (
     <Tabs
       backBehavior="initialRoute"
