@@ -1,6 +1,6 @@
 # Soporte de Descubriendo CR
 
-**Correo de soporte:** [jose17mp3@gmail.com](mailto:jose17mp3@gmail.com)
+**Correo de soporte:** [jose17mp@hotmail.com](mailto:jose17mp@hotmail.com)
 
 Podés escribirnos para reportar problemas de funcionamiento, contenido incorrecto, dificultades con tu cuenta, privacidad o compras.
 

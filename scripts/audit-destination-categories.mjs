@@ -360,7 +360,9 @@ const updates = CATEGORY_AUDIT.map((audit) => {
   const destination = byId.get(audit.destinationId);
   if (!destination) throw new Error(`No se encontró el destino auditado ${audit.destinationId}.`);
   const sourceUrl = `${SITE}/es/lugares/${audit.sourceSlug}`;
-  if (destination.source_url !== sourceUrl) throw new Error(`La fuente de ${destination.name} no coincide con la ficha auditada de Qué Buen Lugar.`);
+  // Public source URLs from Qué Buen Lugar were intentionally removed by
+  // 20260901164851_sanitize_destination_sources_and_complete_english.sql.
+  if (destination.source_url !== null && destination.source_url !== sourceUrl) throw new Error(`La fuente de ${destination.name} no coincide con la ficha auditada de Qué Buen Lugar.`);
   return { audit, destination, sourceUrl };
 });
 const corrections = updates.filter(({ audit, destination }) => destination.category !== audit.category);

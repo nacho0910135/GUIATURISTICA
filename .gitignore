@@ -10,6 +10,7 @@ web-build/
 .codex-audit-dist/
 .codex-play-web/
 .codex-bundle-test/
+.expo-production-audit/
 expo-env.d.ts
 
 # Native

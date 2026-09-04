@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
-import { billingOffers, getMySubscriptions, openSubscriptionCheckout, type BillingOfferId } from '@/lib/billing';
+import { billingOffers, getMySubscriptions, hasActivePersonalPlan, openSubscriptionCheckout, type BillingOfferId } from '@/lib/billing';
 import { getOwnerDashboard } from '@/lib/commerce';
 import { useApp } from '@/providers/app-provider';
 
@@ -36,8 +36,16 @@ export default function SubscriptionsScreen() {
     try {
       const result = await openSubscriptionCheckout({ offerId, serviceId: offer.business ? serviceId : undefined });
       if (result.type === 'success') {
-        await subscriptions.refetch();
-        Alert.alert('Descubriendo CR', language === 'es' ? 'Estamos confirmando tu pago. El plan se activará al validarlo el proveedor.' : 'We are confirming your payment. The plan activates after provider validation.');
+        let confirmed = false;
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+          const refreshed = await subscriptions.refetch();
+          confirmed = hasActivePersonalPlan(refreshed.data ?? []);
+          if (confirmed) break;
+          if (attempt < 9) await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+        Alert.alert('Descubriendo CR', confirmed
+          ? (language === 'es' ? 'Pago confirmado. Tu plan ya está activo.' : 'Payment confirmed. Your plan is now active.')
+          : (language === 'es' ? 'Estamos confirmando tu pago. El plan se activará al validarlo el proveedor.' : 'We are confirming your payment. The plan activates after provider validation.'));
       }
     } catch (error) {
       Alert.alert('Descubriendo CR', error instanceof Error ? error.message : (language === 'es' ? 'No se pudo abrir Checkout.' : 'Checkout could not be opened.'));

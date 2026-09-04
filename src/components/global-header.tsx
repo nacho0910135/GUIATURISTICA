@@ -119,7 +119,7 @@ export function GlobalHeader() {
 
           <View className="hidden flex-row gap-2 md:flex">
             <ThemeButton isSpanish={isSpanish} mode={mode} onPress={toggleMode} />
-            <ProfileButton avatarUrl={avatarUrl} label={isSpanish ? 'Abrir perfil y planes Pro' : 'Open profile and Pro plans'} onPress={() => router.push('/(tabs)/profile')} />
+            <ProfileButton avatarUrl={avatarUrl} desktopOffset label={isSpanish ? 'Abrir perfil y planes Pro' : 'Open profile and Pro plans'} onPress={() => router.push('/(tabs)/profile')} />
           </View>
         </View>
         {access && !access.hasPersonalPlan ? <Pressable accessibilityLabel={isSpanish ? 'Continuar descubriendo por dos dólares mensuales' : 'Keep discovering for two dollars per month'} accessibilityRole="button" className={access.showTrialWarning || !access.hasAccess ? 'mt-3 flex-row items-center rounded-2xl border border-amber-300 bg-amber-50 px-3 py-2.5' : 'mt-3 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-2.5 dark:bg-ui-dark-primary-soft'} disabled={openingCheckout} onPress={() => void startMonthlyCheckout()}><View className="h-9 w-9 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="compass-outline" size={20} color="white" /></View><View className="ml-3 flex-1"><Text className={access.showTrialWarning || !access.hasAccess ? 'text-xs font-black text-amber-900' : 'text-xs font-black text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día gratis restante' : 'días gratis restantes'}` : `${access.trialDaysRemaining} free ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Tu prueba gratuita terminó' : 'Your free trial has ended')}</Text><Text className={access.showTrialWarning || !access.hasAccess ? 'mt-0.5 text-[11px] font-bold text-amber-800' : 'mt-0.5 text-[11px] font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{isSpanish ? 'Podés seguir descubriendo sitios por US$2 mensuales' : 'Keep discovering places for US$2 per month'}</Text></View>{openingCheckout ? <ActivityIndicator color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="arrow-right" size={20} color="#0B6B4F" />}</Pressable> : null}
@@ -159,7 +159,7 @@ function ThemeButton({ isSpanish, mode, onPress }: { isSpanish: boolean; mode: '
   );
 }
 
-function ProfileButton({ avatarUrl, label, onPress }: { avatarUrl: string | null; label: string; onPress: () => void }) {
+function ProfileButton({ avatarUrl, desktopOffset = false, label, onPress }: { avatarUrl: string | null; desktopOffset?: boolean; label: string; onPress: () => void }) {
   const { colors } = useAppTheme();
   return avatarUrl ? (
     <Pressable
@@ -167,9 +167,9 @@ function ProfileButton({ avatarUrl, label, onPress }: { avatarUrl: string | null
       accessibilityRole="link"
       className="h-10 w-10 overflow-hidden rounded-full border border-ui-border bg-ui-surface focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:border-ui-dark-border dark:bg-ui-dark-surface dark:focus-visible:ring-ui-dark-focus"
       onPress={onPress}
-      style={{ transform: [{ translateX: -5 }] }}
+      style={desktopOffset ? { transform: [{ translateX: -5 }] } : undefined}
     >
-      <Image cachePolicy="none" contentFit="cover" contentPosition="center" source={{ uri: avatarUrl }} style={{ height: 40, width: 40 }} />
+      <Image cachePolicy="none" contentFit="cover" contentPosition="center" source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} />
     </Pressable>
   ) : (
     <IconButton accessibilityLabel={label} accessibilityRole="link" icon={<CircleUserRound color={colors.primary} size={20} strokeWidth={1.9} />} onPress={onPress} size="sm" />

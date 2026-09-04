@@ -36,7 +36,7 @@ export function LegalDocumentScreen({ document }: { document: LegalDocument }) {
   const sections = isTerms ? TERMS : PRIVACY;
   const title = language === 'es' ? (isTerms ? 'Términos y condiciones' : 'Política de privacidad') : (isTerms ? 'Terms and conditions' : 'Privacy policy');
   const updated = language === 'es' ? 'Última actualización: 4 de septiembre de 2026' : 'Last updated: September 4, 2026';
-  const legalEmail = process.env.EXPO_PUBLIC_LEGAL_CONTACT_EMAIL?.trim() || 'jose17mp3@gmail.com';
+  const legalEmail = process.env.EXPO_PUBLIC_LEGAL_CONTACT_EMAIL?.trim() || 'jose17mp@hotmail.com';
 
   return (
     <SafeAreaView className="flex-1 bg-ui-background dark:bg-ui-dark-background" edges={['top', 'bottom']}>

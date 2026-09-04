@@ -7,7 +7,7 @@ Descubriendo CR es una aplicación móvil de información turística, planificac
 ## Responsable y contacto
 
 Responsable del servicio: **Descubriendo CR**  
-Contacto de privacidad y soporte: **jose17mp3@gmail.com**
+Contacto de privacidad y soporte: **jose17mp@hotmail.com**
 
 Podés escribir a esa dirección para consultas de privacidad, acceso, corrección o eliminación de datos.
 
@@ -69,7 +69,7 @@ Conservamos los datos mientras la cuenta o el contenido permanezcan activos y du
 
 ## Eliminación y derechos
 
-Podés solicitar acceso o corrección escribiendo a **jose17mp3@gmail.com**. Para eliminar tu cuenta y sus datos:
+Podés solicitar acceso o corrección escribiendo a **jose17mp@hotmail.com**. Para eliminar tu cuenta y sus datos:
 
 1. En la app, abrí **Perfil → Eliminar cuenta y datos**; o
 2. seguí las instrucciones de la [página pública de eliminación de cuenta](./ACCOUNT_DELETION.md).
@@ -78,7 +78,7 @@ La eliminación borra las credenciales, el perfil y los datos asociados que cont
 
 ## Menores de edad
 
-Descubriendo CR no está dirigida específicamente a menores de 13 años ni está configurada como una aplicación infantil. Si creés que un menor proporcionó datos sin autorización adecuada, escribí a **jose17mp3@gmail.com**.
+Descubriendo CR no está dirigida específicamente a menores de 13 años ni está configurada como una aplicación infantil. Si creés que un menor proporcionó datos sin autorización adecuada, escribí a **jose17mp@hotmail.com**.
 
 ## Cambios a esta política
 
@@ -88,4 +88,4 @@ Podemos actualizar esta política cuando cambien la aplicación, los proveedores
 
 # Descubriendo CR Privacy Policy
 
-The English version is available upon request at **jose17mp3@gmail.com**. The Spanish text above is the current governing publication and describes the app’s data collection, use, sharing, retention, security, and deletion practices.
+The English version is available upon request at **jose17mp@hotmail.com**. The Spanish text above is the current governing publication and describes the app’s data collection, use, sharing, retention, security, and deletion practices.
