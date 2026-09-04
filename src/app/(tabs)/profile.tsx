@@ -87,8 +87,8 @@ export default function ProfileScreen() {
   }, [editingProfile, profileSummary.data]);
   useFocusEffect(
     useCallback(() => {
-      if (section && section !== 'login' && section !== 'suggestions' && !data) void load();
-    }, [data, load, section]),
+      if (!data) void load();
+    }, [data, load]),
   );
 
   const run = async (action: () => Promise<void>) => {
@@ -218,7 +218,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
       <View className="mx-auto w-full max-w-5xl rounded-[24px] border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
-        <View className="flex-row items-start">
+        <View className="items-center">
           <Pressable accessibilityLabel={tr(language, 'Editar foto de perfil', 'Edit profile photo')} className="relative" onPress={() => void chooseAvatar()}>
             {profileAvatarUrl ? (
               <Image cachePolicy="memory-disk" source={{ uri: profileAvatarUrl }} style={{ borderRadius: 40, height: 80, width: 80 }} />
@@ -231,7 +231,7 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="pencil" size={15} color="white" />
             </View>
           </Pressable>
-          <View className="ml-4 flex-1">
+          <View className="mt-4 w-full">
             <View className="flex-row items-center">
               <View className="min-w-0 flex-1">{editingProfile ? <TextInput accessibilityLabel={tr(language, 'Nickname', 'Nickname')} autoCapitalize="none" autoCorrect={false} className="rounded-xl bg-ui-muted px-3 py-2 text-2xl font-extrabold text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" maxLength={24} onChangeText={setUsername} placeholder={tr(language, 'Nickname', 'Nickname')} placeholderTextColor="#8f9bb2" value={username} /> : <Text className="text-2xl font-extrabold text-ui-text dark:text-ui-dark-text">{name}</Text>}</View>
               <Pressable accessibilityLabel={tr(language, 'Editar nickname', 'Edit nickname')} className="ml-2 rounded-full bg-ui-muted p-2 dark:bg-ui-dark-muted" onPress={() => setEditingProfile(true)}>
@@ -284,7 +284,6 @@ export default function ProfileScreen() {
           <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
           <Text className="ml-2 font-black text-red-600 dark:text-red-400">{tr(language, 'Cerrar sesión', 'Sign out')}</Text>
         </Pressable>
-        <Pressable accessibilityRole="link" className="mt-3 items-center py-2" onPress={() => router.push('/delete-account' as never)}><Text className="font-bold text-red-600 dark:text-red-400">{tr(language, 'Eliminar cuenta y datos', 'Delete account and data')}</Text></Pressable>
         <View className="mt-4 gap-2">
           {tabs.map((tab) => (
             <Pressable accessibilityRole="button" accessibilityState={{ expanded: section === tab.key }} className={section === tab.key ? 'flex-row items-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary' : 'flex-row items-center rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={tab.key} onPress={() => setSection((current) => (current === tab.key ? undefined : tab.key))}>
@@ -420,6 +419,7 @@ export default function ProfileScreen() {
         ) : null}
         {section === 'login' && isAdmin ? <AdminPanel data={adminDashboard.data} busy={busy} language={language} refresh={async () => { await Promise.all([load(), adminDashboard.refetch(), queryClient.invalidateQueries({ queryKey: ['places'] }), queryClient.invalidateQueries({ queryKey: ['explore-places'] })]); }} run={run} signOut={signOut} /> : null}
       </View>
+      <Pressable accessibilityRole="link" className="mx-auto mt-10 min-h-11 w-full max-w-5xl items-center justify-center border-t border-red-200 pt-5 dark:border-red-900" onPress={() => router.push('/delete-account' as never)}><Text className="font-bold text-red-600 dark:text-red-400">{tr(language, 'Eliminar cuenta y datos', 'Delete account and data')}</Text></Pressable>
     </ScrollView>
   );
 }

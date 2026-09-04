@@ -288,11 +288,14 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
 }
 
 export async function getExplorePlaces(): Promise<ExplorePlace[]> {
-  const [official, community, sanctuaries] = await Promise.all([
+  const [official, communityWithPhotos, sanctuaries] = await Promise.all([
     supabase.from('destinations').select('id,name,province,category,description,description_en,difficulty,price_national_crc,latitude,longitude,cover_image_url,validated_by,verification_evidence_url,verification_checked_at,destination_photos(image_url,sort_order)').eq('status', 'Activo'),
-    supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,community_verified_at').eq('status', 'published'),
+    supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,photos,community_verified_at').eq('status', 'published'),
     supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url,location_name,description_es,description_en,verified').eq('verified', true).order('name'),
   ]);
+  const community = communityWithPhotos.error
+    ? await supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,community_verified_at').eq('status', 'published')
+    : communityWithPhotos;
   const error = official.error ?? community.error;
   if (error) throw error;
   const contributorIds = [...new Set((community.data ?? []).map((place) => place.user_id))];
@@ -301,7 +304,10 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   const contributorNames = new Map((contributors.data ?? []).map((profile) => [profile.id, profile.full_name || profile.username]));
   const officialPlaces = [
     ...(official.data ?? []).map((place) => ({ ...place, cover_image_url: mobileImageUrl(place.cover_image_url ?? place.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url), photos: (place.destination_photos ?? []).sort((a, b) => a.sort_order - b.sort_order).map((photo) => mobileImageUrl(photo.image_url)).filter((url): url is string => Boolean(url)), category: classifiedCategory(place), community: false, contributor_id: null, contributor_name: null })),
-    ...(community.data ?? []).map((place) => ({ ...place, cover_image_url: null, photos: [], community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[], verification_evidence_url: null, verification_checked_at: null })),
+    ...(community.data ?? []).map((place) => {
+      const photos = 'photos' in place && Array.isArray(place.photos) ? place.photos : [];
+      return { ...place, cover_image_url: photos[0] ?? null, photos, community: true, contributor_id: place.user_id, contributor_name: contributorNames.get(place.user_id) || `Viajero ${place.user_id.slice(0, 6)}`, validated_by: [] as ValidationAuthority[], verification_evidence_url: null, verification_checked_at: null };
+    }),
   ]
     .filter((place) => Number.isFinite(Number(place.latitude)) && Number.isFinite(Number(place.longitude)))
     .map((place) => ({ ...place, latitude: Number(place.latitude), longitude: Number(place.longitude), price_national_crc: place.price_national_crc == null ? null : Number(place.price_national_crc) })) as ExplorePlace[];
@@ -312,9 +318,31 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   return [...officialPlaces, ...sanctuaryPlaces];
 }
 
-export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'cover_image_url' | 'photos' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at' | 'description_en'> & { user_id: string; district?: string }) {
-  const { error } = await supabase.from('destination_suggestions').insert({ ...input, status: 'pending' });
-  if (error) throw error;
+export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'cover_image_url' | 'photos' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at' | 'description_en'> & { user_id: string; district?: string; photo_assets: ImagePickerAsset[] }) {
+  if (input.photo_assets.length < 1 || input.photo_assets.length > 10) throw new Error('Seleccioná entre 1 y 10 imágenes.');
+  const uploadedPaths: string[] = [];
+  try {
+    const photos: string[] = [];
+    for (const [index, photo] of input.photo_assets.entries()) {
+      const context = ImageManipulator.manipulate(photo.uri);
+      context.resize({ width: Math.min(photo.width || 1600, 1600) });
+      const rendered = await context.renderAsync();
+      const sanitized = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
+      const bytes = await fetch(sanitized.uri).then((response) => response.arrayBuffer());
+      if (bytes.byteLength > 6 * 1024 * 1024) throw new Error(`La imagen ${index + 1} supera el límite de 6 MB.`);
+      const path = `${input.user_id}/${Date.now()}-${index}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+      const upload = await supabase.storage.from('destination-suggestion-photos').upload(path, bytes, { contentType: 'image/jpeg', cacheControl: '3600' });
+      if (upload.error) throw upload.error;
+      uploadedPaths.push(path);
+      photos.push(supabase.storage.from('destination-suggestion-photos').getPublicUrl(path).data.publicUrl);
+    }
+    const { photo_assets: _photoAssets, ...place } = input;
+    const { error } = await supabase.from('destination_suggestions').insert({ ...place, photos, status: 'pending' });
+    if (error) throw error;
+  } catch (error) {
+    if (uploadedPaths.length) await supabase.storage.from('destination-suggestion-photos').remove(uploadedPaths);
+    throw error;
+  }
 }
 
 export async function getPlacesForProvince(province: string, userId?: string): Promise<MapPlace[]> {
@@ -347,14 +375,18 @@ export async function getPlaceById(id: string, userId?: string, community = fals
 }
 
 async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPlace | null> {
-  const { data: suggestion, error } = await supabase
+  const withPhotos = await supabase
     .from('destination_suggestions')
-    .select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,status,source_url,community_verified_at')
+    .select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,status,source_url,photos,community_verified_at')
     .eq('id', id)
     .eq('status', 'published')
     .maybeSingle();
+  const { data: suggestion, error } = withPhotos.error
+    ? await supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,status,source_url,community_verified_at').eq('id', id).eq('status', 'published').maybeSingle()
+    : withPhotos;
   if (error) throw error;
   if (!suggestion || !Number.isFinite(Number(suggestion.latitude)) || !Number.isFinite(Number(suggestion.longitude))) return null;
+  const suggestionPhotos = 'photos' in suggestion && Array.isArray(suggestion.photos) ? suggestion.photos : [];
   const [likes, reviews, mine] = await Promise.all([
     supabase.from('likes').select('target_id').eq('target_type', 'destination').eq('target_id', id),
     supabase.from('reviews').select('rating').eq('target_type', 'destination').eq('target_id', id),
@@ -370,7 +402,7 @@ async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPl
     category: suggestion.category,
     latitude: Number(suggestion.latitude),
     longitude: Number(suggestion.longitude),
-    cover_image_url: null,
+    cover_image_url: suggestionPhotos[0] ?? null,
     image_verified: false,
     image_attribution: null,
     image_license: null,
@@ -400,7 +432,7 @@ async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPl
     reviews_count: ratings.length,
     average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : initialDestinationRating(suggestion.id),
     liked: (mine.data ?? []).length > 0,
-    photos: [],
+    photos: suggestionPhotos,
     community_photos: [],
     featured_community_photo_url: null,
     is_community_submission: true,

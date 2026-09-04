@@ -1,15 +1,17 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRightLeft, CircleUserRound, Moon, Sun } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/ui/button';
-import { getAccessStatus, getMySubscriptions } from '@/lib/billing';
+import { ThemedAlert as Alert } from '@/components/themed-alert';
+import { getAccessStatus, getMySubscriptions, openSubscriptionCheckout } from '@/lib/billing';
 import { useApp, type VisitorType } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -24,6 +26,7 @@ export function GlobalHeader() {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const [blink] = useState(() => new Animated.Value(0));
+  const [openingCheckout, setOpeningCheckout] = useState(false);
   const formattedRate = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(exchangeRate);
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
   const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
@@ -44,6 +47,17 @@ export function GlobalHeader() {
   }, [blink, reduceMotion]);
 
   const isSpanish = language === 'es';
+  const startMonthlyCheckout = async () => {
+    if (openingCheckout) return;
+    setOpeningCheckout(true);
+    try {
+      await openSubscriptionCheckout({ offerId: 'universal_monthly' });
+    } catch (reason) {
+      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (isSpanish ? 'No se pudo abrir el pago.' : 'Checkout could not be opened.'));
+    } finally {
+      setOpeningCheckout(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={['top']} className="overflow-hidden border-b border-ui-border bg-ui-glass dark:border-ui-dark-border dark:bg-ui-dark-glass">
@@ -108,7 +122,7 @@ export function GlobalHeader() {
             <ProfileButton avatarUrl={avatarUrl} label={isSpanish ? 'Abrir perfil y planes Pro' : 'Open profile and Pro plans'} onPress={() => router.push('/(tabs)/profile')} />
           </View>
         </View>
-        {access && !access.hasPersonalPlan ? <Pressable accessibilityRole="link" className={access.showTrialWarning || !access.hasAccess ? 'mt-2 self-center rounded-full bg-amber-100 px-3 py-1.5' : 'mt-2 self-center rounded-full bg-ui-primary-soft px-3 py-1.5 dark:bg-ui-dark-primary-soft'} onPress={() => router.push('/subscriptions')}><Text className={access.showTrialWarning || !access.hasAccess ? 'text-xs font-bold text-amber-800' : 'text-xs font-bold text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `Prueba gratis · ${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día restante' : 'días restantes'}` : `Free trial · ${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Prueba finalizada · Elegí un plan' : 'Trial ended · Choose a plan')}</Text></Pressable> : null}
+        {access && !access.hasPersonalPlan ? <Pressable accessibilityLabel={isSpanish ? 'Continuar descubriendo por dos dólares mensuales' : 'Keep discovering for two dollars per month'} accessibilityRole="button" className={access.showTrialWarning || !access.hasAccess ? 'mt-3 flex-row items-center rounded-2xl border border-amber-300 bg-amber-50 px-3 py-2.5' : 'mt-3 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-2.5 dark:bg-ui-dark-primary-soft'} disabled={openingCheckout} onPress={() => void startMonthlyCheckout()}><View className="h-9 w-9 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="compass-outline" size={20} color="white" /></View><View className="ml-3 flex-1"><Text className={access.showTrialWarning || !access.hasAccess ? 'text-xs font-black text-amber-900' : 'text-xs font-black text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día gratis restante' : 'días gratis restantes'}` : `${access.trialDaysRemaining} free ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Tu prueba gratuita terminó' : 'Your free trial has ended')}</Text><Text className={access.showTrialWarning || !access.hasAccess ? 'mt-0.5 text-[11px] font-bold text-amber-800' : 'mt-0.5 text-[11px] font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{isSpanish ? 'Podés seguir descubriendo sitios por US$2 mensuales' : 'Keep discovering places for US$2 per month'}</Text></View>{openingCheckout ? <ActivityIndicator color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="arrow-right" size={20} color="#0B6B4F" />}</Pressable> : null}
       </View>
     </SafeAreaView>
   );

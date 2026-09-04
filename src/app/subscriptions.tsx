@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { billingOffers, getMySubscriptions, openSubscriptionCheckout, type BillingOfferId } from '@/lib/billing';
@@ -48,8 +48,6 @@ export default function SubscriptionsScreen() {
 
   const active = (offerId: BillingOfferId) => subscriptions.data?.some((item) => item.offer_id === offerId && item.status === 'active' && (!item.current_period_end || new Date(item.current_period_end).getTime() > Date.now()) && (!billingOffers[offerId].business || item.service_id === serviceId));
   const travelOffers: BillingOfferId[] = visitorType === 'foreigner' ? ['visitor_pass_30d', ...universalOffers] : universalOffers;
-
-  if (Platform.OS !== 'web') return <View className="flex-1 items-center justify-center bg-ui-background p-6 dark:bg-ui-dark-background"><MaterialCommunityIcons name="web" size={48} color="#087443" /><Text className="mt-4 text-center text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Planes disponibles en la versión web' : 'Plans are available on the web version'}</Text><Pressable className="mt-5 rounded-2xl bg-ui-primary px-6 py-3" onPress={() => router.back()}><Text className="font-black text-white">{language === 'es' ? 'Volver' : 'Back'}</Text></Pressable></View>;
 
   return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ padding: 20, paddingBottom: 48 }}>
     <View className="mx-auto w-full max-w-2xl">

@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BlurTargetView, BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,7 +8,6 @@ import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { InformationReportModal } from '@/components/information-report-modal';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
@@ -71,6 +70,10 @@ function tourismRegion(place: MapPlace) {
 type Coordinates = { latitude: number; longitude: number };
 
 const CATALOG_BATCH_SIZE = 5;
+const DESTINATION_CARD_HEIGHT = 346;
+const DESTINATION_INFO_HEIGHT = 140;
+const DESTINATION_INFO_BOTTOM_PADDING = 31;
+const DESTINATION_FLOATING_LABEL_BOTTOM = 108;
 
 function distanceKm(from: Coordinates, to: Coordinates) {
   const radians = (degrees: number) => degrees * Math.PI / 180;
@@ -206,12 +209,12 @@ export default function ProvinceCatalogScreen() {
 
   return (
     <View className="flex-1 bg-ui-background dark:bg-ui-dark-background">
-      <View className="bg-ui-surface dark:bg-ui-dark-surface px-5 pb-6 pt-12">
+      <View className="bg-ui-surface dark:bg-ui-dark-surface px-5 pb-[18px] pt-9">
         <View className="mx-auto w-full max-w-5xl flex-row items-center">
           <Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted dark:bg-white/10" onPress={leaveCatalog}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
           </Pressable>
-          <View className="ml-4 flex-1"><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{scopeTitle}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{categoryName ? (language === 'es' ? 'Todo Costa Rica' : 'Across Costa Rica') : (language === 'es' ? 'Lugares para descubrir' : 'Places to discover')}</Text>{isBeach ? <View className="mt-3 flex-row self-start overflow-hidden rounded-xl border border-ui-border dark:border-ui-dark-border">{(['family', 'surf'] as const).map((type) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: beachType === type }} className={beachType === type ? 'flex-row items-center bg-ui-primary px-3 py-2 dark:bg-ui-dark-primary' : 'flex-row items-center px-3 py-2'} key={type} onPress={() => setBeachType(type)}><MaterialCommunityIcons name={type === 'family' ? 'umbrella-beach' : 'surfing'} size={17} color={beachType === type ? 'white' : '#087443'} /><Text className={beachType === type ? 'ml-1.5 text-xs font-black text-white' : 'ml-1.5 text-xs font-black text-ui-primary'}>{language === 'es' ? (type === 'family' ? 'Familiar' : 'Surf') : (type === 'family' ? 'Family' : 'Surf')}</Text></Pressable>)}</View> : null}</View>
+          <View className="ml-4 flex-1"><Text className="text-[23px] font-black leading-[29px] text-ui-text dark:text-ui-dark-text">{scopeTitle}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{categoryName ? (language === 'es' ? 'Todo Costa Rica' : 'Across Costa Rica') : (language === 'es' ? 'Lugares para descubrir' : 'Places to discover')}</Text>{isBeach ? <View className="mt-3 flex-row self-start overflow-hidden rounded-xl border border-ui-border dark:border-ui-dark-border">{(['family', 'surf'] as const).map((type) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: beachType === type }} className={beachType === type ? 'flex-row items-center bg-ui-primary px-3 py-2 dark:bg-ui-dark-primary' : 'flex-row items-center px-3 py-2'} key={type} onPress={() => setBeachType(type)}><MaterialCommunityIcons name={type === 'family' ? 'umbrella-beach' : 'surfing'} size={17} color={beachType === type ? 'white' : '#087443'} /><Text className={beachType === type ? 'ml-1.5 text-xs font-black text-white' : 'ml-1.5 text-xs font-black text-ui-primary'}>{language === 'es' ? (type === 'family' ? 'Familiar' : 'Surf') : (type === 'family' ? 'Family' : 'Surf')}</Text></Pressable>)}</View> : null}</View>
           <View className="flex-row overflow-hidden rounded-xl border border-ui-border dark:border-white/30">{(['tico', 'foreigner'] as const).map((item) => <Pressable accessibilityLabel={item === 'tico' ? 'Modo Tico' : 'Foreigner mode'} accessibilityRole="button" className={visitorType === item ? 'bg-white px-3 py-2' : 'px-3 py-2'} key={item} onPress={() => setVisitorType(item)}><Text className={visitorType === item ? 'text-xs font-black text-[#002b7f]' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{item === 'tico' ? 'Tico' : 'Foreigner'}</Text></Pressable>)}</View>
         </View>
       </View>
@@ -236,7 +239,6 @@ export default function ProvinceCatalogScreen() {
 }
 
 function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, userLocation, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; userLocation?: Coordinates; visitorType: 'tico' | 'foreigner' }) {
-  const blurTarget = useRef<View | null>(null);
   const price = visitorType === 'tico'
     ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
     : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
@@ -245,32 +247,28 @@ function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress
 
   return (
     <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}`} accessibilityRole="button" className="overflow-hidden rounded-[30px] border border-white/20 bg-ui-primary active:opacity-90" onPress={onPress}>
-      <View className="relative h-[430px]">
-        <BlurTargetView ref={blurTarget} style={StyleSheet.absoluteFill}>
-          <DestinationCarousel autoplay={autoplay} height={430} place={item} />
-        </BlurTargetView>
-        <View className="absolute inset-0 bg-black/20" pointerEvents="none" />
+      <View className="relative" style={{ height: DESTINATION_CARD_HEIGHT }}>
+        <View style={StyleSheet.absoluteFill}>
+          <DestinationCarousel autoplay={autoplay} height={DESTINATION_CARD_HEIGHT} place={item} />
+        </View>
+        <View className="absolute inset-0 bg-black/15" pointerEvents="none" />
         <View className="absolute left-5 top-5 rounded-full bg-black/60 px-4 py-2"><Text className="font-black text-white">{item.province}</Text></View>
         {usesVerifiedCover(item) && item.image_attribution ? <View className="absolute right-4 top-4 max-w-[55%] rounded-lg bg-black/65 px-3 py-2"><Text className="text-right text-[10px] font-bold text-white" numberOfLines={1}>{language === 'es' ? 'Foto' : 'Photo'}: {item.image_attribution}</Text></View> : null}
-        <View className="absolute left-5 top-[168px] rounded-full bg-[#3B4231]/90 px-4 py-2"><Text className="font-black text-white">{tourismRegion(item)}</Text></View>
-        <View className="absolute right-5 top-[168px] rounded-full bg-black/65 px-4 py-2"><Text className="font-black text-white">{difficultyLabel(item.difficulty, language)}</Text></View>
-        <BlurView blurMethod="dimezisBlurViewSdk31Plus" blurTarget={blurTarget} intensity={46} className="px-5 pb-5 pt-4" style={styles.destinationCardOverlay}>
-          <Svg height="100%" pointerEvents="none" preserveAspectRatio="none" style={StyleSheet.absoluteFill} width="100%">
-            <Defs>
-              <LinearGradient id="destination-overlay" x1="0" x2="0" y1="0" y2="1">
-                <Stop offset="0" stopColor="#071B15" stopOpacity="0.08" />
-                <Stop offset="0.38" stopColor="#071B15" stopOpacity="0.42" />
-                <Stop offset="1" stopColor="#03110D" stopOpacity="0.78" />
-              </LinearGradient>
-            </Defs>
-            <Rect fill="url(#destination-overlay)" height="100%" width="100%" />
-          </Svg>
-          <Text className="text-xl font-black leading-7 text-white" numberOfLines={2}>{item.name}</Text>
-          <Text className="mt-1 text-sm leading-5 text-white/75" numberOfLines={1}>{destinationDescription(item, language)}</Text>
-          <View className="mt-3 flex-row flex-wrap gap-2">
+        <View className="absolute left-5 rounded-full bg-[#3B4231]/90 px-3 py-1.5" style={{ bottom: DESTINATION_FLOATING_LABEL_BOTTOM }}><Text className="text-sm font-black text-white">{tourismRegion(item)}</Text></View>
+        <View className="absolute right-5 rounded-full bg-black/65 px-3 py-1.5" style={{ bottom: DESTINATION_FLOATING_LABEL_BOTTOM }}><Text className="text-sm font-black text-white">{difficultyLabel(item.difficulty, language)}</Text></View>
+        <LinearGradient
+          colors={['rgba(7,27,21,0)', 'rgba(7,27,21,0.20)', 'rgba(7,27,21,0.70)', 'rgba(3,17,13,0.98)']}
+          end={{ x: 0.5, y: 1 }}
+          locations={[0, 0.32, 0.68, 1]}
+          start={{ x: 0.5, y: 0 }}
+          style={styles.destinationCardOverlay}
+        >
+          <Text className="text-lg font-black leading-5 text-white" numberOfLines={2}>{item.name}</Text>
+          <Text className="mt-0.5 text-xs leading-4 text-white/75" numberOfLines={1}>{destinationDescription(item, language)}</Text>
+          <View className="mt-2 flex-row gap-1.5">
             {decisionFacts.map((fact) => <DestinationFact accessibilityLabel={fact.action === 'reservation' ? (reservationUrl ? (language === 'es' ? `Reservar ${item.name}` : `Book ${item.name}`) : (language === 'es' ? `Ver cómo reservar ${item.name}` : `See how to book ${item.name}`)) : undefined} icon={fact.icon} key={`${fact.icon}-${fact.label}`} label={fact.label} onPress={fact.action === 'reservation' ? (reservationUrl ? () => void Linking.openURL(reservationUrl) : onPress) : undefined} urgent={fact.urgent} />)}
           </View>
-        </BlurView>
+        </LinearGradient>
       </View>
     </Pressable>
   );
@@ -310,8 +308,8 @@ function conciseAccess(access: string | null | undefined, language: 'es' | 'en')
 }
 
 function DestinationFact({ accessibilityLabel, icon, label, onPress, urgent = false }: DestinationFactItem & { accessibilityLabel?: string; onPress?: () => void }) {
-  const className = urgent ? 'min-h-10 flex-row items-center rounded-xl border border-[#FFD27A]/55 bg-[#5A3512]/55 px-3 py-2' : 'min-h-10 flex-row items-center rounded-xl border border-white/15 bg-black/25 px-3 py-2';
-  const content = <><MaterialCommunityIcons name={icon} size={17} color={urgent ? '#FFD27A' : '#FFFFFF'} /><Text className="ml-1.5 text-xs font-black text-white">{label}</Text></>;
+  const className = urgent ? 'min-h-9 flex-1 flex-row items-center justify-center rounded-lg border border-[#FFD27A]/55 bg-[#5A3512]/55 px-1.5 py-1' : 'min-h-9 flex-1 flex-row items-center justify-center rounded-lg border border-white/15 bg-black/25 px-1.5 py-1';
+  const content = <><MaterialCommunityIcons name={icon} size={14} color={urgent ? '#FFD27A' : '#FFFFFF'} /><Text className="ml-1 text-center text-[9px] font-black leading-3 text-white">{label}</Text></>;
   if (!onPress) return <View className={className}>{content}</View>;
   const handlePress = (event: GestureResponderEvent) => {
     event.stopPropagation();
@@ -326,13 +324,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    paddingTop: 16,
-    paddingRight: 20,
-    paddingBottom: 20,
-    paddingLeft: 20,
+    height: DESTINATION_INFO_HEIGHT,
+    justifyContent: 'flex-end',
+    paddingTop: 10,
+    paddingRight: 12,
+    paddingBottom: DESTINATION_INFO_BOTTOM_PADDING,
+    paddingLeft: 12,
     overflow: 'hidden',
-    borderTopColor: 'rgba(255,255,255,0.2)',
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });
 

@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsFocused, useScrollToTop } from 'expo-router/react-navigation';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
@@ -445,18 +446,29 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   const [price, setPrice] = useState('0');
   const [difficulty, setDifficulty] = useState('');
   const [description, setDescription] = useState('');
+  const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [locationMode, setLocationMode] = useState<'gps' | 'manual'>('gps');
   const [manualLocation, setManualLocation] = useState<{
     latitude: number;
     longitude: number;
   }>();
   const [sending, setSending] = useState(false);
+  const pickPhotos = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: 10 - photos.length,
+      quality: 0.9,
+    });
+    if (!result.canceled) setPhotos((current) => [...current, ...result.assets].slice(0, 10));
+  };
   useEffect(() => {
     if (!difficulty && difficultyOptions.data?.[0]) setDifficulty(difficultyOptions.data[0].id);
   }, [difficulty, difficultyOptions.data]);
   const submit = async () => {
     if (!session || name.trim().length < 3 || description.trim().length < 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Agregá un nombre y una descripción de al menos 10 caracteres.' : 'Add a name and a description of at least 10 characters.');
     if (categories.length < 1 || categories.length > 3) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná entre una y tres categorías.' : 'Select between one and three categories.');
+    if (photos.length < 1 || photos.length > 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná entre 1 y 10 imágenes del sitio.' : 'Select between 1 and 10 place images.');
     if (locationMode === 'manual' && !manualLocation) return Alert.alert('Descubriendo CR', language === 'es' ? 'Mové el mapa y tocá el punto donde está el sitio.' : 'Move the map and tap where the place is located.');
     setSending(true);
     try {
@@ -486,12 +498,14 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
         price_national_crc: Math.max(0, Number(price.replace(',', '.')) || 0),
         latitude: location.latitude,
         longitude: location.longitude,
+        photo_assets: photos,
       });
       void haptic('success');
       onPublished();
       onClose();
       setName('');
       setDescription('');
+      setPhotos([]);
       setCategories([]);
       setLocationMode('gps');
       setManualLocation(undefined);
@@ -547,6 +561,15 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
               ) : null}
             </View>
             <Field label={language === 'es' ? 'Descripción y cómo llegar' : 'Description and directions'} multiline onChange={setDescription} placeholder={language === 'es' ? 'Describí el sitio y cómo llegar…' : 'Describe the place and how to get there…'} value={description} />
+            <View>
+              <Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotos del sitio' : 'Place photos'}</Text>
+              <Pressable accessibilityLabel={language === 'es' ? 'Seleccionar fotos del dispositivo' : 'Select photos from device'} accessibilityRole="button" className="min-h-12 flex-row items-center justify-center rounded-control border border-dashed border-ui-primary bg-ui-primary-soft px-4 dark:bg-ui-dark-primary-soft" disabled={photos.length >= 10 || sending} onPress={() => void pickPhotos()}>
+                <MaterialCommunityIcons name="image-multiple-outline" size={22} color="#0B6B4F" />
+                <Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? `Agregar imágenes (${photos.length}/10)` : `Add images (${photos.length}/10)`}</Text>
+              </Pressable>
+              <Text className="mt-2 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Mínimo 1, máximo 10. JPG, PNG o WebP; hasta 6 MB por imagen.' : 'Minimum 1, maximum 10. JPG, PNG or WebP; up to 6 MB each.'}</Text>
+              {photos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>{photos.map((photo, index) => <View className="relative" key={`${photo.assetId ?? photo.uri}-${index}`}><Image contentFit="cover" source={{ uri: photo.uri }} style={{ borderRadius: 12, height: 88, width: 110 }} /><Pressable accessibilityLabel={language === 'es' ? `Quitar imagen ${index + 1}` : `Remove image ${index + 1}`} accessibilityRole="button" className="absolute right-1 top-1 h-8 w-8 items-center justify-center rounded-full bg-black/70" disabled={sending} onPress={() => setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index))}><MaterialCommunityIcons name="close" size={18} color="white" /></Pressable></View>)}</ScrollView> : null}
+            </View>
             <View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft">
               <Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{locationMode === 'manual' ? (language === 'es' ? 'Se guardará el punto que seleccionaste en el mapa y aparecerá como aporte de la comunidad.' : 'The point you selected on the map will be saved as a community contribution.') : language === 'es' ? 'Se publicará inmediatamente con tu ubicación GPS actual y aparecerá como aporte de la comunidad.' : 'It will publish immediately using your current GPS location and appear as a community contribution.'}</Text>
             </View>
