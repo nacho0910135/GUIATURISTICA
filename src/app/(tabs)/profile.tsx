@@ -417,7 +417,13 @@ export default function ProfileScreen() {
             <ProfileButton label={tr(language, 'Cerrar sesión', 'Sign out')} outline onPress={() => void signOut()} />
           </View>
         ) : null}
-        {section === 'login' && isAdmin ? <AdminPanel data={adminDashboard.data} busy={busy} language={language} refresh={async () => { await Promise.all([load(), adminDashboard.refetch(), queryClient.invalidateQueries({ queryKey: ['places'] }), queryClient.invalidateQueries({ queryKey: ['explore-places'] })]); }} run={run} signOut={signOut} /> : null}
+        {section === 'login' && isAdmin ? adminDashboard.isError ? (
+          <View className="rounded-card border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30">
+            <Text className="text-lg font-black text-red-700 dark:text-red-300">{tr(language, 'No pudimos cargar el panel', 'We could not load the dashboard')}</Text>
+            <Text className="mb-4 mt-2 text-sm leading-5 text-red-700 dark:text-red-300">{message(adminDashboard.error)}</Text>
+            <ProfileButton label={tr(language, 'Reintentar', 'Retry')} onPress={() => void adminDashboard.refetch()} />
+          </View>
+        ) : <AdminPanel data={adminDashboard.data} busy={busy} language={language} refresh={async () => { await Promise.all([load(), adminDashboard.refetch(), queryClient.invalidateQueries({ queryKey: ['places'] }), queryClient.invalidateQueries({ queryKey: ['explore-places'] })]); }} run={run} signOut={signOut} /> : null}
       </View>
       <Pressable accessibilityRole="link" className="mx-auto mt-10 min-h-11 w-full max-w-5xl items-center justify-center border-t border-red-200 pt-5 dark:border-red-900" onPress={() => router.push('/delete-account' as never)}><Text className="font-bold text-red-600 dark:text-red-400">{tr(language, 'Eliminar cuenta y datos', 'Delete account and data')}</Text></Pressable>
     </ScrollView>

@@ -78,6 +78,20 @@ export type CommerceService = {
 
 export type AssistanceService = CommerceService;
 export type CommerceDirectory = { featured: CommerceService[]; organic: CommerceService[] };
+export const commerceDistanceSortValue = (distance: number | null) => Number.isFinite(distance) ? distance! : Infinity;
+export type CommerceAdCampaign = {
+  id: string;
+  service_id: string;
+  campaign_type: 'featured' | 'banner';
+  target_url: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: 'active' | 'expired' | 'refunded';
+};
+
+export type CommerceBannerCampaign = CommerceAdCampaign & {
+  business: { id: string; title: string; cover_image_url: string | null };
+};
 export type CinemaMovie = {
   id: string;
   title_es: string;
@@ -147,11 +161,37 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
         total_reviews: Number(service.total_reviews ?? 0),
       }];
     });
-  const byRelevance = (a: CommerceService, b: CommerceService) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity) || b.avg_rating - a.avg_rating || b.total_reviews - a.total_reviews || a.title.localeCompare(b.title);
+  const byRelevance = (a: CommerceService, b: CommerceService) => commerceDistanceSortValue(a.distance_km) - commerceDistanceSortValue(b.distance_km) || b.avg_rating - a.avg_rating || b.total_reviews - a.total_reviews || a.title.localeCompare(b.title);
+  const now = new Date().toISOString();
+  const { data: campaigns, error: campaignError } = services.length ? await supabase.from('commerce_ad_campaigns').select('service_id').eq('campaign_type', 'featured').eq('status', 'active').lte('starts_at', now).gt('ends_at', now) : { data: [], error: null };
+  if (campaignError) throw campaignError;
+  const featuredIds = new Set((campaigns ?? []).map((campaign) => campaign.service_id));
   return {
-    featured: services.filter((service) => service.is_sponsored).sort(byRelevance),
-    organic: services.filter((service) => !service.is_sponsored).sort(byRelevance),
+    featured: services.filter((service) => service.is_sponsored || featuredIds.has(service.id)).sort(byRelevance),
+    organic: services.filter((service) => !service.is_sponsored && !featuredIds.has(service.id)).sort(byRelevance),
   };
+}
+
+export async function getActiveCommerceBanners(): Promise<CommerceBannerCampaign[]> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase.from('commerce_ad_campaigns').select('id,service_id,campaign_type,target_url,starts_at,ends_at,status,commercial_services!inner(id,title,cover_image_url,moderation_status)').eq('campaign_type', 'banner').eq('status', 'active').lte('starts_at', now).gt('ends_at', now).eq('commercial_services.moderation_status', 'approved').order('ends_at');
+  if (error) throw error;
+  return (data ?? []).map((campaign) => ({
+    id: campaign.id,
+    service_id: campaign.service_id,
+    campaign_type: campaign.campaign_type,
+    target_url: campaign.target_url,
+    starts_at: campaign.starts_at,
+    ends_at: campaign.ends_at,
+    status: campaign.status,
+    business: Array.isArray(campaign.commercial_services) ? campaign.commercial_services[0] : campaign.commercial_services,
+  })) as CommerceBannerCampaign[];
+}
+
+export async function getMyCommerceCampaigns(): Promise<CommerceAdCampaign[]> {
+  const { data, error } = await supabase.from('commerce_ad_campaigns').select('id,service_id,campaign_type,target_url,starts_at,ends_at,status').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CommerceAdCampaign[];
 }
 
 export async function getCinemaMovies(): Promise<CinemaMovie[]> {
@@ -318,6 +358,7 @@ type CommercialProfileUpdate = {
   priceRange?: string;
   bookingUrl?: string;
   menuUrl?: string;
+  websiteUrl?: string;
   parking?: string;
   hasParking?: boolean;
   paymentMethods?: string[];
@@ -327,6 +368,8 @@ type CommercialProfileUpdate = {
   certifications?: string[];
   photos?: string[];
   coverImageUrl?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 const trimOptional = (value?: string) => value?.trim() || null;
@@ -344,6 +387,7 @@ export async function registerCommercialService(input: {
   openingHours?: string;
   bookingUrl?: string;
   menuUrl?: string;
+  websiteUrl?: string;
   parking?: string;
   hasParking?: boolean;
   paymentMethods?: string[];
@@ -383,6 +427,7 @@ export async function updateCommercialServiceProfile(serviceId: string, input: C
   if (input.priceRange !== undefined) payload.price_range = trimOptional(input.priceRange);
   if (input.bookingUrl !== undefined) payload.booking_url = trimOptional(input.bookingUrl);
   if (input.menuUrl !== undefined) payload.menu_url = trimOptional(input.menuUrl);
+  if (input.websiteUrl !== undefined) payload.external_url = trimOptional(input.websiteUrl);
   if (input.parking !== undefined) payload.parking = trimOptional(input.parking);
   if (input.hasParking !== undefined) payload.has_parking = input.hasParking;
   if (input.paymentMethods !== undefined) payload.payment_methods = input.paymentMethods;
@@ -392,6 +437,10 @@ export async function updateCommercialServiceProfile(serviceId: string, input: C
   if (input.certifications !== undefined) payload.certifications = input.certifications;
   if (input.photos !== undefined) payload.photos = input.photos;
   if (input.coverImageUrl !== undefined) payload.cover_image_url = trimOptional(input.coverImageUrl);
+  if (input.latitude !== undefined && input.longitude !== undefined) {
+    if (!Number.isFinite(input.latitude) || !Number.isFinite(input.longitude) || Math.abs(input.latitude) > 90 || Math.abs(input.longitude) > 180) throw new Error('La ubicación seleccionada no es válida.');
+    payload.location = { type: 'Point', coordinates: [input.longitude, input.latitude] };
+  }
 
   const { error } = await supabase.from('commercial_services').update(payload).eq('id', serviceId).select('id').single();
   if (error) throw error;
@@ -411,6 +460,7 @@ export type OwnerDashboardService = {
   phone: string | null;
   whatsapp: string | null;
   menu_url: string | null;
+  external_url: string | null;
   booking_url: string | null;
   cover_image_url: string | null;
   photos: string[];
@@ -425,6 +475,9 @@ export type OwnerDashboardService = {
   certifications: string[];
   claim_status: string;
   business_updated_at: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  subscription: { plan: string; status: string; price_usd: number; current_period_end: string | null } | null;
   metrics: {
     views: number;
     whatsapp_clicks: number;
@@ -436,6 +489,12 @@ export type OwnerDashboardService = {
     attributed_leads: number;
     qr_leads: number;
     utm_leads: number;
+    last_30_days: number;
+    previous_30_days: number;
+    trend_percent: number | null;
+    conversion_rate: number;
+    top_channel: 'QR' | 'UTM' | 'Direct';
+    daily_views: number[];
   };
 };
 
@@ -448,6 +507,7 @@ export async function getOwnerDashboard() {
   const services = (data ?? []).map((row) => {
     const service = row as ServiceRow;
     const knownCategory = service.category as CommerceCategoryId;
+    const [longitude, latitude] = service.location?.coordinates ?? [];
     return {
       id: service.id,
       title: service.title,
@@ -462,6 +522,7 @@ export async function getOwnerDashboard() {
       phone: service.phone_whatsapp,
       whatsapp: service.whatsapp ?? service.phone_whatsapp,
       menu_url: service.menu_url,
+      external_url: service.external_url,
       booking_url: service.booking_url,
       cover_image_url: service.cover_image_url,
       photos: service.photos ?? [],
@@ -476,18 +537,39 @@ export async function getOwnerDashboard() {
       certifications: service.certifications ?? [],
       claim_status: service.claim_status,
       business_updated_at: service.business_updated_at,
+      latitude: typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : null,
+      longitude: typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : null,
     };
   });
   if (!services.length) return [];
-  const { data: events, error: eventError } = await supabase.from('business_events').select('service_id,event_type,attribution').in('service_id', services.map((service) => service.id));
+  const [{ data: events, error: eventError }, { data: subscriptions, error: subscriptionError }] = await Promise.all([
+    supabase.from('business_events').select('service_id,event_type,attribution,created_at').in('service_id', services.map((service) => service.id)),
+    supabase.from('subscriptions').select('service_id,plan,status,price_usd,current_period_end').in('service_id', services.map((service) => service.id)).in('status', ['active', 'pending', 'past_due']).order('created_at', { ascending: false }),
+  ]);
   if (eventError) throw eventError;
+  if (subscriptionError) throw subscriptionError;
   return services.map((service): OwnerDashboardService => {
     const ownEvents = (events ?? []).filter((event) => event.service_id === service.id);
     const attributedLeads = ownEvents.filter((event) => ['whatsapp_click', 'call', 'directions'].includes(event.event_type) && Object.keys((event.attribution ?? {}) as BusinessAttribution).length);
+    const now = Date.now();
+    const last30Start = now - 30 * 86400000;
+    const previous30Start = now - 60 * 86400000;
+    const last30Days = ownEvents.filter((event) => +new Date(event.created_at) >= last30Start).length;
+    const previous30Days = ownEvents.filter((event) => +new Date(event.created_at) >= previous30Start && +new Date(event.created_at) < last30Start).length;
+    const dailyViews = Array.from({ length: 7 }, (_, index) => {
+      const start = now - (7 - index) * 86400000;
+      const end = start + 86400000;
+      return ownEvents.filter((event) => event.event_type === 'impression' && +new Date(event.created_at) >= start && +new Date(event.created_at) < end).length;
+    });
+    const qrLeads = attributedLeads.filter((event) => Boolean((event.attribution as BusinessAttribution | null)?.qr)).length;
+    const utmLeads = attributedLeads.filter((event) => ATTRIBUTION_KEYS.some((key) => Boolean((event.attribution as BusinessAttribution | null)?.[key]))).length;
+    const views = ownEvents.filter((event) => event.event_type === 'impression').length;
+    const directLeads = Math.max(0, ownEvents.filter((event) => ['whatsapp_click', 'call', 'directions'].includes(event.event_type)).length - attributedLeads.length);
     return {
       ...service,
+      subscription: (subscriptions ?? []).find((subscription) => subscription.service_id === service.id) ?? null,
       metrics: {
-        views: ownEvents.filter((event) => event.event_type === 'impression').length,
+        views,
         whatsapp_clicks: ownEvents.filter((event) => event.event_type === 'whatsapp_click').length,
         calls: ownEvents.filter((event) => event.event_type === 'call').length,
         directions: ownEvents.filter((event) => event.event_type === 'directions').length,
@@ -495,8 +577,14 @@ export async function getOwnerDashboard() {
         reservations: ownEvents.filter((event) => event.event_type === 'reservation').length,
         coupons: ownEvents.filter((event) => event.event_type === 'coupon_redeemed').length,
         attributed_leads: attributedLeads.length,
-        qr_leads: attributedLeads.filter((event) => Boolean((event.attribution as BusinessAttribution | null)?.qr)).length,
-        utm_leads: attributedLeads.filter((event) => ATTRIBUTION_KEYS.some((key) => Boolean((event.attribution as BusinessAttribution | null)?.[key]))).length,
+        qr_leads: qrLeads,
+        utm_leads: utmLeads,
+        last_30_days: last30Days,
+        previous_30_days: previous30Days,
+        trend_percent: previous30Days ? Math.round((last30Days - previous30Days) / previous30Days * 100) : null,
+        conversion_rate: views ? Math.round((ownEvents.filter((event) => ['whatsapp_click', 'call', 'directions', 'reservation'].includes(event.event_type)).length / views) * 1000) / 10 : 0,
+        top_channel: qrLeads > utmLeads && qrLeads > directLeads ? 'QR' : utmLeads > directLeads ? 'UTM' : 'Direct',
+        daily_views: dailyViews,
       },
     };
   });
@@ -512,27 +600,36 @@ async function updateBusinessPhotoState(serviceId: string, photos: string[], cov
 }
 
 export async function uploadBusinessPhoto(service: Pick<OwnerDashboardService, 'id' | 'photos' | 'cover_image_url'>, asset: ImagePickerAsset) {
+  const [url] = await uploadBusinessPhotos(service, [asset]);
+  return url;
+}
+
+export async function uploadBusinessPhotos(service: Pick<OwnerDashboardService, 'id' | 'photos' | 'cover_image_url'>, assets: ImagePickerAsset[]) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('Debés iniciar sesión para subir fotos.');
-
-  const context = ImageManipulator.manipulate(asset.uri);
-  context.resize({ width: Math.min(asset.width || 1600, 1600) });
-  const rendered = await context.renderAsync();
-  const saved = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
-  const bytes = await (await fetch(saved.uri)).arrayBuffer();
-  const path = `${auth.user.id}/${service.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+  if (!assets.length) return [];
+  if (service.photos.length + assets.length > 12) throw new Error('Podés publicar hasta 12 fotos por negocio.');
   const storage = supabase.storage.from('business-photos');
-  const { error: uploadError } = await storage.upload(path, bytes, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
-  if (uploadError) throw uploadError;
-
-  const url = storage.getPublicUrl(path).data.publicUrl;
+  const uploaded: { path: string; url: string }[] = [];
   try {
-    await updateBusinessPhotoState(service.id, [...service.photos, url], service.cover_image_url ?? url);
+    for (const asset of assets) {
+      const context = ImageManipulator.manipulate(asset.uri);
+      context.resize({ width: Math.min(asset.width || 1600, 1600) });
+      const rendered = await context.renderAsync();
+      const saved = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
+      const bytes = await (await fetch(saved.uri)).arrayBuffer();
+      const path = `${auth.user.id}/${service.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+      const { error } = await storage.upload(path, bytes, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+      if (error) throw error;
+      uploaded.push({ path, url: storage.getPublicUrl(path).data.publicUrl });
+    }
+    const urls = uploaded.map(({ url }) => url);
+    await updateBusinessPhotoState(service.id, [...service.photos, ...urls], service.cover_image_url ?? urls[0]);
+    return urls;
   } catch (error) {
-    await storage.remove([path]);
+    if (uploaded.length) await storage.remove(uploaded.map(({ path }) => path));
     throw error;
   }
-  return url;
 }
 
 export async function setBusinessCoverPhoto(service: Pick<OwnerDashboardService, 'id' | 'photos'>, url: string) {

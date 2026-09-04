@@ -1,1 +1,1 @@
-export { MapCanvas } from './map-canvas.web';
+export { MapCanvas, type MapCoordinate } from './map-canvas.web';

@@ -5,6 +5,10 @@ const offers = {
   universal_annual: { plan: 'no_ads', priceEnv: 'STRIPE_PRICE_UNIVERSAL_ANNUAL', mode: 'subscription' },
   visitor_pass_30d: { plan: 'no_ads', priceEnv: 'STRIPE_PRICE_VISITOR_PASS_30D', mode: 'payment' },
   business_monthly: { plan: 'business', priceEnv: 'STRIPE_PRICE_BUSINESS_MONTHLY', mode: 'subscription' },
+  featured_30d: { campaignType: 'featured', priceEnv: 'STRIPE_PRICE_COMMERCE_FEATURED_30D', mode: 'payment' },
+  banner_30d: { campaignType: 'banner', priceEnv: 'STRIPE_PRICE_COMMERCE_BANNER_30D', mode: 'payment' },
+  featured_monthly: { campaignType: 'featured', priceEnv: 'STRIPE_PRICE_COMMERCE_FEATURED_MONTHLY', mode: 'subscription' },
+  banner_monthly: { campaignType: 'banner', priceEnv: 'STRIPE_PRICE_COMMERCE_BANNER_MONTHLY', mode: 'subscription' },
 } as const;
 
 const corsHeaders = { 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
@@ -26,13 +30,16 @@ Deno.serve(async (request) => {
   const body = await request.json().catch(() => ({}));
   const offerId = body.offerId as keyof typeof offers | undefined;
   const serviceId = typeof body.serviceId === 'string' ? body.serviceId : undefined;
+  const targetUrl = typeof body.targetUrl === 'string' ? body.targetUrl.trim() : undefined;
   const returnUrl = typeof body.returnUrl === 'string' ? body.returnUrl : undefined;
   if (!offerId || !offers[offerId] || !returnUrl || !isAllowedReturnUrl(returnUrl)) return json({ error: 'invalid_checkout_request' }, 400);
   const offer = offers[offerId];
-  if (offer.plan === 'no_ads' ? serviceId : !serviceId) return json({ error: 'invalid_business_selection' }, 400);
+  const isCampaign = 'campaignType' in offer;
+  if (isCampaign ? !serviceId : offer.plan === 'no_ads' ? serviceId : !serviceId) return json({ error: 'invalid_business_selection' }, 400);
+  if (isCampaign && offer.campaignType === 'banner' && !isSafeTargetUrl(targetUrl)) return json({ error: 'invalid_banner_url' }, 400);
 
   if (serviceId) {
-    const { data: business, error } = await supabase.from('commercial_services').select('id').eq('id', serviceId).eq('owner_id', user.id).maybeSingle();
+    const { data: business, error } = await supabase.from('commercial_services').select('id').eq('id', serviceId).eq('owner_id', user.id).eq('moderation_status', 'approved').maybeSingle();
     if (error || !business) return json({ error: 'business_not_owned' }, 403);
   }
 
@@ -48,10 +55,22 @@ Deno.serve(async (request) => {
     'line_items[0][quantity]': '1',
     client_reference_id: user.id,
     'metadata[user_id]': user.id,
-    'metadata[plan]': offer.plan,
     'metadata[offer_id]': offerId,
   });
-  if (offer.mode === 'subscription') {
+  if (isCampaign) {
+    form.set('metadata[campaign_type]', offer.campaignType);
+    if (targetUrl) form.set('metadata[target_url]', targetUrl);
+    if (offer.mode === 'subscription') {
+      form.set('subscription_data[metadata][user_id]', user.id);
+      form.set('subscription_data[metadata][service_id]', serviceId!);
+      form.set('subscription_data[metadata][offer_id]', offerId);
+      form.set('subscription_data[metadata][campaign_type]', offer.campaignType);
+      if (targetUrl) form.set('subscription_data[metadata][target_url]', targetUrl);
+    }
+  } else {
+    form.set('metadata[plan]', offer.plan);
+  }
+  if (!isCampaign && offer.mode === 'subscription') {
     form.set('subscription_data[metadata][user_id]', user.id);
     form.set('subscription_data[metadata][plan]', offer.plan);
     form.set('subscription_data[metadata][offer_id]', offerId);
@@ -61,7 +80,7 @@ Deno.serve(async (request) => {
     form.set('metadata[service_id]', serviceId);
     if (offer.mode === 'subscription') form.set('subscription_data[metadata][service_id]', serviceId);
   }
-  const stripe = await fetch('https://api.stripe.com/v1/checkout/sessions', { method: 'POST', headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: form });
+  const stripe = await fetch('https://api.stripe.com/v1/checkout/sessions', { method: 'POST', headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Stripe-Version': '2026-02-25.clover' }, body: form });
   const result = await stripe.json();
   if (!stripe.ok || !result.url) return json({ error: 'checkout_creation_failed' }, 502);
   return json({ url: result.url });
@@ -72,6 +91,11 @@ function isAllowedReturnUrl(value: string) {
     const url = new URL(value);
     return url.protocol === 'https:' || url.protocol === 'http:' || url.protocol === 'exp:' || url.protocol === 'descubriendocr:';
   } catch { return false; }
+}
+
+function isSafeTargetUrl(value?: string) {
+  if (!value || value.length > 500) return false;
+  try { const url = new URL(value); return url.protocol === 'https:' || url.protocol === 'http:'; } catch { return false; }
 }
 
 function withCheckoutStatus(value: string, status: 'success' | 'cancel') {

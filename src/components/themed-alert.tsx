@@ -1,7 +1,7 @@
 import { type PropsWithChildren, useCallback, useEffect, useState } from 'react';
 import { Modal, Text, View } from 'react-native';
 
-import { Button } from '@/components/ui/button';
+import { Button as AlertAction } from '@/components/ui/button';
 
 type ThemedAlertButton = {
   onPress?: () => void | Promise<void>;
@@ -48,7 +48,8 @@ export function ThemedAlertProvider({ children }: PropsWithChildren) {
             <View className={`mt-6 flex-row flex-wrap gap-3 ${alert?.buttons.length === 1 ? 'justify-center' : ''}`}>
               {alert?.buttons.map((button, index) => {
                 const destructive = button.style === 'destructive';
-                return <Button className={alert.buttons.length === 1 ? 'w-full' : 'min-w-28 flex-1'} emphasis={button.style === 'cancel' ? 'outline' : 'solid'} intent={destructive ? 'danger' : button.style === 'cancel' ? 'neutral' : 'primary'} key={`${button.text ?? 'OK'}-${index}`} label={button.text ?? 'OK'} onPress={() => dismiss(button)} />;
+                const handlePress = () => dismiss(button);
+                return <AlertAction className={alert.buttons.length === 1 ? 'w-full' : 'min-w-28 flex-1'} emphasis={button.style === 'cancel' ? 'outline' : 'solid'} intent={destructive ? 'danger' : button.style === 'cancel' ? 'neutral' : 'primary'} key={`${button.text ?? 'OK'}-${index}`} label={button.text ?? 'OK'} onPress={handlePress} />;
               })}
             </View>
           </View>

@@ -74,12 +74,16 @@
 | Delete | verbo exacto | confirmación permanece abierta | contexto válido | resultado persistente | retry/cancel en overlay | siguiente elemento lógico | política de lifecycle requerida |
 | Search | campo de búsqueda | contenido previo visible | misma ruta | conteo de resultados | clear/retry | input o heading de resultados | este contrato |
 | Upload/background job | verbo del archivo | progreso real | contexto de origen | estado confirmado por servidor | retry/cancel y datos preservados | elemento subido | `src/lib` + Storage RLS |
+| Registrar negocio | Publicar | botón ocupado; ubicación explícita requerida | panel del propietario | registro creado; fotos sincronizadas | formulario y selección preservados + retry | comercio recién creado | `register_commercial_service_v2` + RLS |
+| Editar negocio propio | Guardar | botón ocupado estable | panel del propietario | perfil y métricas actualizados | formulario abierto + retry | resumen del comercio | `commercial_services` owner RLS |
 | Cancel/back | Cancelar / Volver | ninguno | origen | ninguno | guard de cambios si aplica | trigger/contexto original | Expo Router |
 | Soft-delete | Archivar / Desactivar | dialog busy | lista válida | Undo sólo si es real | dialog conserva contexto | siguiente elemento | pendiente de política mantenida |
 | Hard-delete | Eliminar permanentemente | dialog danger busy | lista válida | confirmación persistente | verificar resultado antes de retry | siguiente elemento | bloqueado sin política mantenida |
 
 - **Búsqueda de transporte:** la portada de Buses y ferris busca por nombre simultáneamente en rutas provinciales y cantonales; los ferris quedan explícitamente fuera de este buscador.
 - **Búsqueda de destinos en Explorar:** las sugerencias forman una sola superficie; seleccionar un sitio abre su ficha en superposición, y cerrarla vuelve a Explorar con la consulta limpia, sin pasar por el catálogo.
+- **Ubicación comercial:** al registrar o editar, el propietario puede autorizar la ubicación actual o marcar un punto directamente en el mapa; la app no infiere silenciosamente una coordenada regional.
+- **Panel del propietario:** reúne edición completa, galería de hasta 12 imágenes, estado de suscripción y analítica basada únicamente en eventos realmente registrados; no inventa métricas ni proyecciones.
 
 ## Navigation and responsive behavior
 

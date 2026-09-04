@@ -16,6 +16,13 @@ export const billingOffers = {
 } as const;
 
 export type BillingOfferId = keyof typeof billingOffers;
+export const campaignOffers = {
+  featured_30d: { campaignType: 'featured', recurring: false, title: ['Aparecer primero', 'Appear first'], detail: ['Tu negocio aparece antes que los resultados por cercanía durante 30 días.', 'Your business appears before distance-ranked results for 30 days.'], price: 'US$5 / 30 días' },
+  featured_monthly: { campaignType: 'featured', recurring: true, title: ['Aparecer primero', 'Appear first'], detail: ['El beneficio se renueva automáticamente cada 30 días hasta que lo cancelés.', 'The benefit renews automatically every 30 days until canceled.'], price: 'US$5 / 30 días' },
+  banner_30d: { campaignType: 'banner', recurring: false, title: ['Banner destacado', 'Featured banner'], detail: ['Mostramos la portada de tu negocio con un enlace encima de “¿Qué necesitás?” durante 30 días.', 'We show your business cover with a link above “What do you need?” for 30 days.'], price: 'US$15 / 30 días' },
+  banner_monthly: { campaignType: 'banner', recurring: true, title: ['Banner destacado', 'Featured banner'], detail: ['El banner se renueva automáticamente cada 30 días hasta que lo cancelés.', 'The banner renews automatically every 30 days until canceled.'], price: 'US$15 / 30 días' },
+} as const;
+export type CampaignOfferId = keyof typeof campaignOffers;
 type LegacySubscriptionOfferId = 'legacy_no_ads' | 'legacy_business' | 'legacy_sponsored' | 'travel_pass_national_monthly' | 'travel_pass_national_annual' | 'travel_pass_foreign_30d' | 'business_pro' | 'business_growth';
 
 export type Subscription = {
@@ -79,4 +86,15 @@ export async function openSubscriptionCheckout({ offerId, serviceId }: { offerId
 
   if (!checkoutUrl) throw new Error('No se pudo crear una sesión de Checkout.');
   return WebBrowser.openAuthSessionAsync(checkoutUrl, returnUrl);
+}
+
+export async function openCampaignCheckout({ offerId, serviceId, targetUrl }: { offerId: CampaignOfferId; serviceId: string; targetUrl?: string }) {
+  if (Platform.OS !== 'web') throw new Error('Las campañas se contratan desde el panel web.');
+  const returnUrl = Linking.createURL('commerce');
+  const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+    body: { offerId, serviceId, targetUrl, returnUrl },
+  });
+  if (error) throw error;
+  if (!data?.url) throw new Error('No se pudo crear una sesión de Checkout.');
+  return WebBrowser.openAuthSessionAsync(data.url, returnUrl);
 }
