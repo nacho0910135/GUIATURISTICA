@@ -440,7 +440,7 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
       if (result.canceled) return;
       await addDestinationPhoto(destinationId, result.assets[0], count);
       await refresh();
-      Alert.alert(tr(language, 'Fotos del sitio', 'Place photos'), tr(language, 'La foto se agregó correctamente.', 'The photo was added.'));
+      Alert.alert(tr(language, 'Fotos del sitio', 'Place photos'), tr(language, 'La foto se agregó y quedó como portada activa del sitio.', 'The photo was added and is now the place’s active cover.'));
     });
   const setSanctuaryPhoto = (sanctuaryId: string) =>
     void run(async () => {
@@ -687,6 +687,7 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
         ))}
       </ListEmpty>
       <Text className="mb-3 mt-6 text-lg font-bold text-ui-text dark:text-ui-dark-text">{tr(language, 'Fotos de sitios (máximo 10)', 'Place photos (maximum 10)')}</Text>
+      <Text className="mb-3 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{tr(language, 'Los sitios sin fotos aparecen primero. Cada foto nueva queda como portada activa.', 'Places without photos appear first. Each new photo becomes the active cover.')}</Text>
       {data.destinations.map((place) => {
         const photos = data.photos.filter((photo) => photo.destination_id === place.id);
         return (

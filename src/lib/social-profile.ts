@@ -174,9 +174,14 @@ export async function getAdminDashboard() {
   const error = suggestions.error ?? destinations.error ?? photos.error ?? sanctuaries.error ?? communityDestinations.error ?? posts.error ?? pendingDestinations.error ?? pendingFauna.error ?? pendingCommerce.error;
   if (error) throw error;
   const oneProfile = <T,>(value: T | T[]) => Array.isArray(value) ? value[0] : value;
+  const destinationsWithPhotos = new Set((photos.data ?? []).map((photo) => photo.destination_id));
+  const orderedDestinations = [
+    ...(destinations.data ?? []).filter((destination) => !destinationsWithPhotos.has(destination.id)),
+    ...(destinations.data ?? []).filter((destination) => destinationsWithPhotos.has(destination.id)),
+  ];
   return {
     suggestions: (suggestions.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })),
-    destinations: destinations.data ?? [], photos: photos.data ?? [], sanctuaries: sanctuaries.data ?? [], communityDestinations: communityDestinations.data ?? [],
+    destinations: orderedDestinations, photos: photos.data ?? [], sanctuaries: sanctuaries.data ?? [], communityDestinations: communityDestinations.data ?? [],
     posts: (posts.data ?? []).map((row) => ({ ...row, user: oneProfile(row.user) })), reports, commercialClaims,
     pendingSubmissions: [
       ...(pendingDestinations.data ?? []).map((item) => ({ id: item.id, kind: 'destination' as const, title: item.name, detail: `${item.category} · ${item.province}`, created_at: item.created_at })),
@@ -194,7 +199,10 @@ export async function reviewUserSubmission(kind: 'destination' | 'fauna' | 'comm
 export async function addDestinationPhoto(destinationId: string, asset: ImagePickerAsset, sortOrder: number) {
   const imageUrl = await uploadImage('destination-photos', destinationId, asset);
   const { error } = await supabase.from('destination_photos').insert({ destination_id: destinationId, image_url: imageUrl, sort_order: sortOrder });
-  if (error) throw error;
+  if (!error) return;
+  const path = decodeURIComponent(imageUrl.split('/destination-photos/')[1] || '');
+  if (path) await supabase.storage.from('destination-photos').remove([path]);
+  throw error;
 }
 
 export async function setSanctuaryCover(sanctuaryId: string, asset: ImagePickerAsset) {
