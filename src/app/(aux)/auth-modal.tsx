@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { BlurView } from 'expo-blur';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Eye, EyeOff, LockKeyhole, Mail, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { useApp } from '@/providers/app-provider';
@@ -16,17 +16,34 @@ export default function AuthModal() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const requestInFlight = useRef(false);
+
+  const authErrorMessage = (reason: unknown) => {
+    const message = reason instanceof Error ? reason.message.toLowerCase() : '';
+    if (message.includes('invalid login credentials')) {
+      return language === 'es' ? 'El correo o la contraseña no son correctos.' : 'The email or password is incorrect.';
+    }
+    if (message.includes('already registered') || message.includes('already been registered')) {
+      return language === 'es'
+        ? 'No se pudo crear la cuenta. Si ya usaste este correo, iniciá sesión; si no, probá con otro correo.'
+        : 'The account could not be created. If you already used this email, sign in; otherwise try another email.';
+    }
+    return reason instanceof Error ? reason.message : language === 'es' ? 'No pudimos completar la acción.' : 'We could not complete the action.';
+  };
 
   const run = async (action: () => Promise<void>) => {
-    if (busy) return;
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
     setBusy(true);
     setError('');
     setNotice('');
     try {
       await action();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : language === 'es' ? 'No pudimos completar la acción.' : 'We could not complete the action.');
+      setError(authErrorMessage(reason));
     } finally {
+      requestInFlight.current = false;
       setBusy(false);
     }
   };
@@ -35,11 +52,16 @@ export default function AuthModal() {
     if (!email.trim() || password.length < 8) throw new Error(language === 'es' ? 'Ingresá un correo válido y una contraseña de al menos 8 caracteres.' : 'Enter a valid email and a password of at least 8 characters.');
     if (create) {
       const signedIn = await signUp(email, password);
-      if (!signedIn) {
-        setNotice(language === 'es' ? 'Revisá tu correo para confirmar la cuenta.' : 'Check your email to confirm your account.');
+      setPassword('');
+      if (signedIn) {
+        router.back();
         return;
       }
-    } else await signIn(email, password);
+      setMode('signin');
+      setNotice(language === 'es' ? 'Revisá tu correo y confirmá la cuenta antes de iniciar sesión.' : 'Check your email and confirm the account before signing in.');
+      return;
+    }
+    await signIn(email, password);
     router.back();
   });
 
@@ -51,8 +73,8 @@ export default function AuthModal() {
         <View className="mb-5 h-1 w-11 self-center rounded-full bg-ui-border dark:bg-ui-dark-border" />
         <View className="flex-row items-start justify-between">
           <View className="mr-5 flex-1">
-            <Text className="font-sans text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Tu aventura continúa' : 'Your adventure continues'}</Text>
-            <Text className="mt-2 font-sans leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{intent ? `${language === 'es' ? 'Iniciá sesión para' : 'Sign in to'} ${intent}.` : language === 'es' ? 'Guardá lugares, compartí hallazgos y construí tu próxima ruta.' : 'Save places, share discoveries and build your next route.'}</Text>
+            <Text className="font-sans text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{mode === 'signup' ? (language === 'es' ? 'Creá tu cuenta' : 'Create your account') : (language === 'es' ? 'Tu aventura continúa' : 'Your adventure continues')}</Text>
+            <Text className="mt-2 font-sans leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{mode === 'signup' ? (language === 'es' ? 'Completá tus datos para empezar.' : 'Enter your details to get started.') : intent ? `${language === 'es' ? 'Iniciá sesión para' : 'Sign in to'} ${intent}.` : language === 'es' ? 'Guardá lugares, compartí hallazgos y construí tu próxima ruta.' : 'Save places, share discoveries and build your next route.'}</Text>
           </View>
           <Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted active:scale-95 dark:bg-ui-dark-muted" onPress={() => router.back()}><X color="#68737A" size={21} /></Pressable>
         </View>
@@ -69,10 +91,16 @@ export default function AuthModal() {
         </View>
         {error ? <View accessibilityRole="alert" className="mt-3 rounded-control bg-red-50 px-4 py-3 dark:bg-red-950/30"><Text className="font-sans text-sm font-semibold text-red-700 dark:text-red-300">{error}</Text></View> : null}
         {notice ? <View className="mt-3 rounded-control bg-ui-primary-soft px-4 py-3 dark:bg-ui-dark-primary-soft"><Text className="font-sans text-sm font-semibold text-ui-primary dark:text-ui-dark-primary">{notice}</Text></View> : null}
-        <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-5 min-h-14 items-center justify-center rounded-control bg-ui-primary px-4 active:bg-ui-primary-pressed disabled:opacity-60 dark:bg-ui-dark-primary" disabled={busy} onPress={() => submit(false)}>{busy ? <ActivityIndicator color="white" /> : <Text className="font-sans font-bold text-white">{language === 'es' ? 'Iniciar sesión' : 'Sign in'}</Text>}</Pressable>
-        <Pressable accessibilityRole="button" className="mt-3 min-h-14 items-center justify-center rounded-control border border-ui-primary px-4 active:bg-ui-primary-soft disabled:opacity-60" disabled={busy} onPress={() => submit(true)}><Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Crear cuenta' : 'Create account'}</Text></Pressable>
-        <Text className="mt-3 text-center text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Al crear una cuenta aceptás las reglas de la comunidad, los Términos y la Política de privacidad.' : 'By creating an account you accept the community rules, Terms, and Privacy Policy.'}</Text>
-        <View className="mt-1 flex-row justify-center gap-4"><Pressable accessibilityRole="link" onPress={() => router.push('/terms')}><Text className="text-xs font-black text-ui-primary">{language === 'es' ? 'Ver Términos' : 'View Terms'}</Text></Pressable><Pressable accessibilityRole="link" onPress={() => router.push('/privacy')}><Text className="text-xs font-black text-ui-primary">{language === 'es' ? 'Ver Privacidad' : 'View Privacy'}</Text></Pressable></View>
+        {mode === 'signin' ? <><Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-5 min-h-14 items-center justify-center rounded-control bg-ui-primary px-4 active:bg-ui-primary-pressed disabled:opacity-60 dark:bg-ui-dark-primary" disabled={busy} onPress={() => submit(false)}>{busy ? <ActivityIndicator color="white" /> : <Text className="font-sans font-bold text-white">{language === 'es' ? 'Iniciar sesión' : 'Sign in'}</Text>}</Pressable><Pressable accessibilityRole="button" className="mt-3 min-h-14 items-center justify-center rounded-control border border-ui-primary px-4 active:bg-ui-primary-soft disabled:opacity-60" disabled={busy} onPress={() => { setMode('signup'); setError(''); setNotice(''); }}><Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Crear cuenta' : 'Create account'}</Text></Pressable></> : <><Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-5 min-h-14 items-center justify-center rounded-control bg-ui-primary px-4 active:bg-ui-primary-pressed disabled:opacity-60 dark:bg-ui-dark-primary" disabled={busy} onPress={() => submit(true)}>{busy ? <ActivityIndicator color="white" /> : <Text className="font-sans font-bold text-white">{language === 'es' ? 'Crear cuenta' : 'Create account'}</Text>}</Pressable><Pressable accessibilityRole="button" className="mt-3 min-h-12 items-center justify-center" disabled={busy} onPress={() => { setMode('signin'); setError(''); setNotice(''); }}><Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Volver a iniciar sesión' : 'Back to sign in'}</Text></Pressable></>}
+        {mode === 'signup' ? <Text className="mt-3 text-center text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Al crear una cuenta aceptás las reglas de la comunidad, los Términos y la Política de privacidad.' : 'By creating an account you accept the community rules, Terms, and Privacy Policy.'}</Text> : null}
+        <View className="mt-3 flex-row overflow-hidden rounded-control border border-ui-border dark:border-ui-dark-border">
+          <Pressable accessibilityRole="link" className="min-h-11 flex-1 items-center justify-center px-2 active:bg-ui-primary-soft dark:active:bg-ui-dark-primary-soft" onPress={() => router.push('/terms')}>
+            <Text className="text-center text-xs font-black text-ui-primary dark:text-ui-dark-primary" numberOfLines={1}>{language === 'es' ? 'Ver Términos' : 'View Terms'}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="link" className="min-h-11 flex-1 items-center justify-center border-l border-ui-border px-2 active:bg-ui-primary-soft dark:border-ui-dark-border dark:active:bg-ui-dark-primary-soft" onPress={() => router.push('/privacy')}>
+            <Text className="text-center text-xs font-black text-ui-primary dark:text-ui-dark-primary" numberOfLines={1}>{language === 'es' ? 'Ver Privacidad' : 'View Privacy'}</Text>
+          </Pressable>
+        </View>
       </View>
       </ScrollView>
     </KeyboardAvoidingView>

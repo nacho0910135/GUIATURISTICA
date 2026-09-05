@@ -12,7 +12,7 @@ import { useAppTheme } from '@/theme/theme-provider';
 const icon = (name: keyof typeof MaterialCommunityIcons.glyphMap) =>
   function TabIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
     return (
-      <MaterialCommunityIcons name={name} color={color} size={24} />
+      <MaterialCommunityIcons name={name} color={color} size={24} style={{ includeFontPadding: false, lineHeight: 24, textAlign: 'center', textAlignVertical: 'center' }} />
     );
   };
 
@@ -28,12 +28,12 @@ const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }
       width: 38,
     }}
   >
-    <MaterialCommunityIcons name="binoculars" color={focused ? 'white' : color} size={24} />
+    <MaterialCommunityIcons name="binoculars" color={focused ? 'white' : color} size={24} style={{ includeFontPadding: false, lineHeight: 24, textAlign: 'center', textAlignVertical: 'center' }} />
   </View>
 );
 
 export default function TabsLayout() {
-  const { language, session, t } = useApp();
+  const { language, refreshUserLocation, session, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
@@ -67,7 +67,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen name="my-trip" options={{ title: 'Mi viaje', tabBarIcon: icon('map-marker-path') }} />
       <Tabs.Screen name="explore" options={{ title: t('explore'), tabBarIcon: exploreIcon }} />
-      <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />
+      <Tabs.Screen name="commerce" listeners={{ tabPress: () => { void refreshUserLocation(); } }} options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />
       <Tabs.Screen name="logistics" options={{ title: 'Buses', tabBarIcon: icon('bus') }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>

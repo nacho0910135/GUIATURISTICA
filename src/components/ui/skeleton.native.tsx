@@ -1,6 +1,6 @@
-import { MotiView } from 'moti';
+import { useEffect } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -12,15 +12,17 @@ export type SkeletonProps = {
 export function Skeleton({ className = 'h-4 w-full rounded-lg', style }: SkeletonProps) {
   const reduceMotion = useReducedMotion();
   const { colors } = useAppTheme();
+  const opacity = useSharedValue(reduceMotion ? 0.64 : 0.34);
+
+  useEffect(() => {
+    opacity.value = reduceMotion ? 0.64 : withRepeat(withTiming(0.92, { duration: 900 }), -1, true);
+  }, [opacity, reduceMotion]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   return (
     <View accessibilityElementsHidden className={`overflow-hidden bg-ui-muted dark:bg-ui-dark-muted ${className}`} importantForAccessibility="no-hide-descendants" style={style}>
-      <MotiView
-        animate={{ opacity: reduceMotion ? 0.64 : 0.92 }}
-        from={{ opacity: reduceMotion ? 0.52 : 0.34 }}
-        style={{ backgroundColor: colors.border, bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 }}
-        transition={{ duration: reduceMotion ? 100 : 900, loop: !reduceMotion, type: 'timing' }}
-      />
+      <Animated.View style={[{ backgroundColor: colors.border, bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 }, animatedStyle]} />
     </View>
   );
 }

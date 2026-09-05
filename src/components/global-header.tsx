@@ -26,6 +26,8 @@ export function GlobalHeader() {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const [blink] = useState(() => new Animated.Value(0));
+  const [entrance] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [glow] = useState(() => new Animated.Value(reduceMotion ? 0.28 : 0.16));
   const [openingCheckout, setOpeningCheckout] = useState(false);
   const formattedRate = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(exchangeRate);
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
@@ -46,6 +48,22 @@ export function GlobalHeader() {
     return () => animation.stop();
   }, [blink, reduceMotion]);
 
+  useEffect(() => {
+    if (reduceMotion) {
+      entrance.setValue(1);
+      glow.setValue(0.28);
+      return;
+    }
+    const reveal = Animated.spring(entrance, { damping: 16, stiffness: 130, toValue: 1, useNativeDriver: Platform.OS !== 'web' });
+    const shimmer = Animated.loop(Animated.sequence([
+      Animated.timing(glow, { duration: 1800, toValue: 0.46, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(glow, { duration: 1800, toValue: 0.16, useNativeDriver: Platform.OS !== 'web' }),
+    ]));
+    reveal.start();
+    shimmer.start();
+    return () => { reveal.stop(); shimmer.stop(); };
+  }, [entrance, glow, reduceMotion]);
+
   const isSpanish = language === 'es';
   const startMonthlyCheckout = async () => {
     if (openingCheckout) return;
@@ -60,18 +78,21 @@ export function GlobalHeader() {
   };
 
   return (
-    <SafeAreaView edges={['top']} className="overflow-hidden border-b border-ui-border bg-ui-glass dark:border-ui-dark-border dark:bg-ui-dark-glass">
+    <SafeAreaView edges={['top']} className="relative border-b border-ui-border bg-ui-glass shadow-floating dark:border-ui-dark-border dark:bg-ui-dark-glass" style={{ elevation: 14, shadowColor: colors.primary, shadowOffset: { height: 8, width: 0 }, shadowOpacity: mode === 'dark' ? 0.32 : 0.2, shadowRadius: 16 }}>
       <BlurView intensity={mode === 'dark' ? 42 : 62} style={StyleSheet.absoluteFill} tint={mode === 'dark' ? 'dark' : 'light'} />
       <View className="absolute inset-0 bg-ui-glass/80 dark:bg-ui-dark-glass/80" pointerEvents="none" />
-      <View className="mx-auto w-full max-w-content px-4 py-2.5 md:flex-row md:items-center md:justify-between md:px-6">
+      <Animated.View className="absolute bottom-0 left-[8%] right-[8%] h-1 rounded-full bg-ui-secondary dark:bg-ui-dark-secondary" pointerEvents="none" style={{ opacity: glow, transform: [{ scaleX: glow.interpolate({ inputRange: [0.16, 0.46], outputRange: [0.72, 1] }) }] }} />
+      <Animated.View className="mx-auto w-full max-w-content px-4 py-2.5 md:flex-row md:items-center md:justify-between md:px-6" style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }] }}>
         <View className="flex-row items-center justify-between">
           <Pressable
             accessibilityLabel={isSpanish ? 'Ir a Explorar' : 'Go to Explore'}
             accessibilityRole="link"
-            className="min-h-11 flex-row items-center rounded-xl pr-3 focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:focus-visible:ring-ui-dark-focus"
+            className="min-h-11 flex-row items-center rounded-xl pr-3 shadow-card focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:focus-visible:ring-ui-dark-focus"
             onPress={() => router.replace({ pathname: '/(tabs)/explore', params: { reset: String(Date.now()) } })}
+            style={{ elevation: 6, shadowColor: colors.secondary, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 7 }}
           >
-            <View className="h-11 w-11 overflow-hidden rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+            <View className="relative h-11 w-11 rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+              <Animated.View className="absolute -inset-1 rounded-2xl bg-ui-secondary dark:bg-ui-dark-secondary" pointerEvents="none" style={{ opacity: glow, transform: [{ scale: glow.interpolate({ inputRange: [0.16, 0.46], outputRange: [0.94, 1.1] }) }] }} />
               <Image contentFit="contain" contentPosition="center" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: '100%', width: '100%' }} />
               <Animated.View style={{ inset: 0, opacity: blink, pointerEvents: 'none', position: 'absolute' }}>
                 <Image contentFit="contain" source={require('@/assets/brand/frog-logo-blink.png')} style={{ height: '100%', width: '100%' }} />
@@ -92,7 +113,8 @@ export function GlobalHeader() {
         <View className="mt-2 flex-row items-center justify-between gap-2 md:mt-0 md:justify-end">
           <View
             accessibilityLabel={isSpanish ? `Un dólar equivale a ${formattedRate} colones` : `One dollar equals ${formattedRate} colones`}
-            className="h-10 flex-row items-center rounded-control border border-ui-border bg-ui-surface/80 px-3 dark:border-ui-dark-border dark:bg-ui-dark-surface/80"
+            className="h-10 flex-row items-center rounded-control border border-ui-border bg-ui-surface/80 px-3 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface/80"
+            style={{ elevation: 6, shadowColor: colors.secondary, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 6 }}
           >
             <ArrowRightLeft color={colors.secondary} size={15} strokeWidth={2} />
             <Text className="ml-2 font-medium text-[11px] text-ui-text-muted dark:text-ui-dark-text-muted">USD</Text>
@@ -123,8 +145,8 @@ export function GlobalHeader() {
             <ProfileButton avatarUrl={avatarUrl} desktopOffset label={isSpanish ? 'Abrir perfil y planes Pro' : 'Open profile and Pro plans'} onPress={() => router.push('/(tabs)/profile')} />
           </View>
         </View>
-        {access && !access.hasPersonalPlan ? <Pressable accessibilityLabel={isSpanish ? 'Continuar descubriendo por dos dólares mensuales' : 'Keep discovering for two dollars per month'} accessibilityRole="button" className={access.showTrialWarning || !access.hasAccess ? 'mt-3 flex-row items-center rounded-2xl border border-amber-300 bg-amber-50 px-3 py-2.5' : 'mt-3 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-2.5 dark:bg-ui-dark-primary-soft'} disabled={openingCheckout} onPress={() => void startMonthlyCheckout()}><View className="h-9 w-9 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="compass-outline" size={20} color="white" /></View><View className="ml-3 flex-1"><Text className={access.showTrialWarning || !access.hasAccess ? 'text-xs font-black text-amber-900' : 'text-xs font-black text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día gratis restante' : 'días gratis restantes'}` : `${access.trialDaysRemaining} free ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Tu prueba gratuita terminó' : 'Your free trial has ended')}</Text><Text className={access.showTrialWarning || !access.hasAccess ? 'mt-0.5 text-[11px] font-bold text-amber-800' : 'mt-0.5 text-[11px] font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{isSpanish ? 'Podés seguir descubriendo sitios por US$2 mensuales' : 'Keep discovering places for US$2 per month'}</Text></View>{openingCheckout ? <ActivityIndicator color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="arrow-right" size={20} color="#0B6B4F" />}</Pressable> : null}
-      </View>
+        {access && !access.hasPersonalPlan ? <Pressable accessibilityLabel={isSpanish ? 'Continuar descubriendo por dos dólares mensuales' : 'Keep discovering for two dollars per month'} accessibilityRole="button" className={access.showTrialWarning || !access.hasAccess ? 'mt-2 flex-row items-center rounded-2xl border border-amber-300 bg-amber-50 px-3 py-1.5 shadow-card' : 'mt-2 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-1.5 shadow-card dark:bg-ui-dark-primary-soft'} disabled={openingCheckout} onPress={() => void startMonthlyCheckout()} style={{ elevation: 7, shadowColor: access.showTrialWarning || !access.hasAccess ? '#B96708' : colors.primary, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.22, shadowRadius: 8 }}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="compass-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className={access.showTrialWarning || !access.hasAccess ? 'text-[11px] font-black text-amber-900' : 'text-[11px] font-black text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día gratis restante' : 'días gratis restantes'}` : `${access.trialDaysRemaining} free ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Tu prueba gratuita terminó' : 'Your free trial has ended')}</Text><Text className={access.showTrialWarning || !access.hasAccess ? 'text-[10px] leading-3 font-bold text-amber-800' : 'text-[10px] leading-3 font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{isSpanish ? 'Podés seguir descubriendo sitios por US$2 mensuales' : 'Keep discovering places for US$2 per month'}</Text></View>{openingCheckout ? <ActivityIndicator color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="arrow-right" size={19} color="#0B6B4F" />}</Pressable> : null}
+      </Animated.View>
     </SafeAreaView>
   );
 }

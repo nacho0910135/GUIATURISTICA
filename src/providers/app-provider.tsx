@@ -199,9 +199,14 @@ export function AppProvider({ children }: PropsWithChildren) {
   const signUp = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
     if (error) throw error;
-    if (data.session) await syncSession(data.session);
-    return Boolean(data.session);
-  }, [syncSession]);
+    if (!data.user) throw new Error(language === 'es' ? 'No pudimos crear la cuenta.' : 'We could not create the account.');
+    if (data.session) {
+      await syncSession(data.session);
+      return true;
+    }
+    await syncSession(null);
+    return false;
+  }, [language, syncSession]);
 
   const signInWithGoogle = useCallback(async () => {
     const redirectTo = getOAuthRedirectUri();

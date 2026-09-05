@@ -274,14 +274,16 @@ export async function shareSightingToWall(userId: string, imageUrl: string, capt
   if (error) throw error;
 }
 
-export async function getPublicTravelerProfile(userId: string, viewerId: string) {
-  const [profile, followers, following, posts, followed] = await Promise.all([
+export async function getPublicTravelerProfile(userId: string, viewerId?: string) {
+  const [profile, followers, following, posts] = await Promise.all([
     supabase.from('users').select('id,username,full_name,avatar_url,bio').eq('id', userId).single(),
     supabase.from('user_follows').select('follower_id').eq('followed_id', userId),
     supabase.from('user_follows').select('followed_id').eq('follower_id', userId),
     supabase.from('traveler_posts').select('id,user_id,body,image_url,topic,created_at').eq('user_id', userId).order('created_at', { ascending: false }),
-    supabase.from('user_follows').select('followed_id').eq('follower_id', viewerId).eq('followed_id', userId).maybeSingle(),
   ]);
+  const followed = viewerId
+    ? await supabase.from('user_follows').select('followed_id').eq('follower_id', viewerId).eq('followed_id', userId).maybeSingle()
+    : { data: null, error: null };
   const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? followed.error;
   if (error) throw error;
   return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], followed: Boolean(followed.data) };

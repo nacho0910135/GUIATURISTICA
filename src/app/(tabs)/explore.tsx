@@ -236,19 +236,36 @@ export default function ExploreScreen() {
                 <MotionPressable
                   accessibilityLabel={`${optionLabel(category, language)}, ${places.isPending ? (language === 'es' ? 'cargando cantidad' : 'loading count') : `${count} ${language === 'es' ? 'sitios' : 'places'}`}`}
                   accessibilityRole="button"
-                  className="my-1 items-center rounded-card border border-ui-border bg-ui-surface px-1 py-3 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface"
+                  className="w-full items-center px-0.5 py-2"
                   containerStyle={{ paddingHorizontal: 2, width: '25%' }}
                   key={category.id}
                   onPress={() => { router.push({ pathname: '/(aux)/province', params: { categoryId: category.id } }); void haptic('selection'); }}
-                  style={{ elevation: 7, shadowColor: color, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.24, shadowRadius: 7 }}
                 >
-                  <View className="items-center justify-center" style={{ backgroundColor: `${color}20`, borderRadius: (wide ? 64 : 51) / 2, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
-                    <MaterialCommunityIcons name={category.icon ?? 'map-marker-outline'} size={wide ? 34 : 27} color={color} />
+                  <View
+                    className="items-center justify-center border border-white/80 shadow-card"
+                    style={{
+                      backgroundColor: `${color}20`,
+                      borderRadius: (wide ? 72 : 62) / 2,
+                      elevation: 8,
+                      height: wide ? 72 : 62,
+                      shadowColor: color,
+                      shadowOffset: { height: 5, width: 0 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 7,
+                      width: wide ? 72 : 62,
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      color={color}
+                      name={category.icon ?? 'map-marker-outline'}
+                      size={wide ? 34 : 27}
+                      style={{ includeFontPadding: false, lineHeight: wide ? 34 : 27, textAlign: 'center', textAlignVertical: 'center' }}
+                    />
                     <View className="absolute -bottom-1 -right-1 h-6 min-w-6 items-center justify-center rounded-full border-2 border-ui-background px-1 dark:border-ui-dark-background" style={{ backgroundColor: color }}>
-                      <Text className="text-[10px] font-black text-white">{places.isPending ? '…' : count}</Text>
+                      <Text className="text-[10px] font-black text-white" style={{ includeFontPadding: false, lineHeight: 12, textAlignVertical: 'center' }}>{places.isPending ? '…' : count}</Text>
                     </View>
                   </View>
-                  <Text className="mt-2 text-center text-[13px] font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{optionLabel(category, language)}</Text>
+                  <Text className="mt-2 w-full text-center text-[13px] font-black leading-4 text-ui-text dark:text-ui-dark-text" numberOfLines={2} style={{ minHeight: 32 }}>{optionLabel(category, language)}</Text>
                 </MotionPressable>
               );
             })}
@@ -319,7 +336,7 @@ function PlaceResultsSkeleton({ language, large }: { language: 'es' | 'en'; larg
 }
 
 function CategoryGridSkeleton({ language, wide }: { language: 'es' | 'en'; wide: boolean }) {
-  const size = wide ? 64 : 51;
+  const size = wide ? 72 : 62;
   return (
     <View accessibilityLabel={language === 'es' ? 'Cargando categorías' : 'Loading categories'} accessibilityRole="progressbar" className="w-full flex-row flex-wrap">
       {[0, 1, 2, 3, 4, 5].map((item) => (
