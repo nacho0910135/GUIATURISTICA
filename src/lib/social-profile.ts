@@ -84,7 +84,7 @@ export async function markNotificationRead(notificationId: string) {
 export async function markAllNotificationsRead() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('authentication_required');
-  const { error } = await supabase.from('notifications').update({ read_status: true }).eq('recipient_id', auth.user.id).eq('read_status', false);
+  const { error } = await supabase.from('notifications').update({ read_status: true }).eq('recipient_id', auth.user.id).eq('read_status', false).select('id');
   if (error) throw error;
 }
 

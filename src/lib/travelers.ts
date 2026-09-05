@@ -5,14 +5,15 @@ import { supabase } from '@/lib/supabase';
 
 export type TravelerProfile = { id: string; username: string | null; full_name: string | null; avatar_url: string | null; role: string | null };
 export type SharedLocation = { latitude: number; longitude: number };
+export type DestinationRecommendation = { id: string; community: boolean };
 export type TravelerTopic = string;
-export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; latitude: number | null; longitude: number | null; topic: TravelerTopic; created_at: string; user?: TravelerProfile };
+export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; image_urls: string[]; latitude: number | null; longitude: number | null; recommended_destination_id: string | null; recommended_destination_is_community: boolean; topic: TravelerTopic; created_at: string; user?: TravelerProfile };
 export type ReactionType = string;
 export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
 
 export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {
   const [postsResult, blocksResult] = await Promise.all([
-    supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic).order('created_at', { ascending: false }).limit(40),
+    supabase.from('traveler_posts').select('id,user_id,body,image_url,image_urls,latitude,longitude,recommended_destination_id,recommended_destination_is_community,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic).order('created_at', { ascending: false }).limit(40),
     userId ? supabase.from('user_blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`) : Promise.resolve({ data: [], error: null }),
   ]);
   if (postsResult.error || blocksResult.error) throw postsResult.error ?? blocksResult.error;
@@ -41,30 +42,43 @@ export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'g
   };
 }
 
-async function uploadPostImage(userId: string, asset: ImagePickerAsset) {
+async function uploadPostImage(userId: string, asset: ImagePickerAsset, index: number) {
   const context = ImageManipulator.manipulate(asset.uri);
   context.resize({ width: Math.min(asset.width || 1600, 1600) });
   const rendered = await context.renderAsync();
   const file = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
   const bytes = await fetch(file.uri).then((response) => response.arrayBuffer());
-  const path = `${userId}/${Date.now()}.jpg`;
+  const path = `${userId}/${Date.now()}-${index}.jpg`;
   const { error } = await supabase.storage.from('traveler-posts').upload(path, bytes, { contentType: 'image/jpeg' });
   if (error) throw error;
   return { path, url: supabase.storage.from('traveler-posts').getPublicUrl(path).data.publicUrl };
 }
 
-export async function createTravelerPost(userId: string, body: string, asset?: ImagePickerAsset, location?: SharedLocation, topic: TravelerTopic = 'general') {
-  const image = asset ? await uploadPostImage(userId, asset) : null;
+export async function createTravelerPost(userId: string, body: string, assets: ImagePickerAsset[] = [], location?: SharedLocation, topic: TravelerTopic = 'general', recommendation?: DestinationRecommendation) {
+  if (assets.length > 5) throw new Error('Podés adjuntar un máximo de 5 imágenes.');
+  const uploads = await Promise.all(assets.map(async (asset, index) => {
+    try { return { image: await uploadPostImage(userId, asset, index) }; }
+    catch (error) { return { error }; }
+  }));
+  const images = uploads.flatMap((result) => result.image ? [result.image] : []);
+  const uploadError = uploads.find((result) => result.error)?.error;
+  if (uploadError) {
+    if (images.length) await supabase.storage.from('traveler-posts').remove(images.map((image) => image.path));
+    throw uploadError;
+  }
   const { error } = await supabase.from('traveler_posts').insert({
     user_id: userId,
     body: body.trim(),
-    image_url: image?.url ?? null,
+    image_url: images[0]?.url ?? null,
+    image_urls: images.map((image) => image.url),
     latitude: location?.latitude ?? null,
     longitude: location?.longitude ?? null,
+    recommended_destination_id: recommendation?.id ?? null,
+    recommended_destination_is_community: recommendation?.community ?? false,
     topic,
   });
   if (error) {
-    if (image) await supabase.storage.from('traveler-posts').remove([image.path]);
+    if (images.length) await supabase.storage.from('traveler-posts').remove(images.map((image) => image.path));
     throw error;
   }
 }

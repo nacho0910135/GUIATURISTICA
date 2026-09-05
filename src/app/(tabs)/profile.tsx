@@ -209,11 +209,11 @@ export default function ProfileScreen() {
       icon: 'lightbulb-outline',
       label: tr(language, 'Sugerencias', 'Suggestions'),
     },
-    {
-      key: 'login',
-      icon: isAuthenticated ? 'account-check-outline' : 'login',
-      label: isAuthenticated ? (isAdmin ? tr(language, 'Administrar', 'Admin') : tr(language, 'Mi sesión', 'My session')) : tr(language, 'Iniciar sesión', 'Sign in'),
-    },
+    ...(isAdmin ? [{
+      key: 'login' as const,
+      icon: 'shield-crown-outline' as const,
+      label: tr(language, 'Administrar', 'Admin'),
+    }] : []),
   ];
   const toggleSection = (key: Section) => {
     const next = section === key ? undefined : key;
@@ -312,13 +312,11 @@ export default function ProfileScreen() {
           <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
           <Text className="ml-2 font-black text-red-600 dark:text-red-400">{tr(language, 'Cerrar sesión', 'Sign out')}</Text>
         </Pressable>
-        <View className="mt-4 flex-row flex-wrap gap-2">
+        <View className="mt-4 flex-row flex-wrap justify-between gap-y-2">
           {tabs.map((tab) => (
-            <Pressable accessibilityRole="button" accessibilityState={{ expanded: section === tab.key }} className={section === tab.key ? 'min-h-14 w-[48.5%] flex-row items-center rounded-2xl bg-ui-primary px-3 py-3 dark:bg-ui-dark-primary' : 'min-h-14 w-[48.5%] flex-row items-center rounded-2xl border border-ui-border bg-ui-surface px-3 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={tab.key} onPress={() => toggleSection(tab.key)}>
-              <MaterialCommunityIcons name={tab.icon} size={21} color={section === tab.key ? 'white' : '#9eabc4'} />
-              <Text className={section === tab.key ? 'ml-3 flex-1 font-black text-white' : 'ml-3 flex-1 font-black text-ui-text-muted dark:text-ui-dark-text-muted'}>{tab.label}</Text>
-              {tab.count !== undefined ? <Text className={section === tab.key ? 'font-black text-white' : 'font-black text-ui-primary dark:text-ui-dark-primary'}>{tab.count}</Text> : null}
-              <MaterialCommunityIcons name={section === tab.key ? 'chevron-up' : 'chevron-right'} size={20} color={section === tab.key ? 'white' : '#9eabc4'} />
+            <Pressable accessibilityLabel={tab.label} accessibilityRole="button" accessibilityState={{ expanded: section === tab.key }} className={section === tab.key ? 'relative min-h-16 w-[31.5%] items-center justify-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary' : 'relative min-h-16 w-[31.5%] items-center justify-center rounded-2xl border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={tab.key} onPress={() => toggleSection(tab.key)}>
+              <MaterialCommunityIcons name={tab.icon} size={29} color={section === tab.key ? 'white' : '#7f8ca3'} />
+              {tab.count !== undefined ? <View className={section === tab.key ? 'absolute right-2 top-2 min-w-5 items-center rounded-full bg-white px-1.5 py-0.5' : 'absolute right-2 top-2 min-w-5 items-center rounded-full bg-ui-primary px-1.5 py-0.5 dark:bg-ui-dark-primary'}><Text className={section === tab.key ? 'text-[10px] font-black text-ui-primary' : 'text-[10px] font-black text-white'}>{tab.count}</Text></View> : null}
             </Pressable>
           ))}
         </View>
@@ -330,16 +328,21 @@ export default function ProfileScreen() {
           <View>
             <View className="mb-4 flex-row items-center justify-between">
               <Title>{tr(language, 'Notificaciones', 'Notifications')}</Title>
-              <ProfileButton
-                label={tr(language, 'Marcar todas como leídas', 'Mark all as read')}
+              <Pressable
+                accessibilityLabel={tr(language, 'Marcar todas como leídas', 'Mark all as read')}
+                accessibilityRole="button"
+                className="ml-3 rounded-full bg-ui-primary px-3 py-2 disabled:opacity-40 dark:bg-ui-dark-primary"
                 disabled={busy || !data.notifications.some((item) => !item.read_status)}
                 onPress={() =>
                   void run(async () => {
                     await markAllNotificationsRead();
+                    setData((current) => current ? { ...current, notifications: current.notifications.map((item) => ({ ...item, read_status: true })) } : current);
                     await load();
                   })
                 }
-              />
+              >
+                <Text className="text-xs font-black text-white">{tr(language, 'Marcar leídas', 'Mark read')}</Text>
+              </Pressable>
             </View>
             <ListEmpty empty={!data.notifications.length} language={language}>
               {data.notifications.map((item) => (

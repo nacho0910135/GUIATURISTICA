@@ -12,7 +12,7 @@ import { ActivityIndicator, BackHandler, Modal, Platform, Pressable, ScrollView,
 import { MapCanvas } from '@/components/explore/map-canvas';
 import { AppFooter } from '@/components/app-footer';
 import { InformationReportModal } from '@/components/information-report-modal';
-import { MotionPressable, Skeleton } from '@/components/motion';
+import { AnimatedShine, MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
@@ -176,8 +176,8 @@ export default function ExploreScreen() {
             onPress={() => void discover()}
             style={{ backgroundColor: volcanoColor, elevation: 9, shadowColor: '#163D3F', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.34, shadowRadius: 8 }}
           >
-            <LinearGradient colors={['rgba(255,255,255,0.40)', 'rgba(255,255,255,0.05)', 'rgba(0,0,0,0.14)']} locations={[0, 0.48, 1]} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
-            <View className="absolute left-4 right-4 top-1 h-[2px] rounded-full bg-white/90" />
+            <LinearGradient colors={['rgba(255,255,255,0.16)', 'rgba(0,0,0,0.12)']} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
+            <AnimatedShine travel={420} />
             <MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" />
             <Text className="ml-2 flex-shrink text-center text-xs font-black text-white" numberOfLines={2}>{language === 'es' ? 'Destinos Turísticos Cercanos' : 'Nearby Tourist Destinations'}</Text>
           </MotionPressable>
@@ -185,11 +185,11 @@ export default function ExploreScreen() {
             accessibilityRole="button"
             className="relative min-h-12 flex-row items-center justify-center overflow-hidden rounded-2xl border border-[#5DB990] bg-[#DDF3E8] px-3 py-3 dark:border-[#47C08A] dark:bg-[#164330]"
             containerStyle={{ width: 128 }}
-            onPress={() => router.push({ pathname: '/(tabs)/fauna', params: { from: 'explore' } })}
+            onPress={() => { void haptic('selection'); router.push({ pathname: '/(tabs)/fauna', params: { from: 'explore' } }); }}
             style={{ elevation: 8, shadowColor: '#07543F', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.3, shadowRadius: 8 }}
           >
-            <LinearGradient colors={['rgba(255,255,255,0.72)', 'rgba(255,255,255,0.08)', 'rgba(7,84,63,0.13)']} locations={[0, 0.5, 1]} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
-            <View className="absolute left-4 right-4 top-1 h-[2px] rounded-full bg-white/90" />
+            <LinearGradient colors={['rgba(255,255,255,0.20)', 'rgba(7,84,63,0.10)']} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
+            <AnimatedShine travel={210} />
             <MaterialCommunityIcons name="paw" size={19} color="#07543F" />
             <Text className="ml-1.5 text-xs font-black text-[#07543F] dark:text-[#8DE0B6]">{language === 'es' ? 'Fauna' : 'Wildlife'}</Text>
           </MotionPressable>
@@ -213,12 +213,13 @@ export default function ExploreScreen() {
               containerStyle={{ width: 128 }}
               onPress={() => {
                 if (!requireAuth(language === 'es' ? 'Agregar un sitio' : 'Add a place') || !session) return;
+                void haptic('selection');
                 setProposalOpen(true);
               }}
               style={{ elevation: 9, shadowColor: '#073F31', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.36, shadowRadius: 8 }}
             >
-              <LinearGradient colors={['rgba(255,255,255,0.34)', 'rgba(255,255,255,0.04)', 'rgba(3,30,24,0.24)']} locations={[0, 0.48, 1]} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
-              <View className="absolute left-4 right-4 top-1 h-[2px] rounded-full bg-white/80" />
+              <LinearGradient colors={['rgba(255,255,255,0.12)', 'rgba(3,30,24,0.20)']} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
+              <AnimatedShine travel={210} />
               <MaterialCommunityIcons name="plus" size={19} color="white" />
               <Text className="ml-1.5 text-center text-xs font-black leading-3 text-white">{language === 'es' ? 'Agregar\nnuevo sitio' : 'Add\nnew place'}</Text>
             </MotionPressable>
@@ -255,12 +256,14 @@ export default function ExploreScreen() {
                       width: wide ? 72 : 62,
                     }}
                   >
-                    <MaterialCommunityIcons
-                      color={color}
-                      name={category.icon ?? 'map-marker-outline'}
-                      size={wide ? 34 : 27}
-                      style={{ includeFontPadding: false, lineHeight: wide ? 34 : 27, textAlign: 'center', textAlignVertical: 'center' }}
-                    />
+                    <View className="items-center justify-center" style={{ height: wide ? 40 : 34, width: wide ? 40 : 34 }}>
+                      <MaterialCommunityIcons
+                        color={color}
+                        name={category.icon ?? 'map-marker-outline'}
+                        size={wide ? 34 : 27}
+                        style={{ includeFontPadding: false }}
+                      />
+                    </View>
                     <View className="absolute -bottom-1 -right-1 h-6 min-w-6 items-center justify-center rounded-full border-2 border-ui-background px-1 dark:border-ui-dark-background" style={{ backgroundColor: color }}>
                       <Text className="text-[10px] font-black text-white" style={{ includeFontPadding: false, lineHeight: 12, textAlignVertical: 'center' }}>{places.isPending ? '…' : count}</Text>
                     </View>

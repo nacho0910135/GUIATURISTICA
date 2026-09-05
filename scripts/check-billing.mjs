@@ -55,6 +55,7 @@ assert.match(migration, /legacy_no_ads/);
 assert.match(campaignMigration, /create table public\.commerce_ad_campaigns/);
 assert.match(campaignMigration, /num_nonnulls\(provider_session_id, provider_subscription_id\) = 1/);
 assert.match(campaignMigration, /grant select \(id, service_id, campaign_type, target_url, status, starts_at, ends_at, created_at\)/);
-assert.match(commerce, /Platform\.OS === 'web'/);
+assert.doesNotMatch(billing, /Las campañas se contratan desde el panel web/);
+assert.match(commerce, /Contratar una vez/);
 assert.doesNotMatch(commerce, /Google o Stripe/);
 console.log('Subscriptions, one-time passes, business billing, and 30-day commerce campaigns are wired.');

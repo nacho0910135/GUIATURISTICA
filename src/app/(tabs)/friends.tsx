@@ -12,6 +12,7 @@ import { MotionPressable, MotionReveal, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
+import { getExplorePlaces, type ExplorePlace } from '@/lib/places';
 import { submitInformationReport } from '@/lib/reports';
 import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
@@ -22,6 +23,80 @@ const displayName = (post: TravelerPost) => post.user?.username || post.user?.fu
 const AdminBadge = () => <View className="ml-2 flex-row items-center rounded-full bg-ui-primary px-2 py-1 dark:bg-ui-dark-primary"><MaterialCommunityIcons name="shield-crown" size={11} color="white" /><Text className="ml-1 text-[9px] font-black text-white">ADMIN</Text></View>;
 const communityDepth = { elevation: 7, shadowColor: '#073F31', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.2, shadowRadius: 7 } as const;
 const communityControlDepth = { elevation: 5, shadowColor: '#073F31', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.18, shadowRadius: 5 } as const;
+
+function RecommendedPlaceThumbnail({ place }: { place: ExplorePlace }) {
+  const sources = [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))];
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const source = sources[sourceIndex];
+
+  return (
+    <View className="h-[76px] w-[88px] items-center justify-center overflow-hidden bg-ui-primary">
+      <MaterialCommunityIcons name="map-marker-star" size={22} color="white" />
+      {source ? (
+        <Image
+          accessible={false}
+          contentFit="cover"
+          onError={() => setSourceIndex((index) => index + 1)}
+          source={{ uri: source }}
+          style={{ bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 }}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function PostImageGallery({ imageUrls, language }: { imageUrls: string[]; language: 'es' | 'en' }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [width, setWidth] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const showImage = (index: number) => {
+    scrollRef.current?.scrollTo({ animated: true, x: index * width });
+    setActiveIndex(index);
+  };
+
+  if (!imageUrls.length) return null;
+  return (
+    <View
+      className="relative overflow-hidden bg-ui-muted dark:bg-ui-dark-muted"
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      style={{ aspectRatio: 1.35, width: '100%' }}
+    >
+      {width ? (
+        <ScrollView
+          accessibilityLabel={language === 'es' ? `Galería de ${imageUrls.length} imágenes` : `Gallery of ${imageUrls.length} images`}
+          horizontal
+          onMomentumScrollEnd={(event) => setActiveIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
+          pagingEnabled
+          ref={scrollRef}
+          showsHorizontalScrollIndicator={false}
+          style={{ bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 }}
+        >
+          {imageUrls.map((url, index) => (
+            <Image
+              accessibilityLabel={language === 'es' ? `Imagen ${index + 1} de ${imageUrls.length}` : `Image ${index + 1} of ${imageUrls.length}`}
+              contentFit="cover"
+              key={url}
+              source={{ uri: url }}
+              style={{ height: '100%', width }}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
+      {imageUrls.length > 1 ? (
+        <>
+          {activeIndex > 0 ? <Pressable accessibilityLabel={language === 'es' ? 'Imagen anterior' : 'Previous image'} className="absolute left-2 h-11 w-11 items-center justify-center rounded-full bg-black/60" onPress={() => showImage(activeIndex - 1)} style={{ marginTop: -22, top: '50%' }}><MaterialCommunityIcons name="chevron-left" size={28} color="white" /></Pressable> : null}
+          {activeIndex < imageUrls.length - 1 ? <Pressable accessibilityLabel={language === 'es' ? 'Imagen siguiente' : 'Next image'} className="absolute right-2 h-11 w-11 items-center justify-center rounded-full bg-black/60" onPress={() => showImage(activeIndex + 1)} style={{ marginTop: -22, top: '50%' }}><MaterialCommunityIcons name="chevron-right" size={28} color="white" /></Pressable> : null}
+          <View className="absolute right-3 top-3 rounded-full bg-black/60 px-3 py-1">
+            <Text className="text-xs font-black text-white">{activeIndex + 1}/{imageUrls.length}</Text>
+          </View>
+          <View className="absolute bottom-3 left-0 right-0 flex-row justify-center gap-1.5">
+            {imageUrls.map((url, index) => <View className={index === activeIndex ? 'h-2 w-5 rounded-full bg-white' : 'h-2 w-2 rounded-full bg-white/60'} key={url} />)}
+          </View>
+        </>
+      ) : null}
+    </View>
+  );
+}
 
 function TravelerWallSkeleton({ language }: { language: 'es' | 'en' }) {
   return (
@@ -52,8 +127,11 @@ export default function FriendsScreen() {
   const userId = session?.user.id;
   const [wall, setWall] = useState<Wall>();
   const [body, setBody] = useState('');
-  const [asset, setAsset] = useState<ImagePicker.ImagePickerAsset>();
+  const [assets, setAssets] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [location, setLocation] = useState<{ latitude: number; longitude: number }>();
+  const [placeSearch, setPlaceSearch] = useState('');
+  const [placeSearchOpen, setPlaceSearchOpen] = useState(false);
+  const [recommendation, setRecommendation] = useState<ExplorePlace>();
   const [replying, setReplying] = useState<string>();
   const [reply, setReply] = useState('');
   const [parentReplyId, setParentReplyId] = useState<string>();
@@ -66,8 +144,13 @@ export default function FriendsScreen() {
   const longPressedPostId = useRef<string | undefined>(undefined);
   const topicOptions = useQuery({ queryKey: ['app-options', 'traveler_topic'], queryFn: () => getAppOptions('traveler_topic'), staleTime: Infinity });
   const reactionOptions = useQuery({ queryKey: ['app-options', 'traveler_reaction'], queryFn: () => getAppOptions('traveler_reaction'), staleTime: Infinity });
+  const explorePlaces = useQuery({ queryKey: ['explore-places', 'v3'], queryFn: getExplorePlaces, staleTime: 5 * 60 * 1000 });
   const topics = topicOptions.data ?? [];
   const reactions = reactionOptions.data ?? [];
+  const normalizedPlaceSearch = placeSearch.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const matchingPlaces = normalizedPlaceSearch
+    ? (explorePlaces.data ?? []).filter((place) => place.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(normalizedPlaceSearch)).slice(0, 6)
+    : [];
 
   const load = useCallback(async () => {
     try { setError(undefined); setWall(await getTravelerWall(userId, topic)); }
@@ -78,11 +161,16 @@ export default function FriendsScreen() {
 
   const choosePhoto = async () => {
     if (!requireAuth(language === 'es' ? 'Compartir una foto' : 'Share a photo')) return;
+    if (assets.length >= 5) {
+      setPublishError(language === 'es' ? 'Podés adjuntar un máximo de 5 imágenes.' : 'You can attach up to 5 images.');
+      return;
+    }
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return Alert.alert('Comunidad Viajera', language === 'es' ? 'Necesitamos permiso para elegir una foto.' : 'Photo permission is required.');
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.9 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 5 - assets.length, quality: 0.9 });
     if (!result.canceled) {
-      setAsset(result.assets[0]);
+      setAssets((current) => [...current, ...result.assets.filter((asset) => !current.some((selected) => selected.uri === asset.uri))].slice(0, 5));
+      setPublishError(undefined);
       void haptic('selection');
     }
   };
@@ -110,10 +198,10 @@ export default function FriendsScreen() {
   };
 
   const publish = async () => {
-    if (!requireAuth(language === 'es' ? 'Crear una publicación' : 'Create a post') || !session || (!body.trim() && !asset && !location)) return;
+    if (!requireAuth(language === 'es' ? 'Crear una publicación' : 'Create a post') || !session || (!body.trim() && !assets.length && !location && !recommendation)) return;
     setBusy(true);
     setPublishError(undefined);
-    try { await createTravelerPost(session.user.id, body, asset, location, topic); setBody(''); setAsset(undefined); setLocation(undefined); await load(); void haptic('success'); }
+    try { await createTravelerPost(session.user.id, body, assets, location, topic, recommendation ? { id: recommendation.id, community: recommendation.community } : undefined); setBody(''); setAssets([]); setLocation(undefined); setRecommendation(undefined); setPlaceSearch(''); setPlaceSearchOpen(false); await load(); void haptic('success'); }
     catch (reason) { setPublishError(reason instanceof Error ? reason.message : 'No se pudo publicar.'); void haptic('error'); }
     finally { setBusy(false); }
   };
@@ -217,12 +305,14 @@ export default function FriendsScreen() {
               value={body}
             />
           </View>
-          {asset ? <View className="mt-3 overflow-hidden rounded-2xl"><Image source={{ uri: asset.uri }} contentFit="cover" style={{ height: 220, width: '100%' }} /><Pressable className="absolute right-3 top-3 h-9 w-9 items-center justify-center rounded-full bg-black/60" onPress={() => setAsset(undefined)}><MaterialCommunityIcons name="close" size={20} color="white" /></Pressable></View> : null}
+          {assets.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>{assets.map((asset, index) => <View className="overflow-hidden rounded-2xl" key={asset.uri}><Image accessibilityLabel={language === 'es' ? `Imagen seleccionada ${index + 1} de ${assets.length}` : `Selected image ${index + 1} of ${assets.length}`} source={{ uri: asset.uri }} contentFit="cover" style={{ height: 112, width: 132 }} /><Pressable accessibilityLabel={language === 'es' ? `Quitar imagen ${index + 1}` : `Remove image ${index + 1}`} className="absolute right-1 top-1 h-11 w-11 items-center justify-center rounded-full bg-black/60" onPress={() => setAssets((current) => current.filter((item) => item.uri !== asset.uri))}><MaterialCommunityIcons name="close" size={20} color="white" /></Pressable></View>)}</ScrollView> : null}
           {location ? <View className="mt-3 flex-row items-center rounded-control bg-ui-primary-soft p-3 dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="map-marker" size={24} color="#0B6B4F" /><Text className="ml-2 flex-1 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ubicación lista para compartir' : 'Location ready to share'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Quitar ubicación' : 'Remove location'} onPress={() => setLocation(undefined)}><MaterialCommunityIcons name="close" size={20} color="#68737A" /></Pressable></View> : null}
+          {recommendation ? <View className="mt-3 overflow-hidden rounded-2xl border border-ui-primary/30 bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><View className="flex-row items-center p-3">{recommendation.cover_image_url ? <Image source={{ uri: recommendation.cover_image_url }} contentFit="cover" style={{ borderRadius: 12, height: 52, width: 68 }} /> : <View className="h-[52px] w-[68px] items-center justify-center rounded-xl bg-ui-primary"><MaterialCommunityIcons name="map-marker" size={25} color="white" /></View>}<View className="ml-3 flex-1"><Text className="text-[10px] font-black uppercase tracking-wider text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Sitio recomendado' : 'Recommended place'}</Text><Text className="mt-1 font-black text-ui-text dark:text-ui-dark-text">{recommendation.name}</Text><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{recommendation.province} · {recommendation.category}</Text></View><Pressable accessibilityLabel={language === 'es' ? 'Quitar recomendación' : 'Remove recommendation'} onPress={() => setRecommendation(undefined)}><MaterialCommunityIcons name="close" size={21} color="#68737A" /></Pressable></View></View> : null}
+          {placeSearchOpen && !recommendation ? <View className="mt-3 rounded-2xl border border-ui-border bg-ui-muted p-3 dark:border-ui-dark-border dark:bg-ui-dark-muted"><View className="flex-row items-center rounded-xl bg-ui-surface px-3 dark:bg-ui-dark-surface"><MaterialCommunityIcons name="magnify" size={21} color="#0B6B4F" /><TextInput accessibilityLabel={language === 'es' ? 'Buscar sitio por nombre' : 'Search place by name'} autoFocus className="ml-2 min-h-11 flex-1 text-ui-text dark:text-ui-dark-text" onChangeText={setPlaceSearch} placeholder={language === 'es' ? 'Buscar por nombre…' : 'Search by name…'} placeholderTextColor="#73807b" value={placeSearch} /></View>{explorePlaces.isPending ? <ActivityIndicator className="mt-3" color="#0B6B4F" /> : matchingPlaces.map((place) => <Pressable accessibilityRole="button" className="mt-2 flex-row items-center rounded-xl bg-ui-surface p-3 dark:bg-ui-dark-surface" key={`${place.community ? 'community' : 'official'}-${place.id}`} onPress={() => { setRecommendation(place); setPlaceSearch(''); setPlaceSearchOpen(false); void haptic('selection'); }}>{place.cover_image_url ? <Image source={{ uri: place.cover_image_url }} contentFit="cover" style={{ borderRadius: 9, height: 42, width: 54 }} /> : <View className="h-[42px] w-[54px] items-center justify-center rounded-lg bg-ui-primary-soft"><MaterialCommunityIcons name="map-marker-outline" size={22} color="#0B6B4F" /></View>}<View className="ml-3 flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{place.name}</Text><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{place.province} · {place.category}</Text></View><MaterialCommunityIcons name="plus-circle" size={23} color="#0B6B4F" /></Pressable>)}{normalizedPlaceSearch && !explorePlaces.isPending && !matchingPlaces.length ? <Text className="py-4 text-center text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No encontramos sitios con ese nombre.' : 'No places matched that name.'}</Text> : null}</View> : null}
           {publishError ? <Text className="mt-3 rounded-xl bg-red-50 p-3 font-bold text-red-600">{publishError}</Text> : null}
           <View className="mt-3 flex-row items-center justify-between border-t border-ui-border dark:border-ui-dark-border pt-3">
-            <View className="flex-row gap-2"><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl bg-ui-muted px-3 py-2 shadow-card dark:bg-ui-dark-muted" style={communityControlDepth} onPress={() => void choosePhoto()}><MaterialCommunityIcons name="image-multiple" size={27} color="#0B6B4F" /><Text className="ml-2 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Foto' : 'Photo'}</Text></Pressable><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl bg-ui-muted px-3 py-2 shadow-card dark:bg-ui-dark-muted" style={{ ...communityControlDepth, shadowColor: '#C33B3B' }} onPress={() => void chooseLocation()}><MaterialCommunityIcons name="map-marker-outline" size={27} color="#C33B3B" /><Text className="ml-1 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ubicación' : 'Location'}</Text></Pressable></View>
-            <MotionPressable accessibilityRole="button" className="min-w-28 items-center rounded-control bg-ui-primary px-6 py-3 shadow-card disabled:opacity-40 dark:bg-ui-dark-primary" disabled={busy || (!body.trim() && !asset && !location)} onPress={() => void publish()} style={communityDepth}>{busy ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar' : 'Post'}</Text>}</MotionPressable>
+            <ScrollView horizontal className="flex-1" contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl bg-ui-muted px-3 py-2 shadow-card dark:bg-ui-dark-muted" style={communityControlDepth} onPress={() => void choosePhoto()}><MaterialCommunityIcons name="image-multiple" size={25} color="#0B6B4F" /><Text className="ml-2 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Foto' : 'Photo'}</Text></Pressable><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl bg-ui-muted px-3 py-2 shadow-card dark:bg-ui-dark-muted" style={{ ...communityControlDepth, shadowColor: '#C33B3B' }} onPress={() => void chooseLocation()}><MaterialCommunityIcons name="map-marker-outline" size={25} color="#C33B3B" /><Text className="ml-1 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ubicación' : 'Location'}</Text></Pressable><Pressable accessibilityRole="button" className="flex-row items-center rounded-xl bg-ui-muted px-3 py-2 shadow-card dark:bg-ui-dark-muted" style={{ ...communityControlDepth, shadowColor: '#0077A8' }} onPress={() => { setPlaceSearchOpen((open) => !open); setPlaceSearch(''); }}><MaterialCommunityIcons name="map-search-outline" size={25} color="#0077A8" /><Text className="ml-1 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Recomendar un sitio' : 'Recommend a place'}</Text></Pressable></ScrollView>
+            <MotionPressable accessibilityRole="button" className="ml-2 min-w-24 items-center rounded-control bg-ui-primary px-4 py-3 shadow-card disabled:opacity-40 dark:bg-ui-dark-primary" disabled={busy || (!body.trim() && !assets.length && !location && !recommendation)} onPress={() => void publish()} style={communityDepth}>{busy ? <ActivityIndicator color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar' : 'Post'}</Text>}</MotionPressable>
           </View>
         </View>
 
@@ -236,6 +326,7 @@ export default function FriendsScreen() {
           const reactionTotal = Object.values(postReactions).reduce((total, count) => total + count, 0);
           const leadingReactions = reactions.filter(({ id }) => postReactions[id]).sort((a, b) => (postReactions[b.id] ?? 0) - (postReactions[a.id] ?? 0)).slice(0, 2);
           const own = post.user_id === session?.user.id;
+          const recommendedPlace = post.recommended_destination_id ? explorePlaces.data?.find((place) => place.id === post.recommended_destination_id && place.community === post.recommended_destination_is_community) : undefined;
           return <View className="mt-5 overflow-hidden rounded-card border border-ui-border bg-ui-surface shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface" key={post.id} style={communityDepth}>
             <View className="p-5">
               <View className="flex-row items-center">
@@ -245,7 +336,8 @@ export default function FriendsScreen() {
               </View>
               {post.body ? <Text className="mt-4 text-base leading-6 text-ui-text dark:text-ui-dark-text">{post.body}</Text> : null}
             </View>
-            {post.image_url ? <Image source={{ uri: post.image_url }} contentFit="cover" style={{ aspectRatio: 1.35, width: '100%' }} /> : null}
+            <PostImageGallery imageUrls={post.image_urls?.length ? post.image_urls : post.image_url ? [post.image_url] : []} language={language} />
+            {recommendedPlace ? <Pressable accessibilityLabel={language === 'es' ? `Abrir ficha de ${recommendedPlace.name}` : `Open ${recommendedPlace.name} details`} accessibilityRole="link" className="mx-5 mb-4 flex-row items-center overflow-hidden rounded-2xl border border-ui-primary/30 bg-ui-primary-soft shadow-card dark:bg-ui-dark-primary-soft" style={communityControlDepth} onPress={() => router.push({ pathname: '/(aux)/province', params: { category: recommendedPlace.category, destinationId: recommendedPlace.id, direct: '1', ...(recommendedPlace.community ? { community: '1' } : {}) } })}><RecommendedPlaceThumbnail place={recommendedPlace} /><View className="flex-1 flex-row items-center px-3 py-2"><View className="flex-1"><Text className="text-[10px] font-black uppercase tracking-wider text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Sitio recomendado' : 'Recommended place'}</Text><Text className="font-black text-ui-text dark:text-ui-dark-text" numberOfLines={1}>{recommendedPlace.name}</Text><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{recommendedPlace.province} · {recommendedPlace.category}</Text></View><MaterialCommunityIcons name="chevron-right" size={22} color="#0B6B4F" /></View></Pressable> : null}
             {post.latitude != null && post.longitude != null ? <Pressable className="mx-5 mb-4 flex-row items-center rounded-control bg-ui-muted p-4 shadow-card dark:bg-ui-dark-muted" style={communityControlDepth} onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${post.latitude},${post.longitude}`)}><MaterialCommunityIcons name="map-marker-radius" size={25} color="#0B6B4F" /><View className="ml-3 flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ver ubicación compartida' : 'View shared location'}</Text><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{post.latitude.toFixed(5)}, {post.longitude.toFixed(5)}</Text></View><MaterialCommunityIcons name="open-in-new" size={20} color="#0B6B4F" /></Pressable> : null}
             <View className="border-t border-ui-border px-5 py-3 dark:border-ui-dark-border">
               <View className="mb-2 flex-row items-center justify-between"><View className="flex-row items-center">{leadingReactions.map((item, index) => <View className="h-6 w-6 items-center justify-center rounded-full border border-white bg-ui-muted dark:border-ui-dark-surface dark:bg-ui-dark-muted" key={item.id} style={{ marginLeft: index ? -5 : 0 }}><Text className="text-sm">{item.icon}</Text></View>)}{reactionTotal ? <Text className="ml-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{reactionTotal.toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text> : null}</View><Pressable onPress={() => { setReplying(replying === post.id ? undefined : post.id); setReply(''); setParentReplyId(undefined); }}><Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{postReplies.length} {language === 'es' ? (postReplies.length === 1 ? 'comentario' : 'comentarios') : (postReplies.length === 1 ? 'comment' : 'comments')}</Text></Pressable></View>

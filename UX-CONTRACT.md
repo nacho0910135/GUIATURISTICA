@@ -59,7 +59,7 @@
 
 - **Admin data:** paginación de servidor cuando se introduzcan tablas extensas.
 - **Catálogos de destinos:** provincias y categorías ordenan primero por cercanía y presentan lotes automáticos de 5 destinos; al acercarse al final se incorporan los siguientes 5, sin botón y conservando el mismo criterio de cercanía.
-- **Feed social:** infinite scroll con alternativa accesible.
+- **Feed social:** infinite scroll con alternativa accesible. Cada publicación admite hasta cinco imágenes ordenadas; se muestran en una galería horizontal paginada con contador e indicadores visibles.
 - **URL/route state:** conservar filtros, sort y contexto al volver cuando Expo Router lo permita; no persistir búsqueda sensible.
 - **Empty/no-results/error/loading:** `EmptyState`, retry explícito, indicador estable; `Skeleton` sólo cuando coincide con geometría final.
 - **Back/scroll restoration:** volver conserva el contexto de origen; un refresh explícito no debe saltar la posición sin necesidad.

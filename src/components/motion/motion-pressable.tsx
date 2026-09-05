@@ -11,7 +11,11 @@ type MotionPressableProps = PressableProps & {
 export function MotionPressable({ children, containerStyle, disabled, onPressIn, onPressOut, scaleTo = 0.97, ...props }: MotionPressableProps) {
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const pressProgress = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: 1 - pressProgress.value * 0.08,
+    transform: [{ scale: scale.value }, { translateY: pressProgress.value * 1.5 }],
+  }));
 
   return (
     <Animated.View style={[containerStyle, animatedStyle]}>
@@ -19,11 +23,17 @@ export function MotionPressable({ children, containerStyle, disabled, onPressIn,
         {...props}
         disabled={disabled}
         onPressIn={(event) => {
-          if (!disabled && !reduceMotion) scale.value = withSpring(scaleTo, { damping: 18, stiffness: 320 });
+          if (!disabled && !reduceMotion) {
+            scale.value = withSpring(scaleTo, { damping: 18, stiffness: 360 });
+            pressProgress.value = withSpring(1, { damping: 20, stiffness: 420 });
+          }
           onPressIn?.(event);
         }}
         onPressOut={(event) => {
-          if (!reduceMotion) scale.value = withSpring(1, { damping: 16, stiffness: 280 });
+          if (!reduceMotion) {
+            scale.value = withSpring(1, { damping: 16, stiffness: 300 });
+            pressProgress.value = withSpring(0, { damping: 16, stiffness: 300 });
+          }
           onPressOut?.(event);
         }}
       >

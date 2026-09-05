@@ -89,7 +89,6 @@ export async function openSubscriptionCheckout({ offerId, serviceId }: { offerId
 }
 
 export async function openCampaignCheckout({ offerId, serviceId, targetUrl }: { offerId: CampaignOfferId; serviceId: string; targetUrl?: string }) {
-  if (Platform.OS !== 'web') throw new Error('Las campañas se contratan desde el panel web.');
   const returnUrl = Linking.createURL('commerce');
   const { data, error } = await supabase.functions.invoke('create-checkout-session', {
     body: { offerId, serviceId, targetUrl, returnUrl },

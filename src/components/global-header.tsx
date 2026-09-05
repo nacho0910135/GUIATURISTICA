@@ -70,7 +70,7 @@ export function GlobalHeader() {
     if (!session?.user.id) return;
     const refresh = () => { void refetchSocialActivityRef.current(); };
     const channel = supabase
-      .channel(`header-social-notifications:${session.user.id}`)
+      .channel(`header-social-notifications:${session.user.id}:${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
@@ -170,9 +170,8 @@ export function GlobalHeader() {
           <Pressable
             accessibilityLabel={isSpanish ? 'Ir a Explorar' : 'Go to Explore'}
             accessibilityRole="link"
-            className="min-h-11 flex-row items-center rounded-xl pr-3 shadow-card focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:focus-visible:ring-ui-dark-focus"
+            className="min-h-11 flex-row items-center rounded-xl pr-3 focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:focus-visible:ring-ui-dark-focus"
             onPress={() => router.replace({ pathname: '/(tabs)/explore', params: { reset: String(Date.now()) } })}
-            style={{ elevation: 6, shadowColor: colors.secondary, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 7 }}
           >
             <View className="relative h-11 w-11 rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
               <Animated.View className="absolute -inset-1 rounded-2xl bg-ui-secondary dark:bg-ui-dark-secondary" pointerEvents="none" style={{ opacity: glow, transform: [{ scale: glow.interpolate({ inputRange: [0.16, 0.46], outputRange: [0.94, 1.1] }) }] }} />
