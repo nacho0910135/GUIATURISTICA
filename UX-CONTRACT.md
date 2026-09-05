@@ -74,7 +74,7 @@
 | Delete | verbo exacto | confirmación permanece abierta | contexto válido | resultado persistente | retry/cancel en overlay | siguiente elemento lógico | política de lifecycle requerida |
 | Search | campo de búsqueda | contenido previo visible | misma ruta | conteo de resultados | clear/retry | input o heading de resultados | este contrato |
 | Upload/background job | verbo del archivo | progreso real | contexto de origen | estado confirmado por servidor | retry/cancel y datos preservados | elemento subido | `src/lib` + Storage RLS |
-| Registrar negocio | Publicar | botón ocupado; ubicación explícita requerida | panel del propietario | registro creado; fotos sincronizadas | formulario y selección preservados + retry | comercio recién creado | `register_commercial_service_v2` + RLS |
+| Registrar negocio | Enviar a revisión | botón ocupado; ubicación explícita requerida | panel del propietario | registro pendiente; fotos sincronizadas; no entra al feed | formulario y selección preservados + retry | comercio recién creado | `register_commercial_service_v2` + moderación/RLS |
 | Editar negocio propio | Guardar | botón ocupado estable | panel del propietario | perfil y métricas actualizados | formulario abierto + retry | resumen del comercio | `commercial_services` owner RLS |
 | Eliminar negocio propio | Eliminar negocio | confirmación destructiva con nombre y alcance | panel del propietario | desaparece del panel y directorio | confirmación permanece recuperable si falla | siguiente negocio o estado vacío | `commercial_services` owner DELETE RLS + cascadas FK |
 | Cancel/back | Cancelar / Volver | ninguno | origen | ninguno | guard de cambios si aplica | trigger/contexto original | Expo Router |
@@ -144,3 +144,10 @@
 - **Accessibility:** roles/nombres, 44 px en acciones principales, foco web visible, contraste y lector de pantalla en flujos críticos.
 - **Canonical sibling:** header y tarjetas del flujo Explorar como primera referencia de migración.
 - **Runtime gaps:** no hay suite de componentes/visual regression mantenida; debe agregarse al migrar pantallas completas.
+
+## Origen de cercanía en Comercios
+
+- `AppProvider.refreshUserLocation` es el dueño de adquisición y actualización del GPS, con estados de carga, permiso denegado y fallo recuperable. La caché de ubicación es opcional; su fallo no impide pedir una posición actual.
+- No se selecciona silenciosamente la primera región. Sin GPS, el visitante elige una región explícita mediante el picker nativo; antes de elegir no se consulta un directorio con coordenadas supuestas.
+- Las fichas y el detalle distinguen distancias desde el usuario y desde el centro regional. El modo regional respeta el radio configurado de esa región. La lista completa sigue ordenada por distancia; coordenadas desconocidas quedan al final.
+- Los controles de ubicación reutilizan `Button`; los mensajes son inline y bilingües. Campañas conserva precios, duración, renovación y checkout definidos en `src/lib/billing.ts`.

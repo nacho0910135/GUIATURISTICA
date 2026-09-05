@@ -99,7 +99,7 @@ export function GlobalHeader() {
             <Text className="ml-1.5 font-bold text-xs text-ui-text dark:text-ui-dark-text">₡{formattedRate}</Text>
           </View>
 
-          <View className="flex-row rounded-control border border-ui-border bg-ui-muted p-0.5 dark:border-ui-dark-border dark:bg-ui-dark-muted">
+          <View className="flex-row rounded-control border border-ui-border bg-ui-muted p-0.5 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-muted" style={{ elevation: 6, shadowColor: colors.primary, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 6 }}>
             {visitorOptions.map((item) => {
               const selected = visitorType === item.id;
               return (
@@ -107,9 +107,10 @@ export function GlobalHeader() {
                   accessibilityLabel={isSpanish ? item.labelEs : item.label}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  className={selected ? 'h-9 min-w-12 items-center justify-center rounded-[10px] bg-ui-primary px-3 focus-visible:ring-2 focus-visible:ring-ui-focus dark:bg-ui-dark-primary dark:focus-visible:ring-ui-dark-focus' : 'h-9 min-w-12 items-center justify-center rounded-[10px] px-3 focus-visible:ring-2 focus-visible:ring-ui-focus active:bg-ui-surface dark:focus-visible:ring-ui-dark-focus dark:active:bg-ui-dark-surface'}
+                  className={selected ? 'h-9 min-w-12 items-center justify-center rounded-[10px] bg-ui-primary px-3 shadow-card focus-visible:ring-2 focus-visible:ring-ui-focus dark:bg-ui-dark-primary dark:focus-visible:ring-ui-dark-focus' : 'h-9 min-w-12 items-center justify-center rounded-[10px] px-3 focus-visible:ring-2 focus-visible:ring-ui-focus active:bg-ui-surface dark:focus-visible:ring-ui-dark-focus dark:active:bg-ui-dark-surface'}
                   key={item.id}
                   onPress={() => setVisitorType(item.id)}
+                  style={selected ? { elevation: 5, shadowColor: colors.primary, shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.3, shadowRadius: 5 } : undefined}
                 >
                   <Text className={selected ? 'font-semibold text-xs text-white dark:text-ui-dark-background' : 'font-semibold text-xs text-ui-text-muted dark:text-ui-dark-text-muted'}>{item.label}</Text>
                 </Pressable>
@@ -144,10 +145,10 @@ function ThemeButton({ isSpanish, mode, onPress }: { isSpanish: boolean; mode: '
       accessibilityLabel={mode === 'dark' ? (isSpanish ? 'Cambiar a tema claro' : 'Switch to light theme') : (isSpanish ? 'Cambiar a tema oscuro' : 'Switch to dark theme')}
       accessibilityRole="switch"
       accessibilityState={{ checked: mode === 'dark' }}
-      className="h-10 w-16 overflow-hidden rounded-full border border-ui-border p-1 focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:border-ui-dark-border dark:focus-visible:ring-ui-dark-focus"
+      className="h-10 w-16 overflow-hidden rounded-full border border-ui-border p-1 shadow-card focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:border-ui-dark-border dark:focus-visible:ring-ui-dark-focus"
       hitSlop={4}
       onPress={onPress}
-      style={{ backgroundColor: mode === 'dark' ? '#1E5B75' : '#F5D76E' }}
+      style={{ backgroundColor: mode === 'dark' ? '#1E5B75' : '#F5D76E', elevation: 7, shadowColor: mode === 'dark' ? '#102E40' : '#B96708', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.28, shadowRadius: 7 }}
     >
       {mode === 'dark'
         ? <Sun color="#B96708" size={15} strokeWidth={2.2} style={{ left: 10, position: 'absolute', top: 12 }} />

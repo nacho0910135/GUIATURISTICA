@@ -162,3 +162,7 @@ La voz usa verbos concretos, español costarricense natural e inglés directo. A
 - **Don't:** usar blur o sombras como decoración en todas las superficies.
 - **Don't:** introducir hexadecimales, radios o tiempos locales sin un rol semántico nuevo.
 - **Don't:** sacrificar contraste, alcance táctil o estabilidad de layout por una animación.
+
+### Panel de propietarios y campañas
+
+El panel conserva Plus Jakarta Sans, superficies neblina y tarjetas de datos. Campañas publicitarias aparece antes de las métricas y usa un acento dorado translúcido exclusivo, solicitado para distinguir esta herramienta comercial. `colors.commerceGold` en `src/theme/tokens.json`, expuesto por `appTheme`, es su dueño: tinta clara `#745313`, tinta oscura `#F1D28A`, superficie clara `#D6AF4820`, oscura `#D6AF481A`, bordes `#B68C354D` / `#D6AF4859` y realce `#D6AF4833`. El color dorado no representa verificación ni estado de pago. La cabecera prioriza el negocio; solicitudes de reclamo quedan después del contenido de gestión. El panel limita su ancho a 768 px en web y conserva un único scroll interior.

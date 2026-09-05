@@ -202,7 +202,20 @@ export default function FaunaScreen() {
         <View className="mt-3 flex-row flex-wrap gap-3">{filteredSpecies.map((item) => {
           const seen = home.seenSpeciesIds.has(item.id);
           const marking = markingId === item.id;
-          return <View className={seen ? 'flex-row items-center rounded-card border-2 border-ui-primary bg-ui-primary-soft p-3 dark:border-ui-dark-primary dark:bg-ui-dark-primary-soft' : 'flex-row items-center rounded-card border border-ui-border bg-ui-surface p-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={item.id} style={{ width: columns === 1 ? '100%' : columns === 2 ? '49%' : '24%' }}>
+          return <View
+            className={seen ? 'flex-row items-center rounded-card border-2 border-ui-primary bg-ui-primary-soft p-3 shadow-card dark:border-ui-dark-primary dark:bg-ui-dark-primary-soft' : 'flex-row items-center rounded-card border border-ui-border bg-ui-surface p-3 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface'}
+            key={item.id}
+            style={{
+              borderBottomColor: seen ? colors.primary : colors.border,
+              borderBottomWidth: seen ? 5 : 4,
+              elevation: seen ? 9 : 7,
+              shadowColor: colors.primary,
+              shadowOffset: { height: seen ? 6 : 5, width: 0 },
+              shadowOpacity: seen ? 0.24 : 0.17,
+              shadowRadius: seen ? 8 : 7,
+              width: columns === 1 ? '100%' : columns === 2 ? '49%' : '24%',
+            }}
+          >
             <Pressable accessibilityRole="button" className="min-w-0 flex-1 flex-row items-center" onPress={() => router.push({ pathname: '/(aux)/species', params: { id: item.id } })}>
               {item.image_url ? <Image source={{ uri: item.image_url }} contentFit="cover" style={{ borderRadius: 12, height: 56, width: 56 }} transition={180} /> : <View className="h-14 w-14 items-center justify-center rounded-xl bg-ui-muted dark:bg-ui-dark-muted"><MaterialCommunityIcons name="paw" size={26} color={colors.primary} /></View>}
               <View className="ml-3 min-w-0 flex-1">

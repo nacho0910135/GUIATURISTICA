@@ -28,6 +28,9 @@ type AppContextValue = {
   session: Session | null;
   authReady: boolean;
   userLocation: Coordinates | null;
+  locating: boolean;
+  locationError: 'denied' | 'unavailable' | null;
+  refreshUserLocation: () => Promise<void>;
   isDark: boolean;
   t: (key: CopyKey) => string;
   setVisitorType: (value: VisitorType) => void;
@@ -73,6 +76,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [authReady, setAuthReady] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const locationRefreshInFlight = useRef(false);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<'denied' | 'unavailable' | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const session = userSession;
   const isAuthenticated = Boolean(userSession);
@@ -80,20 +85,34 @@ export function AppProvider({ children }: PropsWithChildren) {
   const refreshUserLocation = useCallback(async () => {
     if (locationRefreshInFlight.current) return;
     locationRefreshInFlight.current = true;
+    setLocating(true);
+    setLocationError(null);
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
-      if (!permission.granted) return;
+      if (!permission.granted) {
+        setUserLocation(null);
+        setLocationError('denied');
+        return;
+      }
 
       const cached = await Location.getLastKnownPositionAsync({
         maxAge: 2 * 60 * 1000,
         requiredAccuracy: 1000,
-      });
+      }).catch(() => null);
       if (cached) setUserLocation(cached.coords);
 
-      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      // Expo's web adapter defaults to maximumAge: Infinity. A refresh must
+      // request a fresh browser fix instead of reusing an old travel location.
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        ...(Platform.OS === 'web' ? { maximumAge: 0, timeout: 15000 } : {}),
+      });
       setUserLocation(current.coords);
+    } catch {
+      setLocationError('unavailable');
     } finally {
       locationRefreshInFlight.current = false;
+      setLocating(false);
     }
   }, []);
 
@@ -242,9 +261,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [userSession]);
 
   const value = useMemo<AppContextValue>(() => ({
-    language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, userLocation, isDark: mode === 'dark', t,
+    language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, isDark: mode === 'dark', t,
     setVisitorType, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut,
-  }), [language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, userLocation, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
+  }), [language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

@@ -31,7 +31,7 @@ export async function syncOfflineTripPack(zone: string): Promise<OfflineTripPack
   if (regions.error) throw regions.error;
   const regionIds = (regions.data ?? []).map((region) => region.id);
   const commerces = regionIds.length
-    ? await supabase.from('commercial_services').select('id,category,subcategories,region_id,is_claimed,source,main_category,subcategory,title,description,phone_whatsapp,whatsapp,external_url,menu_url,booking_url,cover_image_url,photos,price_range,opening_hours,parking,has_parking,payment_methods,accessibility,languages,experience_type,certifications,location,owner_id,is_sponsored,claim_status,business_verified_at,business_verification_evidence_url,business_updated_at').in('region_id', regionIds).limit(1000)
+    ? await supabase.from('commercial_services').select('id,category,subcategories,region_id,is_claimed,source,main_category,subcategory,title,description,phone_whatsapp,whatsapp,external_url,menu_url,booking_url,cover_image_url,photos,price_range,opening_hours,parking,has_parking,payment_methods,accessibility,languages,experience_type,certifications,location,owner_id,is_sponsored,claim_status,business_verified_at,business_verification_evidence_url,business_updated_at,moderation_status').in('region_id', regionIds).eq('moderation_status', 'approved').limit(1000)
     : { data: [], error: null };
   if (commerces.error) throw commerces.error;
   const pack: OfflineTripPack = { zone, savedAt: new Date().toISOString(), destinations, buses: [...touristBuses, ...cantonalBuses], ferries, contacts: emergencyContacts, commerces: commerces.data ?? [] };
@@ -53,7 +53,7 @@ export async function getOfflineCommerceServices(category: string) {
   for (const row of rows) {
     try {
       const pack = JSON.parse(row.data) as OfflineTripPack;
-      for (const service of pack.commerces ?? []) if (service.category === category && typeof service.id === 'string') services.set(service.id, service);
+      for (const service of pack.commerces ?? []) if (service.moderation_status === 'approved' && service.category === category && typeof service.id === 'string') services.set(service.id, service);
     } catch { /* Ignore one corrupted offline pack. */ }
   }
   return [...services.values()];

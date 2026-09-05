@@ -1,5 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsFocused, useScrollToTop } from 'expo-router/react-navigation';
 import * as Location from 'expo-location';
@@ -154,7 +155,7 @@ export default function ExploreScreen() {
         ))
       )}
       {places.isError ? (
-        <Pressable accessibilityRole="button" className="items-center bg-ui-primary p-4 dark:bg-ui-dark-primary" onPress={() => void places.refetch()}>
+        <Pressable accessibilityRole="button" className="items-center bg-ui-primary p-4 shadow-card dark:bg-ui-dark-primary" style={{ elevation: 7, shadowColor: '#073F31', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.28, shadowRadius: 7 }} onPress={() => void places.refetch()}>
           <Text className="font-black text-white">{language === 'es' ? 'Reintentar cargar destinos' : 'Retry loading destinations'}</Text>
         </Pressable>
       ) : !places.isPending && !visiblePlaces.length ? (
@@ -167,25 +168,31 @@ export default function ExploreScreen() {
     <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180, zIndex: 10 }}>
         <View className="w-full flex-row items-stretch gap-2">
-          <Pressable
+          <MotionPressable
             accessibilityRole="button"
             accessibilityState={{ selected: Boolean(coordinates) }}
             className="relative min-h-12 flex-1 flex-row items-center justify-center overflow-hidden rounded-2xl border border-white/60 px-3 py-3"
+            containerStyle={{ flex: 1 }}
             onPress={() => void discover()}
-            style={{ backgroundColor: volcanoColor, elevation: 8, shadowColor: volcanoColor, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.3, shadowRadius: 12 }}
+            style={{ backgroundColor: volcanoColor, elevation: 9, shadowColor: '#163D3F', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.34, shadowRadius: 8 }}
           >
-            <View className="absolute left-5 right-5 top-0 h-[2px] rounded-full bg-white/80" />
+            <LinearGradient colors={['rgba(255,255,255,0.40)', 'rgba(255,255,255,0.05)', 'rgba(0,0,0,0.14)']} locations={[0, 0.48, 1]} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
+            <View className="absolute left-4 right-4 top-1 h-[2px] rounded-full bg-white/90" />
             <MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" />
             <Text className="ml-2 flex-shrink text-center text-xs font-black text-white" numberOfLines={2}>{language === 'es' ? 'Destinos Turísticos Cercanos' : 'Nearby Tourist Destinations'}</Text>
-          </Pressable>
-          <Pressable
+          </MotionPressable>
+          <MotionPressable
             accessibilityRole="button"
-            className="min-h-12 w-32 flex-none flex-row items-center justify-center rounded-2xl border border-black bg-ui-primary-soft px-3 py-3 active:opacity-75 dark:bg-ui-dark-primary-soft"
+            className="relative min-h-12 flex-row items-center justify-center overflow-hidden rounded-2xl border border-[#5DB990] bg-[#DDF3E8] px-3 py-3 dark:border-[#47C08A] dark:bg-[#164330]"
+            containerStyle={{ width: 128 }}
             onPress={() => router.push({ pathname: '/(tabs)/fauna', params: { from: 'explore' } })}
+            style={{ elevation: 8, shadowColor: '#07543F', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.3, shadowRadius: 8 }}
           >
-            <MaterialCommunityIcons name="paw" size={18} color="#087443" />
-            <Text className="ml-1.5 text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Fauna' : 'Wildlife'}</Text>
-          </Pressable>
+            <LinearGradient colors={['rgba(255,255,255,0.72)', 'rgba(255,255,255,0.08)', 'rgba(7,84,63,0.13)']} locations={[0, 0.5, 1]} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
+            <View className="absolute left-4 right-4 top-1 h-[2px] rounded-full bg-white/90" />
+            <MaterialCommunityIcons name="paw" size={19} color="#07543F" />
+            <Text className="ml-1.5 text-xs font-black text-[#07543F] dark:text-[#8DE0B6]">{language === 'es' ? 'Fauna' : 'Wildlife'}</Text>
+          </MotionPressable>
         </View>
         <Text className="mb-1.5 mt-3 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Busca un sitio por nombre' : 'Search for a place by name'}</Text>
         <View className="relative">
@@ -194,23 +201,27 @@ export default function ExploreScreen() {
               <MaterialCommunityIcons name="magnify" size={23} color="#68737A" />
               <TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Ej. Playa Doña Ana' : 'E.g. Doña Ana Beach'} placeholderTextColor="#68737A" value={search} />
               {search ? (
-                <Pressable accessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'} accessibilityRole="button" hitSlop={10} onPress={() => setSearch('')}>
+                <Pressable accessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'} accessibilityRole="button" className="rounded-full bg-ui-muted p-1 shadow-card dark:bg-ui-dark-muted" hitSlop={10} style={{ elevation: 4, shadowColor: '#073F31', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.18, shadowRadius: 4 }} onPress={() => setSearch('')}>
                   <MaterialCommunityIcons name="close-circle" size={21} color="#68737A" />
                 </Pressable>
               ) : null}
             </View>
-            <Pressable
+            <MotionPressable
               accessibilityLabel={language === 'es' ? 'Agregar sitio' : 'Add place'}
               accessibilityRole="button"
-              className="min-h-12 w-32 flex-none flex-row items-center justify-center rounded-control bg-[#2A7B4C] px-3 active:bg-[#1E6038] active:opacity-75"
+              className="relative min-h-12 flex-row items-center justify-center overflow-hidden rounded-control border border-[#67BC8B] bg-[#2A7B4C] px-3"
+              containerStyle={{ width: 128 }}
               onPress={() => {
                 if (!requireAuth(language === 'es' ? 'Agregar un sitio' : 'Add a place') || !session) return;
                 setProposalOpen(true);
               }}
+              style={{ elevation: 9, shadowColor: '#073F31', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.36, shadowRadius: 8 }}
             >
+              <LinearGradient colors={['rgba(255,255,255,0.34)', 'rgba(255,255,255,0.04)', 'rgba(3,30,24,0.24)']} locations={[0, 0.48, 1]} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
+              <View className="absolute left-4 right-4 top-1 h-[2px] rounded-full bg-white/80" />
               <MaterialCommunityIcons name="plus" size={19} color="white" />
               <Text className="ml-1.5 text-center text-xs font-black leading-3 text-white">{language === 'es' ? 'Agregar\nnuevo sitio' : 'Add\nnew place'}</Text>
-            </Pressable>
+            </MotionPressable>
           </View>
           {hasSearch ? <View className="absolute left-0 right-0 z-20" style={{ elevation: 20, marginTop: 8, top: '100%' }}>{resultContent}</View> : null}
         </View>
@@ -225,10 +236,11 @@ export default function ExploreScreen() {
                 <MotionPressable
                   accessibilityLabel={`${optionLabel(category, language)}, ${places.isPending ? (language === 'es' ? 'cargando cantidad' : 'loading count') : `${count} ${language === 'es' ? 'sitios' : 'places'}`}`}
                   accessibilityRole="button"
-                  className="items-center px-1 py-3"
-                  containerStyle={{ width: '25%' }}
+                  className="my-1 items-center rounded-card border border-ui-border bg-ui-surface px-1 py-3 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface"
+                  containerStyle={{ paddingHorizontal: 2, width: '25%' }}
                   key={category.id}
                   onPress={() => { router.push({ pathname: '/(aux)/province', params: { categoryId: category.id } }); void haptic('selection'); }}
+                  style={{ elevation: 7, shadowColor: color, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.24, shadowRadius: 7 }}
                 >
                   <View className="items-center justify-center" style={{ backgroundColor: `${color}20`, borderRadius: (wide ? 64 : 51) / 2, height: wide ? 64 : 51, width: wide ? 64 : 51 }}>
                     <MaterialCommunityIcons name={category.icon ?? 'map-marker-outline'} size={wide ? 34 : 27} color={color} />
@@ -236,7 +248,7 @@ export default function ExploreScreen() {
                       <Text className="text-[10px] font-black text-white">{places.isPending ? '…' : count}</Text>
                     </View>
                   </View>
-                  <Text className="mt-2 text-center text-sm font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{optionLabel(category, language)}</Text>
+                  <Text className="mt-2 text-center text-[13px] font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{optionLabel(category, language)}</Text>
                 </MotionPressable>
               );
             })}
@@ -254,11 +266,11 @@ export default function ExploreScreen() {
         <View className="mx-5 mt-4 rounded-card border border-[#ffac16]/40 bg-ui-surface p-4 dark:bg-ui-dark-surface">
           <View className="flex-row items-center"><MaterialCommunityIcons name="alert-outline" size={24} color="#d97706" /><View className="ml-2.5 flex-1"><Text className="text-base font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Alertas viales actuales' : 'Current road alerts'}</Text><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">Mapbox Traffic · {roadAlerts.data ? new Date(roadAlerts.data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (language === 'es' ? 'actualizando…' : 'updating…')}</Text></View></View>
           {roadAlerts.isPending ? <ActivityIndicator className="my-4" color="#d97706" /> : null}
-          {roadAlerts.isError ? <View accessibilityRole="alert" className="mt-3"><Text className="font-bold text-coral-600">{language === 'es' ? 'No se pudo consultar Mapbox Traffic.' : 'Mapbox Traffic could not be reached.'}</Text><Pressable accessibilityRole="button" className="min-h-11 justify-center self-start" onPress={() => void roadAlerts.refetch()}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : null}
+          {roadAlerts.isError ? <View accessibilityRole="alert" className="mt-3"><Text className="font-bold text-coral-600">{language === 'es' ? 'No se pudo consultar Mapbox Traffic.' : 'Mapbox Traffic could not be reached.'}</Text><Pressable accessibilityRole="button" className="mt-3 min-h-11 justify-center self-start rounded-control border border-ui-border bg-ui-surface px-4 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface" style={{ elevation: 6, shadowColor: '#073F31', shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 6 }} onPress={() => void roadAlerts.refetch()}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : null}
           <View className="mt-2 gap-2">{roadAlerts.data?.alerts.map((alert) => <RoadAlertRow alert={alert} key={alert.id} language={language} onReport={setReportingRoad} />)}</View>
           <Text className="mt-3 text-[10px] leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Congestión, cierres e incidentes de Mapbox. Actualización aproximada cada 8 minutos.' : 'Congestion, closures, and incidents from Mapbox. Updated approximately every 8 minutes.'}</Text>
         </View>
-        <Pressable accessibilityRole="button" className="mx-5 mb-5 mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-coral-500/40 px-5 py-3" onPress={() => setRoadReportOpen(true)}>
+        <Pressable accessibilityRole="button" className="mx-5 mb-5 mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-coral-500/40 bg-ui-surface px-5 py-3 shadow-card dark:bg-ui-dark-surface" style={{ elevation: 7, shadowColor: '#B42318', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.2, shadowRadius: 7 }} onPress={() => setRoadReportOpen(true)}>
           <MaterialCommunityIcons name="road-variant" size={21} color="#B42318" />
           <Text className="ml-2 font-black text-coral-600">{language === 'es' ? 'Reportar carretera afectada' : 'Report an affected road'}</Text>
         </Pressable>
@@ -274,7 +286,7 @@ export default function ExploreScreen() {
 
 function RoadAlertRow({ alert, language, onReport }: { alert: RoadTrafficAlert; language: 'es' | 'en'; onReport: (alert: RoadTrafficAlert) => void }) {
   const colors = alert.status === 'closed' ? ['#7f1d1d', '#fee2e2'] : alert.status === 'heavy' ? ['#b45309', '#fff7ed'] : alert.status === 'moderate' ? ['#a16207', '#fefce8'] : ['#047857', '#ecfdf5'];
-  return <View className="rounded-2xl border border-ui-border bg-ui-muted p-3 dark:border-ui-dark-border dark:bg-ui-dark-muted"><View className="flex-row items-start"><Text className="flex-1 font-black text-ui-text dark:text-ui-dark-text">{alert.name}</Text><View className="ml-2 rounded-xl px-2.5 py-1.5" style={{ backgroundColor: colors[1] }}><Text className="text-xs font-black" style={{ color: colors[0] }}>{alert.statusLabel}</Text></View></View><Text className="mt-1 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{alert.detail}</Text><Pressable accessibilityRole="button" className="mt-2 min-h-11 justify-center self-start rounded-xl border border-ui-border px-3 dark:border-ui-dark-border" onPress={() => onReport(alert)}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Reportar carretera afectada' : 'Report affected road'}</Text></Pressable></View>;
+  return <View className="rounded-2xl border border-ui-border bg-ui-muted p-3 dark:border-ui-dark-border dark:bg-ui-dark-muted"><View className="flex-row items-start"><Text className="flex-1 font-black text-ui-text dark:text-ui-dark-text">{alert.name}</Text><View className="ml-2 rounded-xl px-2.5 py-1.5" style={{ backgroundColor: colors[1] }}><Text className="text-xs font-black" style={{ color: colors[0] }}>{alert.statusLabel}</Text></View></View><Text className="mt-1 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{alert.detail}</Text><Pressable accessibilityRole="button" className="mt-2 min-h-11 justify-center self-start rounded-xl border border-ui-border bg-ui-surface px-3 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface" style={{ elevation: 6, shadowColor: colors[0], shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 6 }} onPress={() => onReport(alert)}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Reportar carretera afectada' : 'Report affected road'}</Text></Pressable></View>;
 }
 
 function PlaceResultsSkeleton({ language, large }: { language: 'es' | 'en'; large: boolean }) {
@@ -363,7 +375,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
   const description = language === 'es' ? place.description : place.description_en;
   if (large) {
     return (
-      <Pressable accessibilityRole="button" className="overflow-hidden rounded-card border border-ui-border bg-ui-surface active:opacity-85 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={onPress}>
+      <Pressable accessibilityRole="button" className="overflow-hidden rounded-card border border-ui-border bg-ui-surface shadow-card active:opacity-85 dark:border-ui-dark-border dark:bg-ui-dark-surface" style={{ elevation: 7, shadowColor: '#073F31', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.18, shadowRadius: 7 }} onPress={onPress}>
         <DestinationPreviewCarousel active={active} large place={place} />
         <View className="p-4">
           <View className="flex-row flex-wrap items-center">
@@ -378,7 +390,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
             <Text className="text-sm font-black text-ui-primary dark:text-ui-dark-primary">{place.price_national_crc == null ? (language === 'es' ? 'Consultar precio' : 'Check price') : formatPrice(place.price_national_crc)}</Text>
             {origin ? <Text className="font-black text-ui-secondary dark:text-ui-dark-secondary">{distanceKm(origin, place).toFixed(1)} km</Text> : <MaterialCommunityIcons name="arrow-right" size={21} color="#0077A8" />}
           </View>
-          {place.community && place.contributor_name && !ownContribution ? <Pressable className="mt-3 self-start rounded-full bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft" onPress={(event) => { event.stopPropagation(); onFollow(); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{followed ? (language === 'es' ? 'Siguiendo' : 'Following') : language === 'es' ? `Seguir a ${place.contributor_name}` : `Follow ${place.contributor_name}`}</Text></Pressable> : null}
+          {place.community && place.contributor_name && !ownContribution ? <Pressable className="mt-3 self-start rounded-full bg-ui-primary-soft px-3 py-2 shadow-card dark:bg-ui-dark-primary-soft" style={{ elevation: 5, shadowColor: '#073F31', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.2, shadowRadius: 5 }} onPress={(event) => { event.stopPropagation(); onFollow(); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{followed ? (language === 'es' ? 'Siguiendo' : 'Following') : language === 'es' ? `Seguir a ${place.contributor_name}` : `Follow ${place.contributor_name}`}</Text></Pressable> : null}
         </View>
       </Pressable>
     );

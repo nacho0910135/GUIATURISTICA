@@ -126,7 +126,7 @@ export default function ProvinceCatalogScreen() {
   const scopeTitle = categoryName ?? (categoryId ? (language === 'es' ? 'Cargando catálogo…' : 'Loading catalog…') : province.name);
   const scopeKey = categoryName ? `category-${categoryId ?? categoryName}` : `province-${province.code}`;
   const places = useQuery({
-    queryKey: ['places', 'v2', scopeKey, categoryOption?.allowed_targets?.join('|') ?? null, destinationId ?? null, isCommunitySubmission, session?.user.id],
+    queryKey: ['places', 'v3', scopeKey, categoryOption?.allowed_targets?.join('|') ?? null, destinationId ?? null, isCommunitySubmission, session?.user.id],
     queryFn: async () => {
       if (destinationId) {
         const destination = await getPlaceById(destinationId, session?.user.id, isCommunitySubmission);

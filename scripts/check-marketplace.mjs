@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [baseMigration, taxonomyMigration, regionsMigration, secureRegionsMigration, ownerFkMigration, officialCommerceMigration, reportsMigration, commerceSync, commerce, screen, reports, province, explore, profile, claimScreen, claimGuardMigration, freshnessMigration] = await Promise.all([
+const [baseMigration, taxonomyMigration, regionsMigration, secureRegionsMigration, ownerFkMigration, officialCommerceMigration, reportsMigration, commerceSync, commerce, screen, reports, province, explore, profile, claimScreen, claimGuardMigration, freshnessMigration, offlinePack] = await Promise.all([
   readFile(new URL('../supabase/migrations/20260828235854_local_tourism_marketplace.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260829005508_commerce_categories_and_subcategories.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260829012419_commerce_regions_and_hybrid_sources.sql', import.meta.url), 'utf8'),
@@ -19,6 +19,7 @@ const [baseMigration, taxonomyMigration, regionsMigration, secureRegionsMigratio
   readFile(new URL('../src/app/claim-business.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260830105635_reject_claims_for_claimed_businesses.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260830112646_community_freshness_and_b2b_attribution.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../src/lib/offline-trip-pack.native.ts', import.meta.url), 'utf8'),
 ]);
 const migration = `${baseMigration}\n${taxonomyMigration}`;
 assert.match(regionsMigration, /create table if not exists public\.commerce_regions/);
@@ -66,6 +67,8 @@ assert.match(claimScreen, /requestCommercialServiceClaim/);
 assert.match(claimScreen, /Solicitud enviada/);
 assert.match(claimGuardMigration, /service_already_claimed/);
 assert.match(screen, /Registrar comercio/);
+assert.match(screen, /Enviar a revisión/);
+assert.match(offlinePack, /eq\('moderation_status', 'approved'\)/);
 for (const field of ['menuUrl', 'bookingUrl', 'websiteUrl', 'parking', 'hasParking', 'paymentMethods', 'accessibility', 'languages', 'experienceType', 'certifications', 'photos']) assert.match(screen, new RegExp(field));
 assert.match(screen, /allowsMultipleSelection: true/);
 assert.match(screen, /BusinessLocationEditor/);

@@ -1,5 +1,7 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import type { ImagePickerAsset } from 'expo-image-picker';
+import { File } from 'expo-file-system';
+import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import { getAppOptions } from '@/lib/app-options';
@@ -633,13 +635,25 @@ export async function uploadBusinessPhotos(service: Pick<OwnerDashboardService, 
   const uploaded: { path: string; url: string }[] = [];
   try {
     for (const asset of assets) {
-      const context = ImageManipulator.manipulate(asset.uri);
-      context.resize({ width: Math.min(asset.width || 1600, 1600) });
-      const rendered = await context.renderAsync();
-      const saved = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
-      const bytes = await (await fetch(saved.uri)).arrayBuffer();
-      const path = `${auth.user.id}/${service.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
-      const { error } = await storage.upload(path, bytes, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+      let bytes: ArrayBuffer;
+      let contentType = 'image/jpeg';
+      let extension = 'jpg';
+      if (Platform.OS === 'web' && asset.file) {
+        bytes = await asset.file.arrayBuffer();
+        contentType = asset.file.type || asset.mimeType || 'image/jpeg';
+        extension = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
+      } else {
+        const context = ImageManipulator.manipulate(asset.uri);
+        context.resize({ width: Math.min(asset.width || 1600, 1600) });
+        const rendered = await context.renderAsync();
+        const saved = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
+        const processedFile = new File(saved.uri);
+        if (!processedFile.exists) throw new Error('No se pudo preparar la imagen. Elegí la foto nuevamente.');
+        bytes = await processedFile.arrayBuffer();
+      }
+      if (!bytes.byteLength || bytes.byteLength > 6 * 1024 * 1024) throw new Error('Cada foto debe pesar menos de 6 MB.');
+      const path = `${auth.user.id}/${service.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`;
+      const { error } = await storage.upload(path, bytes, { contentType, cacheControl: '3600', upsert: false });
       if (error) throw error;
       uploaded.push({ path, url: storage.getPublicUrl(path).data.publicUrl });
     }
