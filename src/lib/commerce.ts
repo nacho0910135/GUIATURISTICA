@@ -86,6 +86,7 @@ export type CommerceAdCampaign = {
   service_id: string;
   campaign_type: 'featured' | 'banner';
   target_url: string | null;
+  image_url: string | null;
   starts_at: string;
   ends_at: string;
   status: 'active' | 'expired' | 'refunded';
@@ -94,6 +95,8 @@ export type CommerceAdCampaign = {
 export type CommerceBannerCampaign = CommerceAdCampaign & {
   business: { id: string; title: string; cover_image_url: string | null };
 };
+export type CampaignBannerFocus = 'top' | 'center' | 'bottom';
+export type PreparedCampaignBanner = { uri: string; width: 1200; height: 400 };
 export type CinemaMovie = {
   id: string;
   title_es: string;
@@ -176,13 +179,14 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
 
 export async function getActiveCommerceBanners(): Promise<CommerceBannerCampaign[]> {
   const now = new Date().toISOString();
-  const { data, error } = await supabase.from('commerce_ad_campaigns').select('id,service_id,campaign_type,target_url,starts_at,ends_at,status,commercial_services!inner(id,title,cover_image_url,moderation_status)').eq('campaign_type', 'banner').eq('status', 'active').lte('starts_at', now).gt('ends_at', now).eq('commercial_services.moderation_status', 'approved').order('ends_at');
+  const { data, error } = await supabase.from('commerce_ad_campaigns').select('id,service_id,campaign_type,target_url,image_url,starts_at,ends_at,status,commercial_services!inner(id,title,cover_image_url,moderation_status)').eq('campaign_type', 'banner').eq('status', 'active').lte('starts_at', now).gt('ends_at', now).eq('commercial_services.moderation_status', 'approved').order('ends_at');
   if (error) throw error;
   return (data ?? []).map((campaign) => ({
     id: campaign.id,
     service_id: campaign.service_id,
     campaign_type: campaign.campaign_type,
     target_url: campaign.target_url,
+    image_url: campaign.image_url,
     starts_at: campaign.starts_at,
     ends_at: campaign.ends_at,
     status: campaign.status,
@@ -191,9 +195,46 @@ export async function getActiveCommerceBanners(): Promise<CommerceBannerCampaign
 }
 
 export async function getMyCommerceCampaigns(): Promise<CommerceAdCampaign[]> {
-  const { data, error } = await supabase.from('commerce_ad_campaigns').select('id,service_id,campaign_type,target_url,starts_at,ends_at,status').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('commerce_ad_campaigns').select('id,service_id,campaign_type,target_url,image_url,starts_at,ends_at,status').order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as CommerceAdCampaign[];
+}
+
+export async function prepareCampaignBanner(asset: ImagePickerAsset, focus: CampaignBannerFocus = 'center'): Promise<PreparedCampaignBanner> {
+  if (!asset.width || !asset.height) throw new Error('No pudimos leer el tamaño de la imagen. Elegí otra foto.');
+  if (asset.fileSize && asset.fileSize > 6 * 1024 * 1024) throw new Error('La imagen debe pesar menos de 6 MB.');
+  if (asset.mimeType && !['image/jpeg', 'image/png', 'image/webp'].includes(asset.mimeType)) throw new Error('Usá una imagen JPG, PNG o WebP.');
+
+  const ratio = 3;
+  const cropWidth = Math.min(asset.width, Math.round(asset.height * ratio));
+  const cropHeight = Math.min(asset.height, Math.round(asset.width / ratio));
+  const originX = Math.max(0, Math.round((asset.width - cropWidth) / 2));
+  const remainingY = Math.max(0, asset.height - cropHeight);
+  const originY = focus === 'top' ? 0 : focus === 'bottom' ? remainingY : Math.round(remainingY / 2);
+  const context = ImageManipulator.manipulate(asset.uri);
+  context.crop({ originX, originY, width: cropWidth, height: cropHeight });
+  context.resize({ width: 1200, height: 400 });
+  const rendered = await context.renderAsync();
+  const saved = await rendered.saveAsync({ compress: 0.86, format: SaveFormat.JPEG });
+  return { uri: saved.uri, width: 1200, height: 400 };
+}
+
+export async function uploadCampaignBanner(serviceId: string, banner: PreparedCampaignBanner) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('Debés iniciar sesión para subir el banner.');
+  const file = new File(banner.uri);
+  if (!file.exists) throw new Error('No se pudo preparar el banner. Elegí la imagen nuevamente.');
+  const bytes = await file.arrayBuffer();
+  if (!bytes.byteLength || bytes.byteLength > 3 * 1024 * 1024) throw new Error('El banner procesado supera el límite de 3 MB.');
+  const path = `${auth.user.id}/${serviceId}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.jpg`;
+  const storage = supabase.storage.from('campaign-banners');
+  const { error } = await storage.upload(path, bytes, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
+  if (error) throw error;
+  return { path, url: storage.getPublicUrl(path).data.publicUrl };
+}
+
+export async function deleteCampaignBannerUpload(path: string) {
+  await supabase.storage.from('campaign-banners').remove([path]);
 }
 
 export async function getCinemaMovies(): Promise<CinemaMovie[]> {

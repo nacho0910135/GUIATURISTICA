@@ -88,10 +88,10 @@ export async function openSubscriptionCheckout({ offerId, serviceId }: { offerId
   return WebBrowser.openAuthSessionAsync(checkoutUrl, returnUrl);
 }
 
-export async function openCampaignCheckout({ offerId, serviceId, targetUrl }: { offerId: CampaignOfferId; serviceId: string; targetUrl?: string }) {
+export async function openCampaignCheckout({ offerId, serviceId, targetUrl, imageUrl }: { offerId: CampaignOfferId; serviceId: string; targetUrl?: string; imageUrl?: string }) {
   const returnUrl = Linking.createURL('commerce');
   const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-    body: { offerId, serviceId, targetUrl, returnUrl },
+    body: { offerId, serviceId, targetUrl, imageUrl, returnUrl },
   });
   if (error) throw error;
   if (!data?.url) throw new Error('No se pudo crear una sesión de Checkout.');

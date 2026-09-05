@@ -31,12 +31,13 @@ Deno.serve(async (request) => {
   const offerId = body.offerId as keyof typeof offers | undefined;
   const serviceId = typeof body.serviceId === 'string' ? body.serviceId : undefined;
   const targetUrl = typeof body.targetUrl === 'string' ? body.targetUrl.trim() : undefined;
+  const imageUrl = typeof body.imageUrl === 'string' ? body.imageUrl.trim() : undefined;
   const returnUrl = typeof body.returnUrl === 'string' ? body.returnUrl : undefined;
   if (!offerId || !offers[offerId] || !returnUrl || !isAllowedReturnUrl(returnUrl)) return json({ error: 'invalid_checkout_request' }, 400);
   const offer = offers[offerId];
   const isCampaign = 'campaignType' in offer;
   if (isCampaign ? !serviceId : offer.plan === 'no_ads' ? serviceId : !serviceId) return json({ error: 'invalid_business_selection' }, 400);
-  if (isCampaign && offer.campaignType === 'banner' && !isSafeTargetUrl(targetUrl)) return json({ error: 'invalid_banner_url' }, 400);
+  if (isCampaign && offer.campaignType === 'banner' && (!isSafeTargetUrl(targetUrl) || !isOwnedBannerUrl(imageUrl, supabaseUrl, user.id, serviceId))) return json({ error: 'invalid_banner_creative' }, 400);
 
   if (serviceId) {
     const { data: business, error } = await supabase.from('commercial_services').select('id').eq('id', serviceId).eq('owner_id', user.id).eq('moderation_status', 'approved').maybeSingle();
@@ -60,12 +61,14 @@ Deno.serve(async (request) => {
   if (isCampaign) {
     form.set('metadata[campaign_type]', offer.campaignType);
     if (targetUrl) form.set('metadata[target_url]', targetUrl);
+    if (imageUrl) form.set('metadata[image_url]', imageUrl);
     if (offer.mode === 'subscription') {
       form.set('subscription_data[metadata][user_id]', user.id);
       form.set('subscription_data[metadata][service_id]', serviceId!);
       form.set('subscription_data[metadata][offer_id]', offerId);
       form.set('subscription_data[metadata][campaign_type]', offer.campaignType);
       if (targetUrl) form.set('subscription_data[metadata][target_url]', targetUrl);
+      if (imageUrl) form.set('subscription_data[metadata][image_url]', imageUrl);
     }
   } else {
     form.set('metadata[plan]', offer.plan);
@@ -96,6 +99,15 @@ function isAllowedReturnUrl(value: string) {
 function isSafeTargetUrl(value?: string) {
   if (!value || value.length > 500) return false;
   try { const url = new URL(value); return url.protocol === 'https:' || url.protocol === 'http:'; } catch { return false; }
+}
+
+function isOwnedBannerUrl(value: string | undefined, supabaseUrl: string, userId: string, serviceId?: string) {
+  if (!value || !serviceId || value.length > 500) return false;
+  try {
+    const url = new URL(value);
+    const expected = new URL(`/storage/v1/object/public/campaign-banners/${userId}/${serviceId}/`, supabaseUrl);
+    return url.protocol === 'https:' && url.origin === expected.origin && url.pathname.startsWith(expected.pathname);
+  } catch { return false; }
 }
 
 function withCheckoutStatus(value: string, status: 'success' | 'cancel') {

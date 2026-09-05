@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [tabs, billing, screen, commerce, checkout, webhook, migration, campaignMigration] = await Promise.all([
+const [tabs, billing, screen, commerce, checkout, webhook, migration, campaignMigration, bannerImageMigration] = await Promise.all([
   readFile(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/lib/billing.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/app/subscriptions.tsx', import.meta.url), 'utf8'),
@@ -10,6 +10,7 @@ const [tabs, billing, screen, commerce, checkout, webhook, migration, campaignMi
   readFile(new URL('../supabase/functions/stripe-webhook/index.ts', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260830110914_add_subscription_offer_pricing.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260904193320_add_commerce_ad_campaigns.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20260905230000_add_campaign_banner_images.sql', import.meta.url), 'utf8'),
 ]);
 
 for (const tab of ['explore', 'my-trip', 'commerce', 'friends']) assert.match(tabs, new RegExp(`name="${tab}"`));
@@ -57,5 +58,11 @@ assert.match(campaignMigration, /num_nonnulls\(provider_session_id, provider_sub
 assert.match(campaignMigration, /grant select \(id, service_id, campaign_type, target_url, status, starts_at, ends_at, created_at\)/);
 assert.doesNotMatch(billing, /Las campañas se contratan desde el panel web/);
 assert.match(commerce, /Contratar una vez/);
+assert.match(commerce, /prepareCampaignBanner/);
+assert.match(commerce, /Previsualización del banner/);
+assert.match(checkout, /metadata\[image_url\]/);
+assert.match(webhook, /image_url: imageUrl/);
+assert.match(bannerImageMigration, /campaign-banners/);
+assert.match(bannerImageMigration, /image_url/);
 assert.doesNotMatch(commerce, /Google o Stripe/);
 console.log('Subscriptions, one-time passes, business billing, and 30-day commerce campaigns are wired.');

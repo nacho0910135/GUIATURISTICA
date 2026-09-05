@@ -106,7 +106,8 @@ async function handleOneTimePass(session: StripeCheckoutSession, supabaseUrl: st
   if ('campaignType' in offer) {
     const serviceId = session.metadata?.service_id;
     const targetUrl = session.metadata?.target_url || null;
-    if (!serviceId || session.metadata?.campaign_type !== offer.campaignType || (offer.campaignType === 'banner' && !targetUrl)) return new Response('invalid_campaign_metadata', { status: 400 });
+    const imageUrl = session.metadata?.image_url || null;
+    if (!serviceId || session.metadata?.campaign_type !== offer.campaignType || (offer.campaignType === 'banner' && (!targetUrl || !imageUrl))) return new Response('invalid_campaign_metadata', { status: 400 });
     const { data: business } = await supabase.from('commercial_services').select('id').eq('id', serviceId).eq('owner_id', userId).maybeSingle();
     if (!business) return new Response('business_not_owned', { status: 403 });
     const { error } = await supabase.from('commerce_ad_campaigns').insert({
@@ -114,6 +115,7 @@ async function handleOneTimePass(session: StripeCheckoutSession, supabaseUrl: st
       user_id: userId,
       campaign_type: offer.campaignType,
       target_url: targetUrl,
+      image_url: imageUrl,
       amount_usd: session.amount_total / 100,
       provider_session_id: session.id,
       starts_at: new Date(startsAt).toISOString(),
@@ -145,10 +147,11 @@ async function handleCampaignSubscription(subscription: StripeSubscription, even
   const serviceId = subscription.metadata?.service_id;
   const campaignType = subscription.metadata?.campaign_type;
   const targetUrl = subscription.metadata?.target_url || null;
+  const imageUrl = subscription.metadata?.image_url || null;
   const amount = subscription.items?.data?.[0]?.price?.unit_amount;
   const currency = subscription.items?.data?.[0]?.price?.currency?.toLowerCase();
   if (!offer || !('campaignType' in offer) || !userId || !serviceId || campaignType !== offer.campaignType || amount !== offer.amount * 100 || currency !== offer.currency || !subscription.current_period_end) return new Response('invalid_campaign_subscription', { status: 400 });
-  if (offer.campaignType === 'banner' && !targetUrl) return new Response('invalid_campaign_metadata', { status: 400 });
+  if (offer.campaignType === 'banner' && (!targetUrl || !imageUrl)) return new Response('invalid_campaign_metadata', { status: 400 });
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
   const { data: business } = await supabase.from('commercial_services').select('id').eq('id', serviceId).eq('owner_id', userId).maybeSingle();
   if (!business) return new Response('business_not_owned', { status: 403 });
@@ -158,6 +161,7 @@ async function handleCampaignSubscription(subscription: StripeSubscription, even
     user_id: userId,
     campaign_type: offer.campaignType,
     target_url: targetUrl,
+    image_url: imageUrl,
     status: active ? 'active' : 'expired',
     amount_usd: amount / 100,
     provider_session_id: null,
