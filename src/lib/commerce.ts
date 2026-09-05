@@ -477,7 +477,7 @@ export type OwnerDashboardService = {
   business_updated_at: string | null;
   latitude: number | null;
   longitude: number | null;
-  subscription: { plan: string; status: string; price_usd: number; current_period_end: string | null } | null;
+  subscription: { plan: string; status: string; price_amount: number; price_currency: string; current_period_end: string | null } | null;
   metrics: {
     views: number;
     whatsapp_clicks: number;
@@ -544,7 +544,7 @@ export async function getOwnerDashboard() {
   if (!services.length) return [];
   const [{ data: events, error: eventError }, { data: subscriptions, error: subscriptionError }] = await Promise.all([
     supabase.from('business_events').select('service_id,event_type,attribution,created_at').in('service_id', services.map((service) => service.id)),
-    supabase.from('subscriptions').select('service_id,plan,status,price_usd,current_period_end').in('service_id', services.map((service) => service.id)).in('status', ['active', 'pending', 'past_due']).order('created_at', { ascending: false }),
+    supabase.from('subscriptions').select('service_id,plan,status,price_amount,price_currency,current_period_end').in('service_id', services.map((service) => service.id)).in('status', ['active', 'pending', 'past_due']).order('created_at', { ascending: false }),
   ]);
   if (eventError) throw eventError;
   if (subscriptionError) throw subscriptionError;
@@ -588,6 +588,26 @@ export async function getOwnerDashboard() {
       },
     };
   });
+}
+
+export async function deleteOwnedCommercialService(service: Pick<OwnerDashboardService, 'id' | 'photos' | 'cover_image_url'>) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('Debés iniciar sesión para eliminar un negocio.');
+  const { error } = await supabase.from('commercial_services').delete().eq('id', service.id).eq('owner_id', auth.user.id).select('id').single();
+  if (error) throw error;
+
+  const marker = '/storage/v1/object/public/business-photos/';
+  const paths = [...new Set([service.cover_image_url, ...service.photos].flatMap((url) => {
+    if (!url) return [];
+    try {
+      const pathname = new URL(url).pathname;
+      const index = pathname.indexOf(marker);
+      return index < 0 ? [] : [decodeURIComponent(pathname.slice(index + marker.length))];
+    } catch { return []; }
+  }))];
+  if (paths.length) {
+    try { await supabase.storage.from('business-photos').remove(paths); } catch { /* The business is already deleted; orphan cleanup can be retried separately. */ }
+  }
 }
 
 async function updateBusinessPhotoState(serviceId: string, photos: string[], coverImageUrl: string | null) {

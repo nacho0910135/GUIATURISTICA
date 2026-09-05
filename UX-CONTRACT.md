@@ -76,6 +76,7 @@
 | Upload/background job | verbo del archivo | progreso real | contexto de origen | estado confirmado por servidor | retry/cancel y datos preservados | elemento subido | `src/lib` + Storage RLS |
 | Registrar negocio | Publicar | botón ocupado; ubicación explícita requerida | panel del propietario | registro creado; fotos sincronizadas | formulario y selección preservados + retry | comercio recién creado | `register_commercial_service_v2` + RLS |
 | Editar negocio propio | Guardar | botón ocupado estable | panel del propietario | perfil y métricas actualizados | formulario abierto + retry | resumen del comercio | `commercial_services` owner RLS |
+| Eliminar negocio propio | Eliminar negocio | confirmación destructiva con nombre y alcance | panel del propietario | desaparece del panel y directorio | confirmación permanece recuperable si falla | siguiente negocio o estado vacío | `commercial_services` owner DELETE RLS + cascadas FK |
 | Cancel/back | Cancelar / Volver | ninguno | origen | ninguno | guard de cambios si aplica | trigger/contexto original | Expo Router |
 | Soft-delete | Archivar / Desactivar | dialog busy | lista válida | Undo sólo si es real | dialog conserva contexto | siguiente elemento | pendiente de política mantenida |
 | Hard-delete | Eliminar permanentemente | dialog danger busy | lista válida | confirmación persistente | verificar resultado antes de retry | siguiente elemento | bloqueado sin política mantenida |

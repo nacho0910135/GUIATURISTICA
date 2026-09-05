@@ -16,6 +16,7 @@ import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { campaignOffers, openCampaignCheckout, type CampaignOfferId } from '@/lib/billing';
 import {
   deleteBusinessPhoto,
+  deleteOwnedCommercialService,
   getBusinessReviews,
   getCinemaMovies,
   getCommercialFavoriteIds,
@@ -309,6 +310,7 @@ export default function CommerceScreen() {
   const [editBusy, setEditBusy] = useState(false);
   const [editLocation, setEditLocation] = useState<MapCoordinate>();
   const [photoBusyId, setPhotoBusyId] = useState<string>();
+  const [deleteBusyId, setDeleteBusyId] = useState<string>();
   const [campaignBusy, setCampaignBusy] = useState<string>();
   const [bannerUrls, setBannerUrls] = useState<Record<string, string>>({});
   const [detail, setDetail] = useState<CommerceService | null>(null);
@@ -526,6 +528,27 @@ export default function CommerceScreen() {
     ]);
   };
 
+  const removeBusiness = (service: OwnerDashboardService) => {
+    Alert.alert(
+      language === 'es' ? 'Eliminar negocio' : 'Delete business',
+      language === 'es'
+        ? `¿Eliminar ${service.title}? Desaparecerá del directorio y se borrarán sus métricas, campañas, solicitudes y fotos. Esta acción no se puede deshacer.`
+        : `Delete ${service.title}? It will disappear from the directory and its metrics, campaigns, claims, and photos will be deleted. This cannot be undone.`,
+      [
+        { text: language === 'es' ? 'Cancelar' : 'Cancel', style: 'cancel' },
+        { text: language === 'es' ? 'Eliminar negocio' : 'Delete business', style: 'destructive', onPress: async () => {
+          setDeleteBusyId(service.id);
+          try {
+            await deleteOwnedCommercialService(service);
+            await Promise.all([dashboard.refetch(), directory.refetch(), campaigns.refetch(), claims.refetch()]);
+          } catch (error) {
+            Alert.alert(language === 'es' ? 'No se pudo eliminar' : 'Delete failed', error instanceof Error ? error.message : 'Error');
+          } finally { setDeleteBusyId(undefined); }
+        } },
+      ],
+    );
+  };
+
   const toggleFavorite = async (service: CommerceService) => {
     if (!requireAuth(language === 'es' ? 'guardar un comercio' : 'save a business')) return;
     const saved = (favoriteIds.data ?? []).includes(service.id);
@@ -586,11 +609,11 @@ export default function CommerceScreen() {
               }) : <Text className="mt-3 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Todavía no enviaste solicitudes.' : 'You have not submitted any claims yet.'}</Text>}
 
               <Text className="mt-6 text-xs font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Mis negocios' : 'My businesses'}</Text>
-              {dashboard.isLoading ? <ActivityIndicator className="py-8" color="#087443" /> : dashboard.isError ? <Text className="mt-3 text-sm font-semibold text-red-600">{language === 'es' ? 'No pudimos cargar tus negocios.' : 'Your businesses could not load.'}</Text> : dashboard.data?.length ? dashboard.data.map((service) => {
+              {dashboard.isLoading ? <ActivityIndicator className="py-8" color="#087443" /> : dashboard.isError ? <View accessibilityRole="alert" className="mt-3 rounded-card border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30"><Text className="text-sm font-semibold text-red-700 dark:text-red-300">{language === 'es' ? 'No pudimos cargar tus negocios.' : 'Your businesses could not load.'}</Text><Pressable accessibilityRole="button" className="mt-3 min-h-11 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => void dashboard.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : dashboard.data?.length ? dashboard.data.map((service) => {
                 const categoryInfo = categories.find((item) => item.id === service.category);
                 const tagLabels = subcategories.filter((tag) => tag.parent_id === service.category && service.subcategories.includes(tag.id)).map((tag) => language === 'es' ? tag.label_es : tag.label_en);
                 return <View key={service.id} className="mt-4 overflow-hidden rounded-card border border-ui-border bg-ui-background dark:border-ui-dark-border dark:bg-ui-dark-background">
-                  <View className="relative min-h-44 justify-end overflow-hidden bg-ui-primary p-5 dark:bg-ui-dark-surface">{service.cover_image_url ? <Image source={{ uri: service.cover_image_url }} className="absolute inset-0 h-full w-full opacity-35" resizeMode="cover" /> : null}<View className="absolute inset-0 bg-black/25" /><View><View className="flex-row items-center"><Text className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white">{service.subscription ? `${service.subscription.plan} · ${service.subscription.status}` : (language === 'es' ? 'PERFIL PROPIETARIO' : 'OWNER PROFILE')}</Text><Text className="ml-2 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black text-ui-primary">{service.claim_status.toUpperCase()}</Text></View><Text className="mt-3 text-2xl font-black text-white">{service.title}</Text><Text className="mt-1 text-xs font-bold text-white/80">{(language === 'es' ? categoryInfo?.label_es : categoryInfo?.label_en) ?? service.category} · {regions.find((region) => region.id === service.region_id)?.[language === 'es' ? 'name_es' : 'name_en'] ?? (service.latitude != null ? (language === 'es' ? 'Ubicación exacta configurada' : 'Exact location set') : (language === 'es' ? 'Ubicación pendiente' : 'Location pending'))}</Text>{service.subscription ? <Text className="mt-2 text-xs font-bold text-white">US${Number(service.subscription.price_usd).toFixed(2)} · {service.subscription.current_period_end ? `${language === 'es' ? 'vigente hasta' : 'active until'} ${new Date(service.subscription.current_period_end).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}` : (language === 'es' ? 'activación pendiente' : 'activation pending')}</Text> : null}</View></View>
+                  <View className="relative min-h-44 justify-end overflow-hidden bg-ui-primary p-5 dark:bg-ui-dark-surface">{service.cover_image_url ? <Image source={{ uri: service.cover_image_url }} className="absolute inset-0 h-full w-full opacity-35" resizeMode="cover" /> : null}<View className="absolute inset-0 bg-black/25" /><View><View className="flex-row items-center"><Text className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white">{service.subscription ? `${service.subscription.plan} · ${service.subscription.status}` : (language === 'es' ? 'PERFIL PROPIETARIO' : 'OWNER PROFILE')}</Text><Text className="ml-2 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black text-ui-primary">{service.claim_status.toUpperCase()}</Text></View><Text className="mt-3 text-2xl font-black text-white">{service.title}</Text><Text className="mt-1 text-xs font-bold text-white/80">{(language === 'es' ? categoryInfo?.label_es : categoryInfo?.label_en) ?? service.category} · {regions.find((region) => region.id === service.region_id)?.[language === 'es' ? 'name_es' : 'name_en'] ?? (service.latitude != null ? (language === 'es' ? 'Ubicación exacta configurada' : 'Exact location set') : (language === 'es' ? 'Ubicación pendiente' : 'Location pending'))}</Text>{service.subscription ? <Text className="mt-2 text-xs font-bold text-white">{service.subscription.price_currency} {Number(service.subscription.price_amount).toFixed(2)} · {service.subscription.current_period_end ? `${language === 'es' ? 'vigente hasta' : 'active until'} ${new Date(service.subscription.current_period_end).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}` : (language === 'es' ? 'activación pendiente' : 'activation pending')}</Text> : null}</View></View>
                   <View className="p-4">
                   {tagLabels.length ? <View className="mt-2 flex-row flex-wrap gap-2">{tagLabels.map((tag) => <Text key={tag} className="rounded-full bg-ui-primary-soft px-2 py-1 text-[10px] font-black text-ui-primary dark:bg-ui-dark-primary-soft">{tag}</Text>)}</View> : null}
                   <OwnerAnalytics language={language} service={service} />
@@ -598,6 +621,7 @@ export default function CommerceScreen() {
                   <View className="mt-4 flex-row items-center justify-between"><View><Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Galería del negocio' : 'Business gallery'}</Text><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{service.photos.length}/12 · {language === 'es' ? 'selección múltiple disponible' : 'multiple selection available'}</Text></View><Pressable accessibilityRole="button" disabled={photoBusyId === service.id || service.photos.length >= 12} className="min-h-11 flex-row items-center rounded-control bg-ui-primary px-3 disabled:opacity-50" onPress={() => void addPhotos(service)}>{photoBusyId === service.id ? <ActivityIndicator size="small" color="white" /> : <MaterialCommunityIcons name="image-multiple-outline" size={17} color="white" />}<Text className="ml-1 text-xs font-black text-white">{language === 'es' ? 'Agregar fotos' : 'Add photos'}</Text></Pressable></View>
                   {service.photos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>{service.photos.map((photo) => <View key={photo} className="overflow-hidden rounded-2xl bg-ui-muted"><Image source={{ uri: photo }} className="h-28 w-36" resizeMode="cover" />{service.cover_image_url === photo ? <Text className="absolute left-2 top-2 rounded-full bg-ui-primary px-2 py-1 text-[9px] font-black text-white">{language === 'es' ? 'PORTADA' : 'COVER'}</Text> : null}<View className="flex-row justify-end gap-1 p-1"><Pressable accessibilityLabel={language === 'es' ? 'Usar como portada' : 'Use as cover'} className="rounded-lg bg-white p-1.5" onPress={() => void chooseCover(service, photo)}><MaterialCommunityIcons name={service.cover_image_url === photo ? 'star' : 'star-outline'} size={17} color="#087443" /></Pressable><Pressable accessibilityLabel={language === 'es' ? 'Eliminar foto' : 'Delete photo'} className="rounded-lg bg-white p-1.5" onPress={() => removePhoto(service, photo)}><MaterialCommunityIcons name="trash-can-outline" size={17} color="#B42318" /></Pressable></View></View>)}</ScrollView> : <View className="mt-3 items-center rounded-2xl border border-dashed border-ui-border py-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="image-multiple-outline" size={28} color="#68737A" /><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Agregá una foto; la primera será la portada.' : 'Add a photo; the first one becomes the cover.'}</Text></View>}
                   <Pressable accessibilityRole="button" className="mt-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => openEditor(service)}><MaterialCommunityIcons name="tune-variant" size={18} color="white" /><Text className="ml-2 text-center font-black text-white">{language === 'es' ? 'Editar todo el perfil' : 'Edit full profile'}</Text></Pressable>
+                  <Pressable accessibilityRole="button" accessibilityState={{ busy: deleteBusyId === service.id, disabled: Boolean(deleteBusyId) }} disabled={Boolean(deleteBusyId)} className="mt-5 min-h-12 flex-row items-center justify-center border-t border-red-200 pt-4 disabled:opacity-50 dark:border-red-900" onPress={() => removeBusiness(service)}>{deleteBusyId === service.id ? <ActivityIndicator size="small" color="#B42318" /> : <MaterialCommunityIcons name="trash-can-outline" size={18} color="#B42318" />}<Text className="ml-2 font-black text-red-700 dark:text-red-300">{language === 'es' ? 'Eliminar este negocio' : 'Delete this business'}</Text></Pressable>
                   </View>
                 </View>;
               }) : <View className="items-center py-10"><MaterialCommunityIcons name="store-plus-outline" size={42} color="#68737A" /><Text className="mt-3 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Todavía no tenés comercios reclamados.' : 'You have no claimed businesses yet.'}</Text></View>}
