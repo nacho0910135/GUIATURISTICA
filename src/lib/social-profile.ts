@@ -58,7 +58,7 @@ export async function getPrivateConversations(userId: string): Promise<PrivateCo
     const profile = profileById.get(partnerId);
     const current: PrivateConversation = conversations.get(partnerId) ?? {
       partner_id: partnerId,
-      partner_name: profile?.full_name || profile?.username || 'Viajero',
+      partner_name: profile?.username || profile?.full_name || 'Viajero',
       partner_avatar_url: profile?.avatar_url ?? null,
       messages: [] as PrivateMessage[],
       unread_count: 0,
@@ -103,9 +103,15 @@ export async function getSocialProfile(userId: string) {
     supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('fauna_photos').select('id,fauna_id,user_id,image_url,caption,likes_count,created_at,fauna_species(common_name_es,common_name_en)').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'destination'),
-    supabase.from('notifications').select('id,recipient_id,actor_id,type,entity_type,entity_id,message,read_status,created_at,actor:users!notifications_actor_id_fkey(username,full_name,avatar_url)').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(50),
+    supabase.from('notifications').select('id,recipient_id,actor_id,type,target_id,read_status,created_at,actor:users!notifications_actor_id_fkey(username,full_name,avatar_url)').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(50),
   ]);
-  if (profile.error) throw profile.error;
+  const profileError = profile.error ?? followers.error ?? following.error ?? posts.error ?? sightings.error ?? saved.error ?? notifications.error;
+  if (profileError) throw profileError;
+  const followerIds = (followers.data ?? []).map((item) => item.follower_id);
+  const followerProfiles = followerIds.length
+    ? await supabase.from('users').select('id,username,full_name,avatar_url').in('id', followerIds)
+    : { data: [], error: null };
+  if (followerProfiles.error) throw followerProfiles.error;
   const savedIds = (saved.data ?? []).map((item) => item.target_id);
   const destinations = savedIds.length ? await supabase.from('destinations').select('id,name,province,cover_image_url,destination_photos(image_url,sort_order)').in('id', savedIds) : { data: [], error: null };
   const savedDestinations = (destinations.data ?? []).map((destination) => ({ ...destination, cover_image_url: destination.cover_image_url ?? destination.destination_photos?.sort((a, b) => a.sort_order - b.sort_order)[0]?.image_url ?? null }));
@@ -113,7 +119,7 @@ export async function getSocialProfile(userId: string) {
     ...photo,
     fauna_species: Array.isArray(photo.fauna_species) ? photo.fauna_species[0] : photo.fauna_species,
   }));
-  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: normalizedSightings, saved: savedDestinations, notifications: notifications.data ?? [] };
+  return { profile: profile.data, followers: followerProfiles.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: normalizedSightings, saved: savedDestinations, notifications: notifications.data ?? [] };
 }
 
 async function uploadImage(bucket: 'profile-avatars' | 'destination-photos', owner: string, asset: ImagePickerAsset) {
@@ -284,7 +290,10 @@ export async function getPublicTravelerProfile(userId: string, viewerId?: string
   const followed = viewerId
     ? await supabase.from('user_follows').select('followed_id').eq('follower_id', viewerId).eq('followed_id', userId).maybeSingle()
     : { data: null, error: null };
-  const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? followed.error;
+  const blocked = viewerId
+    ? await supabase.from('user_blocks').select('blocked_id').eq('blocker_id', viewerId).eq('blocked_id', userId).maybeSingle()
+    : { data: null, error: null };
+  const error = profile.error ?? followers.error ?? following.error ?? posts.error ?? followed.error ?? blocked.error;
   if (error) throw error;
-  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], followed: Boolean(followed.data) };
+  return { profile: profile.data, followers: followers.data ?? [], following: following.data ?? [], posts: posts.data ?? [], followed: Boolean(followed.data), blocked: Boolean(blocked.data) };
 }

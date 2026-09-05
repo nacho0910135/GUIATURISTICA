@@ -1,16 +1,18 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
-import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
+import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import * as ImagePicker from 'expo-image-picker';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
+import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
+import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { reviewCommercialClaim } from '@/lib/commerce';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
-import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, reviewUserSubmission, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation, type PrivateMessage } from '@/lib/social-profile';
+import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, reviewUserSubmission, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation } from '@/lib/social-profile';
 import { reportTypeLabel, updateInformationReportStatus } from '@/lib/reports';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/providers/app-provider';
@@ -21,6 +23,7 @@ type NotificationItem = Dashboard['notifications'][number];
 type Section = 'notifications' | 'community' | 'sightings' | 'saved' | 'messages' | 'suggestions' | 'login';
 
 export default function ProfileScreen() {
+  const params = useLocalSearchParams<{ section?: string; partnerId?: string }>();
   const { avatarUrl, isAdmin, isAuthenticated, language, session, setAvatarUrl, signIn, signOut } = useApp();
   const [section, setSection] = useState<Section>();
   const [data, setData] = useState<Dashboard>();
@@ -54,8 +57,15 @@ export default function ProfileScreen() {
   const conversations = useQuery({
     queryKey: ['private-conversations', userId],
     queryFn: () => getPrivateConversations(userId),
-    enabled: Boolean(userId) && section === 'messages',
+    enabled: Boolean(userId),
     staleTime: 60 * 1000,
+  });
+  useEffect(() => {
+    if (params.section === 'messages') setSection('messages');
+    if (params.section === 'community') setSection('community');
+  }, [params.section]);
+  useTravelerMessagesSync(section === 'messages' ? userId || undefined : undefined, () => {
+    void queryClient.invalidateQueries({ queryKey: ['private-conversations', userId] });
   });
   const adminDashboard = useQuery({
     queryKey: ['admin-dashboard', userId],
@@ -87,10 +97,22 @@ export default function ProfileScreen() {
   }, [editingProfile, profileSummary.data]);
   useFocusEffect(
     useCallback(() => {
-      if (!data) void load();
-    }, [data, load]),
+      void load();
+      if (userId) void queryClient.invalidateQueries({ queryKey: ['private-conversations', userId] });
+      const interval = userId ? setInterval(() => { void load(); }, 2500) : undefined;
+      return () => { if (interval) clearInterval(interval); };
+    }, [load, queryClient, userId]),
   );
-
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`profile-activity:${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` }, () => {
+        void load();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [load, queryClient, userId]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -161,7 +183,8 @@ export default function ProfileScreen() {
     {
       key: 'community',
       icon: 'account-group-outline',
-      label: tr(language, 'Comunidad', 'Community'),
+      label: tr(language, 'Seguidores', 'Followers'),
+      count: data ? data.followers.length : undefined,
     },
     {
       key: 'sightings',
@@ -192,6 +215,11 @@ export default function ProfileScreen() {
       label: isAuthenticated ? (isAdmin ? tr(language, 'Administrar', 'Admin') : tr(language, 'Mi sesión', 'My session')) : tr(language, 'Iniciar sesión', 'Sign in'),
     },
   ];
+  const toggleSection = (key: Section) => {
+    const next = section === key ? undefined : key;
+    setSection(next);
+    router.setParams({ section: next === 'messages' ? 'messages' : next === 'community' ? 'community' : '', partnerId: '' });
+  };
 
   if (!isAuthenticated)
     return (
@@ -284,9 +312,9 @@ export default function ProfileScreen() {
           <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
           <Text className="ml-2 font-black text-red-600 dark:text-red-400">{tr(language, 'Cerrar sesión', 'Sign out')}</Text>
         </Pressable>
-        <View className="mt-4 gap-2">
+        <View className="mt-4 flex-row flex-wrap gap-2">
           {tabs.map((tab) => (
-            <Pressable accessibilityRole="button" accessibilityState={{ expanded: section === tab.key }} className={section === tab.key ? 'flex-row items-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary' : 'flex-row items-center rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={tab.key} onPress={() => setSection((current) => (current === tab.key ? undefined : tab.key))}>
+            <Pressable accessibilityRole="button" accessibilityState={{ expanded: section === tab.key }} className={section === tab.key ? 'min-h-14 w-[48.5%] flex-row items-center rounded-2xl bg-ui-primary px-3 py-3 dark:bg-ui-dark-primary' : 'min-h-14 w-[48.5%] flex-row items-center rounded-2xl border border-ui-border bg-ui-surface px-3 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={tab.key} onPress={() => toggleSection(tab.key)}>
               <MaterialCommunityIcons name={tab.icon} size={21} color={section === tab.key ? 'white' : '#9eabc4'} />
               <Text className={section === tab.key ? 'ml-3 flex-1 font-black text-white' : 'ml-3 flex-1 font-black text-ui-text-muted dark:text-ui-dark-text-muted'}>{tab.label}</Text>
               {tab.count !== undefined ? <Text className={section === tab.key ? 'font-black text-white' : 'font-black text-ui-primary dark:text-ui-dark-primary'}>{tab.count}</Text> : null}
@@ -334,10 +362,13 @@ export default function ProfileScreen() {
         ) : null}
         {data && section === 'community' ? (
           <View>
-            <Title>{tr(language, 'Comunidad & Exploradores', 'Community & Explorers')}</Title>
-            <Text className="mt-3 text-ui-text-muted dark:text-ui-dark-text-muted">
-              {data.followers.length} {tr(language, 'seguidores', 'followers')} · {data.following.length} {tr(language, 'siguiendo', 'following')}
-            </Text>
+            <Title>{tr(language, 'Seguidores', 'Followers')}</Title>
+            <ListEmpty empty={!data.followers.length} language={language}>
+              {data.followers.map((follower) => {
+                const followerName = follower.username || follower.full_name || tr(language, 'Viajero', 'Traveler');
+                return <Pressable accessibilityLabel={`${tr(language, 'Abrir perfil de', 'Open profile of')} ${followerName}`} accessibilityRole="link" className="mb-3 min-h-16 flex-row items-center rounded-2xl border border-ui-border bg-ui-muted p-3 active:opacity-75 dark:border-ui-dark-border dark:bg-ui-dark-muted" key={follower.id} onPress={() => router.push({ pathname: '/(aux)/traveler-profile', params: { id: follower.id } })}>{follower.avatar_url ? <Image source={{ uri: follower.avatar_url }} style={{ borderRadius: 24, height: 48, width: 48 }} /> : <View className="h-12 w-12 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="account" size={25} color="white" /></View>}<View className="ml-3 flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{followerName}</Text>{follower.username && follower.full_name && follower.username !== follower.full_name ? <Text className="mt-0.5 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{follower.full_name}</Text> : null}</View><MaterialCommunityIcons name="chevron-right" size={22} color="#8f9bb2" /></Pressable>;
+              })}
+            </ListEmpty>
           </View>
         ) : null}
         {data && section === 'sightings' ? (
@@ -372,7 +403,7 @@ export default function ProfileScreen() {
             ))}
           </ListEmpty>
         ) : null}
-        {data && section === 'messages' ? conversations.isPending ? <ActivityIndicator color="#13bd83" /> : <MessagesPanel conversations={conversations.data ?? []} language={language} userId={userId} userAvatarUrl={data.profile?.avatar_url ?? avatarUrl} busy={busy} refresh={async () => { await Promise.all([load(), conversations.refetch()]); }} run={run} /> : null}
+        {data && section === 'messages' ? conversations.isPending ? <ActivityIndicator color="#13bd83" /> : <MessagesPanel conversations={conversations.data ?? []} initialPartnerId={params.partnerId} language={language} userId={userId} userAvatarUrl={data.profile?.avatar_url ?? avatarUrl} busy={busy} refresh={async () => { await Promise.all([load(), conversations.refetch()]); }} run={run} /> : null}
         {section === 'suggestions' ? (
           <View>
             <Title>{tr(language, 'Sugerencias para el creador', 'Suggestions for the creator')}</Title>
@@ -748,7 +779,7 @@ function NotificationRow({ item, language, notificationType, busy, onRead }: { i
       <View className="flex-row items-start">
         <MaterialCommunityIcons name={notificationType?.icon ?? (unread ? 'bell-ring-outline' : 'bell-outline')} size={24} color="#0B6B4F" />
         <View className="ml-3 flex-1">
-          <Text className="font-semibold text-ui-text dark:text-ui-dark-text">{`${actor?.full_name || actor?.username || tr(language, 'Un viajero', 'A traveler')} ${notificationType ? (language === 'es' ? notificationType.label_es : notificationType.label_en) : tr(language, 'generó una actividad nueva', 'created new activity')}`}</Text>
+          <Text className="font-semibold text-ui-text dark:text-ui-dark-text">{`${actor?.username || actor?.full_name || tr(language, 'Un viajero', 'A traveler')} ${notificationType ? (language === 'es' ? notificationType.label_es : notificationType.label_en) : tr(language, 'generó una actividad nueva', 'created new activity')}`}</Text>
           <Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{new Date(item.created_at).toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text>
         </View>
         {unread ? <ProfileButton label={tr(language, 'Marcar leída', 'Mark read')} disabled={busy} onPress={onRead} /> : <Text className="text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{tr(language, 'Leída', 'Read')}</Text>}
@@ -757,9 +788,10 @@ function NotificationRow({ item, language, notificationType, busy, onRead }: { i
   );
 }
 
-function MessagesPanel({ conversations, language, userId, userAvatarUrl, busy, refresh, run }: { conversations: PrivateConversation[]; language: 'es' | 'en'; userId: string; userAvatarUrl: string | null; busy: boolean; refresh: () => Promise<void>; run: (action: () => Promise<void>) => Promise<void> }) {
-  const [activePartnerId, setActivePartnerId] = useState<string>();
+function MessagesPanel({ conversations, initialPartnerId, language, userId, userAvatarUrl, busy, refresh, run }: { conversations: PrivateConversation[]; initialPartnerId?: string; language: 'es' | 'en'; userId: string; userAvatarUrl: string | null; busy: boolean; refresh: () => Promise<void>; run: (action: () => Promise<void>) => Promise<void> }) {
+  const [activePartnerId, setActivePartnerId] = useState<string | undefined>(initialPartnerId);
   const [reply, setReply] = useState('');
+  const messageListRef = useRef<ScrollView>(null);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
   const active = conversations.find((conversation) => conversation.partner_id === activePartnerId);
@@ -827,14 +859,13 @@ function MessagesPanel({ conversations, language, userId, userAvatarUrl, busy, r
           <ChatAvatar url={active.partner_avatar_url} name={active.partner_name} />
           <Text className="ml-3 text-lg font-black text-ui-text dark:text-ui-dark-text">{active.partner_name}</Text>
         </View>
-        <ScrollView className="max-h-96 rounded-2xl bg-ui-muted p-3 dark:bg-ui-dark-muted">
+        <ScrollView ref={messageListRef} className="max-h-96 rounded-2xl bg-ui-muted p-3 dark:bg-ui-dark-muted" onContentSizeChange={() => messageListRef.current?.scrollToEnd({ animated: true })}>
           {active.messages.map((item) => (
-            <MessageBubble
+            <TravelerMessage
               key={item.id}
               message={item}
               mine={item.sender_id === userId}
               language={language}
-              userId={userId}
               avatarUrl={item.sender_id === userId ? userAvatarUrl : active.partner_avatar_url}
               senderName={item.sender_id === userId ? tr(language, 'Vos', 'You') : active.partner_name}
               onReact={(emoji) =>
@@ -896,64 +927,6 @@ function MessagesPanel({ conversations, language, userId, userAvatarUrl, busy, r
           );
         })}
       </ListEmpty>
-    </View>
-  );
-}
-
-function ChatAvatar({ url, name }: { url: string | null; name: string }) {
-  return url ? (
-    <Image cachePolicy="none" source={{ uri: url }} style={{ borderRadius: 22, height: 44, width: 44 }} />
-  ) : (
-    <View className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary">
-      <Text className="font-black text-white">{name.slice(0, 1).toUpperCase()}</Text>
-    </View>
-  );
-}
-function AudioMessage({ url, mine }: { url: string; mine: boolean }) {
-  const player = useAudioPlayer({ uri: url });
-  const status = useAudioPlayerStatus(player);
-  return (
-    <Pressable className="mt-1 flex-row items-center" onPress={() => (status.playing ? player.pause() : player.play())}>
-      <MaterialCommunityIcons name={status.playing ? 'pause-circle' : 'play-circle'} size={32} color={mine ? 'white' : '#0B6B4F'} />
-      <Text className={mine ? 'ml-1 text-white' : 'ml-1 text-ui-primary'}>{status.duration ? `${Math.ceil(status.duration)} s` : 'Audio'}</Text>
-    </Pressable>
-  );
-}
-function MessageBubble({ message: item, mine, language, userId, avatarUrl, senderName, onReact }: { message: PrivateMessage; mine: boolean; language: 'es' | 'en'; userId: string; avatarUrl: string | null; senderName: string; onReact: (emoji: string) => void }) {
-  const mediaOnly = item.body === '📷 Foto' || item.body === '🎙️ Audio';
-  const reactions = [...new Set(item.reactions.map((reaction) => reaction.emoji))];
-  return (
-    <View className={mine ? 'mb-3 flex-row self-end' : 'mb-3 flex-row self-start'} style={{ maxWidth: '92%' }}>
-      {!mine ? (
-        <View className="mr-2 self-end">
-          <ChatAvatar url={avatarUrl} name={senderName} />
-        </View>
-      ) : null}
-      <View className={mine ? 'rounded-2xl rounded-br-sm bg-ui-primary px-4 py-3' : 'rounded-2xl rounded-bl-sm bg-ui-surface px-4 py-3 dark:bg-ui-dark-surface'} style={{ maxWidth: '85%' }}>
-        {item.media_type === 'image' && item.media_url ? <Image source={{ uri: item.media_url }} contentFit="cover" style={{ borderRadius: 12, height: 210, width: 240 }} /> : null}
-        {item.media_type === 'audio' && item.media_url ? <AudioMessage url={item.media_url} mine={mine} /> : null}
-        {!mediaOnly ? <Text className={mine ? 'mt-1 text-white' : 'mt-1 text-ui-text dark:text-ui-dark-text'}>{item.body}</Text> : null}
-        {item.media_type === 'image' ? (
-          <View className="mt-2 flex-row items-center gap-2">
-            <Pressable accessibilityLabel={tr(language, 'Reaccionar a la foto', 'React to photo')} onPress={() => onReact('❤️')}>
-              <Text className="text-lg">❤️</Text>
-            </Pressable>
-            {reactions.map((emoji) => (
-              <Pressable className="rounded-full bg-black/10 px-2 py-1" key={emoji} onPress={() => onReact(emoji)}>
-                <Text>
-                  {emoji} {item.reactions.filter((reaction) => reaction.emoji === emoji).length}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-        <Text className={mine ? 'mt-1 text-right text-[10px] text-white/70' : 'mt-1 text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted'}>{new Date(item.created_at).toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text>
-      </View>
-      {mine ? (
-        <View className="ml-2 self-end">
-          <ChatAvatar url={avatarUrl} name={senderName} />
-        </View>
-      ) : null}
     </View>
   );
 }

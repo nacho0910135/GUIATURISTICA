@@ -83,9 +83,13 @@ export async function setTravelerReaction(postId: string, userId: string, reacti
 }
 
 export async function toggleTravelerFollow(userId: string, followedId: string, followed: boolean) {
+  if (userId === followedId) throw new Error('No se puede seguir esta misma cuenta.');
   const query = followed
     ? supabase.from('user_follows').delete().eq('follower_id', userId).eq('followed_id', followedId)
-    : supabase.from('user_follows').insert({ follower_id: userId, followed_id: followedId });
+    : supabase.from('user_follows').upsert(
+      { follower_id: userId, followed_id: followedId },
+      { ignoreDuplicates: true, onConflict: 'follower_id,followed_id' },
+    );
   const { error } = await query;
   if (error) throw error;
 }
@@ -94,6 +98,13 @@ export async function blockTraveler(blockedId: string) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user || auth.user.id === blockedId) throw new Error('No se puede bloquear esta cuenta.');
   const { error } = await supabase.from('user_blocks').upsert({ blocker_id: auth.user.id, blocked_id: blockedId });
+  if (error) throw error;
+}
+
+export async function unblockTraveler(blockedId: string) {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('Debés iniciar sesión para desbloquear esta cuenta.');
+  const { error } = await supabase.from('user_blocks').delete().eq('blocker_id', auth.user.id).eq('blocked_id', blockedId);
   if (error) throw error;
 }
 

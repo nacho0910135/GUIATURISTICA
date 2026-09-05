@@ -88,7 +88,7 @@
       [
         "expo-notifications",
         {
-          "defaultChannel": "ferries"
+          "defaultChannel": "messages"
         }
       ]
     ],

@@ -58,6 +58,7 @@ export default function FriendsScreen() {
   const [reply, setReply] = useState('');
   const [parentReplyId, setParentReplyId] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [followBusyId, setFollowBusyId] = useState<string>();
   const [error, setError] = useState<string>();
   const [publishError, setPublishError] = useState<string>();
   const [reactionPickerPostId, setReactionPickerPostId] = useState<string>();
@@ -73,7 +74,7 @@ export default function FriendsScreen() {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo cargar Comunidad Viajera.'); }
   }, [topic, userId]);
 
-  useFocusEffect(useCallback(() => { if (!wall) void load(); }, [load, wall]));
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const choosePhoto = async () => {
     if (!requireAuth(language === 'es' ? 'Compartir una foto' : 'Share a photo')) return;
@@ -146,15 +147,20 @@ export default function FriendsScreen() {
     void react(postId, 'like');
   };
 
-  const follow = async (userId: string) => {
-    if (!requireAuth(language === 'es' ? 'Seguir a un viajero' : 'Follow a traveler') || !session || !wall) return;
+  const follow = async (targetUserId: string) => {
+    if (!requireAuth(language === 'es' ? 'Seguir a un viajero' : 'Follow a traveler') || !session || !wall || followBusyId === targetUserId) return;
+    const wasFollowed = wall.followedUserIds.has(targetUserId);
+    setFollowBusyId(targetUserId);
     try {
-      await toggleTravelerFollow(session.user.id, userId, wall.followedUserIds.has(userId));
+      await toggleTravelerFollow(session.user.id, targetUserId, wasFollowed);
       await load();
       void haptic('success');
     } catch (reason) {
+      await load().catch(() => undefined);
       void haptic('error');
       Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo actualizar el seguimiento.');
+    } finally {
+      setFollowBusyId(undefined);
     }
   };
 
@@ -235,7 +241,7 @@ export default function FriendsScreen() {
               <View className="flex-row items-center">
                 <Pressable accessibilityLabel={language === 'es' ? `Ver perfil de ${displayName(post)}` : `View ${displayName(post)} profile`} accessibilityRole="link" onPress={() => router.push({ pathname: '/(aux)/traveler-profile', params: { id: post.user_id } })}>{post.user?.avatar_url ? <Image source={{ uri: post.user.avatar_url }} style={{ borderRadius: 23, height: 46, width: 46 }} /> : <View className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="account" size={24} color="#0B6B4F" /></View>}</Pressable>
                 <Pressable className="ml-3 flex-1" onPress={() => router.push({ pathname: '/(aux)/traveler-profile', params: { id: post.user_id } })}><View className="flex-row items-center"><Text className="font-black text-ui-text dark:text-ui-dark-text">{displayName(post)}</Text>{post.user?.role === 'admin' ? <AdminBadge /> : null}</View><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{new Date(post.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></Pressable>
-                {!own ? <Pressable className="ml-2 rounded-full bg-ui-primary-soft px-3 py-2 shadow-card dark:bg-ui-dark-primary-soft" style={communityControlDepth} onPress={() => void follow(post.user_id)}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{wall.followedUserIds.has(post.user_id) ? (language === 'es' ? 'Siguiendo' : 'Following') : (language === 'es' ? 'Seguir' : 'Follow')}</Text></Pressable> : null}
+                {!own && !wall.followedUserIds.has(post.user_id) ? <Pressable accessibilityRole="button" accessibilityState={{ busy: followBusyId === post.user_id, disabled: followBusyId === post.user_id }} className="ml-2 rounded-full bg-ui-primary-soft px-3 py-2 shadow-card disabled:opacity-50 dark:bg-ui-dark-primary-soft" disabled={followBusyId === post.user_id} style={communityControlDepth} onPress={() => void follow(post.user_id)}>{followBusyId === post.user_id ? <ActivityIndicator color="#0B6B4F" size="small" /> : <Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Seguir' : 'Follow'}</Text>}</Pressable> : null}
               </View>
               {post.body ? <Text className="mt-4 text-base leading-6 text-ui-text dark:text-ui-dark-text">{post.body}</Text> : null}
             </View>
