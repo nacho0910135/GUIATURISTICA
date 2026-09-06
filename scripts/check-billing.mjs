@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [tabs, billing, screen, commerce, checkout, webhook, migration, campaignMigration, bannerImageMigration] = await Promise.all([
+const [tabs, billing, screen, commerce, checkout, webhook, migration, campaignMigration, bannerImageMigration, adminAccessMigration] = await Promise.all([
   readFile(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/lib/billing.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/app/subscriptions.tsx', import.meta.url), 'utf8'),
@@ -11,6 +11,7 @@ const [tabs, billing, screen, commerce, checkout, webhook, migration, campaignMi
   readFile(new URL('../supabase/migrations/20260830110914_add_subscription_offer_pricing.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260904193320_add_commerce_ad_campaigns.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260905230000_add_campaign_banner_images.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20260906031010_admin_commerce_access.sql', import.meta.url), 'utf8'),
 ]);
 
 for (const tab of ['explore', 'my-trip', 'commerce', 'friends']) assert.match(tabs, new RegExp(`name="${tab}"`));
@@ -39,6 +40,12 @@ assert.match(checkout, /eq\('owner_id', user\.id\)/);
 assert.match(checkout, /STRIPE_SECRET_KEY/);
 assert.match(checkout, /mode: offer\.mode/);
 assert.match(checkout, /offer\.mode === 'subscription'/);
+for (const recurringOffer of ['universal_monthly', 'universal_annual', 'business_monthly', 'featured_monthly', 'banner_monthly']) {
+  assert.match(checkout, new RegExp(`${recurringOffer}: \\{[^}]+mode: 'subscription'`));
+}
+for (const oneTimeOffer of ['visitor_pass_30d', 'featured_30d', 'banner_30d']) {
+  assert.match(checkout, new RegExp(`${oneTimeOffer}: \\{[^}]+mode: 'payment'`));
+}
 assert.match(billing, /Platform\.OS !== 'web'/);
 assert.match(checkout, /STRIPE_PRICE_COMMERCE_FEATURED_30D/);
 assert.match(checkout, /STRIPE_PRICE_COMMERCE_BANNER_MONTHLY/);
@@ -64,5 +71,11 @@ assert.match(checkout, /metadata\[image_url\]/);
 assert.match(webhook, /image_url: imageUrl/);
 assert.match(bannerImageMigration, /campaign-banners/);
 assert.match(bannerImageMigration, /image_url/);
+assert.match(billing, /hasActiveBusinessPlan/);
+assert.match(commerce, /Necesitás el plan para comercios/);
+assert.match(commerce, /activateAdminTestCampaign/);
+assert.match(adminAccessMigration, /role = 'admin'/);
+assert.match(adminAccessMigration, /security definer/);
+assert.match(adminAccessMigration, /grant execute .* to authenticated/);
 assert.doesNotMatch(commerce, /Google o Stripe/);
 console.log('Subscriptions, one-time passes, business billing, and 30-day commerce campaigns are wired.');

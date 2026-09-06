@@ -633,6 +633,17 @@ export async function getOwnerDashboard() {
   });
 }
 
+export async function activateAdminTestCampaign({ serviceId, campaignType, targetUrl, imageUrl }: { serviceId: string; campaignType: 'featured' | 'banner'; targetUrl?: string; imageUrl?: string }) {
+  const { data, error } = await supabase.rpc('activate_admin_test_commerce_campaign', {
+    p_service_id: serviceId,
+    p_campaign_type: campaignType,
+    p_target_url: targetUrl ?? null,
+    p_image_url: imageUrl ?? null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function deleteOwnedCommercialService(service: Pick<OwnerDashboardService, 'id' | 'photos' | 'cover_image_url'>) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error('Debés iniciar sesión para eliminar un negocio.');

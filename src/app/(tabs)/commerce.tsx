@@ -13,8 +13,9 @@ import { InformationReportModal } from '@/components/information-report-modal';
 import { MapCanvas, type MapCoordinate } from '@/components/explore/map-canvas';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
-import { campaignOffers, openCampaignCheckout, type CampaignOfferId } from '@/lib/billing';
+import { campaignOffers, getMySubscriptions, hasActiveBusinessPlan, openCampaignCheckout, type CampaignOfferId } from '@/lib/billing';
 import {
+  activateAdminTestCampaign,
   deleteBusinessPhoto,
   deleteCampaignBannerUpload,
   deleteOwnedCommercialService,
@@ -327,7 +328,7 @@ function OwnerAnalytics({ language, service }: { language: 'es' | 'en'; service:
 }
 
 export default function CommerceScreen() {
-  const { language, requireAuth, session, userLocation, isDark } = useApp();
+  const { isAdmin, language, requireAuth, session, userLocation, isDark } = useApp();
   const gold = appTheme.colors.commerceGold;
   const scrollRef = useRef<FlatList<CommerceService>>(null);
   useScrollToTop(scrollRef);
@@ -336,6 +337,7 @@ export default function CommerceScreen() {
   const [subcategory, setSubcategory] = useState<string>();
   const [reporting, setReporting] = useState<CommerceService | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [businessPlanRequiredOpen, setBusinessPlanRequiredOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [registerError, setRegisterError] = useState('');
   const [registerBusy, setRegisterBusy] = useState(false);
@@ -371,6 +373,7 @@ export default function CommerceScreen() {
   });
   const cinemaMovies = useQuery({ queryKey: ['cinema-movies'], queryFn: getCinemaMovies, enabled: category === 'cinemas', staleTime: 30 * 60 * 1000 });
   const dashboard = useQuery({ queryKey: ['owner-dashboard'], queryFn: getOwnerDashboard, enabled: dashboardOpen });
+  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
   const claims = useQuery({ queryKey: ['owner-claims'], queryFn: getOwnerClaims, enabled: dashboardOpen });
   const campaigns = useQuery({ queryKey: ['commerce-campaigns', session?.user.id], queryFn: getMyCommerceCampaigns, enabled: dashboardOpen && Boolean(session) });
   const banners = useQuery({ queryKey: ['commerce-banners'], queryFn: getActiveCommerceBanners, staleTime: 5 * 60 * 1000 });
@@ -389,6 +392,16 @@ export default function CommerceScreen() {
   const catalogDescription = isCinemaCategory ? (language === 'es' ? 'Ordenados de más cercano a más lejano; los sitios sin ubicación aparecen al final. La cartelera y compra abren en el sitio oficial.' : 'Ordered from nearest to farthest; places without a location appear last. Showtimes and purchase open on the official site.') : (language === 'es' ? 'Del más cercano al más lejano; los sitios sin ubicación aparecen al final.' : 'From nearest to farthest; places without a location appear last.');
   const activeBanner = banners.data?.[0];
 
+  const openOwnerDashboard = async () => {
+    if (!requireAuth(language === 'es' ? 'abrir el panel para propietarios' : 'open the owner dashboard')) return;
+    const currentSubscriptions = subscriptions.isLoading ? (await subscriptions.refetch()).data ?? [] : subscriptions.data ?? [];
+    if (isAdmin || hasActiveBusinessPlan(currentSubscriptions)) {
+      setDashboardOpen(true);
+      return;
+    }
+    setBusinessPlanRequiredOpen(true);
+  };
+
   const startCampaignCheckout = async (service: OwnerDashboardService, offerId: CampaignOfferId, banner?: PreparedCampaignBanner) => {
     const offer = campaignOffers[offerId];
     const targetUrl = bannerUrls[service.id]?.trim();
@@ -400,6 +413,12 @@ export default function CommerceScreen() {
     let uploadedBanner: Awaited<ReturnType<typeof uploadCampaignBanner>> | undefined;
     try {
       if (banner) uploadedBanner = await uploadCampaignBanner(service.id, banner);
+      if (isAdmin) {
+        await activateAdminTestCampaign({ serviceId: service.id, campaignType: offer.campaignType, targetUrl, imageUrl: uploadedBanner?.url });
+        await Promise.all([campaigns.refetch(), banners.refetch()]);
+        Alert.alert('Descubriendo CR', language === 'es' ? 'Campaña de prueba activada gratis por 30 días.' : 'Free 30-day test campaign activated.');
+        return;
+      }
       const result = await openCampaignCheckout({ offerId, serviceId: service.id, targetUrl, imageUrl: uploadedBanner?.url });
       if (result.type === 'success') Alert.alert('Descubriendo CR', language === 'es' ? 'Pago recibido. La campaña se activará cuando el proveedor confirme la transacción.' : 'Payment received. The campaign activates after the payment provider confirms the transaction.');
       else if (uploadedBanner) await deleteCampaignBannerUpload(uploadedBanner.path);
@@ -606,7 +625,7 @@ export default function CommerceScreen() {
         <Text className="mt-0.5 max-w-xl text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{language === 'es' ? 'Todo lo útil para tu viaje, organizado por experiencia y cercanía.' : 'Everything useful for your trip, organized by experience and proximity.'}</Text>
         <ScrollView horizontal className="mt-2" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>
           <DirectoryShortcut icon="store-plus-outline" label={language === 'es' ? 'Registrar comercio' : 'Register business'} onPress={() => { if (requireAuth('registrar un comercio')) { setRegisterForm(emptyProfileForm(category)); setRegisterPhotos([]); setRegistrationLocation(userLocation ?? undefined); setRegisterError(''); setRegisterOpen(true); } }} primary />
-          <DirectoryShortcut premium icon="chart-line" label={language === 'es' ? 'Panel de propietarios' : 'Owner dashboard'} onPress={() => { if (requireAuth('abrir el panel para propietarios')) setDashboardOpen(true); }} />
+          <DirectoryShortcut premium icon="chart-line" label={language === 'es' ? 'Panel de propietarios' : 'Owner dashboard'} onPress={() => void openOwnerDashboard()} />
           {Platform.OS === 'web' ? <DirectoryShortcut icon="crown-outline" label={language === 'es' ? 'Planes Pro' : 'Pro plans'} onPress={() => { if (requireAuth('ver los planes Pro')) router.push('/subscriptions'); }} /> : null}
         </ScrollView>
       </View>
@@ -633,6 +652,17 @@ export default function CommerceScreen() {
         ListEmptyComponent={!directoryOrigin ? <View className="mx-5 min-h-40 items-center justify-center px-6 py-8"><ActivityIndicator size="large" color="#087443" /><Text className="mt-4 text-center text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Obteniendo tu ubicación automáticamente…' : 'Getting your location automatically…'}</Text></View> : directory.isLoading ? <View className="mx-5 min-h-52 items-center justify-center"><ActivityIndicator size="large" color="#087443" /><Text className="mt-4 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Cargando comercios…' : 'Loading businesses…'}</Text></View> : directory.isError ? <View accessibilityRole="alert" className="mx-5 min-h-52 items-center justify-center rounded-card border border-ui-border bg-ui-surface px-6 py-10 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="cloud-alert-outline" size={44} color="#B42318" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No pudimos cargar el directorio' : 'Directory could not load'}</Text><Text className="mt-2 text-center text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Revisá tu conexión e intentá de nuevo.' : 'Check your connection and try again.'}</Text><Pressable accessibilityRole="button" className="mt-5 min-h-11 justify-center rounded-control bg-ui-primary px-5" onPress={() => void directory.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : <View className="mx-5 min-h-52 items-center justify-center rounded-card border border-dashed border-ui-border bg-ui-surface px-6 py-10 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name={selectedCategory.icon} size={44} color="#68737A" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Aún no hay perfiles en esta selección' : 'No profiles in this selection yet'}</Text><Text className="mt-2 text-center text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Probá otra categoría. Si administrás un negocio, podés registrarlo desde arriba.' : 'Try another category. If you manage a business, you can register it above.'}</Text></View>}
       />
       <BusinessDetailModal nearby={viewMode === 'nearby'} service={detail} saved={detail ? (favoriteIds.data ?? []).includes(detail.id) : false} onClaim={(service) => router.push({ pathname: '/claim-business', params: { serviceId: service.id } })} onClose={() => setDetail(null)} onReport={setReporting} onReviewed={async () => { await directory.refetch(); }} onSaved={(service) => void toggleFavorite(service)} subcategoryOptions={subcategories} />
+      <Modal visible={businessPlanRequiredOpen} transparent animationType="fade" onRequestClose={() => setBusinessPlanRequiredOpen(false)}>
+        <View className="flex-1 items-center justify-center bg-black/45 px-5">
+          <View className="w-full max-w-md rounded-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="lock-outline" size={25} color="#087443" /></View>
+            <Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Necesitás el plan para comercios' : 'You need the business plan'}</Text>
+            <Text className="mt-2 text-sm leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'El Panel para propietarios está incluido en la suscripción Comercio o servicio de US$9,99 al mes. Se renueva automáticamente y podés cancelarla cuando querás.' : 'The Owner dashboard is included with the US$9.99/month Business or service subscription. It renews automatically and can be canceled anytime.'}</Text>
+            <Pressable accessibilityRole="link" className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => { setBusinessPlanRequiredOpen(false); router.push('/subscriptions'); }}><Text className="font-black text-white">{language === 'es' ? 'Ver plan para comercios' : 'View business plan'}</Text></Pressable>
+            <Pressable accessibilityRole="button" className="mt-2 min-h-11 items-center justify-center" onPress={() => setBusinessPlanRequiredOpen(false)}><Text className="font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ahora no' : 'Not now'}</Text></Pressable>
+          </View>
+        </View>
+      </Modal>
       <Modal visible={dashboardOpen} transparent animationType="slide" onRequestClose={() => setDashboardOpen(false)}>
         <View className="flex-1 justify-end bg-black/40">
           <View className="max-h-[92%] w-full max-w-3xl self-center rounded-t-3xl bg-ui-background p-5 dark:bg-ui-dark-background">

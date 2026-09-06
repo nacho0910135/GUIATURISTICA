@@ -27,7 +27,7 @@ type SocialNotificationType = typeof SOCIAL_NOTIFICATION_TYPES[number];
 let lastPresentedSocialNotificationId: string | null = null;
 
 export function GlobalHeader() {
-  const { avatarUrl, exchangeRate, language, session, setVisitorType, visitorType } = useApp();
+  const { avatarUrl, exchangeRate, isAdmin, language, session, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -54,7 +54,7 @@ export function GlobalHeader() {
   const refetchSocialActivityRef = useRef(socialActivity.refetch);
   refetchSocialActivityRef.current = socialActivity.refetch;
   useTravelerMessagesSync(session?.user.id, () => { void messages.refetch(); });
-  const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
+  const access = session && !isAdmin ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
   const unreadConversation = messages.data?.filter((item) => item.unread_count > 0).sort((a, b) => (b.messages.at(-1)?.created_at ?? '').localeCompare(a.messages.at(-1)?.created_at ?? ''))[0];
   const isInChat = pathname.includes('traveler-profile') || (pathname.includes('profile') && routeParams.section === 'messages');
   const socialActor = Array.isArray(socialActivity.data?.actor) ? socialActivity.data.actor[0] : socialActivity.data?.actor;

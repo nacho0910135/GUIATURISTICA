@@ -12,7 +12,7 @@ export const billingOffers = {
   universal_monthly: { plan: 'no_ads', business: false, featured: false, icon: 'calendar-month-outline', title: ['Mensual', 'Monthly'], detail: ['Acceso completo; se renueva automáticamente.', 'Full access; renews automatically.'], price: ['US$2 / mes', 'US$2 / month'] },
   universal_annual: { plan: 'no_ads', business: false, featured: true, icon: 'calendar-star', title: ['Anual', 'Annual'], detail: ['Ahorrás US$4 frente al plan mensual.', 'Save US$4 compared with monthly billing.'], price: ['US$20 / año', 'US$20 / year'] },
   visitor_pass_30d: { plan: 'no_ads', business: false, featured: false, icon: 'passport', title: ['Pase visitante', 'Visitor Pass'], detail: ['30 días de acceso; pago único, no se renueva.', '30 days of access; one-time payment, no renewal.'], price: ['US$5 / 30 días', 'US$5 / 30 days'] },
-  business_monthly: { plan: 'business', business: true, featured: false, icon: 'store-check-outline', title: ['Comercio o servicio', 'Business or service'], detail: ['Para administrar un comercio o servicio reclamado o registrado.', 'For a claimed or registered business or service.'], price: ['US$9,99 / mes', 'US$9.99 / month'] },
+  business_monthly: { plan: 'business', business: true, featured: false, icon: 'store-check-outline', title: ['Comercio o servicio', 'Business or service'], detail: ['Para administrar un comercio o servicio reclamado o registrado. Se renueva automáticamente.', 'For a claimed or registered business or service. Renews automatically.'], price: ['US$9,99 / mes', 'US$9.99 / month'] },
 } as const;
 
 export type BillingOfferId = keyof typeof billingOffers;
@@ -41,6 +41,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function hasActivePersonalPlan(subscriptions: Subscription[], now = Date.now()) {
   return subscriptions.some((item) => item.plan === 'no_ads' && item.status === 'active' && (!item.current_period_end || new Date(item.current_period_end).getTime() > now));
+}
+
+export function hasActiveBusinessPlan(subscriptions: Subscription[], serviceId?: string, now = Date.now()) {
+  return subscriptions.some((item) => item.plan === 'business'
+    && item.offer_id === 'business_monthly'
+    && item.status === 'active'
+    && (!serviceId || item.service_id === serviceId)
+    && (!item.current_period_end || new Date(item.current_period_end).getTime() > now));
 }
 
 export function getAccessStatus(accountCreatedAt: string, subscriptions: Subscription[], now = Date.now()) {

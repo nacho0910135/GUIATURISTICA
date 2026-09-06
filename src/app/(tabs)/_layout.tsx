@@ -33,12 +33,12 @@ const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }
 );
 
 export default function TabsLayout() {
-  const { language, refreshUserLocation, session, t } = useApp();
+  const { isAdmin, language, refreshUserLocation, session, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
   const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
-  if (Platform.OS === 'web' && access && !access.hasAccess && !subscriptions.isLoading) return <Redirect href="/subscriptions" />;
+  if (Platform.OS === 'web' && !isAdmin && access && !access.hasAccess && !subscriptions.isLoading) return <Redirect href="/subscriptions" />;
   return (
     <Tabs
       backBehavior="initialRoute"
