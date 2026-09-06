@@ -16,6 +16,7 @@ import { AnimatedShine, MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
+import { getPreciseCurrentLocation, type PreciseLocation } from '@/lib/current-location';
 import { getLiveRoadAlerts, type RoadTrafficAlert } from '@/lib/logistics';
 import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
@@ -480,6 +481,8 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [locationMode, setLocationMode] = useState<'gps' | 'manual'>('gps');
+  const [gpsLocation, setGpsLocation] = useState<PreciseLocation>();
+  const [locatingGps, setLocatingGps] = useState(false);
   const [manualLocation, setManualLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -497,6 +500,19 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   useEffect(() => {
     if (!difficulty && difficultyOptions.data?.[0]) setDifficulty(difficultyOptions.data[0].id);
   }, [difficulty, difficultyOptions.data]);
+  const selectGpsLocation = async () => {
+    setLocatingGps(true);
+    try {
+      const current = await getPreciseCurrentLocation(language);
+      setGpsLocation(current);
+      void haptic('success');
+    } catch (reason) {
+      setGpsLocation(undefined);
+      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo obtener tu ubicación.' : 'Your location could not be obtained.');
+    } finally {
+      setLocatingGps(false);
+    }
+  };
   const submit = async () => {
     if (!session || name.trim().length < 3 || description.trim().length < 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Agregá un nombre y una descripción de al menos 10 caracteres.' : 'Add a name and a description of at least 10 characters.');
     if (categories.length < 1 || categories.length > 3) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná entre una y tres categorías.' : 'Select between one and three categories.');
@@ -504,18 +520,9 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
     if (locationMode === 'manual' && !manualLocation) return Alert.alert('Descubriendo CR', language === 'es' ? 'Mové el mapa y tocá el punto donde está el sitio.' : 'Move the map and tap where the place is located.');
     setSending(true);
     try {
-      let location = manualLocation;
+      let location: { latitude: number; longitude: number } | undefined = locationMode === 'manual' ? manualLocation : gpsLocation;
       if (!location) {
-        const permission = await Location.requestForegroundPermissionsAsync();
-        if (!permission.granted) {
-          Alert.alert('Descubriendo CR', language === 'es' ? 'Necesitamos el GPS para guardar la ubicación actual del sitio.' : 'GPS permission is required to save your current location.');
-          return;
-        }
-        location = (
-          await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          })
-        ).coords;
+        location = await getPreciseCurrentLocation(language);
       }
       await publishCommunityPlace({
         user_id: session.user.id,
@@ -540,6 +547,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
       setPhotos([]);
       setCategories([]);
       setLocationMode('gps');
+      setGpsLocation(undefined);
       setManualLocation(undefined);
     } catch (reason) {
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo publicar.' : 'Could not publish.');
@@ -576,6 +584,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
                     void haptic('selection');
                     setLocationMode('gps');
                     setManualLocation(undefined);
+                    void selectGpsLocation();
                   }}
                 >
                   <Text className={locationMode === 'gps' ? 'text-center text-sm font-black text-white' : 'text-center text-sm font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? '📍 Usar mi GPS' : '📍 Use my GPS'}</Text>
@@ -590,7 +599,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
                   <MapCanvas onLocationPick={setManualLocation} selectedLocation={manualLocation} />
                   <Text className="p-3 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{manualLocation ? `${manualLocation.latitude.toFixed(5)}, ${manualLocation.longitude.toFixed(5)}` : language === 'es' ? 'Tocá el mapa para elegir la ubicación.' : 'Tap the map to choose a location.'}</Text>
                 </View>
-              ) : null}
+              ) : <View className="mt-3 rounded-control border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted"><Pressable accessibilityRole="button" className="min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 disabled:opacity-50 dark:bg-ui-dark-secondary" disabled={locatingGps || sending} onPress={() => void selectGpsLocation()}>{locatingGps ? <ActivityIndicator color="white" /> : <MaterialCommunityIcons name="crosshairs-gps" size={20} color="white" />}<Text className="ml-2 font-black text-white">{language === 'es' ? 'Obtener ubicación precisa' : 'Get precise location'}</Text></Pressable><Text accessibilityRole={gpsLocation ? 'text' : 'alert'} className="mt-3 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{gpsLocation ? `${gpsLocation.latitude.toFixed(6)}, ${gpsLocation.longitude.toFixed(6)} · ±${Math.round(gpsLocation.accuracy ?? 0)} m` : language === 'es' ? 'Obtené y revisá la ubicación antes de publicar.' : 'Get and review the location before publishing.'}</Text></View>}
             </View>
             <Field label={language === 'es' ? 'Descripción y cómo llegar' : 'Description and directions'} multiline onChange={setDescription} placeholder={language === 'es' ? 'Describí el sitio y cómo llegar…' : 'Describe the place and how to get there…'} value={description} />
             <View>

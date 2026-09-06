@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
+import { MotionPressable } from '@/components/motion';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { reviewCommercialClaim } from '@/lib/commerce';
@@ -15,6 +16,7 @@ import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, reviewUserSubmission, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation } from '@/lib/social-profile';
 import { reportTypeLabel, updateInformationReportStatus } from '@/lib/reports';
 import { supabase } from '@/lib/supabase';
+import { haptic } from '@/lib/haptics';
 import { useApp } from '@/providers/app-provider';
 
 type Dashboard = Awaited<ReturnType<typeof getSocialProfile>>;
@@ -61,8 +63,9 @@ export default function ProfileScreen() {
     staleTime: 60 * 1000,
   });
   useEffect(() => {
-    if (params.section === 'messages') setSection('messages');
-    if (params.section === 'community') setSection('community');
+    const requestedSection = params.section;
+    const validSection = requestedSection === 'notifications' || requestedSection === 'community' || requestedSection === 'sightings' || requestedSection === 'saved' || requestedSection === 'messages' || requestedSection === 'suggestions' || requestedSection === 'login';
+    setSection(validSection ? requestedSection : undefined);
   }, [params.section]);
   useTravelerMessagesSync(section === 'messages' ? userId || undefined : undefined, () => {
     void queryClient.invalidateQueries({ queryKey: ['private-conversations', userId] });
@@ -218,7 +221,7 @@ export default function ProfileScreen() {
   const toggleSection = (key: Section) => {
     const next = section === key ? undefined : key;
     setSection(next);
-    router.setParams({ section: next === 'messages' ? 'messages' : next === 'community' ? 'community' : '', partnerId: '' });
+    router.setParams({ section: next ?? '', partnerId: '' });
   };
 
   if (!isAuthenticated)
@@ -465,6 +468,25 @@ export default function ProfileScreen() {
 }
 
 function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: AdminDashboard; busy: boolean; language: 'es' | 'en'; refresh: () => Promise<void>; run: (action: () => Promise<void>) => Promise<void>; signOut: () => Promise<void> }) {
+  const [moderating, setModerating] = useState<{ key: string; decision: 'approved' | 'rejected' }>();
+  const moderationInFlight = useRef(new Set<string>());
+  const moderateSubmission = (item: NonNullable<AdminDashboard>['pendingSubmissions'][number], decision: 'approved' | 'rejected') => {
+    const key = `${item.kind}-${item.id}`;
+    if (moderationInFlight.current.has(key)) return;
+    moderationInFlight.current.add(key);
+    setModerating({ key, decision });
+    void haptic('impact');
+    void run(async () => {
+      try {
+        await reviewUserSubmission(item.kind, item.id, decision);
+        void haptic('success');
+        await refresh();
+      } finally {
+        moderationInFlight.current.delete(key);
+        setModerating((current) => current?.key === key ? undefined : current);
+      }
+    });
+  };
   const addPhoto = (destinationId: string, count: number) =>
     void run(async () => {
       if (count >= 10) throw new Error(tr(language, 'Este sitio ya tiene el máximo de 10 fotos.', 'This place already has the maximum of 10 photos.'));
@@ -516,17 +538,45 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
       </View>
       <Text className="mb-3 mt-6 text-lg font-bold text-ui-text dark:text-ui-dark-text">{tr(language, 'Nuevas inserciones', 'New submissions')}</Text>
       <ListEmpty empty={!data.pendingSubmissions.length} language={language}>
-        {data.pendingSubmissions.map((item) => (
-          <View className="mb-3 rounded-2xl border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted" key={`${item.kind}-${item.id}`}>
-            <Text className="font-black text-ui-text dark:text-ui-dark-text">{item.title}</Text>
-            <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{item.detail}</Text>
-            <Text className="mt-1 text-xs font-bold text-ui-primary">{new Date(item.created_at).toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text>
-            <View className="mt-3 flex-row gap-2">
-              <ProfileButton label={tr(language, 'Aprobar', 'Approve')} disabled={busy} onPress={() => void run(async () => { await reviewUserSubmission(item.kind, item.id, 'approved'); await refresh(); })} />
-              <ProfileButton label={tr(language, 'Rechazar', 'Reject')} outline disabled={busy} onPress={() => void run(async () => { await reviewUserSubmission(item.kind, item.id, 'rejected'); await refresh(); })} />
+        {data.pendingSubmissions.map((item) => {
+          const itemKey = `${item.kind}-${item.id}`;
+          const itemModeration = moderating?.key === itemKey ? moderating.decision : undefined;
+          const fields = submissionFields(item, language);
+          const imageUrls = submissionImages(item);
+          return (
+            <View className="mb-4 overflow-hidden rounded-2xl border border-ui-border bg-ui-muted dark:border-ui-dark-border dark:bg-ui-dark-muted" key={itemKey}>
+              {imageUrls.length ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingTop: 16 }}>
+                  {imageUrls.map((uri, index) => <Image accessibilityLabel={tr(language, `Foto enviada ${index + 1}`, `Submitted photo ${index + 1}`)} contentFit="cover" key={uri} source={{ uri }} style={{ borderRadius: 14, height: 132, width: 176 }} />)}
+                </ScrollView>
+              ) : null}
+              <View className="p-4">
+                <View className="flex-row items-start justify-between gap-3">
+                  <View className="min-w-0 flex-1">
+                    <Text className="font-black text-ui-text dark:text-ui-dark-text">{item.title}</Text>
+                    <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{submissionKindLabel(item.kind, language)}</Text>
+                  </View>
+                  <View className="rounded-full bg-ui-primary-soft px-3 py-1 dark:bg-ui-dark-primary-soft">
+                    <Text className="text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{tr(language, 'Pendiente', 'Pending')}</Text>
+                  </View>
+                </View>
+                <View className="my-4 h-px bg-ui-border dark:bg-ui-dark-border" />
+                <Text className="mb-2 text-xs font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{tr(language, 'Información enviada', 'Submitted information')}</Text>
+                {fields.map((field) => (
+                  <View className="mb-2" key={field.label}>
+                    <Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{field.label}</Text>
+                    <Text className="mt-0.5 leading-5 text-ui-text dark:text-ui-dark-text" selectable>{field.value}</Text>
+                  </View>
+                ))}
+                <Text className="mt-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{tr(language, 'Enviado', 'Submitted')} · {new Date(item.created_at).toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text>
+                <View className="mt-4 flex-row gap-2">
+                  <ProfileButton busy={itemModeration === 'approved'} label={itemModeration === 'approved' ? tr(language, 'Aprobando…', 'Approving…') : tr(language, 'Aprobar', 'Approve')} disabled={busy || Boolean(moderating)} stableWidth onPress={() => moderateSubmission(item, 'approved')} />
+                  <ProfileButton busy={itemModeration === 'rejected'} label={itemModeration === 'rejected' ? tr(language, 'Rechazando…', 'Rejecting…') : tr(language, 'Rechazar', 'Reject')} outline disabled={busy || Boolean(moderating)} stableWidth onPress={() => moderateSubmission(item, 'rejected')} />
+                </View>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </ListEmpty>
       <Text className="mb-3 mt-6 text-lg font-bold text-ui-text dark:text-ui-dark-text">{tr(language, 'Reclamos de comercios', 'Business ownership claims')}</Text>
       <ListEmpty empty={!data.commercialClaims.length} language={language}>
@@ -937,12 +987,58 @@ function MessagesPanel({ conversations, initialPartnerId, language, userId, user
 function Field(props: React.ComponentProps<typeof TextInput>) {
   return <TextInput className="mb-3 rounded-control border border-ui-border bg-ui-muted px-4 py-4 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" placeholderTextColor="#8f9bb2" {...props} />;
 }
-function ProfileButton({ label, onPress, outline, disabled }: { label: string; onPress: () => void; outline?: boolean; disabled?: boolean }) {
+function ProfileButton({ label, onPress, outline, disabled, busy = false, stableWidth = false }: { label: string; onPress: () => void; outline?: boolean; disabled?: boolean; busy?: boolean; stableWidth?: boolean }) {
   return (
-    <Pressable className={outline ? 'self-start rounded-full border border-ui-primary dark:border-ui-dark-primary px-5 py-3' : 'self-start rounded-full bg-ui-primary dark:bg-ui-dark-primary px-5 py-3'} disabled={disabled} onPress={onPress}>
-      <Text className={outline ? 'font-black text-ui-primary dark:text-ui-dark-primary' : 'font-black text-white'}>{label}</Text>
-    </Pressable>
+    <MotionPressable accessibilityRole="button" accessibilityState={{ busy, disabled: disabled || busy }} containerStyle={{ alignSelf: 'flex-start', minWidth: stableWidth ? 132 : undefined }} disabled={disabled || busy} onPress={onPress}>
+      <View className={`${stableWidth ? 'w-full' : ''} ${outline ? 'min-h-12 flex-row items-center justify-center gap-2 rounded-full border border-ui-primary px-5 py-3 dark:border-ui-dark-primary' : 'min-h-12 flex-row items-center justify-center gap-2 rounded-full bg-ui-primary px-5 py-3 dark:bg-ui-dark-primary'}`}>
+        {busy ? <ActivityIndicator color={outline ? '#087443' : 'white'} size="small" /> : null}
+        <Text className={outline ? 'font-black text-ui-primary dark:text-ui-dark-primary' : 'font-black text-white'}>{label}</Text>
+      </View>
+    </MotionPressable>
   );
+}
+
+type PendingSubmission = NonNullable<AdminDashboard>['pendingSubmissions'][number];
+
+function submissionKindLabel(kind: PendingSubmission['kind'], language: 'es' | 'en') {
+  if (kind === 'destination') return tr(language, 'Destino turístico', 'Tourist destination');
+  if (kind === 'fauna') return tr(language, 'Especie de fauna', 'Wildlife species');
+  return tr(language, 'Comercio o servicio', 'Business or service');
+}
+
+function submissionImages(item: PendingSubmission) {
+  if (item.kind === 'destination') return Array.isArray(item.photos) ? item.photos.filter((value): value is string => typeof value === 'string' && Boolean(value)) : [];
+  if (item.kind === 'fauna') return item.image_url ? [item.image_url] : [];
+  return [item.cover_image_url, ...(Array.isArray(item.photos) ? item.photos : [])].filter((value, index, all): value is string => typeof value === 'string' && Boolean(value) && all.indexOf(value) === index);
+}
+
+function submissionFields(item: PendingSubmission, language: 'es' | 'en') {
+  const labels = language === 'es' ? {
+    name: 'Nombre', scientific: 'Nombre científico', category: 'Categoría', subcategories: 'Subcategorías', province: 'Provincia', district: 'Distrito', description: 'Descripción', difficulty: 'Dificultad', price: 'Precio nacional', habitat: 'Hábitat', phone: 'Teléfono', whatsapp: 'WhatsApp', hours: 'Horario', parking: 'Estacionamiento', payments: 'Métodos de pago', accessibility: 'Accesibilidad', languages: 'Idiomas', experience: 'Tipo de experiencia', certifications: 'Certificaciones', booking: 'Reservas', menu: 'Menú', website: 'Sitio web', coordinates: 'Ubicación',
+  } : {
+    name: 'Name', scientific: 'Scientific name', category: 'Category', subcategories: 'Subcategories', province: 'Province', district: 'District', description: 'Description', difficulty: 'Difficulty', price: 'Local price', habitat: 'Habitat', phone: 'Phone', whatsapp: 'WhatsApp', hours: 'Opening hours', parking: 'Parking', payments: 'Payment methods', accessibility: 'Accessibility', languages: 'Languages', experience: 'Experience type', certifications: 'Certifications', booking: 'Booking', menu: 'Menu', website: 'Website', coordinates: 'Location',
+  };
+  const rows: { label: string; value: unknown }[] = [];
+  if (item.kind === 'destination') rows.push(
+    { label: labels.name, value: item.name }, { label: labels.category, value: item.category }, { label: labels.province, value: item.province }, { label: labels.district, value: item.district }, { label: labels.description, value: item.description }, { label: labels.difficulty, value: item.difficulty }, { label: labels.price, value: item.price_national_crc == null ? null : `₡${Number(item.price_national_crc).toLocaleString('es-CR')}` }, { label: labels.coordinates, value: coordinateText(item.latitude, item.longitude) },
+  );
+  if (item.kind === 'fauna') rows.push(
+    { label: labels.name, value: item.common_name_es }, { label: labels.scientific, value: item.scientific_name }, { label: labels.category, value: item.category }, { label: labels.province, value: item.province }, { label: labels.description, value: item.description }, { label: labels.habitat, value: item.habitat },
+  );
+  if (item.kind === 'commerce') {
+    const coordinates = Array.isArray(item.location?.coordinates) ? item.location.coordinates : [];
+    rows.push(
+      { label: labels.name, value: item.title }, { label: labels.category, value: item.category }, { label: labels.subcategories, value: item.subcategories }, { label: labels.description, value: item.description }, { label: labels.phone, value: item.phone_whatsapp }, { label: labels.whatsapp, value: item.whatsapp }, { label: labels.hours, value: item.opening_hours }, { label: labels.price, value: item.price_range }, { label: labels.parking, value: item.parking ?? (item.has_parking ? tr(language, 'Sí', 'Yes') : null) }, { label: labels.payments, value: item.payment_methods }, { label: labels.accessibility, value: item.accessibility }, { label: labels.languages, value: item.languages }, { label: labels.experience, value: item.experience_type }, { label: labels.certifications, value: item.certifications }, { label: labels.booking, value: item.booking_url }, { label: labels.menu, value: item.menu_url }, { label: labels.website, value: item.external_url }, { label: labels.coordinates, value: coordinateText(coordinates[1], coordinates[0]) },
+    );
+  }
+  return rows.flatMap((row) => {
+    const value = Array.isArray(row.value) ? row.value.join(', ') : row.value;
+    return value === null || value === undefined || value === '' ? [] : [{ label: row.label, value: String(value) }];
+  });
+}
+
+function coordinateText(latitude: unknown, longitude: unknown) {
+  return typeof latitude === 'number' && typeof longitude === 'number' ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}` : null;
 }
 function Title({ children }: { children: ReactNode }) {
   return <Text className="text-xl font-bold text-ui-text dark:text-ui-dark-text">{children}</Text>;

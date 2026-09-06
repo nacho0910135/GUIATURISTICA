@@ -74,7 +74,7 @@
 | Delete | verbo exacto | confirmación permanece abierta | contexto válido | resultado persistente | retry/cancel en overlay | siguiente elemento lógico | política de lifecycle requerida |
 | Search | campo de búsqueda | contenido previo visible | misma ruta | conteo de resultados | clear/retry | input o heading de resultados | este contrato |
 | Upload/background job | verbo del archivo | progreso real | contexto de origen | estado confirmado por servidor | retry/cancel y datos preservados | elemento subido | `src/lib` + Storage RLS |
-| Registrar negocio | Enviar a revisión | botón ocupado; ubicación explícita requerida | panel del propietario | registro pendiente; fotos sincronizadas; no entra al feed | formulario y selección preservados + retry | comercio recién creado | `register_commercial_service_v2` + moderación/RLS |
+| Registrar negocio | Aviso de plan → completar registro o ir al pago → Enviar a revisión | aviso previo de US$9,99/mes; botón ocupado; ubicación explícita requerida | panel del propietario | registro pendiente; fotos sincronizadas; no entra al feed | formulario y selección preservados + retry | comercio recién creado | `src/lib/billing.ts` + `register_commercial_service_v2` + moderación/RLS |
 | Editar negocio propio | Guardar | botón ocupado estable | panel del propietario | perfil y métricas actualizados | formulario abierto + retry | resumen del comercio | `commercial_services` owner RLS |
 | Eliminar negocio propio | Eliminar negocio | confirmación destructiva con nombre y alcance | panel del propietario | desaparece del panel y directorio | confirmación permanece recuperable si falla | siguiente negocio o estado vacío | `commercial_services` owner DELETE RLS + cascadas FK |
 | Cancel/back | Cancelar / Volver | ninguno | origen | ninguno | guard de cambios si aplica | trigger/contexto original | Expo Router |
@@ -83,7 +83,7 @@
 
 - **Búsqueda de transporte:** la portada de Buses y ferris busca por nombre simultáneamente en rutas provinciales y cantonales; los ferris quedan explícitamente fuera de este buscador.
 - **Búsqueda de destinos en Explorar:** las sugerencias forman una sola superficie; seleccionar un sitio abre su ficha en superposición, y cerrarla vuelve a Explorar con la consulta limpia, sin pasar por el catálogo.
-- **Ubicación comercial:** al registrar o editar, el propietario puede autorizar la ubicación actual o marcar un punto directamente en el mapa; la app no infiere silenciosamente una coordenada regional.
+- **Ubicación de aportes y comercios:** al registrar o editar, la persona puede solicitar una lectura actual de alta precisión o marcar un punto directamente en el mapa. La app muestra las coordenadas obtenidas y rechaza lecturas con más de 1 km de incertidumbre; nunca reutiliza silenciosamente una ubicación web anterior ni infiere una coordenada regional.
 - **Panel del propietario:** reúne edición completa, galería de hasta 12 imágenes, estado de suscripción y analítica basada únicamente en eventos realmente registrados; no inventa métricas ni proyecciones.
 
 ## Navigation and responsive behavior

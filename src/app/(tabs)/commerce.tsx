@@ -4,7 +4,6 @@ import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
-import * as Location from 'expo-location';
 import { useGlobalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
@@ -51,6 +50,7 @@ import {
 import { openNavigation } from '@/lib/logistics';
 import { useApp } from '@/providers/app-provider';
 import { appTheme } from '@/theme/theme';
+import { getPreciseCurrentLocation } from '@/lib/current-location';
 
 type CommercialProfileForm = {
   title: string;
@@ -255,10 +255,8 @@ function BusinessLocationEditor({ language, location, onChange }: { language: 'e
   const selectCurrentLocation = async () => {
     setLocating(true);
     try {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (!permission.granted) throw new Error(language === 'es' ? 'Permití el acceso a la ubicación para usar tu posición actual.' : 'Allow location access to use your current position.');
-      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      onChange({ latitude: current.coords.latitude, longitude: current.coords.longitude });
+      const current = await getPreciseCurrentLocation(language);
+      onChange({ latitude: current.latitude, longitude: current.longitude });
     } catch (error) { Alert.alert(language === 'es' ? 'Ubicación' : 'Location', error instanceof Error ? error.message : 'Error'); }
     finally { setLocating(false); }
   };
@@ -338,6 +336,7 @@ export default function CommerceScreen() {
   const [reporting, setReporting] = useState<CommerceService | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [businessPlanRequiredOpen, setBusinessPlanRequiredOpen] = useState(false);
+  const [businessFeeNoticeOpen, setBusinessFeeNoticeOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [registerError, setRegisterError] = useState('');
   const [registerBusy, setRegisterBusy] = useState(false);
@@ -624,7 +623,7 @@ export default function CommerceScreen() {
         <Text className="mt-0.5 text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Comercios y servicios' : 'Businesses & services'}</Text>
         <Text className="mt-0.5 max-w-xl text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{language === 'es' ? 'Todo lo útil para tu viaje, organizado por experiencia y cercanía.' : 'Everything useful for your trip, organized by experience and proximity.'}</Text>
         <ScrollView horizontal className="mt-2" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>
-          <DirectoryShortcut icon="store-plus-outline" label={language === 'es' ? 'Registrar comercio' : 'Register business'} onPress={() => { if (requireAuth('registrar un comercio')) { setRegisterForm(emptyProfileForm(category)); setRegisterPhotos([]); setRegistrationLocation(userLocation ?? undefined); setRegisterError(''); setRegisterOpen(true); } }} primary />
+          <DirectoryShortcut icon="store-plus-outline" label={language === 'es' ? 'Registrar comercio' : 'Register business'} onPress={() => { if (requireAuth(language === 'es' ? 'registrar un comercio' : 'register a business')) setBusinessFeeNoticeOpen(true); }} primary />
           <DirectoryShortcut premium icon="chart-line" label={language === 'es' ? 'Panel de propietarios' : 'Owner dashboard'} onPress={() => void openOwnerDashboard()} />
           {Platform.OS === 'web' ? <DirectoryShortcut icon="crown-outline" label={language === 'es' ? 'Planes Pro' : 'Pro plans'} onPress={() => { if (requireAuth('ver los planes Pro')) router.push('/subscriptions'); }} /> : null}
         </ScrollView>
@@ -652,6 +651,18 @@ export default function CommerceScreen() {
         ListEmptyComponent={!directoryOrigin ? <View className="mx-5 min-h-40 items-center justify-center px-6 py-8"><ActivityIndicator size="large" color="#087443" /><Text className="mt-4 text-center text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Obteniendo tu ubicación automáticamente…' : 'Getting your location automatically…'}</Text></View> : directory.isLoading ? <View className="mx-5 min-h-52 items-center justify-center"><ActivityIndicator size="large" color="#087443" /><Text className="mt-4 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Cargando comercios…' : 'Loading businesses…'}</Text></View> : directory.isError ? <View accessibilityRole="alert" className="mx-5 min-h-52 items-center justify-center rounded-card border border-ui-border bg-ui-surface px-6 py-10 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="cloud-alert-outline" size={44} color="#B42318" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No pudimos cargar el directorio' : 'Directory could not load'}</Text><Text className="mt-2 text-center text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Revisá tu conexión e intentá de nuevo.' : 'Check your connection and try again.'}</Text><Pressable accessibilityRole="button" className="mt-5 min-h-11 justify-center rounded-control bg-ui-primary px-5" onPress={() => void directory.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : <View className="mx-5 min-h-52 items-center justify-center rounded-card border border-dashed border-ui-border bg-ui-surface px-6 py-10 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name={selectedCategory.icon} size={44} color="#68737A" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Aún no hay perfiles en esta selección' : 'No profiles in this selection yet'}</Text><Text className="mt-2 text-center text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Probá otra categoría. Si administrás un negocio, podés registrarlo desde arriba.' : 'Try another category. If you manage a business, you can register it above.'}</Text></View>}
       />
       <BusinessDetailModal nearby={viewMode === 'nearby'} service={detail} saved={detail ? (favoriteIds.data ?? []).includes(detail.id) : false} onClaim={(service) => router.push({ pathname: '/claim-business', params: { serviceId: service.id } })} onClose={() => setDetail(null)} onReport={setReporting} onReviewed={async () => { await directory.refetch(); }} onSaved={(service) => void toggleFavorite(service)} subcategoryOptions={subcategories} />
+      <Modal visible={businessFeeNoticeOpen} transparent animationType="fade" onRequestClose={() => setBusinessFeeNoticeOpen(false)}>
+        <View className="flex-1 items-center justify-center bg-black/45 px-5">
+          <View accessibilityRole="alert" className="w-full max-w-md rounded-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="credit-card-outline" size={25} color="#087443" /></View>
+            <Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Registrar un negocio requiere el plan comercial' : 'Registering a business requires the business plan'}</Text>
+            <Text className="mt-2 text-sm leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'El costo es de US$9,99 al mes. Podés completar el registro ahora y emitir el pago desde Planes Pro.' : 'The cost is US$9.99 per month. You can complete registration now and pay from Pro plans.'}</Text>
+            <Pressable accessibilityRole="link" className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => { setBusinessFeeNoticeOpen(false); router.push('/subscriptions'); }}><Text className="font-black text-white">{language === 'es' ? 'Ir a emitir el pago' : 'Continue to payment'}</Text></Pressable>
+            <Pressable accessibilityRole="button" className="mt-2 min-h-11 items-center justify-center" onPress={() => { setBusinessFeeNoticeOpen(false); setRegisterForm(emptyProfileForm(category)); setRegisterPhotos([]); setRegistrationLocation(userLocation ?? undefined); setRegisterError(''); setRegisterOpen(true); }}><Text className="font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Completar el registro primero' : 'Complete registration first'}</Text></Pressable>
+            <Pressable accessibilityRole="button" className="min-h-11 items-center justify-center" onPress={() => setBusinessFeeNoticeOpen(false)}><Text className="font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ahora no' : 'Not now'}</Text></Pressable>
+          </View>
+        </View>
+      </Modal>
       <Modal visible={businessPlanRequiredOpen} transparent animationType="fade" onRequestClose={() => setBusinessPlanRequiredOpen(false)}>
         <View className="flex-1 items-center justify-center bg-black/45 px-5">
           <View className="w-full max-w-md rounded-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
