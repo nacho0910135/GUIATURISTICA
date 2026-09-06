@@ -2,10 +2,11 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { useIsFocused } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRightLeft, CircleUserRound, Moon, Sun } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,6 +28,7 @@ type SocialNotificationType = typeof SOCIAL_NOTIFICATION_TYPES[number];
 let lastPresentedSocialNotificationId: string | null = null;
 
 export function GlobalHeader() {
+  const isFocused = useIsFocused();
   const { avatarUrl, exchangeRate, isAdmin, language, session, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
@@ -40,7 +42,7 @@ export function GlobalHeader() {
   const [visibleSocialNotificationId, setVisibleSocialNotificationId] = useState<string>();
   const formattedRate = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(exchangeRate);
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
-  const messages = useQuery({ queryKey: ['header-private-conversations', session?.user.id], queryFn: () => getPrivateConversations(session!.user.id), enabled: Boolean(session), staleTime: 0 });
+  const messages = useQuery({ queryKey: ['header-private-conversations', session?.user.id], queryFn: () => getPrivateConversations(session!.user.id), enabled: Boolean(session) && isFocused, staleTime: 0 });
   const socialActivity = useQuery({
     queryKey: ['header-unread-social-activity', session?.user.id],
     queryFn: async () => {
@@ -48,7 +50,7 @@ export function GlobalHeader() {
       if (error) throw error;
       return data;
     },
-    enabled: Boolean(session),
+    enabled: Boolean(session) && isFocused,
     staleTime: 0,
   });
   const refetchSocialActivityRef = useRef(socialActivity.refetch);
@@ -67,8 +69,10 @@ export function GlobalHeader() {
       : { es: 'Tenés un nuevo seguidor:', en: 'You have a new follower:', icon: 'account-plus-outline' as const };
 
   useEffect(() => {
-    if (!session?.user.id) return;
-    const refresh = () => { void refetchSocialActivityRef.current(); };
+    if (!session?.user.id || !isFocused) return;
+    const refresh = () => {
+      if (AppState.currentState === 'active') void refetchSocialActivityRef.current();
+    };
     const channel = supabase
       .channel(`header-social-notifications:${session.user.id}:${Math.random().toString(36).slice(2)}`)
       .on(
@@ -85,23 +89,31 @@ export function GlobalHeader() {
       )
       .subscribe();
     const interval = setInterval(refresh, 2500);
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refresh();
+    });
     return () => {
       clearInterval(interval);
+      appState.remove();
       void supabase.removeChannel(channel);
     };
-  }, [session?.user.id]);
+  }, [isFocused, session?.user.id]);
 
   useEffect(() => {
     const notificationId = socialActivity.data?.id;
+    if (!isFocused) {
+      setVisibleSocialNotificationId(undefined);
+      return;
+    }
     if (!notificationId || notificationId === lastPresentedSocialNotificationId) return;
     lastPresentedSocialNotificationId = notificationId;
     setVisibleSocialNotificationId(notificationId);
     const timeout = setTimeout(() => setVisibleSocialNotificationId(undefined), 2000);
     return () => clearTimeout(timeout);
-  }, [socialActivity.data?.id]);
+  }, [isFocused, socialActivity.data?.id]);
 
   useEffect(() => {
-    if (reduceMotion) {
+    if (reduceMotion || !isFocused) {
       blink.setValue(0);
       return;
     }
@@ -113,10 +125,10 @@ export function GlobalHeader() {
     ]));
     animation.start();
     return () => animation.stop();
-  }, [blink, reduceMotion]);
+  }, [blink, isFocused, reduceMotion]);
 
   useEffect(() => {
-    if (reduceMotion) {
+    if (reduceMotion || !isFocused) {
       entrance.setValue(1);
       glow.setValue(0.28);
       return;
@@ -129,7 +141,7 @@ export function GlobalHeader() {
     reveal.start();
     shimmer.start();
     return () => { reveal.stop(); shimmer.stop(); };
-  }, [entrance, glow, reduceMotion]);
+  }, [entrance, glow, isFocused, reduceMotion]);
 
   const isSpanish = language === 'es';
   const startMonthlyCheckout = async () => {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -16,6 +16,7 @@ export function Skeleton({ className = 'h-4 w-full rounded-lg', style }: Skeleto
 
   useEffect(() => {
     opacity.value = reduceMotion ? 0.64 : withRepeat(withTiming(0.92, { duration: 900 }), -1, true);
+    return () => cancelAnimation(opacity);
   }, [opacity, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));

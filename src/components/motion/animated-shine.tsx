@@ -1,3 +1,4 @@
+import { useIsFocused } from 'expo-router/react-navigation';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
@@ -14,11 +15,12 @@ import Animated, {
 } from 'react-native-reanimated';
 
 export function AnimatedShine({ travel = 320 }: { travel?: number }) {
+  const isFocused = useIsFocused();
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    if (reduceMotion) {
+    if (reduceMotion || !isFocused) {
       progress.value = 0;
       return undefined;
     }
@@ -33,7 +35,7 @@ export function AnimatedShine({ travel = 320 }: { travel?: number }) {
     );
 
     return () => cancelAnimation(progress);
-  }, [progress, reduceMotion]);
+  }, [isFocused, progress, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 0.08, 0.92, 1], [0, 0.62, 0.62, 0]),

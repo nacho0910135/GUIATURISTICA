@@ -90,13 +90,18 @@ export default function ExploreScreen() {
   );
   const categoryOptions = useMemo(() => destinationCategories.data ?? [], [destinationCategories.data]);
   const rootCategories = useMemo(() => categoryOptions.filter((option) => option.parent_id === null), [categoryOptions]);
+  const categoryCounts = useMemo(() => new Map(rootCategories.map((category) => [
+    category.id,
+    (places.data ?? []).reduce((count, place) => count + Number(matchesOption(place, category)), 0),
+  ])), [places.data, rootCategories]);
   const visiblePlaces = useMemo(() => {
     const term = normalizeSearchText(search);
+    if (!term && !coordinates) return [];
     const matches = (places.data ?? []).flatMap((place) => {
       const score = term ? nameSearchScore(place.name, term) : 0;
-      return score === null || (!term && !coordinates) ? [] : [{ place, score }];
+      return score === null ? [] : [{ place, score, distance: coordinates ? distanceKm(coordinates, place) : 0 }];
     });
-    if (coordinates) return matches.sort((a, b) => distanceKm(coordinates, a.place) - distanceKm(coordinates, b.place) || a.score - b.score).map(({ place }) => place);
+    if (coordinates) return matches.sort((a, b) => a.distance - b.distance || a.score - b.score).map(({ place }) => place);
     return matches.sort((a, b) => a.score - b.score || a.place.name.localeCompare(b.place.name, language === 'es' ? 'es' : 'en')).map(({ place }) => place);
   }, [coordinates, language, places.data, search]);
   const hasSearch = Boolean(search.trim());
@@ -166,7 +171,7 @@ export default function ExploreScreen() {
   );
 
   return (
-    <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180, zIndex: 10 }}>
         <View className="w-full flex-row items-stretch gap-2">
           <MotionPressable
@@ -196,7 +201,7 @@ export default function ExploreScreen() {
           </MotionPressable>
         </View>
         <Text className="mb-1.5 mt-3 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Busca un sitio por nombre' : 'Search for a place by name'}</Text>
-        <View className="relative">
+        <View className="relative z-20">
           <View className="flex-row items-stretch gap-2">
             <View className="min-w-0 flex-1 flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
               <MaterialCommunityIcons name="magnify" size={23} color="#68737A" />
@@ -232,7 +237,7 @@ export default function ExploreScreen() {
           <View className="mt-5 flex-row flex-wrap">
             {destinationCategories.isPending ? <CategoryGridSkeleton language={language} wide={wide} /> : null}
             {rootCategories.map((category, index) => {
-              const count = (places.data ?? []).filter((place) => matchesOption(place, category)).length;
+              const count = categoryCounts.get(category.id) ?? 0;
               const color = categoryColors[index % categoryColors.length];
               return (
                 <MotionPressable
