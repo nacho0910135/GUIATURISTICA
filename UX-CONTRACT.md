@@ -85,6 +85,7 @@
 - **Búsqueda de destinos en Explorar:** las sugerencias forman una sola superficie; seleccionar un sitio abre su ficha en superposición, y cerrarla vuelve a Explorar con la consulta limpia, sin pasar por el catálogo.
 - **Ubicación de aportes y comercios:** al registrar o editar, la persona puede solicitar una lectura actual de alta precisión o marcar un punto directamente en el mapa. La app muestra las coordenadas obtenidas y rechaza lecturas con más de 1 km de incertidumbre; nunca reutiliza silenciosamente una ubicación web anterior ni infiere una coordenada regional.
 - **Panel del propietario:** reúne edición completa, galería de hasta 12 imágenes, estado de suscripción y analítica basada únicamente en eventos realmente registrados; no inventa métricas ni proyecciones.
+- **Acceso administrativo de pruebas:** una cuenta cuyo rol verificado en `public.users` sea `admin` omite avisos y Checkout en registro, reclamos, panel, planes y campañas comerciales. Conserva los mismos formularios, validaciones y moderación para probar el flujo completo sin cargos.
 
 ## Navigation and responsive behavior
 

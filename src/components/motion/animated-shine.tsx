@@ -45,7 +45,7 @@ export function AnimatedShine({ travel = 320 }: { travel?: number }) {
 
   if (reduceMotion) return null;
 
-  return <Animated.View pointerEvents="none" style={[styles.shine, animatedStyle]} />;
+  return <Animated.View style={[styles.shine, animatedStyle]} />;
 }
 
 const styles = StyleSheet.create({
@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.34)',
     bottom: -24,
     position: 'absolute',
+    pointerEvents: 'none',
     top: -24,
     width: 34,
   },

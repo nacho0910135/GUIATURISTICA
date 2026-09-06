@@ -4,11 +4,13 @@ import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useGlobalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { InformationReportModal } from '@/components/information-report-modal';
+import { AnimatedShine } from '@/components/motion';
 import { MapCanvas, type MapCoordinate } from '@/components/explore/map-canvas';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
@@ -109,8 +111,34 @@ function TrustBadge({ service, language }: { service: CommerceService; language:
 function DirectoryShortcut({ icon, label, onPress, primary = false, premium = false }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; onPress: () => void; primary?: boolean; premium?: boolean }) {
   const { isDark } = useApp();
   const gold = appTheme.colors.commerceGold;
+  const action = appTheme.colors.commerceAction;
   const goldInk = isDark ? gold.darkInk : gold.ink;
-  return <Pressable style={{ ...(premium ? { backgroundColor: isDark ? gold.darkGlass : gold.glass, borderColor: isDark ? gold.darkBorder : gold.border } : {}), elevation: 7, shadowColor: premium ? goldInk : primary ? '#07583F' : '#1E5B75', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.24, shadowRadius: 7 }} accessibilityRole="button" className={primary ? 'min-h-11 flex-row items-center rounded-control bg-ui-primary px-4 shadow-card active:translate-y-0.5 active:bg-ui-primary-pressed dark:bg-ui-dark-primary' : 'min-h-11 flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 shadow-card active:translate-y-0.5 active:bg-ui-muted dark:border-ui-dark-border dark:bg-ui-dark-surface dark:active:bg-ui-dark-muted'} onPress={onPress}><View className="absolute left-3 right-3 top-1 h-px rounded-full bg-white/80" pointerEvents="none" /><MaterialCommunityIcons name={icon} size={18} color={premium ? goldInk : primary ? 'white' : '#087443'} /><Text style={premium ? { color: goldInk } : undefined} className={primary ? 'ml-2 font-black text-white' : 'ml-2 font-black text-ui-primary dark:text-ui-dark-primary'}>{label}</Text></Pressable>;
+  const dimensional = primary || premium;
+  return <Pressable
+    accessibilityRole="button"
+    className={primary ? 'min-h-11 flex-row items-center overflow-hidden rounded-control border px-4 active:translate-y-0.5' : 'min-h-11 flex-row items-center overflow-hidden rounded-control border border-ui-border bg-ui-surface px-4 active:translate-y-0.5 active:bg-ui-muted dark:border-ui-dark-border dark:bg-ui-dark-surface dark:active:bg-ui-dark-muted'}
+    onPress={onPress}
+    style={{
+      ...(primary ? { backgroundColor: action.base, borderColor: action.border } : {}),
+      ...(premium ? { backgroundColor: isDark ? gold.darkGlass : gold.glass, borderColor: isDark ? gold.darkBorder : gold.border } : {}),
+      ...(Platform.OS === 'web'
+        ? { boxShadow: `0 ${dimensional ? 7 : 4}px ${dimensional ? 8 : 6}px ${dimensional ? 0 : -1}px ${premium ? goldInk : primary ? action.shadow : '#1E5B75'}52` }
+        : {
+            elevation: dimensional ? 9 : 5,
+            shadowColor: premium ? goldInk : primary ? action.shadow : '#1E5B75',
+            shadowOffset: { height: dimensional ? 7 : 4, width: 0 },
+            shadowOpacity: dimensional ? 0.32 : 0.18,
+            shadowRadius: dimensional ? 8 : 6,
+          }),
+    }}
+  >
+    {primary ? <LinearGradient colors={[action.top, action.base]} end={{ x: 0.65, y: 1 }} start={{ x: 0.35, y: 0 }} style={{ bottom: 0, left: 0, pointerEvents: 'none', position: 'absolute', right: 0, top: 0 }} /> : null}
+    {dimensional ? <View style={{ backgroundColor: primary ? action.shadow : goldInk, bottom: 0, height: 3, left: 0, opacity: 0.28, pointerEvents: 'none', position: 'absolute', right: 0 }} /> : null}
+    {dimensional ? <AnimatedShine travel={240} /> : null}
+    <View className="absolute left-3 right-3 top-1 h-px rounded-full bg-white/80" style={{ pointerEvents: 'none' }} />
+    <MaterialCommunityIcons name={icon} size={18} color={premium ? goldInk : primary ? 'white' : '#087443'} />
+    <Text style={premium ? { color: goldInk } : undefined} className={primary ? 'ml-2 font-black text-white' : 'ml-2 font-black text-ui-primary dark:text-ui-dark-primary'}>{label}</Text>
+  </Pressable>;
 }
 
 function CinemaPosterCarousel({ loading, movies }: { loading: boolean; movies: CinemaMovie[] }) {
@@ -391,6 +419,19 @@ export default function CommerceScreen() {
   const catalogDescription = isCinemaCategory ? (language === 'es' ? 'Ordenados de más cercano a más lejano; los sitios sin ubicación aparecen al final. La cartelera y compra abren en el sitio oficial.' : 'Ordered from nearest to farthest; places without a location appear last. Showtimes and purchase open on the official site.') : (language === 'es' ? 'Del más cercano al más lejano; los sitios sin ubicación aparecen al final.' : 'From nearest to farthest; places without a location appear last.');
   const activeBanner = banners.data?.[0];
 
+  const openBusinessRegistration = () => {
+    if (!requireAuth(language === 'es' ? 'registrar un comercio' : 'register a business')) return;
+    if (!isAdmin) {
+      setBusinessFeeNoticeOpen(true);
+      return;
+    }
+    setRegisterForm(emptyProfileForm(category));
+    setRegisterPhotos([]);
+    setRegistrationLocation(userLocation ?? undefined);
+    setRegisterError('');
+    setRegisterOpen(true);
+  };
+
   const openOwnerDashboard = async () => {
     if (!requireAuth(language === 'es' ? 'abrir el panel para propietarios' : 'open the owner dashboard')) return;
     const currentSubscriptions = subscriptions.isLoading ? (await subscriptions.refetch()).data ?? [] : subscriptions.data ?? [];
@@ -623,7 +664,7 @@ export default function CommerceScreen() {
         <Text className="mt-0.5 text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Comercios y servicios' : 'Businesses & services'}</Text>
         <Text className="mt-0.5 max-w-xl text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{language === 'es' ? 'Todo lo útil para tu viaje, organizado por experiencia y cercanía.' : 'Everything useful for your trip, organized by experience and proximity.'}</Text>
         <ScrollView horizontal className="mt-2" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>
-          <DirectoryShortcut icon="store-plus-outline" label={language === 'es' ? 'Registrar comercio' : 'Register business'} onPress={() => { if (requireAuth(language === 'es' ? 'registrar un comercio' : 'register a business')) setBusinessFeeNoticeOpen(true); }} primary />
+          <DirectoryShortcut icon="store-plus-outline" label={language === 'es' ? 'Registrar comercio' : 'Register business'} onPress={openBusinessRegistration} primary />
           <DirectoryShortcut premium icon="chart-line" label={language === 'es' ? 'Panel de propietarios' : 'Owner dashboard'} onPress={() => void openOwnerDashboard()} />
           {Platform.OS === 'web' ? <DirectoryShortcut icon="crown-outline" label={language === 'es' ? 'Planes Pro' : 'Pro plans'} onPress={() => { if (requireAuth('ver los planes Pro')) router.push('/subscriptions'); }} /> : null}
         </ScrollView>
