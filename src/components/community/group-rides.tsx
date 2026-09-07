@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, Text, TextInput, View } from 'react-native';
 
+import { MapCanvas } from '@/components/explore/map-canvas';
 import { FrogLoader } from '@/components/frog-loader';
 import { RideDateFields } from './ride-date-fields';
-import { getPreciseCurrentLocation } from '@/lib/current-location';
 import { haptic } from '@/lib/haptics';
 import { createGroupRide, getGroupRides, setGroupRideAttendance, type GroupRide, type TravelerTopic } from '@/lib/travelers';
 
@@ -37,23 +37,10 @@ export function GroupRides({ language, topic, userId, requireAuth }: { language:
   useEffect(() => { setCreating(false); setError(undefined); }, [topic]);
   if (!enabled) return null;
 
-  const chooseLocation = async () => {
-    if (!requireAuth(language === 'es' ? 'programar una rodada' : 'schedule a ride')) return;
-    setBusy(true);
-    setError(undefined);
-    try {
-      const current = await getPreciseCurrentLocation(language);
-      setLocation({ latitude: current.latitude, longitude: current.longitude });
-      void haptic('success');
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo obtener el GPS.' : 'Could not get GPS location.'));
-    } finally { setBusy(false); }
-  };
-
   const publish = async () => {
     if (!userId || !requireAuth(language === 'es' ? 'programar una rodada' : 'schedule a ride')) return;
     if (!title.trim() || !placeName.trim() || !location) {
-      setError(language === 'es' ? 'Completá el nombre, punto de encuentro y ubicación GPS.' : 'Complete the name, meeting point, and GPS location.');
+      setError(language === 'es' ? 'Completá el nombre, punto de encuentro y elegí la ubicación en el mapa.' : 'Complete the name, meeting point, and choose the location on the map.');
       return;
     }
     setBusy(true);
@@ -93,8 +80,10 @@ export function GroupRides({ language, topic, userId, requireAuth }: { language:
       <TextInput accessibilityLabel={language === 'es' ? 'Nombre de la rodada' : 'Ride name'} className="mt-4 min-h-12 rounded-control border border-ui-border bg-ui-muted px-4 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" maxLength={100} onChangeText={setTitle} placeholder={language === 'es' ? 'Ej: Ruta al volcán' : 'Example: Volcano route'} placeholderTextColor="#68737A" value={title} />
       <TextInput accessibilityLabel={language === 'es' ? 'Nombre del punto de encuentro' : 'Meeting point name'} className="mt-3 min-h-12 rounded-control border border-ui-border bg-ui-muted px-4 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-muted dark:text-ui-dark-text" maxLength={160} onChangeText={setPlaceName} placeholder={language === 'es' ? 'Ej: Parque de La Fortuna' : 'Example: La Fortuna Park'} placeholderTextColor="#68737A" value={placeName} />
       <RideDateFields language={language} onChange={setStartsAt} value={startsAt} />
-      <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-ui-primary bg-ui-primary-soft px-4 disabled:opacity-50 dark:border-ui-dark-primary dark:bg-ui-dark-primary-soft" disabled={busy} onPress={() => void chooseLocation()}>{busy ? <FrogLoader color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="crosshairs-gps" size={21} color="#0B6B4F" />}<Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{location ? (language === 'es' ? 'Actualizar GPS' : 'Update GPS') : (language === 'es' ? 'Usar mi ubicación GPS' : 'Use my GPS location')}</Text></Pressable>
-      {location ? <Text className="mt-2 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">GPS: {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</Text> : null}
+      <Text className="mt-4 font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ubicación del punto de encuentro' : 'Meeting point location'}</Text>
+      <Text className="mb-3 mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Navegá por el mapa y tocá el lugar donde iniciará la rodada.' : 'Navigate the map and tap where the ride will start.'}</Text>
+      <View className="overflow-hidden rounded-card"><MapCanvas onLocationPick={setLocation} selectedLocation={location} /></View>
+      <Text accessibilityRole={location ? 'text' : 'alert'} className="mt-2 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{location ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}` : (language === 'es' ? 'Tocá el mapa para elegir la ubicación.' : 'Tap the map to choose the location.')}</Text>
       {error ? <Text accessibilityRole="alert" className="mt-3 rounded-control bg-red-50 p-3 font-bold text-ui-danger dark:bg-red-950 dark:text-ui-dark-danger">{error}</Text> : null}
       <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-4 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4 disabled:opacity-50 dark:bg-ui-dark-primary" disabled={busy} onPress={() => void publish()}>{busy ? <FrogLoader color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar rodada' : 'Publish ride'}</Text>}</Pressable>
     </View> : null}

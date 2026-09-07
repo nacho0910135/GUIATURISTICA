@@ -6,10 +6,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { AppCard, PrimaryButton } from '@/components/ui';
-import { ferryRoutes, buildOfflineTripPlan, buildTripPlan, openNavigation, TRIP_VEHICLES, type PlannerPreference, type TripPlan, type TripVehicle } from '@/lib/logistics';
+import { buildOfflineTripPlan, buildTripPlan, openNavigation, TRIP_VEHICLES, type PlannerPreference, type TripPlan, type TripVehicle } from '@/lib/logistics';
 import { getPlannerOptions } from '@/lib/app-options';
 import { getOfflineTripPack, syncOfflineTripPack } from '../../lib/offline-trip-pack';
-import { scheduleTripReminders } from '../../lib/trip-notifications';
 import { useApp } from '@/providers/app-provider';
 
 export default function MyTripScreen() {
@@ -23,7 +22,6 @@ export default function MyTripScreen() {
   const [vehicle, setVehicle] = useState<TripVehicle>('sedan');
   const [stylesSelected, setStylesSelected] = useState<PlannerPreference[]>([]);
   const [zone, setZone] = useState('');
-  const [ferryId, setFerryId] = useState('');
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -58,21 +56,6 @@ export default function MyTripScreen() {
       const pack = await syncOfflineTripPack(zone);
       setMessage(isSpanish ? `${zone} disponible sin conexión: ${pack.destinations.length} destinos, ${pack.commerces.length} comercios y ${pack.buses.length} rutas.` : `${zone} is available offline: ${pack.destinations.length} destinations, ${pack.commerces.length} businesses, and ${pack.buses.length} routes.`);
     } catch (error) { setMessage(error instanceof Error && error.message === 'NATIVE_ONLY' ? (isSpanish ? 'Las descargas offline se habilitan en la app iOS o Android.' : 'Offline downloads are available in the iOS or Android app.') : (isSpanish ? 'No se pudo descargar el paquete.' : 'The package could not be downloaded.')); }
-    finally { setBusy(false); }
-  };
-
-  const reminders = async () => {
-    if (!plan) return;
-    setBusy(true); setMessage(null);
-    try {
-      await scheduleTripReminders(plan, ferryRoutes.find((route) => route.id === ferryId) ?? null);
-      setMessage(isSpanish ? 'Recordatorios locales programados.' : 'Local reminders scheduled.');
-    } catch (error) {
-      const unavailable = error instanceof Error && ['NATIVE_ONLY', 'EXPO_GO_NOTIFICATIONS_UNAVAILABLE'].includes(error.message);
-      setMessage(unavailable
-        ? (isSpanish ? 'Los recordatorios requieren la aplicación instalada; Expo Go no admite notificaciones remotas.' : 'Reminders require the installed app; Expo Go does not support remote notifications.')
-        : (isSpanish ? 'Permití las notificaciones para activar los recordatorios.' : 'Allow notifications to enable reminders.'));
-    }
     finally { setBusy(false); }
   };
 
@@ -117,7 +100,6 @@ export default function MyTripScreen() {
         <View className="flex-row items-start justify-between"><View className="flex-1 pr-4"><Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Ruta recomendada' : 'Recommended route'}</Text><Text className="mt-1 text-2xl font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Tu día, en orden' : 'Your day, in order'}</Text></View><View className="h-11 w-11 items-center justify-center rounded-2xl bg-caribbean-50 dark:bg-caribbean-900"><MaterialCommunityIcons color="#0077A8" name="format-list-numbered" size={25} /></View></View>
         <View className="mt-5 flex-row overflow-hidden rounded-2xl bg-ui-muted dark:bg-ui-dark-muted"><PlanMetric label={isSpanish ? 'Paradas' : 'Stops'} value={String(plan.stops.length)} /><PlanMetric label={isSpanish ? 'Inversión' : 'Budget'} value={formatCrc(plan.estimatedTotalCrc)} /><PlanMetric label={isSpanish ? 'Preferencias' : 'Preferences'} value={stylesSelected.length ? String(stylesSelected.length) : (isSpanish ? 'Todas' : 'All')} /></View>
         <View className="mt-6">{plan.stops.map((stop, index) => <View className={index === plan.stops.length - 1 ? 'relative ml-4 pl-7 pb-1' : 'relative ml-4 border-l-2 border-caribbean-200 pb-6 pl-7 dark:border-caribbean-800'} key={stop.destination.id}><View className="absolute -left-[17px] top-0 h-8 w-8 items-center justify-center rounded-full border-4 border-ui-surface bg-caribbean-500 dark:border-ui-dark-surface"><Text className="text-xs font-black text-white">{stop.order}</Text></View><Text className="text-xs font-black uppercase tracking-wide text-ui-primary dark:text-ui-dark-primary">{new Date(stop.arrivalAt).toLocaleTimeString(isSpanish ? 'es-CR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</Text><Text className="mt-1 text-base font-black text-ui-text dark:text-ui-dark-text">{stop.destination.name}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{stop.travelMinutes} min {isSpanish ? 'de traslado' : 'travel'} · {Math.round(stop.visitMinutes / 60 * 10) / 10} h {isSpanish ? 'en el destino' : 'at the destination'}</Text><Pressable accessibilityRole="button" className="mt-2 min-h-11 flex-row items-center self-start" onPress={() => void openNavigation(stop.destination.latitude, stop.destination.longitude)}><MaterialCommunityIcons name="navigation-variant-outline" size={18} color="#0077A8" /><Text className="ml-2 font-black text-caribbean-700 dark:text-caribbean-100">{isSpanish ? 'Abrir navegación' : 'Open navigation'}</Text></Pressable></View>)}</View>
-        <View className="mt-5 border-t border-ui-border pt-5 dark:border-ui-dark-border"><Text className="font-bold text-ui-text dark:text-ui-dark-text">{isSpanish ? '¿Tu ruta incluye ferri?' : 'Does your route include a ferry?'}</Text><ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}><Choice active={!ferryId} label={isSpanish ? 'Sin ferri' : 'No ferry'} onPress={() => setFerryId('')} />{ferryRoutes.map((route) => <Choice active={ferryId === route.id} key={route.id} label={route.route} onPress={() => setFerryId(route.id)} />)}</ScrollView><PrimaryButton className="mt-4" disabled={busy} onPress={() => void reminders()}>{isSpanish ? 'Activar recordatorios' : 'Enable reminders'}</PrimaryButton></View>
       </AppCard> : null}
 
       <AppCard className="p-5"><View className="flex-row items-start"><View className="h-11 w-11 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="download-circle-outline" size={25} color="#087443" /></View><View className="ml-3 flex-1"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Prepará la zona sin conexión' : 'Prepare the area offline'}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Destinos, transporte, emergencias y comercios, aunque perdás señal.' : 'Destinations, transport, emergencies, and businesses even without signal.'}</Text></View></View>{plannerOptions.isError ? <Pressable accessibilityRole="button" className="mt-4 min-h-11 justify-center rounded-control bg-ui-primary-soft px-4 dark:bg-ui-dark-primary-soft" onPress={() => void plannerOptions.refetch()}><Text className="font-bold text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Reintentar cargar zonas' : 'Retry loading areas'}</Text></Pressable> : <ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>{provinces.map((province) => <Choice active={zone === province} key={province} label={province} onPress={() => setZone(province)} />)}</ScrollView>}<PrimaryButton className="mt-4" disabled={busy || !zone} onPress={() => void download()}>{isSpanish ? `Descargar ${zone || 'zona'}` : `Download ${zone || 'area'}`}</PrimaryButton></AppCard>

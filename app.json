@@ -25,7 +25,6 @@
         "CAMERA",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "POST_NOTIFICATIONS",
         "RECORD_AUDIO"
       ],
       "adaptiveIcon": {
@@ -83,12 +82,6 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Descubriendo CR usa tu ubicación para recomendar destinos cercanos y calcular rutas."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "defaultChannel": "messages"
         }
       ]
     ],

@@ -105,6 +105,7 @@
 - **Toast:** pendiente un provider canónico; mientras tanto el feedback accionable permanece inline y no desaparece solo.
 - **Alerts/banners:** inline para corrección local, banner de página para condición persistente y global sólo para interrupción general.
 - **Nuevos seguidores:** se registran en el centro de notificaciones de Perfil; no generan aviso en la cabecera global ni notificación push.
+- **Avisos externos:** la aplicación no solicita permiso de notificaciones, no registra tokens push y no programa recordatorios locales. Toda actividad se consulta únicamente dentro de la aplicación.
 - **Unsaved changes:** conservar datos y confirmar salida mediante overlay propio cuando el formulario esté dirty.
 - **Layer order:** dialog > bottom sheet/drawer > popover > futura cola de toast.
 
@@ -161,5 +162,5 @@
 
 - Moteros, Enduro y 4x4 muestran las próximas rodadas antes del compositor social. Cada rodada conserva título, fecha/hora, nombre del lugar, coordenadas GPS y organizador.
 - Programar una rodada y confirmar «Asistiré» requieren sesión. La confirmación es idempotente por usuario y rodada; el contador proviene de `group_ride_attendees` bajo RLS.
-- El formulario usa selector nativo de fecha/hora en Android/iOS y entrada equivalente en web. La ubicación se obtiene mediante `getPreciseCurrentLocation`; nunca se publica una coordenada aproximada o inventada.
+- El formulario usa selector nativo de fecha/hora en Android/iOS y entrada equivalente en web. El organizador navega por el mapa y marca manualmente el punto de encuentro, porque no se asume que esté físicamente allí al programar la rodada; nunca se publica una coordenada aproximada o inventada.
 - Contrato de persistencia: migración `20260907033330_create_group_rides.sql`, tablas `group_rides` y `group_ride_attendees`.

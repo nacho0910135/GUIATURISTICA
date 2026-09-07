@@ -9,9 +9,7 @@ import { createContext, type PropsWithChildren, useCallback, useContext, useEffe
 import { AppState, Platform } from 'react-native';
 
 import { hasPrecisePermission, isUsablePosition, LOCATION_MAX_AGE_MS } from '@/lib/location-quality';
-import { registerAdminPushToken } from '@/lib/admin-push-notifications';
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
-import { registerPushToken } from '@/lib/push-notifications';
 import { supabase } from '@/lib/supabase';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -250,15 +248,6 @@ export function AppProvider({ children }: PropsWithChildren) {
     });
     return () => subscription.remove();
   }, [refreshUserLocation, syncSession]);
-
-  useEffect(() => {
-    if (isAdmin && session?.user.id) void registerAdminPushToken(session.user.id).catch((error) => console.warn('No se pudo registrar el push administrativo.', error));
-  }, [isAdmin, session?.user.id]);
-
-  useEffect(() => {
-    if (!session?.user.id) return;
-    void registerPushToken().catch((error) => console.warn('No se pudo registrar el push de mensajes.', error));
-  }, [session?.user.id]);
 
   useEffect(() => {
     void refreshUserLocation().catch(() => undefined);

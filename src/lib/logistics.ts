@@ -409,26 +409,6 @@ export async function openNavigation(latitude: number, longitude: number) {
   }
 }
 
-export async function scheduleFerryReminder(route: FerryRoute, minutes = route.arrivalMinutes) {
-  if (Platform.OS === 'web') throw new Error('NATIVE_ONLY');
-  const Constants = await import('expo-constants');
-  if (Constants.default.executionEnvironment === Constants.ExecutionEnvironment.StoreClient) {
-    throw new Error('EXPO_GO_NOTIFICATIONS_UNAVAILABLE');
-  }
-  const Notifications = await import('expo-notifications');
-  const permission = await Notifications.requestPermissionsAsync();
-  if (permission.status !== 'granted') throw new Error('PERMISSION_DENIED');
-  if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('ferries', { name: 'Ferris', importance: Notifications.AndroidImportance.HIGH });
-  const departure = nextDeparture(route.departures);
-  const reminder = new Date(departure.getTime() - minutes * 60 * 1000);
-  if (reminder.getTime() <= Date.now()) reminder.setDate(reminder.getDate() + 1);
-  await Notifications.scheduleNotificationAsync({
-    content: { title: `Ferri ${route.route}`, body: `Llegá ${minutes} minutos antes. Salida: ${departure.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminder, channelId: 'ferries' },
-  });
-  return departure;
-}
-
 export async function saveOfflinePack(destinations: Destination[], dayPlan?: DayPlan | null) {
   await offlineStorage.setItem('LOGISTICS_OFFLINE_PACK', JSON.stringify({ savedAt: new Date().toISOString(), destinations, emergencyContacts, dayPlan: dayPlan ?? null }));
 }
@@ -451,16 +431,4 @@ function normalizeDestination(row: Record<string, unknown>): Destination {
     latitude: Number(row.latitude), longitude: Number(row.longitude), price_national_crc: Number(row.price_national_crc ?? 0),
     schedule: rules?.horario_ingreso ?? null, closed_day: rules?.dia_cierre ?? null,
   };
-}
-
-function nextDeparture(times: string[]) {
-  const now = new Date();
-  for (const time of times) {
-    const [hours, minutes] = time.split(':').map(Number);
-    const candidate = new Date(now); candidate.setHours(hours, minutes, 0, 0);
-    if (candidate.getTime() > now.getTime() + 15 * 60 * 1000) return candidate;
-  }
-  const [hours, minutes] = times[0].split(':').map(Number);
-  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(hours, minutes, 0, 0);
-  return tomorrow;
 }
