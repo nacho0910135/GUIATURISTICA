@@ -28,7 +28,7 @@ Todas las tablas públicas deben tener RLS habilitado. Las lecturas anónimas de
 
 ## Google OAuth
 
-Habilitá Google en Supabase Auth y agregá `descubriendocr://auth/callback` a la lista de Redirect URLs. Para Expo Go, agregá también la URL que produzca `Linking.createURL('auth/callback')` en tu entorno de desarrollo. Los identificadores nativos son `cr.descubriendo.app`.
+Habilitá Google en Supabase Auth y agregá `descubriendocr://auth/callback` a la lista de Redirect URLs. Para Expo Go, agregá también la URL que produzca `Linking.createURL('auth/callback')` en tu entorno de desarrollo. Los identificadores nativos son `com.descubriendo.cr`.
 
 ## Mapas en builds de tienda
 

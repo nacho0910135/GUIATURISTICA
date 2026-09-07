@@ -8,7 +8,7 @@
     "scheme": "descubriendocr",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "cr.descubriendo.app",
+      "bundleIdentifier": "com.descubriendo.cr",
       "buildNumber": "1",
       "supportsTablet": true,
       "infoPlist": {
@@ -19,7 +19,7 @@
       }
     },
     "android": {
-      "package": "cr.descubriendo.app",
+      "package": "com.descubriendo.cr",
       "versionCode": 1,
       "permissions": [
         "CAMERA",
