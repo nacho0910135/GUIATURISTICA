@@ -69,7 +69,7 @@ assert.doesNotMatch(billing, /Las campañas se contratan desde el panel web/);
 assert.match(commerce, /Contratar una vez/);
 assert.match(commerce, /prepareCampaignBanner/);
 assert.match(commerce, /Previsualización del banner/);
-assert.match(commerce, /aspectRatio: 4\.5/);
+assert.match(commerce, /className="h-28 w-full"/);
 assert.match(commerce, /número máximo de banners activos ya fue alcanzado/);
 assert.match(checkout, /metadata\[image_url\]/);
 assert.match(webhook, /image_url: imageUrl/);
