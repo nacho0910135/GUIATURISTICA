@@ -40,7 +40,7 @@ export function AppFooter({ language }: { language: 'es' | 'en' }) {
         </View>
 
         <View className="mt-5 border-t border-white/15 pt-5">
-          <Text className="text-center text-xs leading-5 text-[#B5CCC4]">© {new Date().getFullYear()} Descubriendo CR · {text('Hecho con ❤️ por la conservación de Costa Rica.', 'Made with ❤️ for Costa Rica’s conservation.')}</Text>
+          <Text className="text-center text-xs leading-5 text-[#B5CCC4]">© {new Date().getFullYear()} Descubriendo CR · {text('Hecho con ❤️ para la promoción del turismo nacional.', 'Made with ❤️ to promote national tourism.')}</Text>
           <Text className="mt-2 text-center text-sm font-bold text-[#D9F7ED]">¡Pura Vida! · CR 🇨🇷</Text>
         </View>
       </View>

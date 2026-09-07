@@ -2,11 +2,12 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { getClaimableBusiness, requestCommercialServiceClaim } from '@/lib/commerce';
 import { useApp } from '@/providers/app-provider';
 
+import { FrogLoader } from '@/components/frog-loader';
 export default function ClaimBusinessScreen() {
   const { isAdmin, language, requireAuth } = useApp();
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function ClaimBusinessScreen() {
           <MaterialCommunityIcons name="store-check-outline" size={30} color="#087443" />
         </View>
         <Text className="mt-5 text-2xl font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Reclamar negocio' : 'Claim business'}</Text>
-        {business.isLoading ? <ActivityIndicator className="py-10" color="#087443" /> : null}
+        {business.isLoading ? <FrogLoader className="py-10" color="#087443" /> : null}
         {!business.isLoading && unavailable ? <Text className="mt-4 leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Este perfil no está disponible para reclamo.' : 'This profile is not available to claim.'}</Text> : null}
         {!business.isLoading && !unavailable && submitted ? (
           <View className="mt-5 rounded-2xl bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft">

@@ -8,6 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
+import { hasPrecisePermission, isUsablePosition, LOCATION_MAX_AGE_MS } from '@/lib/location-quality';
 import { registerAdminPushToken } from '@/lib/admin-push-notifications';
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { registerPushToken } from '@/lib/push-notifications';
@@ -77,6 +78,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [authReady, setAuthReady] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const locationRefreshInFlight = useRef(false);
+  const locationWatcher = useRef<Location.LocationSubscription | null>(null);
+  const locationGeneration = useRef(0);
+  const lastLocationTimestamp = useRef(0);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<'denied' | 'unavailable' | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -86,36 +90,92 @@ export function AppProvider({ children }: PropsWithChildren) {
   const refreshUserLocation = useCallback(async () => {
     if (locationRefreshInFlight.current) return;
     locationRefreshInFlight.current = true;
+    const generation = ++locationGeneration.current;
+    const active = () => generation === locationGeneration.current;
     setLocating(true);
     setLocationError(null);
-    try {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (!permission.granted) {
+    locationWatcher.current?.remove();
+    locationWatcher.current = null;
+    setUserLocation(null);
+    const accept = (position: Location.LocationObject) => {
+      if (!active() || position.timestamp < lastLocationTimestamp.current) return;
+      if (!isUsablePosition(position)) {
         setUserLocation(null);
+        setLocationError('unavailable');
+        setLocating(false);
+        return;
+      }
+      lastLocationTimestamp.current = position.timestamp;
+      setUserLocation(position.coords);
+      setLocationError(null);
+      setLocating(false);
+    };
+    try {
+      let permission = await Location.getForegroundPermissionsAsync();
+      if (!permission.granted && permission.canAskAgain) permission = await Location.requestForegroundPermissionsAsync();
+      if (!active()) return;
+      if (!permission.granted) {
+        lastLocationTimestamp.current = 0;
         setLocationError('denied');
         return;
       }
-
-      const cached = await Location.getLastKnownPositionAsync({
-        maxAge: 2 * 60 * 1000,
-        requiredAccuracy: 1000,
-      }).catch(() => null);
-      if (cached) setUserLocation(cached.coords);
-
-      // Expo's web adapter defaults to maximumAge: Infinity. A refresh must
-      // request a fresh browser fix instead of reusing an old travel location.
-      const current = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-        ...(Platform.OS === 'web' ? { maximumAge: 0, timeout: 15000 } : {}),
+      if (!hasPrecisePermission(permission)) {
+        lastLocationTimestamp.current = 0;
+        setLocationError('unavailable');
+        return;
+      }
+      const options = {
+        accuracy: Location.Accuracy.Highest,
+        distanceInterval: 10,
+        timeInterval: 10000,
+        ...(Platform.OS === 'web' ? { maximumAge: 0, timeout: 20000 } : {}),
+      };
+      const watcher = await Location.watchPositionAsync(options, accept, () => {
+        if (!active()) return;
+        setUserLocation(null);
+        setLocationError('unavailable');
+        setLocating(false);
       });
-      setUserLocation(current.coords);
+      if (!active()) { watcher.remove(); return; }
+      locationWatcher.current = watcher;
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const current = await Promise.race([
+          Location.getCurrentPositionAsync(options),
+          new Promise<never>((_, reject) => {
+            timeout = setTimeout(() => reject(new Error('Location timeout')), 25000);
+          }),
+        ]);
+        accept(current);
+      } finally {
+        clearTimeout(timeout);
+      }
     } catch {
-      setLocationError('unavailable');
+      if (active() && Date.now() - lastLocationTimestamp.current > LOCATION_MAX_AGE_MS) {
+        setUserLocation(null);
+        setLocationError('unavailable');
+      }
     } finally {
-      locationRefreshInFlight.current = false;
-      setLocating(false);
+      if (active()) { locationRefreshInFlight.current = false; setLocating(false); }
     }
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (Date.now() - lastLocationTimestamp.current > LOCATION_MAX_AGE_MS) {
+        setUserLocation(null);
+        // Recheck silent sensors and permissions without a screen-specific GPS.
+        if (lastLocationTimestamp.current > 0 && AppState.currentState === 'active') void refreshUserLocation();
+      }
+    }, 15000);
+    return () => {
+      clearInterval(timer);
+      locationGeneration.current += 1;
+      locationRefreshInFlight.current = false;
+      locationWatcher.current?.remove();
+      locationWatcher.current = null;
+    };
+  }, [refreshUserLocation]);
 
   const syncSession = useCallback(async (nextSession: Session | null) => {
     setUserSession(nextSession);
@@ -176,7 +236,15 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') return;
+      if (state === 'inactive') return;
+      if (state !== 'active') {
+        locationGeneration.current += 1;
+        locationRefreshInFlight.current = false;
+        locationWatcher.current?.remove();
+        locationWatcher.current = null;
+        setUserLocation(null);
+        return;
+      }
       void supabase.auth.getSession().then(({ data }) => syncSession(data.session));
       void refreshUserLocation().catch(() => undefined);
     });

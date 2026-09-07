@@ -4,10 +4,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
+import { roadDistanceLabel } from '@/lib/road-distance';
+import { useRoadDistances } from '@/lib/use-road-distances';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { ActivityIndicator, BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
+import { BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
 
 import { InformationReportModal } from '@/components/information-report-modal';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
@@ -18,6 +19,7 @@ import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
+import { FrogLoader } from '@/components/frog-loader';
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
 
 function DestinationCarousel({ autoplay = true, height, place }: { autoplay?: boolean; height: number; place: MapPlace }) {
@@ -67,7 +69,6 @@ function tourismRegion(place: MapPlace) {
   return place.province;
 }
 
-type Coordinates = { latitude: number; longitude: number };
 
 const CATALOG_BATCH_SIZE = 5;
 const DESTINATION_CARD_HEIGHT = 346;
@@ -75,22 +76,14 @@ const DESTINATION_INFO_HEIGHT = 140;
 const DESTINATION_INFO_BOTTOM_PADDING = 31;
 const DESTINATION_FLOATING_LABEL_BOTTOM = 108;
 
-function distanceKm(from: Coordinates, to: Coordinates) {
-  const radians = (degrees: number) => degrees * Math.PI / 180;
-  const lat = radians(to.latitude - from.latitude);
-  const lng = radians(to.longitude - from.longitude);
-  const a = Math.sin(lat / 2) ** 2 + Math.cos(radians(from.latitude)) * Math.cos(radians(to.latitude)) * Math.sin(lng / 2) ** 2;
-  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 export default function ProvinceCatalogScreen() {
   const { category: rawCategory, categoryId, community: communityParam, destinationId, direct: directParam, province: rawProvince } = useLocalSearchParams<{ category?: string; categoryId?: string; community?: string; destinationId?: string; direct?: string; province?: string }>();
-  const { formatPrice, language, requireAuth, session, setVisitorType, visitorType } = useApp();
+  const { formatPrice, language, requireAuth, session, setVisitorType, visitorType, userLocation: sessionLocation } = useApp();
   const { colors } = useAppTheme();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<MapPlace>();
-  const [userLocation, setUserLocation] = useState<Coordinates>();
+  const userLocation = sessionLocation ?? undefined;
   const [beachType, setBeachType] = useState<'family' | 'surf'>('family');
   const [activeSubcategoryId, setActiveSubcategoryId] = useState<string>();
   const [visiblePlaceCount, setVisiblePlaceCount] = useState(CATALOG_BATCH_SIZE);
@@ -151,26 +144,8 @@ export default function ProvinceCatalogScreen() {
     if (match) setSelected(match);
   }, [destinationId, places.data]);
   useEffect(() => { setActiveSubcategoryId(undefined); }, [categoryId]);
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        let permission = await Location.getForegroundPermissionsAsync();
-        if (!permission.granted) permission = await Location.requestForegroundPermissionsAsync();
-        if (!permission.granted) return;
-        const cached = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60 * 1000, requiredAccuracy: 5000 });
-        if (active && cached) setUserLocation(cached.coords);
-        const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        if (active) setUserLocation(current.coords);
-      } catch {
-        // Keep the catalog usable if the device location is unavailable.
-      }
-    })();
-    return () => { active = false; };
-  }, []);
-  const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => userLocation
-    ? distanceKm(userLocation, a) - distanceKm(userLocation, b)
-    : 0), [places.data, userLocation]);
+  const roadDistance = useRoadDistances(userLocation, places.data ?? []);
+  const sortedPlaces = [...(places.data ?? [])].sort((a, b) => (roadDistance(a) ?? Infinity) - (roadDistance(b) ?? Infinity));
   const visibleCategorySubcategories = useMemo(
     () => categorySubcategories.filter((subcategory) => sortedPlaces.some((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, subcategory.allowed_targets ?? []))),
     [categorySubcategories, sortedPlaces],
@@ -202,7 +177,7 @@ export default function ProvinceCatalogScreen() {
 
   if (directDestination && !selected) {
     if (places.isPending || places.data?.some((place) => place.id === destinationId)) {
-      return <View accessibilityLabel={language === 'es' ? 'Cargando ficha del sitio' : 'Loading place details'} accessibilityRole="progressbar" className="flex-1 items-center justify-center bg-ui-background dark:bg-ui-dark-background"><ActivityIndicator color="#00c98d" size="large" /></View>;
+      return <View accessibilityLabel={language === 'es' ? 'Cargando ficha del sitio' : 'Loading place details'} accessibilityRole="progressbar" className="flex-1 items-center justify-center bg-ui-background dark:bg-ui-dark-background"><FrogLoader color="#00c98d" size="large" /></View>;
     }
     return <View className="flex-1 items-center justify-center bg-ui-background p-6 dark:bg-ui-dark-background"><View accessibilityRole="alert" className="w-full max-w-md rounded-card border border-ui-border bg-ui-surface p-6 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="map-marker-alert-outline" size={34} color={colors.textMuted} /><Text className="mt-4 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No pudimos abrir la ficha' : 'We could not open this place'}</Text><Text className="mt-2 leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Revisá tu conexión e intentá de nuevo.' : 'Check your connection and try again.'}</Text><View className="mt-5 flex-row gap-3"><Pressable accessibilityRole="button" className="min-h-11 flex-1 items-center justify-center rounded-control bg-ui-primary px-4 dark:bg-ui-dark-primary" onPress={() => void places.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable><Pressable accessibilityRole="button" className="min-h-11 flex-1 items-center justify-center rounded-control border border-ui-border px-4 dark:border-ui-dark-border" onPress={leaveCatalog}><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Volver' : 'Back'}</Text></Pressable></View></View></View>;
   }
@@ -225,12 +200,12 @@ export default function ProvinceCatalogScreen() {
         extraData={visiblePlaceIds}
         initialNumToRender={CATALOG_BATCH_SIZE}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={places.isPending ? <ActivityIndicator className="py-16" color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? (language === 'es' ? 'No se pudieron cargar los sitios.' : 'Places could not be loaded.') : isBeach ? (language === 'es' ? `Aún no hay playas ${beachType === 'surf' ? 'de surf' : 'familiares'} publicadas.` : `There are no ${beachType === 'surf' ? 'surf' : 'family'} beaches published yet.`) : (language === 'es' ? 'Aún no hay sitios publicados aquí.' : 'There are no published places here yet.')}</Text>}
+        ListEmptyComponent={places.isPending ? <FrogLoader branded color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? (language === 'es' ? 'No se pudieron cargar los sitios.' : 'Places could not be loaded.') : isBeach ? (language === 'es' ? `Aún no hay playas ${beachType === 'surf' ? 'de surf' : 'familiares'} publicadas.` : `There are no ${beachType === 'surf' ? 'surf' : 'family'} beaches published yet.`) : (language === 'es' ? 'Aún no hay sitios publicados aquí.' : 'There are no published places here yet.')}</Text>}
         maxToRenderPerBatch={CATALOG_BATCH_SIZE}
         onEndReached={visiblePlaces.length < displayedPlaces.length ? loadNextPlaces : undefined}
         onEndReachedThreshold={0.35}
         onViewableItemsChanged={onViewableItemsChanged.current}
-        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} userLocation={userLocation} visitorType={visitorType} />}
+        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} roadDistance={roadDistance(item)} visitorType={visitorType} />}
         viewabilityConfig={viewabilityConfig.current}
       />
       <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} />
@@ -238,11 +213,11 @@ export default function ProvinceCatalogScreen() {
   );
 }
 
-function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, userLocation, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; userLocation?: Coordinates; visitorType: 'tico' | 'foreigner' }) {
+function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, roadDistance, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; roadDistance?: number | null; visitorType: 'tico' | 'foreigner' }) {
   const price = visitorType === 'tico'
     ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
     : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
-  const decisionFacts = destinationDecisionFacts(item, language, price, userLocation);
+  const decisionFacts = destinationDecisionFacts(item, language, price, roadDistance);
   const reservationUrl = destinationReservationUrl(item);
 
   return (
@@ -283,7 +258,7 @@ function destinationReservationUrl(item: MapPlace) {
   return null;
 }
 
-function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, userLocation?: Coordinates) {
+function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, roadDistance?: number | null) {
   const facts: DestinationFactItem[] = [];
   if (item.has_high_tides_risk) facts.push({ icon: 'waves-arrow-up', label: language === 'es' ? 'Revisar mareas' : 'Check tides', urgent: true });
   if (item.visit_info?.reserva_requerida || item.requires_online_ticket || item.requires_sinac_booking) facts.push({ action: 'reservation', icon: 'calendar-check-outline', label: destinationReservationUrl(item) ? (language === 'es' ? 'Reservar ahora ↗' : 'Book now ↗') : (language === 'es' ? 'Ver cómo reservar ›' : 'How to book ›'), urgent: true });
@@ -293,7 +268,7 @@ function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: 
   const duration = item.visit_info?.duracion_estimada?.replace(/\s*\(.*/, '').trim();
   if (duration) facts.push({ icon: 'clock-outline', label: duration });
   facts.push({ icon: 'ticket-confirmation-outline', label: price });
-  facts.push({ icon: 'map-marker-distance', label: userLocation ? `${distanceKm(userLocation, item).toFixed(1)} km` : (language === 'es' ? 'Calculando distancia…' : 'Calculating distance…') });
+  facts.push({ icon: 'map-marker-distance', label: roadDistanceLabel(roadDistance, language) });
   return facts.slice(0, 4);
 }
 
@@ -429,7 +404,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
               <View className="absolute bottom-0 left-0 right-0 bg-black/45 px-5 pb-4 pt-8"><View className="flex-row flex-wrap items-center gap-1.5"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-2.5 py-1.5"><Text className="text-xs font-black text-white">{categoryLabel(place.category, language)}</Text></View><View className="rounded-lg bg-[#ffac16] px-2.5 py-1.5"><Text className="text-xs font-black text-white">★ {place.average_rating.toFixed(1)} · {place.reviews_count ? `${place.reviews_count} ${language === 'es' ? 'opiniones' : 'reviews'}` : (language === 'es' ? 'calificación inicial' : 'starting rating')}</Text></View>{place.is_community_submission ? communityLocationVerified ? <View className="rounded-lg bg-ui-primary px-2.5 py-1.5"><Text className="text-xs font-black text-white">{language === 'es' ? 'UBICACIÓN VERIFICADA' : 'LOCATION VERIFIED'}</Text></View> : null : <ValidationBadge authorities={place.validated_by} checkedAt={place.verification_checked_at} evidenceUrl={place.verification_evidence_url} language={language} />}</View><Text className="mt-2 text-2xl font-black leading-7 text-white md:text-3xl md:leading-9">{place.name}</Text></View>
             </View>
             {usesVerifiedCover(place) && place.image_source_url ? <Pressable className="self-end px-5 pt-3" onPress={() => void Linking.openURL(place.image_source_url!)}><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Foto' : 'Photo'}: {place.image_attribution || 'Wikimedia Commons'} · {place.image_license || (language === 'es' ? 'Ver licencia' : 'View license')}</Text></Pressable> : null}
-            <View className="pt-5"><View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <ActivityIndicator color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>{communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((photo, index) => <View key={photo.id}><Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable><Pressable className="mt-1 flex-row self-start items-center rounded-full bg-ui-muted px-2 py-1 dark:bg-ui-dark-muted" onPress={() => void likePhoto(photo)}><MaterialCommunityIcons name={photo.liked ? 'heart' : 'heart-outline'} size={16} color={photo.liked ? '#ff557d' : '#0B6B4F'} /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{photo.likes_count}</Text></Pressable></View>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}</View>
+            <View className="pt-5"><View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <FrogLoader color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>{communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((photo, index) => <View key={photo.id}><Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable><Pressable className="mt-1 flex-row self-start items-center rounded-full bg-ui-muted px-2 py-1 dark:bg-ui-dark-muted" onPress={() => void likePhoto(photo)}><MaterialCommunityIcons name={photo.liked ? 'heart' : 'heart-outline'} size={16} color={photo.liked ? '#ff557d' : '#0B6B4F'} /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{photo.likes_count}</Text></Pressable></View>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}</View>
             <View className="gap-6 p-5 md:p-8">
               <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={difficultyLabel(place.difficulty, language)} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}

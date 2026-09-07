@@ -6,7 +6,7 @@ import { useIsFocused } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRightLeft, CircleUserRound, Moon, Sun } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,17 +19,18 @@ import { supabase } from '@/lib/supabase';
 import { useApp, type VisitorType } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
+import { FrogLoader } from '@/components/frog-loader';
 const visitorOptions: readonly { id: VisitorType; label: string; labelEs: string }[] = [
   { id: 'tico', label: 'Tico', labelEs: 'Tico' },
   { id: 'foreigner', label: 'Foreigner', labelEs: 'Foreigner' },
 ];
-const SOCIAL_NOTIFICATION_TYPES = ['follow', 'like', 'comment'] as const;
+const SOCIAL_NOTIFICATION_TYPES = ['like', 'comment'] as const;
 type SocialNotificationType = typeof SOCIAL_NOTIFICATION_TYPES[number];
 let lastPresentedSocialNotificationId: string | null = null;
 
 export function GlobalHeader() {
   const isFocused = useIsFocused();
-  const { avatarUrl, exchangeRate, isAdmin, language, session, setVisitorType, visitorType } = useApp();
+  const { avatarUrl, exchangeRate, language, session, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -56,7 +57,8 @@ export function GlobalHeader() {
   const refetchSocialActivityRef = useRef(socialActivity.refetch);
   refetchSocialActivityRef.current = socialActivity.refetch;
   useTravelerMessagesSync(session?.user.id, () => { void messages.refetch(); });
-  const access = session && !isAdmin ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
+  const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
+  const showTrialBanner = Boolean(access && !subscriptions.isPending && !subscriptions.isFetching && !access.hasPersonalPlan);
   const unreadConversation = messages.data?.filter((item) => item.unread_count > 0).sort((a, b) => (b.messages.at(-1)?.created_at ?? '').localeCompare(a.messages.at(-1)?.created_at ?? ''))[0];
   const isInChat = pathname.includes('traveler-profile') || (pathname.includes('profile') && routeParams.section === 'messages');
   const socialActor = Array.isArray(socialActivity.data?.actor) ? socialActivity.data.actor[0] : socialActivity.data?.actor;
@@ -64,9 +66,7 @@ export function GlobalHeader() {
   const socialType = socialActivity.data?.type as SocialNotificationType | undefined;
   const socialCopy = socialType === 'like'
     ? { es: 'reaccionó a tu publicación:', en: 'reacted to your post:', icon: 'thumb-up-outline' as const }
-    : socialType === 'comment'
-      ? { es: 'comentó en tu publicación:', en: 'commented on your post:', icon: 'comment-outline' as const }
-      : { es: 'Tenés un nuevo seguidor:', en: 'You have a new follower:', icon: 'account-plus-outline' as const };
+    : { es: 'comentó en tu publicación:', en: 'commented on your post:', icon: 'comment-outline' as const };
 
   useEffect(() => {
     if (!session?.user.id || !isFocused) return;
@@ -149,6 +149,7 @@ export function GlobalHeader() {
     setOpeningCheckout(true);
     try {
       await openSubscriptionCheckout({ offerId: 'universal_monthly' });
+      await subscriptions.refetch();
     } catch (reason) {
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (isSpanish ? 'No se pudo abrir el pago.' : 'Checkout could not be opened.'));
     } finally {
@@ -169,7 +170,7 @@ export function GlobalHeader() {
   const openSocialNotification = () => {
     if (!socialActivity.data) return;
     setVisibleSocialNotificationId(undefined);
-    router.push({ pathname: '/(tabs)/profile', params: { section: socialType === 'follow' ? 'community' : 'notifications' } });
+    router.push({ pathname: '/(tabs)/profile', params: { section: 'notifications' } });
   };
 
   return (
@@ -239,7 +240,7 @@ export function GlobalHeader() {
             <ProfileButton avatarUrl={avatarUrl} desktopOffset label={isSpanish ? 'Abrir perfil y planes Pro' : 'Open profile and Pro plans'} onPress={() => router.push('/(tabs)/profile')} />
           </View>
         </View>
-        {access && !access.hasPersonalPlan ? <Pressable accessibilityLabel={isSpanish ? 'Continuar descubriendo por dos dólares mensuales' : 'Keep discovering for two dollars per month'} accessibilityRole="button" className={access.showTrialWarning || !access.hasAccess ? 'mt-2 flex-row items-center rounded-2xl border border-amber-300 bg-amber-50 px-3 py-1.5 shadow-card' : 'mt-2 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-1.5 shadow-card dark:bg-ui-dark-primary-soft'} disabled={openingCheckout} onPress={() => void startMonthlyCheckout()} style={{ elevation: 7, shadowColor: access.showTrialWarning || !access.hasAccess ? '#B96708' : colors.primary, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.22, shadowRadius: 8 }}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="compass-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className={access.showTrialWarning || !access.hasAccess ? 'text-[11px] font-black text-amber-900' : 'text-[11px] font-black text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día gratis restante' : 'días gratis restantes'}` : `${access.trialDaysRemaining} free ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Tu prueba gratuita terminó' : 'Your free trial has ended')}</Text><Text className={access.showTrialWarning || !access.hasAccess ? 'text-[10px] leading-3 font-bold text-amber-800' : 'text-[10px] leading-3 font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{isSpanish ? 'Podés seguir descubriendo sitios por US$2 mensuales' : 'Keep discovering places for US$2 per month'}</Text></View>{openingCheckout ? <ActivityIndicator color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="arrow-right" size={19} color="#0B6B4F" />}</Pressable> : null}
+        {showTrialBanner && access ? <Pressable accessibilityLabel={isSpanish ? 'Continuar descubriendo por dos dólares mensuales' : 'Keep discovering for two dollars per month'} accessibilityRole="button" className={access.showTrialWarning || !access.hasAccess ? 'mt-2 flex-row items-center rounded-2xl border border-amber-300 bg-amber-50 px-3 py-1.5 shadow-card' : 'mt-2 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-1.5 shadow-card dark:bg-ui-dark-primary-soft'} disabled={openingCheckout} onPress={() => void startMonthlyCheckout()} style={{ elevation: 7, shadowColor: access.showTrialWarning || !access.hasAccess ? '#B96708' : colors.primary, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.22, shadowRadius: 8 }}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="compass-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className={access.showTrialWarning || !access.hasAccess ? 'text-[11px] font-black text-amber-900' : 'text-[11px] font-black text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día gratis restante' : 'días gratis restantes'} de prueba gratuita` : `${access.trialDaysRemaining} free-trial ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Tu prueba gratuita terminó' : 'Your free trial has ended')}</Text><Text className={access.showTrialWarning || !access.hasAccess ? 'text-[10px] leading-3 font-bold text-amber-800' : 'text-[10px] leading-3 font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{isSpanish ? 'Podés seguir descubriendo sitios por US$2 mensuales' : 'Keep discovering places for US$2 per month'}</Text></View>{openingCheckout ? <FrogLoader color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="arrow-right" size={19} color="#0B6B4F" />}</Pressable> : null}
         {unreadConversation && !isInChat ? <Pressable accessibilityLabel={isSpanish ? `Abrir nuevo mensaje de ${unreadConversation.partner_name}` : `Open new message from ${unreadConversation.partner_name}`} accessibilityRole="button" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-ui-secondary/30 bg-ui-surface px-3 py-2 shadow-card dark:border-ui-dark-secondary/40 dark:bg-ui-dark-surface" onPress={() => void openUnreadConversation()}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-secondary"><MaterialCommunityIcons name="message-text-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Recibiste un nuevo mensaje de:' : 'You received a new message from:'}</Text><Text className="text-[10px] font-bold text-ui-secondary dark:text-ui-dark-secondary">{unreadConversation.partner_name}</Text></View><MaterialCommunityIcons name="arrow-right" size={19} color={colors.secondary} /></Pressable> : null}
         {socialActivity.data && visibleSocialNotificationId === socialActivity.data.id ? <Pressable accessibilityLabel={isSpanish ? `Abrir actividad nueva de ${socialActorName}` : `Open new activity from ${socialActorName}`} accessibilityRole="button" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-2 shadow-card dark:bg-ui-dark-primary-soft" onPress={openSocialNotification}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name={socialCopy.icon} size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? socialCopy.es : socialCopy.en}</Text><Text className="text-[10px] font-bold text-ui-primary dark:text-ui-dark-primary">{socialActorName}</Text></View><MaterialCommunityIcons name="arrow-right" size={19} color={colors.primary} /></Pressable> : null}
       </Animated.View>

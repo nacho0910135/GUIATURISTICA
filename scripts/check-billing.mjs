@@ -38,6 +38,8 @@ assert.match(screen, /MEJOR VALOR/);
 assert.match(checkout, /supabase\.auth\.getUser/);
 assert.match(checkout, /eq\('owner_id', user\.id\)/);
 assert.match(checkout, /STRIPE_SECRET_KEY/);
+assert.match(checkout, /banner_capacity_reached/);
+assert.match(checkout, /new Set\(\(data \?\? \[\]\)\.map\(\(campaign\) => campaign\.service_id\)\)\.size >= 3/);
 assert.match(checkout, /mode: offer\.mode/);
 assert.match(checkout, /offer\.mode === 'subscription'/);
 for (const recurringOffer of ['universal_monthly', 'universal_annual', 'business_monthly', 'featured_monthly', 'banner_monthly']) {
@@ -67,6 +69,8 @@ assert.doesNotMatch(billing, /Las campañas se contratan desde el panel web/);
 assert.match(commerce, /Contratar una vez/);
 assert.match(commerce, /prepareCampaignBanner/);
 assert.match(commerce, /Previsualización del banner/);
+assert.match(commerce, /aspectRatio: 4\.5/);
+assert.match(commerce, /número máximo de banners activos ya fue alcanzado/);
 assert.match(checkout, /metadata\[image_url\]/);
 assert.match(webhook, /image_url: imageUrl/);
 assert.match(bannerImageMigration, /campaign-banners/);

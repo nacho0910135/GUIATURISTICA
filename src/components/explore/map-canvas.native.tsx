@@ -1,13 +1,14 @@
 import { useQueries } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import MapView, { Marker, Polygon, type Region } from 'react-native-maps';
 
 import { getWeather, WEATHER_STALE_TIME } from '@/lib/logistics';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 
+import { FrogLoader } from '@/components/frog-loader';
 const provinceColors = ['#2A7B4C', '#1E5B75', '#4A9874', '#326F8B', '#82B99C', '#568BA4', '#1E6038'];
 // Reuse static geometry instead of allocating every vertex on each gesture/weather update.
 const nativeProvincePolygons = provinces.map((province) => province.polygons.map((ring) =>
@@ -107,7 +108,7 @@ export const MapCanvas = memo(function MapCanvas({ onLocationPick, selectedLocat
           );
         }) : null}
       </View> : null}
-      {!selectionMode && weather.every(({ isPending }) => isPending) ? <View className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/90 p-2"><ActivityIndicator color="#2A7B4C" /></View> : null}
+      {!selectionMode && weather.every(({ isPending }) => isPending) ? <View className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/90 p-2"><FrogLoader color="#2A7B4C" /></View> : null}
     </View>
   );
 });

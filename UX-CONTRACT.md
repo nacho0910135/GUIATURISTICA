@@ -47,8 +47,8 @@
 
 | Component | Default | Hover | Focus | Active | Disabled | Busy | Error |
 |---|---|---|---|---|---|---|---|
-| Button | énfasis × intención | realce sólo web | ring visible | cambio tonal | opacidad + bloqueo | spinner estable + `busy` | mensaje en contexto |
-| Icon button | nombre accesible | realce sólo web | ring visible | cambio tonal | opacidad + bloqueo | no duplica evento | mensaje en contexto |
+| Button | énfasis × intención | realce sólo web | ring visible | cambio tonal | opacidad + bloqueo | rana compacta estable + `busy` | mensaje en contexto |
+| Icon button | nombre accesible | realce sólo web | ring visible | cambio tonal | opacidad + bloqueo | rana compacta; no duplica evento | mensaje en contexto |
 | Input | etiqueta + valor | borde | borde/ring | n/a | legible | conserva ancho | texto asociado |
 | Secret input | masked | borde | borde/ring | reveal por botón | legible | bloqueo de submit | nunca expone valor |
 | Search | clear + debounce | borde | borde/ring | clear inmediato | explica razón | región estable | retry persistente |
@@ -85,7 +85,7 @@
 - **Búsqueda de destinos en Explorar:** las sugerencias forman una sola superficie; seleccionar un sitio abre su ficha en superposición, y cerrarla vuelve a Explorar con la consulta limpia, sin pasar por el catálogo.
 - **Ubicación de aportes y comercios:** al registrar o editar, la persona puede solicitar una lectura actual de alta precisión o marcar un punto directamente en el mapa. La app muestra las coordenadas obtenidas y rechaza lecturas con más de 1 km de incertidumbre; nunca reutiliza silenciosamente una ubicación web anterior ni infiere una coordenada regional.
 - **Panel del propietario:** reúne edición completa, galería de hasta 12 imágenes, estado de suscripción y analítica basada únicamente en eventos realmente registrados; no inventa métricas ni proyecciones.
-- **Acceso administrativo de pruebas:** una cuenta cuyo rol verificado en `public.users` sea `admin` omite avisos y Checkout en registro, reclamos, panel, planes y campañas comerciales. Conserva los mismos formularios, validaciones y moderación para probar el flujo completo sin cargos.
+- **Acceso administrativo de pruebas:** una cuenta cuyo rol verificado en `public.users` sea `admin` omite avisos y Checkout en registro, reclamos, panel y campañas comerciales. Conserva los mismos formularios, validaciones y moderación para probar el flujo completo sin cargos. El aviso global de prueba personal sí aparece para toda cuenta sin plan personal activo y desaparece al confirmarse la suscripción.
 
 ## Navigation and responsive behavior
 
@@ -104,6 +104,7 @@
 - **Confirmations:** overlay propio; consecuencias serias enfocan inicialmente Cancelar. No usar APIs nativas de alerta como sustituto de UI.
 - **Toast:** pendiente un provider canónico; mientras tanto el feedback accionable permanece inline y no desaparece solo.
 - **Alerts/banners:** inline para corrección local, banner de página para condición persistente y global sólo para interrupción general.
+- **Nuevos seguidores:** se registran en el centro de notificaciones de Perfil; no generan aviso en la cabecera global ni notificación push.
 - **Unsaved changes:** conservar datos y confirmar salida mediante overlay propio cuando el formulario esté dirty.
 - **Layer order:** dialog > bottom sheet/drawer > popover > futura cola de toast.
 
@@ -146,9 +147,12 @@
 - **Canonical sibling:** header y tarjetas del flujo Explorar como primera referencia de migración.
 - **Runtime gaps:** no hay suite de componentes/visual regression mantenida; debe agregarse al migrar pantallas completas.
 
-## Origen de cercanía en Comercios
+## Ubicación y distancias durante la sesión
 
-- `AppProvider.refreshUserLocation` es el dueño de adquisición y actualización del GPS, con estados de carga, permiso denegado y fallo recuperable. La caché de ubicación es opcional; su fallo no impide pedir una posición actual.
-- No se selecciona silenciosamente la primera región. Sin GPS, el visitante elige una región explícita mediante el picker nativo; antes de elegir no se consulta un directorio con coordenadas supuestas.
-- Las fichas y el detalle distinguen distancias desde el usuario y desde el centro regional. El modo regional respeta el radio configurado de esa región. La lista completa sigue ordenada por distancia; coordenadas desconocidas quedan al final.
-- Los controles de ubicación reutilizan `Button`; los mensajes son inline y bilingües. Campañas conserva precios, duración, renovación y checkout definidos en `src/lib/billing.ts`.
+- AppProvider es el dueño del GPS de la sesión. Explorar, sitios turísticos y Comercios consumen esa misma ubicación; se actualiza en primer plano y al volver a la app.
+- Se solicita permiso al iniciar. Los permisos aproximados de Android/iOS no habilitan distancias ni captura GPS. Sólo se aceptan coordenadas válidas, con precisión reportada de hasta 100 metros y antigüedad máxima de 60 segundos. No se reutiliza la última ubicación conocida del dispositivo.
+- Sin una lectura fiable no se inventa un origen ni se muestra una distancia numérica. La captura y Comercios permiten reintentar; los catálogos siguen utilizables.
+- Las tarjetas, listas y detalles de sitios y comercios muestran kilómetros de rutas en automóvil de Mapbox Matrix y se ordenan por carretera. Nunca usan distancia geodésica como sustituto. Sin ruta, red, permiso o coordenadas fiables se muestra distancia por carretera no disponible. El origen y destino se envían en orden longitud,latitud; Waze recibe el mismo destino y puede elegir otra ruta. Se rechazan rutas cuyo ajuste del punto a la carretera supera 100 metros.
+- Agregar sitio, agregar/editar comercio y compartir ubicación en Comunidad usan getPreciseCurrentLocation. Cada acción solicita una lectura fresca y tiene un límite de espera. La selección explícita queda fijada al punto elegido; no se mueve silenciosamente antes de publicar.
+- Al registrar un comercio no se precarga automáticamente la posición del visitante como ubicación del negocio: se obtiene con la acción GPS o se marca en el mapa.
+- Verificación reproducible: npm run check:location. El comportamiento físico del GPS y del permiso preciso requiere validación en dispositivo.

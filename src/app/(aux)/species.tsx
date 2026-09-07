@@ -3,13 +3,14 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { ThemedNotice } from '@/components/themed-notice';
 import { addFaunaComment, getFaunaPhotoComments, getFaunaPhotoLikeIds, getFaunaPhotos, getFaunaSpecies, getVulnerabilityLabel, toggleFaunaPhotoLike, type FaunaComment, type FaunaPhoto, type FaunaSpecies, uploadFaunaPhoto } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
 
+import { FrogLoader } from '@/components/frog-loader';
 export default function SpeciesScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -115,7 +116,7 @@ export default function SpeciesScreen() {
   };
 
   if (!species && !error) {
-    return <View className="flex-1 items-center justify-center bg-mint-50 dark:bg-forest-950"><ActivityIndicator color="#13a95b" size="large" /></View>;
+    return <View className="flex-1 items-center justify-center bg-mint-50 dark:bg-forest-950"><FrogLoader color="#13a95b" size="large" /></View>;
   }
 
   if (!species) {
@@ -211,7 +212,7 @@ export default function SpeciesScreen() {
 function PhotoButton({ busy, icon, label, onPress }: { busy: boolean; icon: 'camera' | 'image-multiple'; label: string; onPress: () => void }) {
   return (
     <Pressable className="flex-1 flex-row items-center justify-center rounded-2xl border border-mint-200 bg-white px-4 py-4 dark:border-forest-700 dark:bg-forest-900" disabled={busy} onPress={onPress}>
-      {busy ? <ActivityIndicator color="#13a95b" /> : <MaterialCommunityIcons name={icon} size={23} color="#087443" />}
+      {busy ? <FrogLoader color="#13a95b" /> : <MaterialCommunityIcons name={icon} size={23} color="#087443" />}
       <Text className="ml-2 font-black text-forest-800 dark:text-white">{label}</Text>
     </Pressable>
   );

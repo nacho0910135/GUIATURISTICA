@@ -23,6 +23,11 @@ export const campaignOffers = {
   banner_monthly: { campaignType: 'banner', recurring: true, title: ['Banner destacado', 'Featured banner'], detail: ['El banner se renueva automáticamente cada 30 días hasta que lo cancelés.', 'The banner renews automatically every 30 days until canceled.'], price: 'US$15 / 30 días' },
 } as const;
 export type CampaignOfferId = keyof typeof campaignOffers;
+export const BANNER_CAPACITY_ERROR = 'banner_capacity_reached';
+
+export class BannerCapacityError extends Error {
+  readonly code = BANNER_CAPACITY_ERROR;
+}
 type LegacySubscriptionOfferId = 'legacy_no_ads' | 'legacy_business' | 'legacy_sponsored' | 'travel_pass_national_monthly' | 'travel_pass_national_annual' | 'travel_pass_foreign_30d' | 'business_pro' | 'business_growth';
 
 export type Subscription = {
@@ -101,7 +106,12 @@ export async function openCampaignCheckout({ offerId, serviceId, targetUrl, imag
   const { data, error } = await supabase.functions.invoke('create-checkout-session', {
     body: { offerId, serviceId, targetUrl, imageUrl, returnUrl },
   });
-  if (error) throw error;
+  if (error) {
+    const context = (error as { context?: Response }).context;
+    const payload = context ? await context.clone().json().catch(() => undefined) as { error?: string } | undefined : undefined;
+    if (payload?.error === BANNER_CAPACITY_ERROR) throw new BannerCapacityError(BANNER_CAPACITY_ERROR);
+    throw error;
+  }
   if (!data?.url) throw new Error('No se pudo crear una sesión de Checkout.');
   return WebBrowser.openAuthSessionAsync(data.url, returnUrl);
 }

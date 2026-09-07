@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useApp } from '@/providers/app-provider';
 
+import { FrogLoader } from '@/components/frog-loader';
 export default function OAuthCallback() {
   const { authReady, isAuthenticated, language } = useApp();
   const [timedOut, setTimedOut] = useState(false);
@@ -30,7 +31,7 @@ export default function OAuthCallback() {
         </>
       ) : (
         <>
-          <ActivityIndicator color="#087443" size="large" />
+          <FrogLoader color="#087443" size="large" />
           <Text className="mt-4 text-center font-semibold text-ui-text dark:text-ui-dark-text">
             {language === 'es' ? 'Terminando el acceso con Google…' : 'Finishing Google sign-in…'}
           </Text>

@@ -44,6 +44,13 @@ Deno.serve(async (request) => {
     if (error || !business) return json({ error: 'business_not_owned' }, 403);
   }
 
+  if (isCampaign && offer.campaignType === 'banner') {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase.from('commerce_ad_campaigns').select('service_id').eq('campaign_type', 'banner').eq('status', 'active').lte('starts_at', now).gt('ends_at', now);
+    if (error) return json({ error: 'banner_capacity_lookup_failed' }, 503);
+    if (new Set((data ?? []).map((campaign) => campaign.service_id)).size >= 3) return json({ error: 'banner_capacity_reached' }, 409);
+  }
+
   const priceId = Deno.env.get(offer.priceEnv);
   if (!priceId) return json({ error: 'plan_not_configured' }, 503);
   const successUrl = withCheckoutStatus(returnUrl, 'success');

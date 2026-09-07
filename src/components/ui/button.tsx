@@ -1,8 +1,9 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { useAppTheme } from '@/theme/theme-provider';
 
+import { FrogLoader } from '@/components/frog-loader';
 type ButtonIntent = 'primary' | 'neutral' | 'success' | 'danger';
 type ButtonEmphasis = 'solid' | 'outline' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -91,7 +92,7 @@ export function Button({
       disabled={isDisabled}
       {...props}
     >
-      {busy ? <ActivityIndicator color={spinnerColor} size="small" /> : icon}
+      {busy ? <FrogLoader color={spinnerColor} size="small" /> : icon}
       <Text className={`font-semibold ${size === 'sm' ? 'text-sm' : 'text-base'} ${labelClasses[emphasis][intent]}`}>{label}</Text>
     </Pressable>
   );

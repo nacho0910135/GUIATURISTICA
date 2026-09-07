@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { MotionPressable } from '@/components/motion';
@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
 import { useApp } from '@/providers/app-provider';
 
+import { FrogLoader } from '@/components/frog-loader';
 type Dashboard = Awaited<ReturnType<typeof getSocialProfile>>;
 type AdminDashboard = Awaited<ReturnType<typeof getAdminDashboard>>;
 type NotificationItem = Dashboard['notifications'][number];
@@ -325,7 +326,7 @@ export default function ProfileScreen() {
         </View>
       </View>
       <View className="mx-auto mt-5 w-full max-w-5xl rounded-[30px] border border-ui-border dark:border-ui-dark-border bg-ui-surface dark:bg-ui-dark-surface p-5">
-        {section && section !== 'login' && section !== 'suggestions' && !data && !error ? <ActivityIndicator color="#13bd83" /> : null}
+        {section && section !== 'login' && section !== 'suggestions' && !data && !error ? <FrogLoader color="#13bd83" /> : null}
         {error ? <Text className="text-red-400">{error}</Text> : null}
         {data && section === 'notifications' ? (
           <View>
@@ -409,7 +410,7 @@ export default function ProfileScreen() {
             ))}
           </ListEmpty>
         ) : null}
-        {data && section === 'messages' ? conversations.isPending ? <ActivityIndicator color="#13bd83" /> : <MessagesPanel conversations={conversations.data ?? []} initialPartnerId={params.partnerId} language={language} userId={userId} userAvatarUrl={data.profile?.avatar_url ?? avatarUrl} busy={busy} refresh={async () => { await Promise.all([load(), conversations.refetch()]); }} run={run} /> : null}
+        {data && section === 'messages' ? conversations.isPending ? <FrogLoader color="#13bd83" /> : <MessagesPanel conversations={conversations.data ?? []} initialPartnerId={params.partnerId} language={language} userId={userId} userAvatarUrl={data.profile?.avatar_url ?? avatarUrl} busy={busy} refresh={async () => { await Promise.all([load(), conversations.refetch()]); }} run={run} /> : null}
         {section === 'suggestions' ? (
           <View>
             <Title>{tr(language, 'Sugerencias para el creador', 'Suggestions for the creator')}</Title>
@@ -520,7 +521,7 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
       await refresh();
       Alert.alert(tr(language, 'Santuarios de fauna', 'Wildlife sanctuaries'), tr(language, 'La foto fue guardada.', 'The photo was saved.'));
     });
-  if (!data) return <ActivityIndicator color="#13bd83" />;
+  if (!data) return <FrogLoader color="#13bd83" />;
   return (
     <View>
       <View className="flex-row items-center justify-between">
@@ -991,7 +992,7 @@ function ProfileButton({ label, onPress, outline, disabled, busy = false, stable
   return (
     <MotionPressable accessibilityRole="button" accessibilityState={{ busy, disabled: disabled || busy }} containerStyle={{ alignSelf: 'flex-start', minWidth: stableWidth ? 132 : undefined }} disabled={disabled || busy} onPress={onPress}>
       <View className={`${stableWidth ? 'w-full' : ''} ${outline ? 'min-h-12 flex-row items-center justify-center gap-2 rounded-full border border-ui-primary px-5 py-3 dark:border-ui-dark-primary' : 'min-h-12 flex-row items-center justify-center gap-2 rounded-full bg-ui-primary px-5 py-3 dark:bg-ui-dark-primary'}`}>
-        {busy ? <ActivityIndicator color={outline ? '#087443' : 'white'} size="small" /> : null}
+        {busy ? <FrogLoader color={outline ? '#087443' : 'white'} size="small" /> : null}
         <Text className={outline ? 'font-black text-ui-primary dark:text-ui-dark-primary' : 'font-black text-white'}>{label}</Text>
       </View>
     </MotionPressable>
