@@ -6,8 +6,8 @@ import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { useApp } from '@/providers/app-provider';
-
 import { FrogLoader } from '@/components/frog-loader';
+
 export default function AuthModal() {
   const { intent } = useLocalSearchParams<{ intent?: string }>();
   const { language, signIn, signInWithGoogle, signUp } = useApp();
@@ -70,39 +70,95 @@ export default function AuthModal() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-black/45">
       <BlurView className="absolute inset-0" intensity={24} tint="dark" />
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }} keyboardShouldPersistTaps="handled">
-      <View className="w-full max-w-xl self-center rounded-[32px] border border-white/50 bg-ui-surface px-6 pb-7 pt-3 shadow-2xl dark:border-white/10 dark:bg-ui-dark-surface">
-        <View className="mb-5 h-1 w-11 self-center rounded-full bg-ui-border dark:bg-ui-dark-border" />
-        <View className="flex-row items-start justify-between">
-          <View className="mr-5 flex-1">
-            <Text className="font-sans text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{mode === 'signup' ? (language === 'es' ? 'Creá tu cuenta' : 'Create your account') : (language === 'es' ? 'Tu aventura continúa' : 'Your adventure continues')}</Text>
-            <Text className="mt-2 font-sans leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{mode === 'signup' ? (language === 'es' ? 'Completá tus datos para empezar.' : 'Enter your details to get started.') : intent ? `${language === 'es' ? 'Iniciá sesión para' : 'Sign in to'} ${intent}.` : language === 'es' ? 'Guardá lugares, compartí hallazgos y construí tu próxima ruta.' : 'Save places, share discoveries and build your next route.'}</Text>
+        <View className="w-full max-w-xl self-center rounded-[32px] border border-white/50 bg-ui-surface px-6 pb-7 pt-3 shadow-2xl dark:border-white/10 dark:bg-ui-dark-surface">
+          <View className="mb-5 h-1 w-11 self-center rounded-full bg-ui-border dark:bg-ui-dark-border" />
+          <View className="flex-row items-start justify-between">
+            <View className="mr-5 flex-1">
+              <Text className="font-sans text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">
+                {mode === 'signup' ? (language === 'es' ? 'Creá tu cuenta' : 'Create your account') : (language === 'es' ? 'Tu aventura continúa' : 'Your adventure continues')}
+              </Text>
+              <Text className="mt-2 font-sans leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">
+                {mode === 'signup' ? (language === 'es' ? 'Completá tus datos para empezar.' : 'Enter your details to get started.') : intent ? `${language === 'es' ? 'Iniciá sesión para' : 'Sign in to'} ${intent}.` : language === 'es' ? 'Guardá lugares, compartí hallazgos y construí tu próxima ruta.' : 'Save places, share discoveries and build your next route.'}
+              </Text>
+            </View>
+            <Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted active:scale-95 dark:bg-ui-dark-muted" onPress={() => router.back()}>
+              <X color="#68737A" size={21} />
+            </Pressable>
           </View>
-          <Pressable accessibilityLabel={language === 'es' ? 'Cerrar' : 'Close'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted active:scale-95 dark:bg-ui-dark-muted" onPress={() => router.back()}><X color="#68737A" size={21} /></Pressable>
-        </View>
-        <Pressable accessibilityRole="button" className="mt-6 min-h-14 flex-row items-center justify-center rounded-control border border-ui-border bg-ui-surface px-4 active:bg-ui-muted disabled:opacity-60 dark:border-ui-dark-border dark:bg-ui-dark-surface dark:active:bg-ui-dark-muted" disabled={busy} onPress={() => void run(async () => { if (await signInWithGoogle()) router.back(); })}><MaterialCommunityIcons name="google" size={22} color="#DB4437" /><Text className="ml-3 font-sans text-base font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Continuar con Google' : 'Continue with Google'}</Text></Pressable>
-        <View className="my-5 flex-row items-center"><View className="h-px flex-1 bg-ui-border dark:bg-ui-dark-border" /><Text className="mx-3 font-sans text-xs font-semibold uppercase tracking-widest text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'o usá tu correo' : 'or use your email'}</Text><View className="h-px flex-1 bg-ui-border dark:bg-ui-dark-border" /></View>
-        <View className="flex-row items-center rounded-control border border-ui-border bg-ui-muted px-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
-          <Mail color="#68737A" size={19} strokeWidth={1.8} />
-          <TextInput accessibilityLabel={language === 'es' ? 'Correo electrónico' : 'Email'} autoCapitalize="none" autoComplete="email" className="ml-3 min-h-14 flex-1 font-sans text-ui-text dark:text-ui-dark-text" editable={!busy} keyboardType="email-address" onChangeText={setEmail} placeholder={language === 'es' ? 'Correo electrónico' : 'Email'} placeholderTextColor="#68737A" value={email} />
-        </View>
-        <View className="mt-3 flex-row items-center rounded-control border border-ui-border bg-ui-muted px-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
-          <LockKeyhole color="#68737A" size={19} strokeWidth={1.8} />
-          <TextInput accessibilityLabel={language === 'es' ? 'Contraseña' : 'Password'} autoComplete="password" className="ml-3 min-h-14 flex-1 font-sans text-ui-text dark:text-ui-dark-text" editable={!busy} onChangeText={setPassword} placeholder={language === 'es' ? 'Contraseña' : 'Password'} placeholderTextColor="#68737A" secureTextEntry={!passwordVisible} value={password} />
-          <Pressable accessibilityLabel={passwordVisible ? (language === 'es' ? 'Ocultar contraseña' : 'Hide password') : language === 'es' ? 'Mostrar contraseña' : 'Show password'} accessibilityRole="button" accessibilityState={{ expanded: passwordVisible }} className="h-11 w-11 items-center justify-center" onPress={() => setPasswordVisible((value) => !value)}>{passwordVisible ? <EyeOff color="#68737A" size={20} /> : <Eye color="#68737A" size={20} />}</Pressable>
-        </View>
-        {error ? <View accessibilityRole="alert" className="mt-3 rounded-control bg-red-50 px-4 py-3 dark:bg-red-950/30"><Text className="font-sans text-sm font-semibold text-red-700 dark:text-red-300">{error}</Text></View> : null}
-        {notice ? <View className="mt-3 rounded-control bg-ui-primary-soft px-4 py-3 dark:bg-ui-dark-primary-soft"><Text className="font-sans text-sm font-semibold text-ui-primary dark:text-ui-dark-primary">{notice}</Text></View> : null}
-        {mode === 'signin' ? <><Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-5 min-h-14 items-center justify-center rounded-control bg-ui-primary px-4 active:bg-ui-primary-pressed disabled:opacity-60 dark:bg-ui-dark-primary" disabled={busy} onPress={() => submit(false)}>{busy ? <FrogLoader color="white" /> : <Text className="font-sans font-bold text-white">{language === 'es' ? 'Iniciar sesión' : 'Sign in'}</Text>}</Pressable><Pressable accessibilityRole="button" className="mt-3 min-h-14 items-center justify-center rounded-control border border-ui-primary px-4 active:bg-ui-primary-soft disabled:opacity-60" disabled={busy} onPress={() => { setMode('signup'); setError(''); setNotice(''); }}><Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Crear cuenta' : 'Create account'}</Text></Pressable></> : <><Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-5 min-h-14 items-center justify-center rounded-control bg-ui-primary px-4 active:bg-ui-primary-pressed disabled:opacity-60 dark:bg-ui-dark-primary" disabled={busy} onPress={() => submit(true)}>{busy ? <FrogLoader color="white" /> : <Text className="font-sans font-bold text-white">{language === 'es' ? 'Crear cuenta' : 'Create account'}</Text>}</Pressable><Pressable accessibilityRole="button" className="mt-3 min-h-12 items-center justify-center" disabled={busy} onPress={() => { setMode('signin'); setError(''); setNotice(''); }}><Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Volver a iniciar sesión' : 'Back to sign in'}</Text></Pressable></>}
-        {mode === 'signup' ? <Text className="mt-3 text-center text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Al crear una cuenta aceptás las reglas de la comunidad, los Términos y la Política de privacidad.' : 'By creating an account you accept the community rules, Terms, and Privacy Policy.'}</Text> : null}
-        <View className="mt-3 flex-row overflow-hidden rounded-control border border-ui-border dark:border-ui-dark-border">
-          <Pressable accessibilityRole="link" className="min-h-11 flex-1 items-center justify-center px-2 active:bg-ui-primary-soft dark:active:bg-ui-dark-primary-soft" onPress={() => router.push('/terms')}>
-            <Text className="text-center text-xs font-black text-ui-primary dark:text-ui-dark-primary" numberOfLines={1}>{language === 'es' ? 'Ver Términos' : 'View Terms'}</Text>
+
+          {/* Botón de Google ajustado */}
+          <Pressable 
+            accessibilityRole="button" 
+            className="mt-6 min-h-14 flex-row items-center justify-center rounded-control border border-ui-border bg-ui-surface px-4 active:bg-ui-muted disabled:opacity-60 dark:border-ui-dark-border dark:bg-ui-dark-surface dark:active:bg-ui-dark-muted" 
+            disabled={busy} 
+            onPress={() => void run(async () => { 
+              const success = await signInWithGoogle();
+              if (success) {
+                router.back();
+              }
+            })}
+          >
+            <MaterialCommunityIcons name="google" size={22} color="#DB4437" />
+            <Text className="ml-3 font-sans text-base font-bold text-ui-text dark:text-ui-dark-text">
+              {language === 'es' ? 'Continuar con Google' : 'Continue with Google'}
+            </Text>
           </Pressable>
-          <Pressable accessibilityRole="link" className="min-h-11 flex-1 items-center justify-center border-l border-ui-border px-2 active:bg-ui-primary-soft dark:border-ui-dark-border dark:active:bg-ui-dark-primary-soft" onPress={() => router.push('/privacy')}>
-            <Text className="text-center text-xs font-black text-ui-primary dark:text-ui-dark-primary" numberOfLines={1}>{language === 'es' ? 'Ver Privacidad' : 'View Privacy'}</Text>
-          </Pressable>
+
+          <View className="my-5 flex-row items-center">
+            <View className="h-px flex-1 bg-ui-border dark:bg-ui-dark-border" />
+            <Text className="mx-3 font-sans text-xs font-semibold uppercase tracking-widest text-ui-text-muted dark:text-ui-dark-text-muted">
+              {language === 'es' ? 'o usá tu correo' : 'or use your email'}
+            </Text>
+            <View className="h-px flex-1 bg-ui-border dark:bg-ui-dark-border" />
+          </View>
+
+          <View className="flex-row items-center rounded-control border border-ui-border bg-ui-muted px-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
+            <Mail color="#68737A" size={19} strokeWidth={1.8} />
+            <TextInput accessibilityLabel={language === 'es' ? 'Correo electrónico' : 'Email'} autoCapitalize="none" autoComplete="email" className="ml-3 min-h-14 flex-1 font-sans text-ui-text dark:text-ui-dark-text" editable={!busy} keyboardType="email-address" onChangeText={setEmail} placeholder={language === 'es' ? 'Correo electrónico' : 'Email'} placeholderTextColor="#68737A" value={email} />
+          </View>
+
+          <View className="mt-3 flex-row items-center rounded-control border border-ui-border bg-ui-muted px-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
+            <LockKeyhole color="#68737A" size={19} strokeWidth={1.8} />
+            <TextInput accessibilityLabel={language === 'es' ? 'Contraseña' : 'Password'} autoComplete="password" className="ml-3 min-h-14 flex-1 font-sans text-ui-text dark:text-ui-dark-text" editable={!busy} onChangeText={setPassword} placeholder={language === 'es' ? 'Contraseña' : 'Password'} placeholderTextColor="#68737A" secureTextEntry={!passwordVisible} value={password} />
+            <Pressable accessibilityLabel={passwordVisible ? (language === 'es' ? 'Ocultar contraseña' : 'Hide password') : language === 'es' ? 'Mostrar contraseña' : 'Show password'} accessibilityRole="button" accessibilityState={{ expanded: passwordVisible }} className="h-11 w-11 items-center justify-center" onPress={() => setPasswordVisible((value) => !value)}>
+              {passwordVisible ? <EyeOff color="#68737A" size={20} /> : <Eye color="#68737A" size={20} />}
+            </Pressable>
+          </View>
+
+          {error ? <View accessibilityRole="alert" className="mt-3 rounded-control bg-red-50 px-4 py-3 dark:bg-red-950/30"><Text className="font-sans text-sm font-semibold text-red-700 dark:text-red-300">{error}</Text></View> : null}
+          {notice ? <View className="mt-3 rounded-control bg-ui-primary-soft px-4 py-3 dark:bg-ui-dark-primary-soft"><Text className="font-sans text-sm font-semibold text-ui-primary dark:text-ui-dark-primary">{notice}</Text></View> : null}
+
+          {mode === 'signin' ? (
+            <>
+              <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-5 min-h-14 items-center justify-center rounded-control bg-ui-primary px-4 active:bg-ui-primary-pressed disabled:opacity-60 dark:bg-ui-dark-primary" disabled={busy} onPress={() => submit(false)}>
+                {busy ? <FrogLoader color="white" /> : <Text className="font-sans font-bold text-white">{language === 'es' ? 'Iniciar sesión' : 'Sign in'}</Text>}
+              </Pressable>
+              <Pressable accessibilityRole="button" className="mt-3 min-h-14 items-center justify-center rounded-control border border-ui-primary px-4 active:bg-ui-primary-soft disabled:opacity-60" disabled={busy} onPress={() => { setMode('signup'); setError(''); setNotice(''); }}>
+                <Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Crear cuenta' : 'Create account'}</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-5 min-h-14 items-center justify-center rounded-control bg-ui-primary px-4 active:bg-ui-primary-pressed disabled:opacity-60 dark:bg-ui-dark-primary" disabled={busy} onPress={() => submit(true)}>
+                {busy ? <FrogLoader color="white" /> : <Text className="font-sans font-bold text-white">{language === 'es' ? 'Crear cuenta' : 'Create account'}</Text>}
+              </Pressable>
+              <Pressable accessibilityRole="button" className="mt-3 min-h-12 items-center justify-center" disabled={busy} onPress={() => { setMode('signin'); setError(''); setNotice(''); }}>
+                <Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Volver a iniciar sesión' : 'Back to sign in'}</Text>
+              </Pressable>
+            </>
+          )}
+
+          {mode === 'signup' ? <Text className="mt-3 text-center text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Al crear una cuenta aceptás las reglas de la comunidad, los Términos y la Política de privacidad.' : 'By creating an account you accept the community rules, Terms, and Privacy Policy.'}</Text> : null}
+
+          <View className="mt-3 flex-row overflow-hidden rounded-control border border-ui-border dark:border-ui-dark-border">
+            <Pressable accessibilityRole="link" className="min-h-11 flex-1 items-center justify-center px-2 active:bg-ui-primary-soft dark:active:bg-ui-dark-primary-soft" onPress={() => router.push('/terms')}>
+              <Text className="text-center text-xs font-black text-ui-primary dark:text-ui-dark-primary" numberOfLines={1}>{language === 'es' ? 'Ver Términos' : 'View Terms'}</Text>
+            </Pressable>
+            <Pressable accessibilityRole="link" className="min-h-11 flex-1 items-center justify-center border-l border-ui-border px-2 active:bg-ui-primary-soft dark:border-ui-dark-border dark:active:bg-ui-dark-primary-soft" onPress={() => router.push('/privacy')}>
+              <Text className="text-center text-xs font-black text-ui-primary dark:text-ui-dark-primary" numberOfLines={1}>{language === 'es' ? 'Ver Privacidad' : 'View Privacy'}</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
