@@ -27,6 +27,10 @@ for (const bad of [fix(null), fix(1000), fix(5000), fix(NaN), fix(-1), fix(10, D
 }
 assert.equal(quality.hasPrecisePermission({ granted: true, android: { accuracy: 'coarse' } }), false);
 assert.equal(quality.hasPrecisePermission({ granted: true, ios: { accuracy: 'reduced' } }), false);
+assert.equal(Math.round(quality.distanceKm({ latitude: 0, longitude: 0 }, { latitude: 0, longitude: 1 })), 111);
+assert.equal(quality.straightLineDistanceLabel(34, 'es'), '≈ 34.0 km en línea recta');
+assert.equal(quality.straightLineDistanceLabel(0.25, 'en'), '≈ 250 m straight-line');
+assert.equal(quality.straightLineDistanceLabel(null, 'es'), 'Distancia no disponible');
 
 let permission = { granted: true, canAskAgain: true, android: { accuracy: 'fine' } };
 let position = fix();
@@ -182,5 +186,10 @@ for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx',
   const source = readFileSync(path, 'utf8');
   assert.ok(source.includes('getPreciseCurrentLocation(language)'), path);
   assert.ok(!/Location\.(getCurrentPositionAsync|getLastKnownPositionAsync)/.test(source), path);
+}
+for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx', 'src/app/(aux)/province.tsx']) {
+  const source = readFileSync(path, 'utf8');
+  assert.ok(source.includes('straightLineDistanceLabel'), `${path}: straight-line distance label`);
+  assert.ok(!source.includes('useRoadDistances'), `${path}: no route-service dependency`);
 }
 console.log('Location checks passed: precision, freshness, permissions, shared movement, revocation, cleanup, distance labels and all three capture flows.');

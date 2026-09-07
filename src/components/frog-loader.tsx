@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useEffect } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -37,7 +37,6 @@ function BrandedFrogLoader({
   size = 'small',
   style,
 }: FrogLoaderProps) {
-  const { height: windowHeight } = useWindowDimensions();
   const { colors } = useAppTheme();
   const reducedMotion = useReducedMotion();
   const blinkOpacity = useSharedValue(0);
@@ -68,7 +67,6 @@ function BrandedFrogLoader({
       className={className}
       style={[
         styles.container,
-        { minHeight: Math.max(440, windowHeight - 300), width: '100%' },
         style,
       ]}
     >
@@ -90,7 +88,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     alignSelf: 'center',
+    flex: 1,
     justifyContent: 'center',
+    width: '100%',
   },
   country: {
     color: '#EF4B45',
@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 2,
   },
 });

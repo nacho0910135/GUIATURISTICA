@@ -4,8 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { roadDistanceLabel } from '@/lib/road-distance';
-import { useRoadDistances } from '@/lib/use-road-distances';
+import { distanceKm, straightLineDistanceLabel } from '@/lib/location-quality';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
@@ -144,8 +143,9 @@ export default function ProvinceCatalogScreen() {
     if (match) setSelected(match);
   }, [destinationId, places.data]);
   useEffect(() => { setActiveSubcategoryId(undefined); }, [categoryId]);
-  const roadDistance = useRoadDistances(userLocation, places.data ?? []);
-  const sortedPlaces = [...(places.data ?? [])].sort((a, b) => (roadDistance(a) ?? Infinity) - (roadDistance(b) ?? Infinity));
+  const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => userLocation
+    ? distanceKm(userLocation, a) - distanceKm(userLocation, b)
+    : 0), [places.data, userLocation]);
   const visibleCategorySubcategories = useMemo(
     () => categorySubcategories.filter((subcategory) => sortedPlaces.some((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, subcategory.allowed_targets ?? []))),
     [categorySubcategories, sortedPlaces],
@@ -195,7 +195,7 @@ export default function ProvinceCatalogScreen() {
       </View>
       {visibleCategorySubcategories.length ? <View className="border-b border-ui-border bg-ui-surface py-2 dark:border-ui-dark-border dark:bg-ui-dark-surface"><ScrollView horizontal contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}><Pressable accessibilityRole="button" accessibilityState={{ selected: !activeSubcategory }} className={!activeSubcategory ? 'min-h-11 justify-center rounded-full bg-ui-primary px-4 dark:bg-ui-dark-primary' : 'min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted'} onPress={() => setActiveSubcategoryId(undefined)}><Text className={!activeSubcategory ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? 'Todos' : 'All'}</Text></Pressable>{visibleCategorySubcategories.map((subcategory) => <Pressable accessibilityRole="button" accessibilityState={{ selected: activeSubcategoryId === subcategory.id }} className={activeSubcategoryId === subcategory.id ? 'min-h-11 justify-center rounded-full bg-ui-primary px-4 dark:bg-ui-dark-primary' : 'min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted'} key={subcategory.id} onPress={() => setActiveSubcategoryId((current) => current === subcategory.id ? undefined : subcategory.id)}><Text className={activeSubcategoryId === subcategory.id ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? subcategory.label_es : subcategory.label_en}</Text></Pressable>)}</ScrollView></View> : null}
       <FlatList
-        contentContainerStyle={{ gap: 24, padding: 20, paddingBottom: 48, width: '100%', maxWidth: 1040, alignSelf: 'center' }}
+        contentContainerStyle={{ alignSelf: 'center', flexGrow: 1, gap: 24, maxWidth: 1040, padding: 20, paddingBottom: 48, width: '100%' }}
         data={visiblePlaces}
         extraData={visiblePlaceIds}
         initialNumToRender={CATALOG_BATCH_SIZE}
@@ -205,7 +205,7 @@ export default function ProvinceCatalogScreen() {
         onEndReached={visiblePlaces.length < displayedPlaces.length ? loadNextPlaces : undefined}
         onEndReachedThreshold={0.35}
         onViewableItemsChanged={onViewableItemsChanged.current}
-        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} roadDistance={roadDistance(item)} visitorType={visitorType} />}
+        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} userLocation={userLocation} visitorType={visitorType} />}
         viewabilityConfig={viewabilityConfig.current}
       />
       <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} />
@@ -213,11 +213,11 @@ export default function ProvinceCatalogScreen() {
   );
 }
 
-function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, roadDistance, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; roadDistance?: number | null; visitorType: 'tico' | 'foreigner' }) {
+function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, userLocation, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; userLocation?: { latitude: number; longitude: number }; visitorType: 'tico' | 'foreigner' }) {
   const price = visitorType === 'tico'
     ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
     : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
-  const decisionFacts = destinationDecisionFacts(item, language, price, roadDistance);
+  const decisionFacts = destinationDecisionFacts(item, language, price, userLocation);
   const reservationUrl = destinationReservationUrl(item);
 
   return (
@@ -258,7 +258,7 @@ function destinationReservationUrl(item: MapPlace) {
   return null;
 }
 
-function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, roadDistance?: number | null) {
+function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, userLocation?: { latitude: number; longitude: number }) {
   const facts: DestinationFactItem[] = [];
   if (item.has_high_tides_risk) facts.push({ icon: 'waves-arrow-up', label: language === 'es' ? 'Revisar mareas' : 'Check tides', urgent: true });
   if (item.visit_info?.reserva_requerida || item.requires_online_ticket || item.requires_sinac_booking) facts.push({ action: 'reservation', icon: 'calendar-check-outline', label: destinationReservationUrl(item) ? (language === 'es' ? 'Reservar ahora ↗' : 'Book now ↗') : (language === 'es' ? 'Ver cómo reservar ›' : 'How to book ›'), urgent: true });
@@ -268,7 +268,7 @@ function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: 
   const duration = item.visit_info?.duracion_estimada?.replace(/\s*\(.*/, '').trim();
   if (duration) facts.push({ icon: 'clock-outline', label: duration });
   facts.push({ icon: 'ticket-confirmation-outline', label: price });
-  facts.push({ icon: 'map-marker-distance', label: roadDistanceLabel(roadDistance, language) });
+  facts.push({ icon: 'map-marker-distance', label: userLocation ? straightLineDistanceLabel(distanceKm(userLocation, item), language) : (language === 'es' ? 'Ubicación precisa no disponible' : 'Precise location unavailable') });
   return facts.slice(0, 4);
 }
 

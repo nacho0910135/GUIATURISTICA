@@ -3,8 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsFocused, useScrollToTop } from 'expo-router/react-navigation';
-import { roadDistanceLabel } from '@/lib/road-distance';
-import { useRoadDistances } from '@/lib/use-road-distances';
+import { distanceKm, straightLineDistanceLabel } from '@/lib/location-quality';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -97,18 +96,16 @@ export default function ExploreScreen() {
     category.id,
     (places.data ?? []).reduce((count, place) => count + Number(matchesOption(place, category)), 0),
   ])), [places.data, rootCategories]);
-  const routeCandidates = (places.data ?? []).filter((place) => nearbyEnabled || (Boolean(search.trim()) && nameSearchScore(place.name, normalizeSearchText(search)) !== null));
-  const roadDistance = useRoadDistances(userLocation, routeCandidates);
   const visiblePlaces = useMemo(() => {
     const term = normalizeSearchText(search);
     if (!term && !coordinates) return [];
     const matches = (places.data ?? []).flatMap((place) => {
       const score = term ? nameSearchScore(place.name, term) : 0;
-      return score === null ? [] : [{ place, score, distance: coordinates ? roadDistance(place) ?? Infinity : 0 }];
+      return score === null ? [] : [{ place, score, distance: coordinates ? distanceKm(coordinates, place) : 0 }];
     });
     if (coordinates) return matches.sort((a, b) => a.distance - b.distance || a.score - b.score).map(({ place }) => place);
     return matches.sort((a, b) => a.score - b.score || a.place.name.localeCompare(b.place.name, language === 'es' ? 'es' : 'en')).map(({ place }) => place);
-  }, [coordinates, language, places.data, search, roadDistance]);
+  }, [coordinates, language, places.data, search]);
   const hasSearch = Boolean(search.trim());
 
   const discover = async () => {
@@ -149,7 +146,6 @@ export default function ExploreScreen() {
               router.push({ pathname: '/(aux)/province', params: { category: place.category, destinationId: place.id, direct: '1', ...(place.community ? { community: '1' } : {}) } });
             }}
             origin={userLocation ?? undefined}
-            roadDistance={roadDistance(place)}
             ownContribution={place.contributor_id === session?.user.id}
             place={place}
           />
@@ -384,7 +380,7 @@ function DestinationPreviewCarousel({ active, large, place }: { active: boolean;
   return <Image accessibilityLabel={place.name} cachePolicy="memory-disk" contentFit="cover" onError={() => setFailed(true)} placeholder={destinationPlaceholder} placeholderContentFit="cover" priority={active ? 'high' : 'normal'} source={source} style={large ? { height: 180, width: '100%' } : { borderRadius: 16, flexShrink: 0, height: 52, width: 52 }} transition={160} />;
 }
 
-function PlaceResult({ active, followed, formatPrice, language, large, onFollow, onPress, origin, roadDistance, ownContribution, place }: { active: boolean; followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; large: boolean; onFollow: () => void; onPress: () => void; origin?: { latitude: number; longitude: number }; roadDistance?: number | null; ownContribution: boolean; place: ExplorePlace }) {
+function PlaceResult({ active, followed, formatPrice, language, large, onFollow, onPress, origin, ownContribution, place }: { active: boolean; followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; large: boolean; onFollow: () => void; onPress: () => void; origin?: { latitude: number; longitude: number }; ownContribution: boolean; place: ExplorePlace }) {
   const documentedAuthorities = place.verification_evidence_url && place.verification_checked_at ? place.validated_by : [];
   const description = language === 'es' ? place.description : place.description_en;
   if (large) {
@@ -402,7 +398,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
           <Text className="mt-3 text-sm font-bold text-ui-text dark:text-ui-dark-text">{place.province} · {place.category}</Text>
           <View className="mt-1 flex-row items-center justify-between">
             <Text className="text-sm font-black text-ui-primary dark:text-ui-dark-primary">{place.price_national_crc == null ? (language === 'es' ? 'Consultar precio' : 'Check price') : formatPrice(place.price_national_crc)}</Text>
-            {origin ? <Text className="ml-2 flex-1 text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{roadDistanceLabel(roadDistance, language)}</Text> : <MaterialCommunityIcons name="arrow-right" size={21} color="#0077A8" />}
+            {origin ? <Text className="ml-2 flex-1 text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{straightLineDistanceLabel(distanceKm(origin, place), language)}</Text> : <MaterialCommunityIcons name="arrow-right" size={21} color="#0077A8" />}
           </View>
           {place.community && place.contributor_name && !ownContribution ? <Pressable className="mt-3 self-start rounded-full bg-ui-primary-soft px-3 py-2 shadow-card dark:bg-ui-dark-primary-soft" style={{ elevation: 5, shadowColor: '#073F31', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.2, shadowRadius: 5 }} onPress={(event) => { event.stopPropagation(); onFollow(); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{followed ? (language === 'es' ? 'Siguiendo' : 'Following') : language === 'es' ? `Seguir a ${place.contributor_name}` : `Follow ${place.contributor_name}`}</Text></Pressable> : null}
         </View>
@@ -447,7 +443,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
           {place.province} · {place.category} · {place.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check price') : formatPrice(place.price_national_crc)}
         </Text>
       </View>
-      {origin ? <Text className="ml-2 max-w-28 flex-shrink text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{roadDistanceLabel(roadDistance, language)}</Text> : <MaterialCommunityIcons name="chevron-right" size={23} color="#0077A8" />}
+      {origin ? <Text className="ml-2 max-w-28 flex-shrink text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{straightLineDistanceLabel(distanceKm(origin, place), language)}</Text> : <MaterialCommunityIcons name="chevron-right" size={23} color="#0077A8" />}
     </Pressable>
   );
 }

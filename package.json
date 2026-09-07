@@ -89,7 +89,7 @@
     "cache:destination-photos": "node --env-file=.env.local scripts/cache-wikimedia-destination-photos.mjs",
     "check:assistance": "node --env-file=.env.local scripts/check-assistance.mjs",
     "check:trust": "node scripts/check-trust-metadata.mjs",
-    "check:location": "node scripts/check-location.mjs && node scripts/check-road-distance.mjs",
+    "check:location": "node scripts/check-location.mjs",
     "check:map": "node scripts/check-map-geojson.mjs",
     "check:performance": "node scripts/check-performance.mjs",
     "build:android:aab": "npx eas-cli@latest build --platform android --profile production",
