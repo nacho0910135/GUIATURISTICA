@@ -83,7 +83,8 @@
         {
           "locationWhenInUsePermission": "Descubriendo CR usa tu ubicación para recomendar destinos cercanos y calcular rutas."
         }
-      ]
+      ],
+      "@rnmapbox/maps"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
