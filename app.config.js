@@ -1,11 +1,25 @@
 module.exports = ({ config }) => {
-  const plugins = [...config.plugins];
-  plugins.push('expo-asset');
-  plugins.push('expo-sqlite');
-  plugins.push('expo-secure-store');
-  plugins.push('expo-image');
-  plugins.push('expo-web-browser');
-  plugins.push('expo-status-bar');
-  plugins.push('@react-native-community/datetimepicker');
-  return { ...config, plugins };
+  const existingPlugins = config.plugins || [];
+
+  const plugins = [
+    ...existingPlugins,
+    'expo-asset',
+    'expo-sqlite',
+    'expo-secure-store',
+    'expo-image',
+    'expo-web-browser',
+    'expo-status-bar',
+    '@react-native-community/datetimepicker',
+    [
+      '@rnmapbox/maps',
+      {
+        RNMapboxMapsDownloadToken: process.env.MAPBOX_SECRET_TOKEN || '',
+      },
+    ],
+  ];
+
+  return {
+    ...config,
+    plugins,
+  };
 };
