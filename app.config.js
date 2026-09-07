@@ -6,5 +6,6 @@ module.exports = ({ config }) => {
   plugins.push('expo-image');
   plugins.push('expo-web-browser');
   plugins.push('expo-status-bar');
+  plugins.push('@react-native-community/datetimepicker');
   return { ...config, plugins };
 };

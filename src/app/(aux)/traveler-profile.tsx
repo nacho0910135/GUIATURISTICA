@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { getPrivateConversations, getPublicTravelerProfile, markMessageRead, sendTravelerMessage, type PrivateConversation } from '@/lib/social-profile';
+import { submitInformationReport } from '@/lib/reports';
 import { blockTraveler, toggleTravelerFollow, unblockTraveler } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
@@ -53,6 +54,30 @@ export default function TravelerProfileScreen() {
   if (!data?.profile) return <View className="flex-1 items-center justify-center bg-ui-background dark:bg-ui-dark-background"><FrogLoader color="#13bd83" /></View>;
   const text = (es: string, en: string) => language === 'es' ? es : en;
   const name = data.profile.username || data.profile.full_name || text('Viajero', 'Traveler');
+  const profileBio = data.profile.bio;
+  const report = () => {
+    if (!requireAuth(text('reportar a este usuario', 'report this user'))) return;
+    Alert.alert(
+      text('Reportar usuario', 'Report user'),
+      text('El equipo de moderación revisará este perfil y su actividad.', 'The moderation team will review this profile and its activity.'),
+      [
+        { text: text('Cancelar', 'Cancel') },
+        {
+          text: text('Reportar', 'Report'),
+          onPress: () => void submitInformationReport({
+            targetType: 'traveler',
+            targetId: id,
+            targetLabel: name,
+            reportType: 'abusive_content',
+            details: profileBio?.slice(0, 500),
+          }).then(
+            () => Alert.alert(text('Reporte enviado', 'Report sent'), text('Gracias. Revisaremos este usuario.', 'Thank you. We will review this user.')),
+            () => Alert.alert(text('No se pudo enviar', 'Could not send'), text('Revisá tu conexión e intentá de nuevo.', 'Check your connection and try again.')),
+          ),
+        },
+      ],
+    );
+  };
   const block = () => {
     if (!requireAuth(text('bloquear a este usuario', 'block this user'))) return;
     if (data.blocked) {
@@ -121,7 +146,7 @@ export default function TravelerProfileScreen() {
   };
   return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ padding: 20, paddingBottom: 50 }}>
     <Card className="items-center" padding="lg">
-      <View className="mb-2 w-full flex-row items-center justify-between"><Pressable accessibilityLabel={text('Volver', 'Back')} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={24} color="#087443" /></Pressable>{id !== viewerId ? <Pressable accessibilityLabel={data.blocked ? text('Desbloquear usuario', 'Unblock user') : text('Bloquear usuario', 'Block user')} accessibilityRole="button" accessibilityState={{ busy: blockBusy, disabled: blockBusy }} className={data.blocked ? 'min-h-10 flex-row items-center rounded-full bg-ui-primary-soft px-3 dark:bg-ui-dark-primary-soft' : 'min-h-10 flex-row items-center rounded-full border border-ui-danger px-3 dark:border-ui-dark-danger'} disabled={blockBusy} onPress={block}>{blockBusy ? <FrogLoader color="#C33B3B" size="small" /> : <MaterialCommunityIcons name={data.blocked ? 'account-lock-open-outline' : 'account-cancel-outline'} size={17} color={data.blocked ? '#0B6B4F' : '#C33B3B'} />}<Text className={data.blocked ? 'ml-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary' : 'ml-1 text-xs font-bold text-ui-danger dark:text-ui-dark-danger'}>{data.blocked ? text('Desbloquear', 'Unblock') : text('Bloquear', 'Block')}</Text></Pressable> : <View className="h-11" />}</View>
+      <View className="mb-2 w-full flex-row items-center justify-between"><Pressable accessibilityLabel={text('Volver', 'Back')} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={24} color="#087443" /></Pressable>{id !== viewerId ? <View className="flex-row gap-2"><Pressable accessibilityLabel={text('Reportar usuario', 'Report user')} accessibilityRole="button" className="min-h-10 flex-row items-center rounded-full border border-ui-danger px-3 dark:border-ui-dark-danger" onPress={report}><MaterialCommunityIcons name="flag-outline" size={17} color="#C33B3B" /><Text className="ml-1 text-xs font-bold text-ui-danger dark:text-ui-dark-danger">{text('Reportar', 'Report')}</Text></Pressable><Pressable accessibilityLabel={data.blocked ? text('Desbloquear usuario', 'Unblock user') : text('Bloquear usuario', 'Block user')} accessibilityRole="button" accessibilityState={{ busy: blockBusy, disabled: blockBusy }} className={data.blocked ? 'min-h-10 flex-row items-center rounded-full bg-ui-primary-soft px-3 dark:bg-ui-dark-primary-soft' : 'min-h-10 flex-row items-center rounded-full border border-ui-danger px-3 dark:border-ui-dark-danger'} disabled={blockBusy} onPress={block}>{blockBusy ? <FrogLoader color="#C33B3B" size="small" /> : <MaterialCommunityIcons name={data.blocked ? 'account-lock-open-outline' : 'account-cancel-outline'} size={17} color={data.blocked ? '#0B6B4F' : '#C33B3B'} />}<Text className={data.blocked ? 'ml-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary' : 'ml-1 text-xs font-bold text-ui-danger dark:text-ui-dark-danger'}>{data.blocked ? text('Desbloquear', 'Unblock') : text('Bloquear', 'Block')}</Text></Pressable></View> : <View className="h-11" />}</View>
       {data.profile.avatar_url ? <Image source={{ uri: data.profile.avatar_url }} style={{ borderRadius: 52, height: 104, width: 104 }} /> : <View className="h-[104px] w-[104px] items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="account" size={50} color="white" /></View>}
       <View className="mt-5 w-full">
         <Text className="text-2xl font-black leading-8 text-ui-text dark:text-ui-dark-text">{name}</Text>

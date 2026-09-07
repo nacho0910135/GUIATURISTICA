@@ -156,3 +156,10 @@
 - Agregar sitio, agregar/editar comercio y compartir ubicación en Comunidad usan getPreciseCurrentLocation. Cada acción solicita una lectura fresca y tiene un límite de espera. La selección explícita queda fijada al punto elegido; no se mueve silenciosamente antes de publicar.
 - Al registrar un comercio no se precarga automáticamente la posición del visitante como ubicación del negocio: se obtiene con la acción GPS o se marca en el mapa.
 - Verificación reproducible: npm run check:location. El comportamiento físico del GPS y del permiso preciso requiere validación en dispositivo.
+
+## Rodadas de comunidad
+
+- Moteros, Enduro y 4x4 muestran las próximas rodadas antes del compositor social. Cada rodada conserva título, fecha/hora, nombre del lugar, coordenadas GPS y organizador.
+- Programar una rodada y confirmar «Asistiré» requieren sesión. La confirmación es idempotente por usuario y rodada; el contador proviene de `group_ride_attendees` bajo RLS.
+- El formulario usa selector nativo de fecha/hora en Android/iOS y entrada equivalente en web. La ubicación se obtiene mediante `getPreciseCurrentLocation`; nunca se publica una coordenada aproximada o inventada.
+- Contrato de persistencia: migración `20260907033330_create_group_rides.sql`, tablas `group_rides` y `group_ride_attendees`.

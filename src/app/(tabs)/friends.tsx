@@ -9,6 +9,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { MotionPressable, MotionReveal, Skeleton } from '@/components/motion';
+import { GroupRides } from '@/components/community/group-rides';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
@@ -287,6 +288,7 @@ export default function FriendsScreen() {
       </View>
 
       <View className="w-full max-w-3xl px-4 pt-5">
+        <GroupRides language={language} topic={topic} userId={userId} requireAuth={requireAuth} />
         <View className="rounded-card border border-ui-border bg-ui-surface p-4 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface" style={communityDepth}>
           <View className="flex-row items-center">
             {avatarUrl ? <Image cachePolicy="none" source={{ uri: avatarUrl }} style={{ borderRadius: 25, height: 50, width: 50 }} /> : <View className="h-12 w-12 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="account" size={27} color="#0B6B4F" /></View>}

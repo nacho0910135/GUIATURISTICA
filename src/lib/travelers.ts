@@ -10,6 +10,68 @@ export type TravelerTopic = string;
 export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; image_urls: string[]; latitude: number | null; longitude: number | null; recommended_destination_id: string | null; recommended_destination_is_community: boolean; topic: TravelerTopic; created_at: string; user?: TravelerProfile };
 export type ReactionType = string;
 export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
+export type GroupRide = {
+  id: string;
+  organizer_id: string;
+  topic: TravelerTopic;
+  title: string;
+  place_name: string;
+  latitude: number;
+  longitude: number;
+  starts_at: string;
+  created_at: string;
+  organizer?: TravelerProfile;
+  attendee_count: number;
+  attending: boolean;
+};
+
+export async function getGroupRides(topic: TravelerTopic, userId?: string) {
+  if (!['moteros', 'enduro', 'convoy_4x4'].includes(topic)) return [] as GroupRide[];
+  const { data, error } = await supabase
+    .from('group_rides')
+    .select('id,organizer_id,topic,title,place_name,latitude,longitude,starts_at,created_at,organizer:users!group_rides_organizer_id_fkey(id,username,full_name,avatar_url,role),attendees:group_ride_attendees(user_id)')
+    .eq('topic', topic)
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at')
+    .limit(10);
+  if (error) throw error;
+  const oneProfile = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] : value;
+  return (data ?? []).map((ride) => {
+    const attendees = (ride.attendees ?? []) as { user_id: string }[];
+    return {
+      ...ride,
+      organizer: oneProfile(ride.organizer) ?? undefined,
+      attendee_count: attendees.length,
+      attending: Boolean(userId && attendees.some((attendee) => attendee.user_id === userId)),
+    } as GroupRide;
+  });
+}
+
+export async function createGroupRide(input: { organizerId: string; topic: TravelerTopic; title: string; placeName: string; latitude: number; longitude: number; startsAt: Date }) {
+  const title = input.title.trim();
+  const placeName = input.placeName.trim();
+  if (!['moteros', 'enduro', 'convoy_4x4'].includes(input.topic)) throw new Error('Este grupo no admite rodadas.');
+  if (title.length < 3 || placeName.length < 3) throw new Error('Completá el nombre de la rodada y el punto de encuentro.');
+  if (input.startsAt.getTime() <= Date.now()) throw new Error('Elegí una fecha y hora futuras.');
+  const { error } = await supabase.from('group_rides').insert({
+    organizer_id: input.organizerId,
+    topic: input.topic,
+    title,
+    place_name: placeName,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    starts_at: input.startsAt.toISOString(),
+  });
+  if (error) throw error;
+}
+
+export async function setGroupRideAttendance(rideId: string, userId: string, attending: boolean) {
+  const query = attending
+    ? supabase.from('group_ride_attendees').upsert({ ride_id: rideId, user_id: userId }, { ignoreDuplicates: true, onConflict: 'ride_id,user_id' })
+    : supabase.from('group_ride_attendees').delete().eq('ride_id', rideId).eq('user_id', userId);
+  const { error } = await query;
+  if (error) throw error;
+}
 
 export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {
   const [postsResult, blocksResult] = await Promise.all([
