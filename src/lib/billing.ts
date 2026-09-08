@@ -16,6 +16,13 @@ export const billingOffers = {
 } as const;
 
 export type BillingOfferId = keyof typeof billingOffers;
+
+export const googlePlayProductIds = {
+  universal_monthly: 'universal_monthly',
+  universal_annual: 'universal_annual',
+  visitor_pass_30d: 'visitor_pass_30d',
+  business_monthly: 'business_monthly',
+} as const satisfies Record<BillingOfferId, string>;
 export const campaignOffers = {
   featured_30d: { campaignType: 'featured', recurring: false, title: ['Aparecer primero', 'Appear first'], detail: ['Tu negocio aparece antes que los resultados por cercanía durante 30 días.', 'Your business appears before distance-ranked results for 30 days.'], price: 'US$5 / 30 días' },
   featured_monthly: { campaignType: 'featured', recurring: true, title: ['Aparecer primero', 'Appear first'], detail: ['El beneficio se renueva automáticamente cada 30 días hasta que lo cancelés.', 'The benefit renews automatically every 30 days until canceled.'], price: 'US$5 / 30 días' },
