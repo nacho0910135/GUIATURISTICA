@@ -97,6 +97,7 @@ export default function FaunaScreen() {
 
   const markSeen = useCallback(async (speciesId: string) => {
     if (markingId) return;
+    if (!requireAuth(language === 'es' ? 'marcar este animal como avistado' : 'mark this animal as seen')) return;
     setMarkingId(speciesId);
     try {
       await markFaunaSeen(speciesId);
@@ -116,7 +117,7 @@ export default function FaunaScreen() {
     } finally {
       setMarkingId(undefined);
     }
-  }, [home?.species, language, markingId]);
+  }, [home?.species, language, markingId, requireAuth]);
 
   const removeSeen = useCallback(async (speciesId: string) => {
     if (markingId) return;

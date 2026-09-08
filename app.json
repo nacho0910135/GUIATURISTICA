@@ -7,11 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "descubriendocr",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/brand/frog-flag.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#f7fbf8"
-    },
     "ios": {
       "bundleIdentifier": "com.descubriendo.cr",
       "buildNumber": "1",
@@ -26,15 +21,6 @@
     "android": {
       "package": "com.descubriendo.cr",
       "versionCode": 1,
-      "splash": {
-        "image": "./assets/brand/frog-flag.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#f7fbf8",
-        "dark": {
-          "image": "./assets/brand/frog-flag.png",
-          "backgroundColor": "#0B0F12"
-        }
-      },
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",
@@ -81,14 +67,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#f7fbf8",
-          "image": "./assets/brand/frog-flag.png",
-          "imageWidth": 95,
-          "resizeMode": "contain",
-          "dark": {
-            "backgroundColor": "#0B0F12",
-            "image": "./assets/brand/frog-flag.png"
-          }
+          "backgroundColor": "#FFFFFF"
         }
       ],
       "expo-font",

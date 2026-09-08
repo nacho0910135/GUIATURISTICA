@@ -5,22 +5,30 @@ import { Platform, StyleSheet, View } from 'react-native';
 
 let startupSoundPlayed = false;
 
-export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
+export function AnimatedSplash({ appReady, onFinish }: { appReady: boolean; onFinish: () => void }) {
   const player = useAudioPlayer(require('@/assets/audio/startup-transition.mp3'));
   const [showAnimation, setShowAnimation] = useState(true);
+  const [animationFinished, setAnimationFinished] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web' && !startupSoundPlayed) {
       startupSoundPlayed = true;
       player.play();
     }
-    const animationTimer = setTimeout(() => setShowAnimation(false), 2000);
-    const finishTimer = setTimeout(onFinish, 2300);
+    const animationTimer = setTimeout(() => {
+      setShowAnimation(false);
+      setAnimationFinished(true);
+    }, 2000);
     return () => {
       clearTimeout(animationTimer);
-      clearTimeout(finishTimer);
     };
-  }, [onFinish, player]);
+  }, [player]);
+
+  useEffect(() => {
+    if (!animationFinished || !appReady) return;
+    const finishTimer = setTimeout(onFinish, 300);
+    return () => clearTimeout(finishTimer);
+  }, [animationFinished, appReady, onFinish]);
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>

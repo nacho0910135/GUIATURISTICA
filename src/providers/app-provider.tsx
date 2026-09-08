@@ -78,6 +78,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const locationRefreshInFlight = useRef(false);
   const locationWatcher = useRef<Location.LocationSubscription | null>(null);
   const locationGeneration = useRef(0);
+  const oauthCallbackInFlight = useRef<Promise<boolean> | null>(null);
+  const lastOAuthCallbackUrl = useRef<string | undefined>(undefined);
   const lastLocationTimestamp = useRef(0);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<'denied' | 'unavailable' | null>(null);
@@ -188,26 +190,32 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAvatarUrl(data?.avatar_url ?? (typeof metadataAvatar === 'string' ? metadataAvatar : null));
   }, []);
 
-  const createSessionFromUrl = useCallback(async (url: string) => {
-    const callback = new URL(url.replace('#', url.includes('?') ? '&' : '?'));
-    const oauthError = callback.searchParams.get('error_description') ?? callback.searchParams.get('error');
-    if (oauthError) throw new Error(oauthError);
+  const createSessionFromUrl = useCallback((url: string) => {
+    if (url === lastOAuthCallbackUrl.current && oauthCallbackInFlight.current) return oauthCallbackInFlight.current;
+    lastOAuthCallbackUrl.current = url;
+    const request = (async () => {
+      const callback = new URL(url.replace('#', url.includes('?') ? '&' : '?'));
+      const oauthError = callback.searchParams.get('error_description') ?? callback.searchParams.get('error');
+      if (oauthError) throw new Error(oauthError);
 
-    const code = callback.searchParams.get('code');
-    if (code) {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      const code = callback.searchParams.get('code');
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) throw error;
+        await syncSession(data.session);
+        return Boolean(data.session);
+      }
+
+      const access_token = callback.searchParams.get('access_token');
+      const refresh_token = callback.searchParams.get('refresh_token');
+      if (!access_token || !refresh_token) return false;
+      const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
       if (error) throw error;
       await syncSession(data.session);
       return Boolean(data.session);
-    }
-
-    const access_token = callback.searchParams.get('access_token');
-    const refresh_token = callback.searchParams.get('refresh_token');
-    if (!access_token || !refresh_token) return false;
-    const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
-    if (error) throw error;
-    await syncSession(data.session);
-    return Boolean(data.session);
+    })();
+    oauthCallbackInFlight.current = request;
+    return request;
   }, [syncSession]);
 
   useEffect(() => {

@@ -13,7 +13,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from 'nativewind';
@@ -22,6 +22,7 @@ import { AnimatedSplash } from '@/components/animated-splash';
 import { ThemedAlertProvider } from '@/components/themed-alert';
 import { AppProvider } from '@/providers/app-provider';
 import { queryClient } from '@/lib/query-client';
+import { isExploreStartupReady, subscribeToExploreStartupReady } from '@/lib/startup-gate';
 import { AppThemeProvider } from '@/theme/theme-provider';
 
 void SplashScreen.preventAutoHideAsync();
@@ -29,6 +30,7 @@ void SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
+  const [exploreReady, setExploreReady] = useState(isExploreStartupReady);
   const finishSplash = useCallback(() => setShowSplash(false), []);
   const [fontsLoaded, fontError] = useFonts({
     PlusJakartaSans_400Regular,
@@ -41,6 +43,8 @@ export default function RootLayout() {
   const onReady = useCallback(() => {
     if (fontsLoaded || fontError) void SplashScreen.hideAsync();
   }, [fontError, fontsLoaded]);
+
+  useEffect(() => subscribeToExploreStartupReady(() => setExploreReady(true)), []);
 
   if (!fontsLoaded && !fontError) return null;
 
@@ -71,7 +75,7 @@ export default function RootLayout() {
                     <Stack.Screen name="(aux)/auth-modal" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
                   </Stack>
                 </View>
-                {showSplash ? <AnimatedSplash onFinish={finishSplash} /> : null}
+                {showSplash ? <AnimatedSplash appReady={exploreReady} onFinish={finishSplash} /> : null}
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
               </ThemedAlertProvider>
           </AppProvider>

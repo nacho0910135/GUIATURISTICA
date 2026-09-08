@@ -21,6 +21,7 @@ import { getLiveRoadAlerts, type RoadTrafficAlert } from '@/lib/logistics';
 import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
+import { markExploreStartupReady } from '@/lib/startup-gate';
 import { useApp } from '@/providers/app-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
@@ -68,6 +69,9 @@ export default function ExploreScreen() {
     queryFn: () => getFollowedTravelerIds(session?.user.id),
     staleTime: 60 * 1000,
   });
+  useEffect(() => {
+    if (!places.isPending && !destinationCategories.isPending) markExploreStartupReady();
+  }, [destinationCategories.isPending, places.isPending]);
   const resetExplore = useCallback(() => {
     setSearch('');
     setNearbyEnabled(false);

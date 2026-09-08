@@ -94,7 +94,7 @@ export default function AuthModal() {
             onPress={() => void run(async () => { 
               const success = await signInWithGoogle();
               if (success) {
-                router.back();
+                router.replace('/(tabs)/profile');
               }
             })}
           >
