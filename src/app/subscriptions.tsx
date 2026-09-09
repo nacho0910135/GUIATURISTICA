@@ -30,7 +30,7 @@ export default function SubscriptionsScreen() {
   }, [language, refetchSubscriptions]);
   const purchaseFailed = useCallback((message: string) => {
     setBusyOffer(undefined);
-    Alert.alert('Descubriendo CR', message);
+    if (message) Alert.alert('Descubriendo CR', message);
   }, []);
   const playBilling = useGooglePlayBilling({ onError: purchaseFailed, onVerified: purchaseVerified, userId: session?.user.id });
 
@@ -70,6 +70,7 @@ export default function SubscriptionsScreen() {
       }
     } catch (error) {
       Alert.alert('Descubriendo CR', error instanceof Error ? error.message : (language === 'es' ? 'No se pudo abrir Checkout.' : 'Checkout could not be opened.'));
+      if (Platform.OS === 'android') setBusyOffer(undefined);
     } finally {
       if (Platform.OS !== 'android') setBusyOffer(undefined);
     }

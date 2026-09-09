@@ -62,7 +62,7 @@ export function useGooglePlayBilling({ onError, onVerified, userId }: Options) {
 
   const { availablePurchases, connected, fetchProducts, getAvailablePurchases, requestPurchase, subscriptions } = useIAP({
     onPurchaseError: (error) => {
-      if (error.code !== ErrorCode.UserCancelled) onErrorRef.current(error.message);
+      onErrorRef.current(error.code === ErrorCode.UserCancelled ? '' : error.message);
     },
     onPurchaseSuccess: (purchase) => { void verifyPurchase(purchase); },
     onError: (error) => onErrorRef.current(error.message),

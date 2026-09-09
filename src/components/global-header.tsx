@@ -146,6 +146,10 @@ export function GlobalHeader() {
   const isSpanish = language === 'es';
   const startMonthlyCheckout = async () => {
     if (openingCheckout) return;
+    if (Platform.OS === 'android') {
+      router.push('/subscriptions');
+      return;
+    }
     setOpeningCheckout(true);
     try {
       await openSubscriptionCheckout({ offerId: 'universal_monthly' });

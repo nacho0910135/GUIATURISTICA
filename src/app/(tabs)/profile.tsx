@@ -308,7 +308,7 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-        {Platform.OS === 'web' ? <Pressable accessibilityRole="link" className="mt-4 flex-row items-center justify-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => router.push('/subscriptions')}>
+        {Platform.OS !== 'ios' ? <Pressable accessibilityRole="link" className="mt-4 flex-row items-center justify-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => router.push('/subscriptions')}>
           <MaterialCommunityIcons name="crown-outline" size={20} color="white" />
           <Text className="ml-2 font-black text-white">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
         </Pressable> : null}
