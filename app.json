@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.descubriendo.cr",
-      "versionCode": 9,
+      "versionCode": 11,
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",

@@ -114,12 +114,12 @@ export default function AuthModal() {
 
           <View className="flex-row items-center rounded-control border border-ui-border bg-ui-muted px-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
             <Mail color="#68737A" size={19} strokeWidth={1.8} />
-            <TextInput accessibilityLabel={language === 'es' ? 'Correo electrónico' : 'Email'} autoCapitalize="none" autoComplete="email" className="ml-3 min-h-14 flex-1 font-sans text-ui-text dark:text-ui-dark-text" editable={!busy} keyboardType="email-address" onChangeText={setEmail} placeholder={language === 'es' ? 'Correo electrónico' : 'Email'} placeholderTextColor="#68737A" value={email} />
+            <TextInput accessibilityLabel={language === 'es' ? 'Correo electrónico' : 'Email'} autoCapitalize="none" autoComplete="email" autoCorrect={false} className="ml-3 min-h-14 flex-1 font-sans text-ui-text dark:text-ui-dark-text" editable={!busy} keyboardType="email-address" onChangeText={setEmail} placeholder={language === 'es' ? 'Correo electrónico' : 'Email'} placeholderTextColor="#68737A" spellCheck={false} value={email} />
           </View>
 
           <View className="mt-3 flex-row items-center rounded-control border border-ui-border bg-ui-muted px-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
             <LockKeyhole color="#68737A" size={19} strokeWidth={1.8} />
-            <TextInput accessibilityLabel={language === 'es' ? 'Contraseña' : 'Password'} autoComplete="password" className="ml-3 min-h-14 flex-1 font-sans text-ui-text dark:text-ui-dark-text" editable={!busy} onChangeText={setPassword} placeholder={language === 'es' ? 'Contraseña' : 'Password'} placeholderTextColor="#68737A" secureTextEntry={!passwordVisible} value={password} />
+            <TextInput accessibilityLabel={language === 'es' ? 'Contraseña' : 'Password'} autoCapitalize="none" autoComplete="password" autoCorrect={false} className="ml-3 min-h-14 flex-1 font-sans text-ui-text dark:text-ui-dark-text" editable={!busy} onChangeText={setPassword} placeholder={language === 'es' ? 'Contraseña' : 'Password'} placeholderTextColor="#68737A" secureTextEntry={!passwordVisible} spellCheck={false} textContentType="password" value={password} />
             <Pressable accessibilityLabel={passwordVisible ? (language === 'es' ? 'Ocultar contraseña' : 'Hide password') : language === 'es' ? 'Mostrar contraseña' : 'Show password'} accessibilityRole="button" accessibilityState={{ expanded: passwordVisible }} className="h-11 w-11 items-center justify-center" onPress={() => setPasswordVisible((value) => !value)}>
               {passwordVisible ? <EyeOff color="#68737A" size={20} /> : <Eye color="#68737A" size={20} />}
             </Pressable>

@@ -1,6 +1,4 @@
 import type { Session } from '@supabase/supabase-js';
-import * as AuthSession from 'expo-auth-session';
-import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
@@ -51,18 +49,9 @@ const NATIVE_OAUTH_REDIRECT_URI = 'descubriendocr://auth/callback';
 
 function getOAuthRedirectUri() {
   if (Platform.OS === 'web' && typeof window !== 'undefined') return window.location.origin;
-
-  // Expo Go cannot open the custom scheme registered by the standalone app.
-  // Its callback must point back to the currently running Expo development URL.
-  if (Constants.appOwnership === 'expo' || Constants.expoGoConfig) {
-    return Linking.createURL('auth/callback', { scheme: 'exp' });
-  }
-
-  return AuthSession.makeRedirectUri({
-    native: NATIVE_OAUTH_REDIRECT_URI,
-    scheme: 'descubriendocr',
-    path: 'auth/callback',
-  });
+  // Production OAuth must always return to the installed application. An
+  // `exp://` callback delegates the result to Expo Go instead of this AAB.
+  return NATIVE_OAUTH_REDIRECT_URI;
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
