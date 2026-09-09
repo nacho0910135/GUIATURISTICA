@@ -258,14 +258,26 @@ export function AppProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let cancelled = false;
     const requestStartupLocation = async () => {
-      let permission = await Location.getForegroundPermissionsAsync();
-      if (!permission.granted && permission.canAskAgain) permission = await Location.requestForegroundPermissionsAsync();
+      // Calling the request API on every cold start is intentional: the OS only
+      // displays its dialog while the permission is undetermined, and otherwise
+      // returns the current status without bothering the user again.
+      const permission = await Location.requestForegroundPermissionsAsync();
       if (cancelled) return;
       if (!permission.granted) {
         setLocationError('denied');
         return;
       }
       if (!hasPrecisePermission(permission)) {
+        setLocationError('unavailable');
+        return;
+      }
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled && Platform.OS === 'android') {
+        // Android's permission dialog cannot turn on the device location
+        // provider. This opens the native high-accuracy/GPS prompt instead.
+        await Location.enableNetworkProviderAsync();
+      }
+      if (!(await Location.hasServicesEnabledAsync())) {
         setLocationError('unavailable');
         return;
       }

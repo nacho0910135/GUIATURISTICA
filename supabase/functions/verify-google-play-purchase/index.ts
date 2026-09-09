@@ -101,9 +101,7 @@ Deno.serve(async (request) => {
   const offer = offers[productId as keyof typeof offers];
   if (!offer || !purchaseToken || purchaseToken.length > 4096)
     return json({ error: "invalid_purchase" }, 400);
-  if (
-    offer.kind === "plan" ? offer.business !== Boolean(serviceId) : !serviceId
-  )
+  if (offer.kind === "plan" ? !offer.business && Boolean(serviceId) : !serviceId)
     return json({ error: "invalid_business_selection" }, 400);
   if (
     offer.kind === "campaign" &&
@@ -117,12 +115,14 @@ Deno.serve(async (request) => {
   if (serviceId) {
     const { data: business } = await userClient
       .from("commercial_services")
-      .select("id")
+      .select("id,subscription_required")
       .eq("id", serviceId)
       .eq("owner_id", user.id)
       .eq("moderation_status", "approved")
       .maybeSingle();
     if (!business) return json({ error: "business_not_owned" }, 403);
+    if (offer.kind === "plan" && !business.subscription_required)
+      return json({ error: "business_not_subscription_governed" }, 409);
   }
 
   let serviceAccount: ServiceAccount;

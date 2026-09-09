@@ -1,23 +1,29 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { getClaimableBusiness, requestCommercialServiceClaim } from '@/lib/commerce';
+import { getMySubscriptions, hasAvailableBusinessPlan } from '@/lib/billing';
 import { useApp } from '@/providers/app-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
 export default function ClaimBusinessScreen() {
-  const { isAdmin, language, requireAuth } = useApp();
+  const { isAdmin, isAuthenticated, language, requireAuth } = useApp();
   const router = useRouter();
   const { serviceId } = useLocalSearchParams<{ serviceId?: string }>();
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [feeAcknowledged, setFeeAcknowledged] = useState(false);
   const business = useQuery({ queryKey: ['claimable-business', serviceId], queryFn: () => getClaimableBusiness(serviceId!), enabled: Boolean(serviceId) });
+  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: isAuthenticated });
+  const refetchSubscriptions = subscriptions.refetch;
   const isSpanish = language === 'es';
+
+  useFocusEffect(useCallback(() => {
+    if (isAuthenticated) void refetchSubscriptions();
+  }, [isAuthenticated, refetchSubscriptions]));
 
   const submit = async () => {
     if (!serviceId || !requireAuth(isSpanish ? 'reclamar un perfil comercial' : 'claim a business profile')) return;
@@ -26,12 +32,15 @@ export default function ClaimBusinessScreen() {
       await requestCommercialServiceClaim(serviceId, message);
       setSubmitted(true);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : (isSpanish ? 'No pudimos enviar el reclamo.' : 'The claim could not be sent.'));
+      const message = nextError instanceof Error ? nextError.message : '';
+      setError(message.includes('active_business_subscription_required')
+        ? (isSpanish ? 'Necesitás confirmar primero una suscripción comercial activa.' : 'You must first confirm an active business subscription.')
+        : message || (isSpanish ? 'No pudimos enviar el reclamo.' : 'The claim could not be sent.'));
     }
   };
 
   const unavailable = !serviceId || business.data?.is_claimed || Boolean(business.data?.owner_id);
-  const showBusinessPlanNotice = !isAdmin && !feeAcknowledged;
+  const showBusinessPlanNotice = !isAdmin && !hasAvailableBusinessPlan(subscriptions.data ?? []);
 
   return (
     <ScrollView className="flex-1 bg-ui-background px-5 pt-12 dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 44 }}>
@@ -58,9 +67,8 @@ export default function ClaimBusinessScreen() {
             {showBusinessPlanNotice ? (
               <View accessibilityRole="alert" className="mt-5 rounded-2xl border border-ui-primary bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft">
                 <Text className="font-black text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Este reclamo requiere el plan comercial' : 'This claim requires the business plan'}</Text>
-                <Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'El costo es de US$9,99 al mes. Podés emitir el pago desde Planes Pro.' : 'The cost is US$9.99 per month. You can pay from Pro plans.'}</Text>
-                <Pressable accessibilityRole="link" className="mt-4 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => router.push('/subscriptions')}><Text className="font-black text-white">{isSpanish ? 'Ir a emitir el pago' : 'Continue to payment'}</Text></Pressable>
-                <Pressable accessibilityRole="button" className="mt-2 min-h-11 items-center justify-center" onPress={() => setFeeAcknowledged(true)}><Text className="font-bold text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Completar el reclamo primero' : 'Complete the claim first'}</Text></Pressable>
+                <Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'El costo es de US$9,99 al mes. El perfil actual seguirá visible mientras revisamos el reclamo. Al aprobarlo, la publicación y el panel quedarán sujetos a esta suscripción mensual: si cancelás, conservarás el acceso hasta terminar el período pagado y luego el negocio se ocultará, sin eliminarse.' : 'The cost is US$9.99 per month. The current listing remains visible while the claim is reviewed. Once approved, publishing and dashboard access follow this monthly subscription: if you cancel, access remains through the paid period and the business is then hidden, not deleted.'}</Text>
+                <Pressable accessibilityRole="link" className="mt-4 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => router.push({ pathname: '/subscriptions', params: { intent: 'business', claimServiceId: serviceId } })}><Text className="font-black text-white">{isSpanish ? 'Suscribirme y continuar' : 'Subscribe and continue'}</Text></Pressable>
               </View>
             ) : (
               <>

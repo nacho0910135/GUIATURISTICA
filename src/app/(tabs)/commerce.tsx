@@ -33,6 +33,7 @@ import {
   campaignOffers,
   getMySubscriptions,
   hasActiveBusinessPlan,
+  hasAvailableBusinessPlan,
   openGooglePlayCampaignManagement,
   openCampaignCheckout,
   type CampaignOfferId,
@@ -1986,7 +1987,6 @@ export default function CommerceScreen() {
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [businessPlanRequiredOpen, setBusinessPlanRequiredOpen] =
     useState(false);
-  const [businessFeeNoticeOpen, setBusinessFeeNoticeOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [registerError, setRegisterError] = useState("");
   const [registerBusy, setRegisterBusy] = useState(false);
@@ -2142,15 +2142,18 @@ export default function CommerceScreen() {
     new Set((banners.data ?? []).map((campaign) => campaign.service_id)).size >=
     3;
 
-  const openBusinessRegistration = () => {
+  const openBusinessRegistration = async () => {
     if (
       !requireAuth(
         language === "es" ? "registrar un comercio" : "register a business",
       )
     )
       return;
-    if (!isAdmin) {
-      setBusinessFeeNoticeOpen(true);
+    const currentSubscriptions = subscriptions.isLoading
+      ? ((await subscriptions.refetch()).data ?? [])
+      : (subscriptions.data ?? []);
+    if (!isAdmin && !hasAvailableBusinessPlan(currentSubscriptions)) {
+      router.push({ pathname: "/subscriptions", params: { intent: "business" } });
       return;
     }
     setRegisterForm(emptyProfileForm(category));
@@ -2172,7 +2175,8 @@ export default function CommerceScreen() {
     const currentSubscriptions = subscriptions.isLoading
       ? ((await subscriptions.refetch()).data ?? [])
       : (subscriptions.data ?? []);
-    if (isAdmin || hasActiveBusinessPlan(currentSubscriptions)) {
+    const ownedBusinesses = await getOwnerDashboard();
+    if (isAdmin || hasActiveBusinessPlan(currentSubscriptions) || ownedBusinesses.length) {
       setDashboardOpen(true);
       return;
     }
@@ -2368,11 +2372,15 @@ export default function CommerceScreen() {
         language === "es"
           ? message.includes("authentication_required")
             ? "Tu sesión venció. Volvé a iniciar sesión e intentá de nuevo."
+            : message.includes("active_business_subscription_required")
+              ? "Necesitás confirmar el pago del plan Comercio o servicio antes de registrar el negocio."
             : message.includes("invalid commerce category")
               ? "Ese tipo ya no está disponible. Elegí otro."
               : "No pudimos enviar el comercio. Revisá tu conexión e intentá de nuevo."
           : message.includes("authentication_required")
             ? "Your session expired. Sign in again and retry."
+            : message.includes("active_business_subscription_required")
+              ? "Confirm payment for the Business or service plan before registering the business."
             : message.includes("invalid commerce category")
               ? "That type is no longer available. Choose another."
               : "We could not send the business. Check your connection and retry.",
@@ -2653,7 +2661,7 @@ export default function CommerceScreen() {
             label={
               language === "es" ? "Registrar comercio" : "Register business"
             }
-            onPress={openBusinessRegistration}
+            onPress={() => void openBusinessRegistration()}
             primary
           />
           <DirectoryShortcut
@@ -2983,78 +2991,6 @@ export default function CommerceScreen() {
         subcategoryOptions={subcategories}
       />
       <Modal
-        visible={businessFeeNoticeOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setBusinessFeeNoticeOpen(false)}
-      >
-        <View className="flex-1 items-center justify-center bg-black/45 px-5">
-          <View
-            accessibilityRole="alert"
-            className="w-full max-w-md rounded-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface"
-          >
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
-              <MaterialCommunityIcons
-                name="credit-card-outline"
-                size={25}
-                color="#087443"
-              />
-            </View>
-            <Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">
-              {language === "es"
-                ? "Registrar un negocio requiere el plan comercial"
-                : "Registering a business requires the business plan"}
-            </Text>
-            <Text className="mt-2 text-sm leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">
-              {language === "es"
-                ? "El costo es de US$9,99 al mes. Podés completar el registro ahora y emitir el pago desde Planes Pro."
-                : "The cost is US$9.99 per month. You can complete registration now and pay from Pro plans."}
-            </Text>
-            <Pressable
-              accessibilityRole="link"
-              className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4"
-              onPress={() => {
-                setBusinessFeeNoticeOpen(false);
-                router.push("/subscriptions");
-              }}
-            >
-              <Text className="font-black text-white">
-                {language === "es"
-                  ? "Ir a emitir el pago"
-                  : "Continue to payment"}
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              className="mt-2 min-h-11 items-center justify-center"
-              onPress={() => {
-                setBusinessFeeNoticeOpen(false);
-                setRegisterForm(emptyProfileForm(category));
-                setRegisterPhotos([]);
-                setRegistrationLocation(undefined);
-                setRegisterError("");
-                setRegisterOpen(true);
-              }}
-            >
-              <Text className="font-bold text-ui-primary dark:text-ui-dark-primary">
-                {language === "es"
-                  ? "Completar el registro primero"
-                  : "Complete registration first"}
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              className="min-h-11 items-center justify-center"
-              onPress={() => setBusinessFeeNoticeOpen(false)}
-            >
-              <Text className="font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
-                {language === "es" ? "Ahora no" : "Not now"}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-      <Modal
         visible={businessPlanRequiredOpen}
         transparent
         animationType="fade"
@@ -3254,6 +3190,14 @@ export default function CommerceScreen() {
                         </View>
                       </View>
                       <View className="p-4">
+                        {service.subscription_required && !service.publicly_visible ? (
+                          <View accessibilityRole="alert" className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+                            <View className="flex-row items-start"><MaterialCommunityIcons name="eye-off-outline" size={22} color="#B96708" /><View className="ml-3 flex-1"><Text className="font-black text-amber-900 dark:text-amber-100">{language === "es" ? "Tu negocio está oculto al público" : "Your business is hidden from the public"}</Text><Text className="mt-1 text-sm leading-5 text-amber-800 dark:text-amber-200">{language === "es" ? "El período pagado terminó. Tu información sigue guardada y volverá a mostrarse cuando reactivés el plan." : "The paid period ended. Your information is saved and will be shown again when you reactivate the plan."}</Text></View></View>
+                            <Pressable accessibilityRole="link" className="mt-3 min-h-11 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => { setDashboardOpen(false); router.push({ pathname: "/subscriptions", params: { intent: "business", serviceId: service.id } }); }}><Text className="font-black text-white">{language === "es" ? "Reactivar y volver a publicar" : "Reactivate and publish again"}</Text></Pressable>
+                          </View>
+                        ) : service.subscription_required && service.subscription_visible_until ? (
+                          <View className="mb-4 flex-row items-center rounded-2xl bg-ui-primary-soft p-3 dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="eye-check-outline" size={21} color="#087443" /><Text className="ml-2 flex-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{language === "es" ? `Visible al público hasta ${new Date(service.subscription_visible_until).toLocaleDateString("es-CR")}. Si cancelás, seguirá visible hasta esa fecha.` : `Public until ${new Date(service.subscription_visible_until).toLocaleDateString("en-US")}. If you cancel, it remains visible until that date.`}</Text></View>
+                        ) : null}
                         {tagLabels.length ? (
                           <View className="mt-2 flex-row flex-wrap gap-2">
                             {tagLabels.map((tag) => (

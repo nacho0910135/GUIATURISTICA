@@ -13,6 +13,12 @@ import { addGroupRideComment, cancelGroupRide, createGroupRide, getGroupRides, s
 
 const RIDE_TOPICS = new Set(['moteros', 'enduro', 'convoy_4x4']);
 
+function errorMessage(reason: unknown, fallback: string) {
+  if (reason instanceof Error) return reason.message;
+  if (reason && typeof reason === 'object' && 'message' in reason && typeof reason.message === 'string') return reason.message;
+  return fallback;
+}
+
 function initialRideDate() {
   const value = new Date();
   value.setDate(value.getDate() + 1);
@@ -56,7 +62,7 @@ export function GroupRides({ language, topic, userId, requireAuth }: { language:
       await rides.refetch();
       void haptic('success');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo programar la rodada.' : 'Could not schedule the ride.'));
+      setError(errorMessage(reason, language === 'es' ? 'No se pudo programar la rodada.' : 'Could not schedule the ride.'));
       void haptic('error');
     } finally { setBusy(false); }
   };

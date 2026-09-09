@@ -74,7 +74,7 @@
 | Delete | verbo exacto | confirmación permanece abierta | contexto válido | resultado persistente | retry/cancel en overlay | siguiente elemento lógico | política de lifecycle requerida |
 | Search | campo de búsqueda | contenido previo visible | misma ruta | conteo de resultados | clear/retry | input o heading de resultados | este contrato |
 | Upload/background job | verbo del archivo | progreso real | contexto de origen | estado confirmado por servidor | retry/cancel y datos preservados | elemento subido | `src/lib` + Storage RLS |
-| Registrar negocio | Aviso de plan → completar registro o ir al pago → Enviar a revisión | aviso previo de US$9,99/mes; botón ocupado; ubicación explícita requerida | panel del propietario | registro pendiente; fotos sincronizadas; no entra al feed | formulario y selección preservados + retry | comercio recién creado | `src/lib/billing.ts` + `register_commercial_service_v2` + moderación/RLS |
+| Registrar negocio | Plan Comercio o servicio → pago confirmado → Registrar comercio → Enviar a revisión | Checkout/Google Play primero; botón ocupado; ubicación explícita requerida | panel del propietario | registro pendiente; suscripción asociada; fotos sincronizadas; no entra al feed | pago no confirmado mantiene registro bloqueado; formulario preservado ante fallos posteriores | comercio recién creado | `src/lib/billing.ts` + `register_commercial_service_v2` + moderación/RLS |
 | Editar negocio propio | Guardar | botón ocupado estable | panel del propietario | perfil y métricas actualizados | formulario abierto + retry | resumen del comercio | `commercial_services` owner RLS |
 | Eliminar negocio propio | Eliminar negocio | confirmación destructiva con nombre y alcance | panel del propietario | desaparece del panel y directorio | confirmación permanece recuperable si falla | siguiente negocio o estado vacío | `commercial_services` owner DELETE RLS + cascadas FK |
 | Cancel/back | Cancelar / Volver | ninguno | origen | ninguno | guard de cambios si aplica | trigger/contexto original | Expo Router |
@@ -105,6 +105,7 @@
 - **Toast:** pendiente un provider canónico; mientras tanto el feedback accionable permanece inline y no desaparece solo.
 - **Alerts/banners:** inline para corrección local, banner de página para condición persistente y global sólo para interrupción general.
 - **Nuevos seguidores:** se registran en el centro de notificaciones de Perfil; no generan aviso en la cabecera global ni notificación push.
+- **Actividad de personas seguidas:** una publicación nueva en el foro genera `new_post`; un sitio aprobado genera `new_destination`; y un comercio o servicio aprobado genera `new_business`. Los tres se muestran sólo en Notificaciones de Perfil, sin banner global ni push externo. Sitios y comercios esperan la aprobación para no avisar sobre contenido que todavía no es público.
 - **Avisos externos:** la aplicación no solicita permiso de notificaciones, no registra tokens push y no programa recordatorios locales. Toda actividad se consulta únicamente dentro de la aplicación.
 - **Unsaved changes:** conservar datos y confirmar salida mediante overlay propio cuando el formulario esté dirty.
 - **Layer order:** dialog > bottom sheet/drawer > popover > futura cola de toast.
@@ -165,6 +166,14 @@
 - Programar una rodada y confirmar «Asistiré» requieren sesión. La confirmación es idempotente por usuario y rodada; el contador proviene de `group_ride_attendees` bajo RLS.
 - El formulario usa selector nativo de fecha/hora en Android/iOS y entrada equivalente en web. El organizador selecciona por separado el punto de reunión y el destino mediante el selector manual compartido; nunca se publica una coordenada aproximada o inventada.
 - La ficha distingue visualmente punto de reunión y destino, y abre Waze directamente hacia el punto de reunión. Las dudas quedan como comentarios visibles en la misma ficha; un comentario de otra persona genera una notificación interna para quien organizó la rodada.
-- Sólo el organizador puede cancelar su rodada. La cancelación es un estado persistente, conserva el historial y los comentarios, queda claramente señalada y bloquea nuevas confirmaciones de asistencia.
+- Sólo el organizador puede cancelar su rodada. La cancelación es un estado persistente que conserva historial y comentarios, pero la rodada deja de mostrarse en la comunidad. Cada asistente recibe una única notificación global persistente en la cabecera y la descarta explícitamente con su botón de cierre.
 - Una rodada permanece visible durante todo el día local programado y deja de aparecer al comenzar el día siguiente; no se borra de la base de datos.
 - Contrato de persistencia: migraciones `20260907033330_create_group_rides.sql`, `20260909153000_add_group_ride_destination.sql` y `20260909160000_group_ride_details_comments_cancellation.sql`; tablas `group_rides`, `group_ride_attendees` y `group_ride_comments`.
+
+## Navegación y suscripción comercial
+
+- En Android, la tecla física Atrás desde cualquier pestaña lleva a Explorar. En Explorar se consume el evento para evitar una salida accidental de la aplicación.
+- Registrar o reclamar un comercio exige primero un pago comercial confirmado. Una suscripción sin negocio vinculado habilita un único registro o reclamo; la aprobación del reclamo la vincula al perfil existente.
+- Los perfiles importados sin propietario son visibles y no requieren suscripción. Desde que se aprueba su reclamo pasan al régimen mensual, igual que los negocios registrados por propietarios.
+- La cancelación no corta el servicio de inmediato: el panel y la visibilidad continúan hasta `current_period_end`. Después, el perfil se oculta de toda vista pública pero sus datos no se eliminan; el panel muestra el estado y una acción de reactivación.
+- Una reactivación vincula la nueva compra al mismo comercio y lo vuelve visible al confirmarse. La renovación automática activa extiende la vigencia sin interrupción.

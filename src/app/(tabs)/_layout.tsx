@@ -1,7 +1,8 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, Tabs } from 'expo-router';
-import { Platform, Text, View, type ColorValue } from 'react-native';
+import { Redirect, Tabs, usePathname, useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { BackHandler, Platform, Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
@@ -36,8 +37,18 @@ export default function TabsLayout() {
   const { isAdmin, language, refreshUserLocation, session, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
+  const pathname = usePathname();
+  const router = useRouter();
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
   const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!pathname.endsWith('/explore')) router.replace('/(tabs)/explore');
+      return true;
+    });
+    return () => subscription.remove();
+  }, [pathname, router]);
   if (Platform.OS === 'web' && !isAdmin && access && !access.hasAccess && !subscriptions.isLoading) return <Redirect href="/subscriptions" />;
   return (
     <Tabs

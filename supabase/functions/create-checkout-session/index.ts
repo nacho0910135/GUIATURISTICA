@@ -80,9 +80,7 @@ Deno.serve(async (request) => {
     return json({ error: "invalid_checkout_request" }, 400);
   const offer = offers[offerId];
   const isCampaign = "campaignType" in offer;
-  if (
-    isCampaign ? !serviceId : offer.plan === "no_ads" ? serviceId : !serviceId
-  )
+  if (isCampaign ? !serviceId : offer.plan === "no_ads" && Boolean(serviceId))
     return json({ error: "invalid_business_selection" }, 400);
   if (
     isCampaign &&
@@ -95,12 +93,14 @@ Deno.serve(async (request) => {
   if (serviceId) {
     const { data: business, error } = await supabase
       .from("commercial_services")
-      .select("id")
+      .select("id,subscription_required")
       .eq("id", serviceId)
       .eq("owner_id", user.id)
       .eq("moderation_status", "approved")
       .maybeSingle();
     if (error || !business) return json({ error: "business_not_owned" }, 403);
+    if (!isCampaign && !business.subscription_required)
+      return json({ error: "business_not_subscription_governed" }, 409);
   }
 
   if (isCampaign && offer.campaignType === "banner") {

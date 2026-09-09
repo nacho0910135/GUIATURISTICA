@@ -40,6 +40,7 @@ export async function getGroupRides(topic: TravelerTopic, userId?: string) {
     .from('group_rides')
     .select('id,organizer_id,topic,title,place_name,latitude,longitude,destination_name,destination_latitude,destination_longitude,status,cancelled_at,starts_at,created_at,organizer:users!group_rides_organizer_id_fkey(id,username,full_name,avatar_url,role),attendees:group_ride_attendees(user_id),comments:group_ride_comments(id,ride_id,user_id,body,created_at,user:users(id,username,full_name,avatar_url,role))')
     .eq('topic', topic)
+    .eq('status', 'scheduled')
     .gte('starts_at', today.toISOString())
     .order('starts_at')
     .limit(10);

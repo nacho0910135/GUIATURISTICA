@@ -53,8 +53,8 @@ export const billingOffers = {
     icon: "store-check-outline",
     title: ["Comercio o servicio", "Business or service"],
     detail: [
-      "Para administrar un comercio o servicio reclamado o registrado. Se renueva automáticamente.",
-      "For a claimed or registered business or service. Renews automatically.",
+      "Primero activás el plan; después registrás tu comercio o servicio y accedés al panel. Se renueva automáticamente.",
+      "Activate the plan first; then register your business or service and access the dashboard. Renews automatically.",
     ],
     price: ["US$9,99 / mes", "US$9.99 / month"],
   },
@@ -151,8 +151,23 @@ export function hasActiveBusinessPlan(
     (item) =>
       item.plan === "business" &&
       item.offer_id === "business_monthly" &&
-      item.status === "active" &&
+      ["active", "past_due", "canceled"].includes(item.status) &&
       (!serviceId || item.service_id === serviceId) &&
+      (!item.current_period_end ||
+        new Date(item.current_period_end).getTime() > now),
+  );
+}
+
+export function hasAvailableBusinessPlan(
+  subscriptions: Subscription[],
+  now = Date.now(),
+) {
+  return subscriptions.some(
+    (item) =>
+      item.plan === "business" &&
+      item.offer_id === "business_monthly" &&
+      item.service_id === null &&
+      ["active", "past_due", "canceled"].includes(item.status) &&
       (!item.current_period_end ||
         new Date(item.current_period_end).getTime() > now),
   );

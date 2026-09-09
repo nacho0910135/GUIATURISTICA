@@ -14,7 +14,7 @@ import { IconButton } from '@/components/ui/button';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { getAccessStatus, getMySubscriptions, openSubscriptionCheckout } from '@/lib/billing';
-import { getPrivateConversations, markMessageRead } from '@/lib/social-profile';
+import { getPrivateConversations, markMessageRead, markNotificationRead } from '@/lib/social-profile';
 import { supabase } from '@/lib/supabase';
 import { useApp, type VisitorType } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
@@ -54,8 +54,22 @@ export function GlobalHeader() {
     enabled: Boolean(session) && isFocused,
     staleTime: 0,
   });
+  const cancelledRide = useQuery({
+    queryKey: ['header-cancelled-ride', session?.user.id],
+    queryFn: async () => {
+      const { data: notification, error } = await supabase.from('notifications').select('id,target_id,created_at').eq('recipient_id', session!.user.id).eq('type', 'ride_cancelled').eq('read_status', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      if (!notification) return null;
+      const { data: ride } = await supabase.from('group_rides').select('title').eq('id', notification.target_id).maybeSingle();
+      return { ...notification, title: ride?.title ?? (language === 'es' ? 'Rodada programada' : 'Scheduled ride') };
+    },
+    enabled: Boolean(session) && isFocused,
+    staleTime: 0,
+  });
   const refetchSocialActivityRef = useRef(socialActivity.refetch);
   refetchSocialActivityRef.current = socialActivity.refetch;
+  const refetchCancelledRideRef = useRef(cancelledRide.refetch);
+  refetchCancelledRideRef.current = cancelledRide.refetch;
   useTravelerMessagesSync(session?.user.id, () => { void messages.refetch(); });
   const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
   const showTrialBanner = Boolean(access && !subscriptions.isPending && !subscriptions.isFetching && !access.hasPersonalPlan);
@@ -71,7 +85,10 @@ export function GlobalHeader() {
   useEffect(() => {
     if (!session?.user.id || !isFocused) return;
     const refresh = () => {
-      if (AppState.currentState === 'active') void refetchSocialActivityRef.current();
+      if (AppState.currentState === 'active') {
+        void refetchSocialActivityRef.current();
+        void refetchCancelledRideRef.current();
+      }
     };
     const channel = supabase
       .channel(`header-social-notifications:${session.user.id}:${Math.random().toString(36).slice(2)}`)
@@ -176,6 +193,11 @@ export function GlobalHeader() {
     setVisibleSocialNotificationId(undefined);
     router.push({ pathname: '/(tabs)/profile', params: { section: 'notifications' } });
   };
+  const dismissCancelledRide = async () => {
+    if (!cancelledRide.data) return;
+    await markNotificationRead(cancelledRide.data.id);
+    await cancelledRide.refetch();
+  };
 
   return (
     <SafeAreaView edges={['top']} className="relative border-b border-ui-border bg-ui-glass shadow-floating dark:border-ui-dark-border dark:bg-ui-dark-glass" style={{ elevation: 14, shadowColor: colors.primary, shadowOffset: { height: 8, width: 0 }, shadowOpacity: mode === 'dark' ? 0.32 : 0.2, shadowRadius: 16 }}>
@@ -244,6 +266,7 @@ export function GlobalHeader() {
             <ProfileButton avatarUrl={avatarUrl} desktopOffset label={isSpanish ? 'Abrir perfil y planes Pro' : 'Open profile and Pro plans'} onPress={() => router.push('/(tabs)/profile')} />
           </View>
         </View>
+        {cancelledRide.data ? <View accessibilityRole="alert" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-red-300 bg-red-50 px-3 py-2 shadow-card dark:border-red-800 dark:bg-red-950"><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-danger"><MaterialCommunityIcons name="calendar-remove-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-danger dark:text-ui-dark-danger">{isSpanish ? 'Rodada cancelada' : 'Ride cancelled'}</Text><Text className="text-[10px] font-bold text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{cancelledRide.data.title}</Text></View><Pressable accessibilityLabel={isSpanish ? 'Cerrar aviso de rodada cancelada' : 'Dismiss cancelled ride notice'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full active:bg-red-100 dark:active:bg-red-900" onPress={() => void dismissCancelledRide()}><MaterialCommunityIcons name="close" size={22} color={colors.danger} /></Pressable></View> : null}
         {showTrialBanner && access ? <Pressable accessibilityLabel={isSpanish ? 'Continuar descubriendo por dos dólares mensuales' : 'Keep discovering for two dollars per month'} accessibilityRole="button" className={access.showTrialWarning || !access.hasAccess ? 'mt-2 flex-row items-center rounded-2xl border border-amber-300 bg-amber-50 px-3 py-1.5 shadow-card' : 'mt-2 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-1.5 shadow-card dark:bg-ui-dark-primary-soft'} disabled={openingCheckout} onPress={() => void startMonthlyCheckout()} style={{ elevation: 7, shadowColor: access.showTrialWarning || !access.hasAccess ? '#B96708' : colors.primary, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.22, shadowRadius: 8 }}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="compass-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className={access.showTrialWarning || !access.hasAccess ? 'text-[11px] font-black text-amber-900' : 'text-[11px] font-black text-ui-primary dark:text-ui-dark-primary'}>{access.hasAccess ? (isSpanish ? `${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'día gratis restante' : 'días gratis restantes'} de prueba gratuita` : `${access.trialDaysRemaining} free-trial ${access.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Tu prueba gratuita terminó' : 'Your free trial has ended')}</Text><Text className={access.showTrialWarning || !access.hasAccess ? 'text-[10px] leading-3 font-bold text-amber-800' : 'text-[10px] leading-3 font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{isSpanish ? 'Podés seguir descubriendo sitios por US$2 mensuales' : 'Keep discovering places for US$2 per month'}</Text></View>{openingCheckout ? <FrogLoader color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="arrow-right" size={19} color="#0B6B4F" />}</Pressable> : null}
         {unreadConversation && !isInChat ? <Pressable accessibilityLabel={isSpanish ? `Abrir nuevo mensaje de ${unreadConversation.partner_name}` : `Open new message from ${unreadConversation.partner_name}`} accessibilityRole="button" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-ui-secondary/30 bg-ui-surface px-3 py-2 shadow-card dark:border-ui-dark-secondary/40 dark:bg-ui-dark-surface" onPress={() => void openUnreadConversation()}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-secondary"><MaterialCommunityIcons name="message-text-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Recibiste un nuevo mensaje de:' : 'You received a new message from:'}</Text><Text className="text-[10px] font-bold text-ui-secondary dark:text-ui-dark-secondary">{unreadConversation.partner_name}</Text></View><MaterialCommunityIcons name="arrow-right" size={19} color={colors.secondary} /></Pressable> : null}
         {socialActivity.data && visibleSocialNotificationId === socialActivity.data.id ? <Pressable accessibilityLabel={isSpanish ? `Abrir actividad nueva de ${socialActorName}` : `Open new activity from ${socialActorName}`} accessibilityRole="button" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-2 shadow-card dark:bg-ui-dark-primary-soft" onPress={openSocialNotification}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name={socialCopy.icon} size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? socialCopy.es : socialCopy.en}</Text><Text className="text-[10px] font-bold text-ui-primary dark:text-ui-dark-primary">{socialActorName}</Text></View><MaterialCommunityIcons name="arrow-right" size={19} color={colors.primary} /></Pressable> : null}

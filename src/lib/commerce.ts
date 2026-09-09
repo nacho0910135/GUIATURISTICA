@@ -93,7 +93,7 @@ export type CommerceAdCampaign = {
 };
 
 export type CommerceBannerCampaign = CommerceAdCampaign & {
-  business: { id: string; title: string; cover_image_url: string | null };
+  business: { id: string; title: string; cover_image_url: string | null; subscription_required?: boolean; subscription_visible_until?: string | null };
 };
 export type CampaignBannerFocus = 'top' | 'center' | 'bottom';
 export type PreparedCampaignBanner = { uri: string; width: 1200; height: 400 };
@@ -142,7 +142,7 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
   } catch (error) {
     const cached = await getOfflineCommerceServices(categoryId) as ServiceRow[];
     if (!cached.length) throw error;
-    rows.push(...cached.filter((service) => !subcategory || service.subcategories?.includes(subcategory)));
+    rows.push(...cached.filter((service) => service.owner_id === null && service.source !== 'owner_registered' && (!subcategory || service.subcategories?.includes(subcategory))));
   }
 
   const services = rows
@@ -179,9 +179,12 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
 
 export async function getActiveCommerceBanners(): Promise<CommerceBannerCampaign[]> {
   const now = new Date().toISOString();
-  const { data, error } = await supabase.from('commerce_ad_campaigns').select('id,service_id,campaign_type,target_url,image_url,starts_at,ends_at,status,commercial_services!inner(id,title,cover_image_url,moderation_status)').eq('campaign_type', 'banner').eq('status', 'active').lte('starts_at', now).gt('ends_at', now).eq('commercial_services.moderation_status', 'approved').order('ends_at');
+  const { data, error } = await supabase.from('commerce_ad_campaigns').select('id,service_id,campaign_type,target_url,image_url,starts_at,ends_at,status,commercial_services!inner(id,title,cover_image_url,moderation_status,subscription_required,subscription_visible_until)').eq('campaign_type', 'banner').eq('status', 'active').lte('starts_at', now).gt('ends_at', now).eq('commercial_services.moderation_status', 'approved').order('ends_at');
   if (error) throw error;
-  return (data ?? []).map((campaign) => ({
+  return (data ?? []).flatMap((campaign) => {
+    const business = Array.isArray(campaign.commercial_services) ? campaign.commercial_services[0] : campaign.commercial_services;
+    if (business?.subscription_required && (!business.subscription_visible_until || new Date(business.subscription_visible_until).getTime() <= Date.now())) return [];
+    return [{
     id: campaign.id,
     service_id: campaign.service_id,
     campaign_type: campaign.campaign_type,
@@ -190,8 +193,9 @@ export async function getActiveCommerceBanners(): Promise<CommerceBannerCampaign
     starts_at: campaign.starts_at,
     ends_at: campaign.ends_at,
     status: campaign.status,
-    business: Array.isArray(campaign.commercial_services) ? campaign.commercial_services[0] : campaign.commercial_services,
-  })) as CommerceBannerCampaign[];
+      business,
+    }];
+  }) as CommerceBannerCampaign[];
 }
 
 export async function getMyCommerceCampaigns(): Promise<CommerceAdCampaign[]> {
@@ -520,6 +524,9 @@ export type OwnerDashboardService = {
   business_updated_at: string | null;
   latitude: number | null;
   longitude: number | null;
+  subscription_required: boolean;
+  subscription_visible_until: string | null;
+  publicly_visible: boolean;
   subscription: { plan: string; status: string; price_amount: number; price_currency: string; current_period_end: string | null } | null;
   metrics: {
     views: number;
@@ -545,10 +552,10 @@ export async function getOwnerDashboard() {
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;
   if (!userId) return [];
-  const { data, error } = await supabase.from('commercial_services').select(SERVICE_FIELDS).eq('owner_id', userId);
+  const { data, error } = await supabase.from('commercial_services').select(`${SERVICE_FIELDS},subscription_required,subscription_visible_until`).eq('owner_id', userId);
   if (error) throw error;
   const services = (data ?? []).map((row) => {
-    const service = row as ServiceRow;
+    const service = row as ServiceRow & { subscription_required: boolean; subscription_visible_until: string | null };
     const knownCategory = service.category as CommerceCategoryId;
     const [longitude, latitude] = service.location?.coordinates ?? [];
     return {
@@ -582,12 +589,14 @@ export async function getOwnerDashboard() {
       business_updated_at: service.business_updated_at,
       latitude: typeof latitude === 'number' && Number.isFinite(latitude) ? latitude : null,
       longitude: typeof longitude === 'number' && Number.isFinite(longitude) ? longitude : null,
+      subscription_required: service.subscription_required,
+      subscription_visible_until: service.subscription_visible_until,
     };
   });
   if (!services.length) return [];
   const [{ data: events, error: eventError }, { data: subscriptions, error: subscriptionError }] = await Promise.all([
     supabase.from('business_events').select('service_id,event_type,attribution,created_at').in('service_id', services.map((service) => service.id)),
-    supabase.from('subscriptions').select('service_id,plan,status,price_amount,price_currency,current_period_end').in('service_id', services.map((service) => service.id)).in('status', ['active', 'pending', 'past_due']).order('created_at', { ascending: false }),
+    supabase.from('subscriptions').select('service_id,plan,status,price_amount,price_currency,current_period_end').in('service_id', services.map((service) => service.id)).eq('plan', 'business').order('created_at', { ascending: false }),
   ]);
   if (eventError) throw eventError;
   if (subscriptionError) throw subscriptionError;
@@ -608,9 +617,12 @@ export async function getOwnerDashboard() {
     const utmLeads = attributedLeads.filter((event) => ATTRIBUTION_KEYS.some((key) => Boolean((event.attribution as BusinessAttribution | null)?.[key]))).length;
     const views = ownEvents.filter((event) => event.event_type === 'impression').length;
     const directLeads = Math.max(0, ownEvents.filter((event) => ['whatsapp_click', 'call', 'directions'].includes(event.event_type)).length - attributedLeads.length);
+    const subscription = (subscriptions ?? []).find((item) => item.service_id === service.id) ?? null;
+    const publiclyVisible = !service.subscription_required || Boolean(service.subscription_visible_until && new Date(service.subscription_visible_until).getTime() > now);
     return {
       ...service,
-      subscription: (subscriptions ?? []).find((subscription) => subscription.service_id === service.id) ?? null,
+      subscription,
+      publicly_visible: publiclyVisible,
       metrics: {
         views,
         whatsapp_clicks: ownEvents.filter((event) => event.event_type === 'whatsapp_click').length,
