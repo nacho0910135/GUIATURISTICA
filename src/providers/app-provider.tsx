@@ -314,9 +314,10 @@ export function AppProvider({ children }: PropsWithChildren) {
       window.location.assign(data.url);
       return false;
     }
-    // Keep the Chrome custom tab attached to the authentication flow instead
-    // of exposing it as a second Android task in the recent-apps screen.
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    // Keep Chrome's custom tab in its own Android task. When the OAuth deep
+    // link returns, Android can then resume this app instead of finishing the
+    // activity together with the browser task.
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo, { showInRecents: true });
     if (result.type !== 'success') return false;
     const sessionCreated = await createSessionFromUrl(result.url);
     if (!sessionCreated) throw new Error('Google completó el acceso, pero no fue posible crear la sesión. Intentá nuevamente.');

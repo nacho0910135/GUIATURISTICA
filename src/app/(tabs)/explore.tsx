@@ -17,7 +17,6 @@ import { AnimatedShine, MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
-import { getPreciseCurrentLocation, type PreciseLocation } from '@/lib/current-location';
 import { getLiveRoadAlerts, type RoadTrafficAlert } from '@/lib/logistics';
 import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
@@ -474,9 +473,6 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   const [difficulty, setDifficulty] = useState('');
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
-  const [locationMode, setLocationMode] = useState<'gps' | 'manual'>('gps');
-  const [gpsLocation, setGpsLocation] = useState<PreciseLocation>();
-  const [locatingGps, setLocatingGps] = useState(false);
   const [manualLocation, setManualLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -495,30 +491,14 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   useEffect(() => {
     if (!difficulty && difficultyOptions.data?.[0]) setDifficulty(difficultyOptions.data[0].id);
   }, [difficulty, difficultyOptions.data]);
-  const selectGpsLocation = async () => {
-    setLocatingGps(true);
-    try {
-      const current = await getPreciseCurrentLocation(language);
-      setGpsLocation(current);
-      void haptic('success');
-    } catch (reason) {
-      setGpsLocation(undefined);
-      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo obtener tu ubicación.' : 'Your location could not be obtained.');
-    } finally {
-      setLocatingGps(false);
-    }
-  };
   const submit = async () => {
     if (!session || name.trim().length < 3 || description.trim().length < 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Agregá un nombre y una descripción de al menos 10 caracteres.' : 'Add a name and a description of at least 10 characters.');
     if (categories.length < 1 || categories.length > 3) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná entre una y tres categorías.' : 'Select between one and three categories.');
     if (photos.length < 1 || photos.length > 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná entre 1 y 10 imágenes del sitio.' : 'Select between 1 and 10 place images.');
-    if (locationMode === 'manual' && !manualLocation) return Alert.alert('Descubriendo CR', language === 'es' ? 'Mové el mapa y tocá el punto donde está el sitio.' : 'Move the map and tap where the place is located.');
+    if (!manualLocation) return Alert.alert('Descubriendo CR', language === 'es' ? 'Ubicá el sitio en el mapa antes de publicarlo.' : 'Place the site on the map before publishing it.');
     setSending(true);
     try {
-      let location: { latitude: number; longitude: number } | undefined = locationMode === 'manual' ? manualLocation : gpsLocation;
-      if (!location) {
-        location = await getPreciseCurrentLocation(language);
-      }
+      const location = manualLocation;
       await publishCommunityPlace({
         user_id: session.user.id,
         name: name.trim(),
@@ -541,8 +521,6 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
       setDescription('');
       setPhotos([]);
       setCategories([]);
-      setLocationMode('gps');
-      setGpsLocation(undefined);
       setManualLocation(undefined);
     } catch (reason) {
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo publicar.' : 'Could not publish.');
@@ -570,31 +548,11 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
             <OptionChoiceField label={language === 'es' ? 'Dificultad física' : 'Difficulty'} language={language} onChange={setDifficulty} options={difficultyOptions.data ?? []} value={difficulty} />
             <View>
               <Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ubicación del sitio' : 'Place location'}</Text>
-              <View className="flex-row gap-2">
-                <Pressable
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: locationMode === 'gps' }}
-                  className={locationMode === 'gps' ? 'flex-1 rounded-control bg-ui-primary p-3 dark:bg-ui-dark-primary' : 'flex-1 rounded-control bg-ui-muted p-3 dark:bg-ui-dark-muted'}
-                  onPress={() => {
-                    void haptic('selection');
-                    setLocationMode('gps');
-                    setManualLocation(undefined);
-                    void selectGpsLocation();
-                  }}
-                >
-                  <Text className={locationMode === 'gps' ? 'text-center text-sm font-black text-white' : 'text-center text-sm font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? '📍 Usar mi GPS' : '📍 Use my GPS'}</Text>
-                </Pressable>
-                <Pressable accessibilityRole="radio" accessibilityState={{ selected: locationMode === 'manual' }} className={locationMode === 'manual' ? 'flex-1 rounded-control bg-ui-primary p-3 dark:bg-ui-dark-primary' : 'flex-1 rounded-control bg-ui-muted p-3 dark:bg-ui-dark-muted'} onPress={() => { void haptic('selection'); setLocationMode('manual'); setManualPickerOpen(true); }}>
-                  <Text className={locationMode === 'manual' ? 'text-center text-sm font-black text-white' : 'text-center text-sm font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? '🗺️ Ubicar en mapa' : '🗺️ Pick on map'}</Text>
-                </Pressable>
-              </View>
-              {locationMode === 'manual' ? (
-                <View className="mt-3 rounded-control border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
+              <View className="rounded-control border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
                   <Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{manualLocation ? `${manualLocation.latitude.toFixed(5)}, ${manualLocation.longitude.toFixed(5)}` : language === 'es' ? 'Abrí el mapa para buscar y elegir el punto exacto.' : 'Open the map to search and choose the exact point.'}</Text>
-                  <Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 dark:bg-ui-dark-secondary" onPress={() => setManualPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? (manualLocation ? 'Cambiar ubicación en el mapa' : 'Seleccionar ubicación manualmente') : (manualLocation ? 'Change map location' : 'Select location manually')}</Text></Pressable>
+                  <Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 dark:bg-ui-dark-secondary" onPress={() => setManualPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? (manualLocation ? 'Cambiar ubicación en el mapa' : 'Ubicar en el mapa') : (manualLocation ? 'Change map location' : 'Pick on map')}</Text></Pressable>
                   <LocationPickerModal initialLocation={manualLocation} language={language} onClose={() => setManualPickerOpen(false)} onConfirm={setManualLocation} open={manualPickerOpen} title={language === 'es' ? 'Ubicación del sitio' : 'Place location'} />
-                </View>
-              ) : <View className="mt-3 rounded-control border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted"><Pressable accessibilityRole="button" className="min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 disabled:opacity-50 dark:bg-ui-dark-secondary" disabled={locatingGps || sending} onPress={() => void selectGpsLocation()}>{locatingGps ? <FrogLoader color="white" /> : <MaterialCommunityIcons name="crosshairs-gps" size={20} color="white" />}<Text className="ml-2 font-black text-white">{language === 'es' ? 'Obtener ubicación precisa' : 'Get precise location'}</Text></Pressable><Text accessibilityRole={gpsLocation ? 'text' : 'alert'} className="mt-3 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{gpsLocation ? `${gpsLocation.latitude.toFixed(6)}, ${gpsLocation.longitude.toFixed(6)} · ±${Math.round(gpsLocation.accuracy ?? 0)} m` : language === 'es' ? 'Obtené y revisá la ubicación antes de publicar.' : 'Get and review the location before publishing.'}</Text></View>}
+              </View>
             </View>
             <Field label={language === 'es' ? 'Descripción y cómo llegar' : 'Description and directions'} multiline onChange={setDescription} placeholder={language === 'es' ? 'Describí el sitio y cómo llegar…' : 'Describe the place and how to get there…'} value={description} />
             <View>
@@ -607,7 +565,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
               {photos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>{photos.map((photo, index) => <View className="relative" key={`${photo.assetId ?? photo.uri}-${index}`}><Image contentFit="cover" source={{ uri: photo.uri }} style={{ borderRadius: 12, height: 88, width: 110 }} /><Pressable accessibilityLabel={language === 'es' ? `Quitar imagen ${index + 1}` : `Remove image ${index + 1}`} accessibilityRole="button" className="absolute right-1 top-1 h-8 w-8 items-center justify-center rounded-full bg-black/70" disabled={sending} onPress={() => setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index))}><MaterialCommunityIcons name="close" size={18} color="white" /></Pressable></View>)}</ScrollView> : null}
             </View>
             <View className="rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft">
-              <Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{locationMode === 'manual' ? (language === 'es' ? 'Se guardará el punto que seleccionaste en el mapa y aparecerá como aporte de la comunidad.' : 'The point you selected on the map will be saved as a community contribution.') : language === 'es' ? 'Se publicará inmediatamente con tu ubicación GPS actual y aparecerá como aporte de la comunidad.' : 'It will publish immediately using your current GPS location and appear as a community contribution.'}</Text>
+              <Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Se guardará el punto que seleccionaste en el mapa y aparecerá como aporte de la comunidad.' : 'The point you selected on the map will be saved as a community contribution.'}</Text>
             </View>
             <MotionPressable accessibilityRole="button" className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>
               {sending ? <FrogLoader color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar ahora' : 'Publish now'}</Text>}

@@ -76,7 +76,6 @@ import {
 import { openNavigation } from "@/lib/logistics";
 import { useApp } from "@/providers/app-provider";
 import { appTheme } from "@/theme/theme";
-import { getPreciseCurrentLocation } from "@/lib/current-location";
 
 type CommercialProfileForm = {
   title: string;
@@ -1363,22 +1362,7 @@ function BusinessLocationEditor({
   location?: MapCoordinate;
   onChange: (location: MapCoordinate | undefined) => void;
 }) {
-  const [locating, setLocating] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const selectCurrentLocation = async () => {
-    setLocating(true);
-    try {
-      const current = await getPreciseCurrentLocation(language);
-      onChange({ latitude: current.latitude, longitude: current.longitude });
-    } catch (error) {
-      Alert.alert(
-        language === "es" ? "Ubicación" : "Location",
-        error instanceof Error ? error.message : "Error",
-      );
-    } finally {
-      setLocating(false);
-    }
-  };
   return (
     <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border">
       <Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">
@@ -1386,38 +1370,17 @@ function BusinessLocationEditor({
       </Text>
       <Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
         {language === "es"
-          ? "Usá tu ubicación actual o tocá el mapa donde está el negocio."
-          : "Use your current location or tap the business location on the map."}
+          ? "Ubicá en el mapa el punto exacto donde está el negocio."
+          : "Place the exact business location on the map."}
       </Text>
-      <Pressable
-        accessibilityRole="button"
-        className="my-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 disabled:opacity-50 dark:bg-ui-dark-secondary"
-        disabled={locating}
-        onPress={() => void selectCurrentLocation()}
-      >
-        {locating ? (
-          <FrogLoader color="white" />
-        ) : (
-          <MaterialCommunityIcons
-            name="crosshairs-gps"
-            size={20}
-            color="white"
-          />
-        )}
-        <Text className="ml-2 font-black text-white">
-          {language === "es"
-            ? "Usar mi ubicación actual"
-            : "Use my current location"}
-        </Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" className="min-h-12 flex-row items-center justify-center rounded-control border border-ui-primary bg-ui-primary-soft px-4 dark:border-ui-dark-primary dark:bg-ui-dark-primary-soft" onPress={() => setPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? (location ? 'Cambiar ubicación en el mapa' : 'Seleccionar ubicación manualmente') : (location ? 'Change map location' : 'Select location manually')}</Text></Pressable>
+      <Pressable accessibilityRole="button" className="mt-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 dark:bg-ui-dark-secondary" onPress={() => setPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? (location ? 'Cambiar ubicación en el mapa' : 'Ubicar en el mapa') : (location ? 'Change map location' : 'Pick on map')}</Text></Pressable>
       <LocationPickerModal initialLocation={location} language={language} onClose={() => setPickerOpen(false)} onConfirm={(coordinate) => onChange(coordinate)} open={pickerOpen} title={language === 'es' ? 'Ubicación del comercio' : 'Business location'} />
       <Text className="mt-2 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
         {location
           ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
           : language === "es"
-            ? "Usá el GPS o abrí el mapa para elegir la ubicación."
-            : "Use GPS or open the map to choose the location."}
+            ? "Abrí el mapa para elegir la ubicación."
+            : "Open the map to choose the location."}
       </Text>
     </View>
   );
@@ -2311,8 +2274,8 @@ export default function CommerceScreen() {
     if (!registrationOrigin) {
       setRegisterError(
         language === "es"
-          ? "Usá tu ubicación actual o marcá el negocio en el mapa."
-          : "Use your current location or mark the business on the map.",
+          ? "Marcá la ubicación del negocio en el mapa."
+          : "Mark the business location on the map.",
       );
       return;
     }
