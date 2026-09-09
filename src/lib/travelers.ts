@@ -10,6 +10,7 @@ export type TravelerTopic = string;
 export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; image_urls: string[]; latitude: number | null; longitude: number | null; recommended_destination_id: string | null; recommended_destination_is_community: boolean; topic: TravelerTopic; created_at: string; user?: TravelerProfile };
 export type ReactionType = string;
 export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
+export type GroupRideComment = { id: string; ride_id: string; user_id: string; body: string; created_at: string; user?: TravelerProfile };
 export type GroupRide = {
   id: string;
   organizer_id: string;
@@ -21,31 +22,40 @@ export type GroupRide = {
   destination_name: string | null;
   destination_latitude: number | null;
   destination_longitude: number | null;
+  status: 'scheduled' | 'cancelled';
+  cancelled_at: string | null;
   starts_at: string;
   created_at: string;
   organizer?: TravelerProfile;
   attendee_count: number;
   attending: boolean;
+  comments: GroupRideComment[];
 };
 
 export async function getGroupRides(topic: TravelerTopic, userId?: string) {
   if (!['moteros', 'enduro', 'convoy_4x4'].includes(topic)) return [] as GroupRide[];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const { data, error } = await supabase
     .from('group_rides')
-    .select('id,organizer_id,topic,title,place_name,latitude,longitude,destination_name,destination_latitude,destination_longitude,starts_at,created_at,organizer:users!group_rides_organizer_id_fkey(id,username,full_name,avatar_url,role),attendees:group_ride_attendees(user_id)')
+    .select('id,organizer_id,topic,title,place_name,latitude,longitude,destination_name,destination_latitude,destination_longitude,status,cancelled_at,starts_at,created_at,organizer:users!group_rides_organizer_id_fkey(id,username,full_name,avatar_url,role),attendees:group_ride_attendees(user_id),comments:group_ride_comments(id,ride_id,user_id,body,created_at,user:users(id,username,full_name,avatar_url,role))')
     .eq('topic', topic)
-    .gte('starts_at', new Date().toISOString())
+    .gte('starts_at', today.toISOString())
     .order('starts_at')
     .limit(10);
   if (error) throw error;
   const oneProfile = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] : value;
   return (data ?? []).map((ride) => {
     const attendees = (ride.attendees ?? []) as { user_id: string }[];
+    const comments = ((ride.comments ?? []) as (Omit<GroupRideComment, 'user'> & { user?: TravelerProfile | TravelerProfile[] | null })[])
+      .map((comment) => ({ ...comment, user: oneProfile(comment.user ?? null) ?? undefined }))
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     return {
       ...ride,
       organizer: oneProfile(ride.organizer) ?? undefined,
       attendee_count: attendees.length,
       attending: Boolean(userId && attendees.some((attendee) => attendee.user_id === userId)),
+      comments,
     } as GroupRide;
   });
 }
@@ -78,6 +88,26 @@ export async function setGroupRideAttendance(rideId: string, userId: string, att
     : supabase.from('group_ride_attendees').delete().eq('ride_id', rideId).eq('user_id', userId);
   const { error } = await query;
   if (error) throw error;
+}
+
+export async function addGroupRideComment(rideId: string, userId: string, body: string) {
+  const comment = body.trim();
+  if (!comment) throw new Error('Escribí tu comentario antes de enviarlo.');
+  if (comment.length > 1000) throw new Error('El comentario puede tener hasta 1000 caracteres.');
+  const { error } = await supabase.from('group_ride_comments').insert({ ride_id: rideId, user_id: userId, body: comment });
+  if (error) throw error;
+}
+
+export async function cancelGroupRide(rideId: string, organizerId: string) {
+  const { data, error } = await supabase.from('group_rides')
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+    .eq('id', rideId)
+    .eq('organizer_id', organizerId)
+    .eq('status', 'scheduled')
+    .select('id')
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error('La rodada ya fue cancelada o no tenés permiso para cancelarla.');
 }
 
 export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {

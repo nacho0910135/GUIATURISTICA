@@ -24,7 +24,7 @@ const visitorOptions: readonly { id: VisitorType; label: string; labelEs: string
   { id: 'tico', label: 'Tico', labelEs: 'Tico' },
   { id: 'foreigner', label: 'Foreigner', labelEs: 'Foreigner' },
 ];
-const SOCIAL_NOTIFICATION_TYPES = ['like', 'comment'] as const;
+const SOCIAL_NOTIFICATION_TYPES = ['like', 'comment', 'ride_comment'] as const;
 type SocialNotificationType = typeof SOCIAL_NOTIFICATION_TYPES[number];
 let lastPresentedSocialNotificationId: string | null = null;
 

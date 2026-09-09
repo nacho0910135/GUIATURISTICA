@@ -164,4 +164,7 @@
 - Moteros, Enduro y 4x4 muestran las próximas rodadas antes del compositor social. Cada rodada conserva título, fecha/hora, nombre del lugar, coordenadas GPS y organizador.
 - Programar una rodada y confirmar «Asistiré» requieren sesión. La confirmación es idempotente por usuario y rodada; el contador proviene de `group_ride_attendees` bajo RLS.
 - El formulario usa selector nativo de fecha/hora en Android/iOS y entrada equivalente en web. El organizador selecciona por separado el punto de reunión y el destino mediante el selector manual compartido; nunca se publica una coordenada aproximada o inventada.
-- Contrato de persistencia: migración `20260907033330_create_group_rides.sql`, tablas `group_rides` y `group_ride_attendees`.
+- La ficha distingue visualmente punto de reunión y destino, y abre Waze directamente hacia el punto de reunión. Las dudas quedan como comentarios visibles en la misma ficha; un comentario de otra persona genera una notificación interna para quien organizó la rodada.
+- Sólo el organizador puede cancelar su rodada. La cancelación es un estado persistente, conserva el historial y los comentarios, queda claramente señalada y bloquea nuevas confirmaciones de asistencia.
+- Una rodada permanece visible durante todo el día local programado y deja de aparecer al comenzar el día siguiente; no se borra de la base de datos.
+- Contrato de persistencia: migraciones `20260907033330_create_group_rides.sql`, `20260909153000_add_group_ride_destination.sql` y `20260909160000_group_ride_details_comments_cancellation.sql`; tablas `group_rides`, `group_ride_attendees` y `group_ride_comments`.
