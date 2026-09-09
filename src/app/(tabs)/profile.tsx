@@ -110,13 +110,16 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
-      .channel(`profile-activity:${userId}`)
+      // React can remount this effect before removeChannel finishes. A unique
+      // topic prevents Supabase from reusing an already-subscribed channel and
+      // rejecting the next postgres_changes listener.
+      .channel(`profile-activity:${userId}:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` }, () => {
         void load();
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [load, queryClient, userId]);
+  }, [load, userId]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
