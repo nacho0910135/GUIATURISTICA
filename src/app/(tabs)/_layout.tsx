@@ -43,6 +43,7 @@ export default function TabsLayout() {
     <Tabs
       backBehavior="initialRoute"
       initialRouteName="explore"
+      screenListeners={{ tabPress: () => { void refreshUserLocation(); } }}
       screenOptions={{
         header: () => <GlobalHeader />,
         tabBarActiveTintColor: colors.primary,
@@ -67,7 +68,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen name="my-trip" options={{ title: 'Mi viaje', tabBarIcon: icon('map-marker-path') }} />
       <Tabs.Screen name="explore" options={{ title: t('explore'), tabBarIcon: exploreIcon }} />
-      <Tabs.Screen name="commerce" listeners={{ tabPress: () => { void refreshUserLocation(); } }} options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />
+      <Tabs.Screen name="commerce" options={{ title: t('commerce'), tabBarIcon: icon('storefront-outline'), tabBarLabel: ({ color }) => <Text style={{ color, fontSize: 8, fontWeight: '800', lineHeight: 9, textAlign: 'center' }}>{t('commerce').replace(' y ', ' y\n').replace(' & ', ' &\n')}</Text> }} />
       <Tabs.Screen name="logistics" options={{ title: 'Buses', tabBarIcon: icon('bus') }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>

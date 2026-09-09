@@ -22,7 +22,7 @@ const provinceShape: GeoJSON.FeatureCollection = {
   features: provinces.map((province) => ({ type: 'Feature', id: province.code, properties: { code: province.code, name: province.name }, geometry: { type: 'MultiPolygon', coordinates: province.polygons.map((ring) => [ring]) } })),
 };
 export type MapCoordinate = { latitude: number; longitude: number };
-type MapCanvasProps = { onLocationPick?: (coordinate: MapCoordinate) => void; selectedLocation?: MapCoordinate };
+type MapCanvasProps = { expanded?: boolean; focusLocation?: MapCoordinate; onLocationPick?: (coordinate: MapCoordinate) => void; onViewportChange?: (coordinate: MapCoordinate) => void; selectedLocation?: MapCoordinate };
 type WeatherMarker = { icon: HTMLSpanElement; label: HTMLSpanElement; marker: mapboxgl.Marker };
 
 function weatherSymbol(icon?: string) {
@@ -33,7 +33,7 @@ function weatherSymbol(icon?: string) {
   return '☁';
 }
 
-export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps = {}) {
+export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportChange, selectedLocation }: MapCanvasProps = {}) {
   const { language } = useApp();
   const { width } = useWindowDimensions();
   const router = useRouter();
@@ -42,18 +42,21 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
   const locationMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const weatherMarkersRef = useRef(new Map<string, WeatherMarker>());
   const onLocationPickRef = useRef(onLocationPick);
+  const onViewportChangeRef = useRef(onViewportChange);
+  const initialFocusLocation = useRef(focusLocation).current;
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(false);
   const wide = width >= 900;
   const selectionMode = Boolean(onLocationPick);
   const weather = useQueries({ queries: provinces.map((province) => ({ queryKey: ['weather', 'province', province.code, language], queryFn: () => getWeather(province.center, language), enabled: !selectionMode, staleTime: WEATHER_STALE_TIME })) });
   useEffect(() => { onLocationPickRef.current = onLocationPick; }, [onLocationPick]);
+  useEffect(() => { onViewportChangeRef.current = onViewportChange; }, [onViewportChange]);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
     const weatherMarkers = weatherMarkersRef.current;
     let loaded = false;
-    const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: selectionMode ? 'mapbox://styles/mapbox/outdoors-v12' : PROVINCE_MAP_STYLE, center: [-84.12, 9.88], zoom: wide ? 7.37 : 6.67, minZoom: 5.7, maxZoom: selectionMode ? 19 : 10, dragRotate: false, pitchWithRotate: false, attributionControl: selectionMode });
+    const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: selectionMode ? 'mapbox://styles/mapbox/streets-v12' : PROVINCE_MAP_STYLE, center: initialFocusLocation ? [initialFocusLocation.longitude, initialFocusLocation.latitude] : [-84.12, 9.88], zoom: initialFocusLocation ? 15 : wide ? 7.37 : 6.67, minZoom: 5.7, maxZoom: selectionMode ? 20 : 10, dragRotate: false, pitchWithRotate: false, attributionControl: selectionMode });
     if (selectionMode) map.scrollZoom.enable(); else map.scrollZoom.disable();
     mapRef.current = map;
     map.on('load', () => {
@@ -62,6 +65,7 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
       setMapError(false);
       if (selectionMode) {
         map.on('click', (event) => onLocationPickRef.current?.({ latitude: event.lngLat.lat, longitude: event.lngLat.lng }));
+        map.on('move', () => { const center = map.getCenter(); onViewportChangeRef.current?.({ latitude: center.lat, longitude: center.lng }); });
         return;
       }
       map.addSource('provinces', { type: 'geojson', data: provinceShape });
@@ -117,7 +121,11 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
       map.remove();
       mapRef.current = null;
     };
-  }, [router, selectionMode, wide]);
+  }, [initialFocusLocation, router, selectionMode, wide]);
+
+  useEffect(() => {
+    if (focusLocation && mapReady) mapRef.current?.flyTo({ center: [focusLocation.longitude, focusLocation.latitude], zoom: 15, duration: 450 });
+  }, [focusLocation, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -146,7 +154,7 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
   }, [mapReady, selectionMode, weather]);
 
   return (
-    <View className="relative overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, boxShadow: '0 10px 28px rgba(30, 91, 117, 0.28)', height: wide ? 530 : 460 }}>
+    <View className="relative overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={expanded ? { flex: 1 } : { borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, boxShadow: '0 10px 28px rgba(30, 91, 117, 0.28)', height: wide ? 530 : 460 }}>
       <div ref={mapContainer} style={{ height: '100%', inset: 0, position: 'absolute', width: '100%' }} />
       {!mapReady ? <View className="absolute inset-0 items-center justify-center bg-ui-background"><MaterialCommunityIcons name={mapError ? 'map-marker-off-outline' : 'map-search-outline'} color="#2A7B4C" size={34} /><Text className="mt-2 px-8 text-center font-bold text-forest-700">{mapError ? (language === 'es' ? 'No se pudo cargar Mapbox. Revisá el token o la conexión.' : 'Mapbox could not load. Check the token or connection.') : (language === 'es' ? 'Cargando mapa de Costa Rica…' : 'Loading Costa Rica map…')}</Text></View> : null}
     </View>

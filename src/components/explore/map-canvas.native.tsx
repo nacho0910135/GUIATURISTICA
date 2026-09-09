@@ -1,7 +1,7 @@
 import Mapbox from '@rnmapbox/maps';
 import { useQueries } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { FrogLoader } from '@/components/frog-loader';
@@ -30,7 +30,13 @@ const provinceShape: GeoJSON.FeatureCollection = {
 };
 
 export type MapCoordinate = { latitude: number; longitude: number };
-type MapCanvasProps = { onLocationPick?: (coordinate: MapCoordinate) => void; selectedLocation?: MapCoordinate };
+type MapCanvasProps = {
+  expanded?: boolean;
+  focusLocation?: MapCoordinate;
+  onLocationPick?: (coordinate: MapCoordinate) => void;
+  onViewportChange?: (coordinate: MapCoordinate) => void;
+  selectedLocation?: MapCoordinate;
+};
 
 function weatherSymbol(icon?: string) {
   if (icon?.startsWith('01')) return '☀';
@@ -40,12 +46,13 @@ function weatherSymbol(icon?: string) {
   return '☁';
 }
 
-export const MapCanvas = memo(function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps = {}) {
+export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportChange, selectedLocation }: MapCanvasProps = {}) {
   const { language } = useApp();
   const { width } = useWindowDimensions();
   const router = useRouter();
   const wide = width >= 900;
   const selectionMode = Boolean(onLocationPick);
+  const cameraRef = useRef<Mapbox.Camera>(null);
   const weather = useQueries({ queries: provinces.map((province) => ({
     queryKey: ['weather', 'province', province.code, language],
     queryFn: () => getWeather(province.center, language),
@@ -62,6 +69,9 @@ export const MapCanvas = memo(function MapCanvas({ onLocationPick, selectedLocat
     const name = event.features[0]?.properties?.name;
     if (typeof name === 'string') openProvince(name);
   }, [openProvince]);
+  useEffect(() => {
+    if (focusLocation) cameraRef.current?.flyTo([focusLocation.longitude, focusLocation.latitude], 450);
+  }, [focusLocation]);
   const weatherAnnotations = useMemo(() => selectionMode ? null : provinces.map((province, index) => {
     const current = weather[index].data;
     return (
@@ -77,9 +87,9 @@ export const MapCanvas = memo(function MapCanvas({ onLocationPick, selectedLocat
   }), [openProvince, selectionMode, weather, wide]);
 
   return (
-    <View className="overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 371 : 322, position: 'relative' }}>
-      <Mapbox.MapView attributionEnabled compassEnabled={false} logoEnabled onPress={onLocationPick ? handleMapPress : undefined} pitchEnabled={false} rotateEnabled={false} scaleBarEnabled={false} style={StyleSheet.absoluteFill} styleJSON={selectionMode ? undefined : PROVINCE_MAP_STYLE} styleURL={selectionMode ? Mapbox.StyleURL.Outdoors : undefined}>
-        <Mapbox.Camera defaultSettings={{ centerCoordinate: [-84.12, 9.88], zoomLevel: wide ? 7.37 : 6.67 }} maxZoomLevel={selectionMode ? 19 : 10} minZoomLevel={5} />
+    <View className="overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={expanded ? styles.expandedMap : { borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 371 : 322, position: 'relative' }}>
+      <Mapbox.MapView attributionEnabled compassEnabled logoEnabled onCameraChanged={onViewportChange ? (state) => { const [longitude, latitude] = state.properties.center; onViewportChange({ latitude, longitude }); } : undefined} onPress={onLocationPick ? handleMapPress : undefined} pitchEnabled={false} rotateEnabled={false} scaleBarEnabled={false} style={StyleSheet.absoluteFill} styleJSON={selectionMode ? undefined : PROVINCE_MAP_STYLE} styleURL={selectionMode ? 'mapbox://styles/mapbox/streets-v12' : undefined}>
+        <Mapbox.Camera ref={cameraRef} defaultSettings={{ centerCoordinate: focusLocation ? [focusLocation.longitude, focusLocation.latitude] : [-84.12, 9.88], zoomLevel: focusLocation ? 15 : wide ? 7.37 : 6.67 }} maxZoomLevel={selectionMode ? 20 : 10} minZoomLevel={5} />
         {!selectionMode ? (
           <Mapbox.ShapeSource id="provinces" shape={provinceShape} onPress={handleProvincePress}>
             <Mapbox.FillLayer id="province-fills" style={{ fillColor: ['get', 'color'], fillOpacity: 1 }} />
@@ -100,6 +110,7 @@ export const MapCanvas = memo(function MapCanvas({ onLocationPick, selectedLocat
 });
 
 const styles = StyleSheet.create({
+  expandedMap: { flex: 1, position: 'relative' },
   selectedMarker: { backgroundColor: '#F26A44', borderColor: '#FFFFFF', borderRadius: 10, borderWidth: 3, height: 20, width: 20 },
   weatherIcon: { color: '#F26A44', fontWeight: '700', textAlign: 'center', textShadowColor: '#F8F6F0', textShadowRadius: 3 },
   weatherLabel: { color: '#F8F6F0', fontWeight: '700', textAlign: 'center', textShadowColor: '#1E5B75', textShadowRadius: 3 },

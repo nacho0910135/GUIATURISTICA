@@ -66,6 +66,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const locationRefreshInFlight = useRef(false);
   const locationWatcher = useRef<Location.LocationSubscription | null>(null);
+  const locationWatcherActive = useRef(false);
   const locationGeneration = useRef(0);
   const oauthCallbackInFlight = useRef<Promise<boolean> | null>(null);
   const lastOAuthCallbackUrl = useRef<string | undefined>(undefined);
@@ -83,11 +84,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     const active = () => generation === locationGeneration.current;
     setLocating(true);
     setLocationError(null);
-    locationWatcher.current?.remove();
-    locationWatcher.current = null;
-    setUserLocation(null);
-    const accept = (position: Location.LocationObject) => {
-      if (!active() || position.timestamp < lastLocationTimestamp.current) return;
+    const accept = (position: Location.LocationObject, requireActiveGeneration = true) => {
+      if ((requireActiveGeneration && !active()) || position.timestamp < lastLocationTimestamp.current) return;
       if (!isUsablePosition(position)) {
         setUserLocation(null);
         setLocationError('unavailable');
@@ -101,15 +99,22 @@ export function AppProvider({ children }: PropsWithChildren) {
     };
     try {
       let permission = await Location.getForegroundPermissionsAsync();
-      if (!permission.granted && permission.canAskAgain) permission = await Location.requestForegroundPermissionsAsync();
       if (!active()) return;
       if (!permission.granted) {
         lastLocationTimestamp.current = 0;
+        locationWatcherActive.current = false;
+        locationWatcher.current?.remove();
+        locationWatcher.current = null;
+        setUserLocation(null);
         setLocationError('denied');
         return;
       }
       if (!hasPrecisePermission(permission)) {
         lastLocationTimestamp.current = 0;
+        locationWatcherActive.current = false;
+        locationWatcher.current?.remove();
+        locationWatcher.current = null;
+        setUserLocation(null);
         setLocationError('unavailable');
         return;
       }
@@ -119,14 +124,17 @@ export function AppProvider({ children }: PropsWithChildren) {
         timeInterval: 10000,
         ...(Platform.OS === 'web' ? { maximumAge: 0, timeout: 20000 } : {}),
       };
-      const watcher = await Location.watchPositionAsync(options, accept, () => {
-        if (!active()) return;
-        setUserLocation(null);
-        setLocationError('unavailable');
-        setLocating(false);
-      });
-      if (!active()) { watcher.remove(); return; }
-      locationWatcher.current = watcher;
+      if (!locationWatcher.current) {
+        locationWatcherActive.current = true;
+        const watcher = await Location.watchPositionAsync(options, (position) => { if (locationWatcherActive.current) accept(position, false); }, () => {
+          if (!locationWatcherActive.current) return;
+          setUserLocation(null);
+          setLocationError('unavailable');
+          setLocating(false);
+        });
+        if (!active()) { watcher.remove(); return; }
+        locationWatcher.current = watcher;
+      }
       let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
         const current = await Promise.race([
@@ -153,8 +161,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const timer = setInterval(() => {
       if (Date.now() - lastLocationTimestamp.current > LOCATION_MAX_AGE_MS) {
         setUserLocation(null);
-        // Recheck silent sensors and permissions without a screen-specific GPS.
-        if (lastLocationTimestamp.current > 0 && AppState.currentState === 'active') void refreshUserLocation();
+        if (AppState.currentState === 'active') void refreshUserLocation();
       }
     }, 15000);
     return () => {
@@ -162,6 +169,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       locationGeneration.current += 1;
       locationRefreshInFlight.current = false;
       locationWatcher.current?.remove();
+      locationWatcherActive.current = false;
       locationWatcher.current = null;
     };
   }, [refreshUserLocation]);
@@ -235,6 +243,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       if (state !== 'active') {
         locationGeneration.current += 1;
         locationRefreshInFlight.current = false;
+        locationWatcherActive.current = false;
         locationWatcher.current?.remove();
         locationWatcher.current = null;
         setUserLocation(null);
@@ -247,7 +256,23 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [refreshUserLocation, syncSession]);
 
   useEffect(() => {
-    void refreshUserLocation().catch(() => undefined);
+    let cancelled = false;
+    const requestStartupLocation = async () => {
+      let permission = await Location.getForegroundPermissionsAsync();
+      if (!permission.granted && permission.canAskAgain) permission = await Location.requestForegroundPermissionsAsync();
+      if (cancelled) return;
+      if (!permission.granted) {
+        setLocationError('denied');
+        return;
+      }
+      if (!hasPrecisePermission(permission)) {
+        setLocationError('unavailable');
+        return;
+      }
+      await refreshUserLocation();
+    };
+    void requestStartupLocation().catch(() => { if (!cancelled) setLocationError('unavailable'); });
+    return () => { cancelled = true; };
   }, [refreshUserLocation]);
 
   const signIn = useCallback(async (email: string, password: string) => {

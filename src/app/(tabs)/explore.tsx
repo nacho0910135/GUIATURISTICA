@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { MapCanvas } from '@/components/explore/map-canvas';
+import { LocationPickerModal } from '@/components/location-picker-modal';
 import { AppFooter } from '@/components/app-footer';
 import { InformationReportModal } from '@/components/information-report-modal';
 import { AnimatedShine, MotionPressable, Skeleton } from '@/components/motion';
@@ -480,6 +481,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
     latitude: number;
     longitude: number;
   }>();
+  const [manualPickerOpen, setManualPickerOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const pickPhotos = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -582,15 +584,15 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
                 >
                   <Text className={locationMode === 'gps' ? 'text-center text-sm font-black text-white' : 'text-center text-sm font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? '📍 Usar mi GPS' : '📍 Use my GPS'}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="radio" accessibilityState={{ selected: locationMode === 'manual' }} className={locationMode === 'manual' ? 'flex-1 rounded-control bg-ui-primary p-3 dark:bg-ui-dark-primary' : 'flex-1 rounded-control bg-ui-muted p-3 dark:bg-ui-dark-muted'} onPress={() => { void haptic('selection'); setLocationMode('manual'); }}>
+                <Pressable accessibilityRole="radio" accessibilityState={{ selected: locationMode === 'manual' }} className={locationMode === 'manual' ? 'flex-1 rounded-control bg-ui-primary p-3 dark:bg-ui-dark-primary' : 'flex-1 rounded-control bg-ui-muted p-3 dark:bg-ui-dark-muted'} onPress={() => { void haptic('selection'); setLocationMode('manual'); setManualPickerOpen(true); }}>
                   <Text className={locationMode === 'manual' ? 'text-center text-sm font-black text-white' : 'text-center text-sm font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? '🗺️ Ubicar en mapa' : '🗺️ Pick on map'}</Text>
                 </Pressable>
               </View>
               {locationMode === 'manual' ? (
-                <View className="mt-3 overflow-hidden rounded-control border border-ui-border dark:border-ui-dark-border">
-                  <Text className="p-3 text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Mové el mapa, acercá o alejále y tocá el punto exacto. El pin verde muestra tu selección.' : 'Pan or zoom the map, then tap the exact point. The green pin shows your selection.'}</Text>
-                  <MapCanvas onLocationPick={setManualLocation} selectedLocation={manualLocation} />
-                  <Text className="p-3 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{manualLocation ? `${manualLocation.latitude.toFixed(5)}, ${manualLocation.longitude.toFixed(5)}` : language === 'es' ? 'Tocá el mapa para elegir la ubicación.' : 'Tap the map to choose a location.'}</Text>
+                <View className="mt-3 rounded-control border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
+                  <Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{manualLocation ? `${manualLocation.latitude.toFixed(5)}, ${manualLocation.longitude.toFixed(5)}` : language === 'es' ? 'Abrí el mapa para buscar y elegir el punto exacto.' : 'Open the map to search and choose the exact point.'}</Text>
+                  <Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 dark:bg-ui-dark-secondary" onPress={() => setManualPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? (manualLocation ? 'Cambiar ubicación en el mapa' : 'Seleccionar ubicación manualmente') : (manualLocation ? 'Change map location' : 'Select location manually')}</Text></Pressable>
+                  <LocationPickerModal initialLocation={manualLocation} language={language} onClose={() => setManualPickerOpen(false)} onConfirm={setManualLocation} open={manualPickerOpen} title={language === 'es' ? 'Ubicación del sitio' : 'Place location'} />
                 </View>
               ) : <View className="mt-3 rounded-control border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted"><Pressable accessibilityRole="button" className="min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 disabled:opacity-50 dark:bg-ui-dark-secondary" disabled={locatingGps || sending} onPress={() => void selectGpsLocation()}>{locatingGps ? <FrogLoader color="white" /> : <MaterialCommunityIcons name="crosshairs-gps" size={20} color="white" />}<Text className="ml-2 font-black text-white">{language === 'es' ? 'Obtener ubicación precisa' : 'Get precise location'}</Text></Pressable><Text accessibilityRole={gpsLocation ? 'text' : 'alert'} className="mt-3 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{gpsLocation ? `${gpsLocation.latitude.toFixed(6)}, ${gpsLocation.longitude.toFixed(6)} · ±${Math.round(gpsLocation.accuracy ?? 0)} m` : language === 'es' ? 'Obtené y revisá la ubicación antes de publicar.' : 'Get and review the location before publishing.'}</Text></View>}
             </View>

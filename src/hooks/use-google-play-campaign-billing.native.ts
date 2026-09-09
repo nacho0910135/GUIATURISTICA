@@ -20,14 +20,15 @@ type PurchaseMetadata = {
   targetUrl?: string;
   imageUrl?: string;
 };
+type Campaign = {
+  campaign_type: "featured" | "banner";
+  image_url: string | null;
+  service_id: string;
+  status: "active" | "expired" | "refunded";
+  target_url: string | null;
+};
 type Options = {
-  campaigns?: Array<{
-    campaign_type: "featured" | "banner";
-    image_url: string | null;
-    service_id: string;
-    status: "active" | "expired" | "refunded";
-    target_url: string | null;
-  }>;
+  campaigns?: Campaign[];
   onError: (message: string) => void;
   onVerified: () => void | Promise<void>;
   userId?: string;
@@ -91,7 +92,9 @@ export function useGooglePlayCampaignBilling({
         }
         if (!data?.verified)
           throw new Error("Google Play todavía no confirmó esta campaña.");
-        if (!purchase.isAcknowledgedAndroid)
+        if (!(
+          "isAcknowledgedAndroid" in purchase && purchase.isAcknowledgedAndroid
+        ))
           await finishTransaction({ purchase, isConsumable: false });
         metadataByProduct.current.delete(purchase.productId);
         await onVerifiedRef.current();

@@ -23,7 +23,8 @@ import {
 
 import { InformationReportModal } from "@/components/information-report-modal";
 import { AnimatedShine } from "@/components/motion";
-import { MapCanvas, type MapCoordinate } from "@/components/explore/map-canvas";
+import type { MapCoordinate } from "@/components/explore/map-canvas";
+import { LocationPickerModal } from "@/components/location-picker-modal";
 import { ThemedAlert as Alert } from "@/components/themed-alert";
 import { getAppOptions, type AppOption } from "@/lib/app-options";
 import { useGooglePlayCampaignBilling } from "@/hooks/use-google-play-campaign-billing";
@@ -1362,6 +1363,7 @@ function BusinessLocationEditor({
   onChange: (location: MapCoordinate | undefined) => void;
 }) {
   const [locating, setLocating] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const selectCurrentLocation = async () => {
     setLocating(true);
     try {
@@ -1407,15 +1409,14 @@ function BusinessLocationEditor({
             : "Use my current location"}
         </Text>
       </Pressable>
-      <View className="overflow-hidden rounded-card">
-        <MapCanvas onLocationPick={onChange} selectedLocation={location} />
-      </View>
+      <Pressable accessibilityRole="button" className="min-h-12 flex-row items-center justify-center rounded-control border border-ui-primary bg-ui-primary-soft px-4 dark:border-ui-dark-primary dark:bg-ui-dark-primary-soft" onPress={() => setPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? (location ? 'Cambiar ubicación en el mapa' : 'Seleccionar ubicación manualmente') : (location ? 'Change map location' : 'Select location manually')}</Text></Pressable>
+      <LocationPickerModal initialLocation={location} language={language} onClose={() => setPickerOpen(false)} onConfirm={(coordinate) => onChange(coordinate)} open={pickerOpen} title={language === 'es' ? 'Ubicación del comercio' : 'Business location'} />
       <Text className="mt-2 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
         {location
           ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
           : language === "es"
-            ? "Tocá el mapa para marcar la ubicación."
-            : "Tap the map to set the location."}
+            ? "Usá el GPS o abrí el mapa para elegir la ubicación."
+            : "Use GPS or open the map to choose the location."}
       </Text>
     </View>
   );

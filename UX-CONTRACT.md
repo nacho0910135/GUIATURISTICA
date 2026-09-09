@@ -151,10 +151,11 @@
 ## Ubicación y distancias durante la sesión
 
 - AppProvider es el dueño del GPS de la sesión. Explorar, sitios turísticos y Comercios consumen esa misma ubicación; se actualiza en primer plano y al volver a la app.
-- Se solicita permiso al iniciar. Los permisos aproximados de Android/iOS no habilitan distancias ni captura GPS. Sólo se aceptan coordenadas válidas, con precisión reportada de hasta 100 metros y antigüedad máxima de 60 segundos. No se reutiliza la última ubicación conocida del dispositivo.
+- Se solicita permiso de ubicación precisa una sola vez al iniciar. Los permisos aproximados de Android/iOS no habilitan distancias ni captura GPS. Durante la sesión, cada cambio de pestaña actualiza silenciosamente la coordenada con el permiso ya concedido, sin volver a mostrar solicitudes. Sólo se aceptan coordenadas válidas, con precisión reportada de hasta 100 metros y antigüedad máxima de 60 segundos. No se reutiliza la última ubicación conocida del dispositivo.
 - Sin una lectura fiable no se inventa un origen ni se muestra una distancia numérica. La captura y Comercios permiten reintentar; los catálogos siguen utilizables.
 - Las tarjetas, listas y detalles de sitios y comercios muestran una distancia geodésica aproximada y se ordenan por ella. El texto dice siempre «en línea recta» para distinguirla de la ruta por carretera que calcula Waze.
 - Agregar sitio, agregar/editar comercio y compartir ubicación en Comunidad usan getPreciseCurrentLocation. Cada acción solicita una lectura fresca y tiene un límite de espera. La selección explícita queda fijada al punto elegido; no se mueve silenciosamente antes de publicar.
+- La selección manual de sitios, comercios y rodadas usa un único selector de mapa urbano a pantalla completa. El pin permanece centrado mientras la persona desplaza o amplía el mapa; la búsqueda se limita a Costa Rica y la confirmación explícita devuelve el punto al formulario dueño.
 - Al registrar un comercio no se precarga automáticamente la posición del visitante como ubicación del negocio: se obtiene con la acción GPS o se marca en el mapa.
 - Verificación reproducible: npm run check:location. El comportamiento físico del GPS y del permiso preciso requiere validación en dispositivo.
 
@@ -162,5 +163,5 @@
 
 - Moteros, Enduro y 4x4 muestran las próximas rodadas antes del compositor social. Cada rodada conserva título, fecha/hora, nombre del lugar, coordenadas GPS y organizador.
 - Programar una rodada y confirmar «Asistiré» requieren sesión. La confirmación es idempotente por usuario y rodada; el contador proviene de `group_ride_attendees` bajo RLS.
-- El formulario usa selector nativo de fecha/hora en Android/iOS y entrada equivalente en web. El organizador navega por el mapa y marca manualmente el punto de encuentro, porque no se asume que esté físicamente allí al programar la rodada; nunca se publica una coordenada aproximada o inventada.
+- El formulario usa selector nativo de fecha/hora en Android/iOS y entrada equivalente en web. El organizador selecciona por separado el punto de reunión y el destino mediante el selector manual compartido; nunca se publica una coordenada aproximada o inventada.
 - Contrato de persistencia: migración `20260907033330_create_group_rides.sql`, tablas `group_rides` y `group_ride_attendees`.

@@ -18,6 +18,9 @@ export type GroupRide = {
   place_name: string;
   latitude: number;
   longitude: number;
+  destination_name: string | null;
+  destination_latitude: number | null;
+  destination_longitude: number | null;
   starts_at: string;
   created_at: string;
   organizer?: TravelerProfile;
@@ -29,7 +32,7 @@ export async function getGroupRides(topic: TravelerTopic, userId?: string) {
   if (!['moteros', 'enduro', 'convoy_4x4'].includes(topic)) return [] as GroupRide[];
   const { data, error } = await supabase
     .from('group_rides')
-    .select('id,organizer_id,topic,title,place_name,latitude,longitude,starts_at,created_at,organizer:users!group_rides_organizer_id_fkey(id,username,full_name,avatar_url,role),attendees:group_ride_attendees(user_id)')
+    .select('id,organizer_id,topic,title,place_name,latitude,longitude,destination_name,destination_latitude,destination_longitude,starts_at,created_at,organizer:users!group_rides_organizer_id_fkey(id,username,full_name,avatar_url,role),attendees:group_ride_attendees(user_id)')
     .eq('topic', topic)
     .gte('starts_at', new Date().toISOString())
     .order('starts_at')
@@ -47,11 +50,12 @@ export async function getGroupRides(topic: TravelerTopic, userId?: string) {
   });
 }
 
-export async function createGroupRide(input: { organizerId: string; topic: TravelerTopic; title: string; placeName: string; latitude: number; longitude: number; startsAt: Date }) {
+export async function createGroupRide(input: { organizerId: string; topic: TravelerTopic; title: string; placeName: string; latitude: number; longitude: number; destinationName: string; destinationLatitude: number; destinationLongitude: number; startsAt: Date }) {
   const title = input.title.trim();
   const placeName = input.placeName.trim();
+  const destinationName = input.destinationName.trim();
   if (!['moteros', 'enduro', 'convoy_4x4'].includes(input.topic)) throw new Error('Este grupo no admite rodadas.');
-  if (title.length < 3 || placeName.length < 3) throw new Error('Completá el nombre de la rodada y el punto de encuentro.');
+  if (title.length < 3 || placeName.length < 3 || destinationName.length < 3) throw new Error('Completá el nombre de la rodada, el punto de reunión y el destino.');
   if (input.startsAt.getTime() <= Date.now()) throw new Error('Elegí una fecha y hora futuras.');
   const { error } = await supabase.from('group_rides').insert({
     organizer_id: input.organizerId,
@@ -60,6 +64,9 @@ export async function createGroupRide(input: { organizerId: string; topic: Trave
     place_name: placeName,
     latitude: input.latitude,
     longitude: input.longitude,
+    destination_name: destinationName,
+    destination_latitude: input.destinationLatitude,
+    destination_longitude: input.destinationLongitude,
     starts_at: input.startsAt.toISOString(),
   });
   if (error) throw error;

@@ -1,13 +1,14 @@
 import type { CampaignOfferId } from "@/lib/billing";
 
+type Campaign = {
+  campaign_type: "featured" | "banner";
+  image_url: string | null;
+  service_id: string;
+  status: "active" | "expired" | "refunded";
+  target_url: string | null;
+};
 type Options = {
-  campaigns?: Array<{
-    campaign_type: "featured" | "banner";
-    image_url: string | null;
-    service_id: string;
-    status: "active" | "expired" | "refunded";
-    target_url: string | null;
-  }>;
+  campaigns?: Campaign[];
   onError: (message: string) => void;
   onVerified: () => void | Promise<void>;
   userId?: string;

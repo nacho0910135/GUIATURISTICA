@@ -9,12 +9,11 @@ export type PreciseLocation = {
 };
 
 export async function getPreciseCurrentLocation(language: 'es' | 'en'): Promise<PreciseLocation> {
-  let permission = await Location.getForegroundPermissionsAsync();
-  if (!permission.granted && permission.canAskAgain) permission = await Location.requestForegroundPermissionsAsync();
+  const permission = await Location.getForegroundPermissionsAsync();
   if (!hasPrecisePermission(permission)) {
     throw new Error(language === 'es'
-      ? 'Permití el acceso a la ubicación precisa para usar tu posición actual.'
-      : 'Allow precise location access to use your current position.');
+      ? 'La ubicación precisa no está activa. Habilitala en los ajustes del teléfono o elegí el punto manualmente.'
+      : 'The precise location is not enabled. Turn it on in phone settings or choose the point manually.');
   }
 
   let timeout: ReturnType<typeof setTimeout> | undefined;
