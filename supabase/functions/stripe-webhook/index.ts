@@ -1,11 +1,13 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 type StripeSubscription = {
   id: string;
   status: string;
   current_period_end?: number;
   metadata?: Record<string, string | undefined>;
-  items?: { data?: { price?: { unit_amount?: number | null; currency?: string } }[] };
+  items?: {
+    data?: { price?: { unit_amount?: number | null; currency?: string } }[];
+  };
 };
 
 type StripeCheckoutSession = {
@@ -19,98 +21,195 @@ type StripeCheckoutSession = {
 };
 
 const offers = {
-  universal_monthly: { plan: 'no_ads', amount: 2, currency: 'usd' },
-  universal_annual: { plan: 'no_ads', amount: 20, currency: 'usd' },
-  visitor_pass_30d: { plan: 'no_ads', amount: 5, currency: 'usd' },
-  business_monthly: { plan: 'business', amount: 9.99, currency: 'usd' },
-  featured_30d: { campaignType: 'featured', amount: 5, currency: 'usd' },
-  banner_30d: { campaignType: 'banner', amount: 15, currency: 'usd' },
-  featured_monthly: { campaignType: 'featured', amount: 5, currency: 'usd' },
-  banner_monthly: { campaignType: 'banner', amount: 15, currency: 'usd' },
+  universal_monthly: { plan: "no_ads", amount: 2, currency: "usd" },
+  universal_annual: { plan: "no_ads", amount: 20, currency: "usd" },
+  visitor_pass_30d: { plan: "no_ads", amount: 5, currency: "usd" },
+  business_monthly: { plan: "business", amount: 9.99, currency: "usd" },
+  // Validate sessions already created before one-time campaigns were retired.
+  featured_30d: { campaignType: "featured", amount: 5, currency: "usd" },
+  banner_30d: { campaignType: "banner", amount: 15, currency: "usd" },
+  featured_monthly: { campaignType: "featured", amount: 5, currency: "usd" },
+  banner_monthly: { campaignType: "banner", amount: 50, currency: "usd" },
   // Keep validating pre-migration subscriptions until they naturally end.
-  travel_pass_national_monthly: { plan: 'no_ads', amount: 1900, currency: 'crc' },
-  travel_pass_national_annual: { plan: 'no_ads', amount: 9900, currency: 'crc' },
-  travel_pass_foreign_30d: { plan: 'no_ads', amount: 5.99, currency: 'usd' },
-  business_pro: { plan: 'business', amount: 4900, currency: 'crc' },
-  business_growth: { plan: 'sponsored', amount: 24.99, currency: 'usd' },
+  travel_pass_national_monthly: {
+    plan: "no_ads",
+    amount: 1900,
+    currency: "crc",
+  },
+  travel_pass_national_annual: {
+    plan: "no_ads",
+    amount: 9900,
+    currency: "crc",
+  },
+  travel_pass_foreign_30d: { plan: "no_ads", amount: 5.99, currency: "usd" },
+  business_pro: { plan: "business", amount: 4900, currency: "crc" },
+  business_growth: { plan: "sponsored", amount: 24.99, currency: "usd" },
 } as const;
 
 Deno.serve(async (request) => {
-  if (request.method !== 'POST') return new Response('method_not_allowed', { status: 405 });
-  const signingSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  if (!signingSecret || !serviceKey || !supabaseUrl) return new Response('billing_not_configured', { status: 503 });
+  if (request.method !== "POST")
+    return new Response("method_not_allowed", { status: 405 });
+  const signingSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  if (!signingSecret || !serviceKey || !supabaseUrl)
+    return new Response("billing_not_configured", { status: 503 });
 
   const payload = await request.text();
-  if (!await validSignature(payload, request.headers.get('stripe-signature'), signingSecret)) return new Response('invalid_signature', { status: 400 });
-  const event = JSON.parse(payload) as { type?: string; data?: { object?: StripeSubscription | StripeCheckoutSession } };
-  if (!['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type ?? '')) return new Response('ignored', { status: 200 });
+  if (
+    !(await validSignature(
+      payload,
+      request.headers.get("stripe-signature"),
+      signingSecret,
+    ))
+  )
+    return new Response("invalid_signature", { status: 400 });
+  const event = JSON.parse(payload) as {
+    type?: string;
+    data?: { object?: StripeSubscription | StripeCheckoutSession };
+  };
+  if (
+    ![
+      "checkout.session.completed",
+      "checkout.session.async_payment_succeeded",
+      "customer.subscription.updated",
+      "customer.subscription.deleted",
+    ].includes(event.type ?? "")
+  )
+    return new Response("ignored", { status: 200 });
   const object = event.data?.object;
-  if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && !(object as StripeCheckoutSession | undefined)?.subscription) {
-    return handleOneTimePass(object as StripeCheckoutSession, supabaseUrl, serviceKey);
+  if (
+    (event.type === "checkout.session.completed" ||
+      event.type === "checkout.session.async_payment_succeeded") &&
+    !(object as StripeCheckoutSession | undefined)?.subscription
+  ) {
+    return handleOneTimePass(
+      object as StripeCheckoutSession,
+      supabaseUrl,
+      serviceKey,
+    );
   }
-  const subscriptionId = event.type?.startsWith('checkout.session.') ? (object as StripeCheckoutSession | undefined)?.subscription : (object as StripeSubscription | undefined)?.id;
-  if (!subscriptionId) return new Response('ignored', { status: 200 });
+  const subscriptionId = event.type?.startsWith("checkout.session.")
+    ? (object as StripeCheckoutSession | undefined)?.subscription
+    : (object as StripeSubscription | undefined)?.id;
+  if (!subscriptionId) return new Response("ignored", { status: 200 });
 
-  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-  if (!stripeKey) return new Response('billing_not_configured', { status: 503 });
-  const stripe = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, { headers: { Authorization: `Bearer ${stripeKey}` } });
-  if (!stripe.ok) return new Response('subscription_lookup_failed', { status: 502 });
-  const subscription = await stripe.json() as StripeSubscription;
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey)
+    return new Response("billing_not_configured", { status: 503 });
+  const stripe = await fetch(
+    `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
+    { headers: { Authorization: `Bearer ${stripeKey}` } },
+  );
+  if (!stripe.ok)
+    return new Response("subscription_lookup_failed", { status: 502 });
+  const subscription = (await stripe.json()) as StripeSubscription;
   const userId = subscription.metadata?.user_id;
   const plan = subscription.metadata?.plan;
   const offerId = subscription.metadata?.offer_id;
-  if (offerId && isOffer(offerId) && 'campaignType' in offers[offerId]) return handleCampaignSubscription(subscription, event.type ?? '', supabaseUrl, serviceKey);
-  if (!userId || !isPlan(plan) || !isOffer(offerId)) return new Response('ignored', { status: 200 });
+  if (offerId && isOffer(offerId) && "campaignType" in offers[offerId])
+    return handleCampaignSubscription(
+      subscription,
+      event.type ?? "",
+      supabaseUrl,
+      serviceKey,
+    );
+  if (!userId || !isPlan(plan) || !isOffer(offerId))
+    return new Response("ignored", { status: 200 });
   const subscriptionOffer = offers[offerId];
-  if (!('plan' in subscriptionOffer) || plan !== subscriptionOffer.plan) return new Response('ignored', { status: 200 });
+  if (!("plan" in subscriptionOffer) || plan !== subscriptionOffer.plan)
+    return new Response("ignored", { status: 200 });
 
   const amount = subscription.items?.data?.[0]?.price?.unit_amount;
-  const currency = subscription.items?.data?.[0]?.price?.currency?.toLowerCase();
+  const currency =
+    subscription.items?.data?.[0]?.price?.currency?.toLowerCase();
   const offer = subscriptionOffer;
-  if (amount == null || currency !== offer.currency || amount !== offer.amount * 100) return new Response('unexpected_price', { status: 400 });
+  if (
+    amount == null ||
+    currency !== offer.currency ||
+    amount !== offer.amount * 100
+  )
+    return new Response("unexpected_price", { status: 400 });
   const serviceId = subscription.metadata?.service_id || null;
-  const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  const { error } = await supabase.from('subscriptions').upsert({
-    user_id: userId,
-    service_id: serviceId,
-    plan,
-    offer_id: offerId,
-    status: databaseStatus(subscription.status),
-    price_amount: amount / 100,
-    price_currency: currency.toUpperCase(),
-    provider: 'stripe',
-    provider_subscription_id: subscription.id,
-    current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'provider_subscription_id' });
-  if (error) return new Response('subscription_write_failed', { status: 500 });
-  if (serviceId && plan === 'sponsored') {
-    const { count, error: countError } = await supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('service_id', serviceId).eq('plan', 'sponsored').eq('status', 'active');
-    if (countError) return new Response('sponsorship_lookup_failed', { status: 500 });
-    const { error: sponsorshipError } = await supabase.from('commercial_services').update({ is_sponsored: Boolean(count) }).eq('id', serviceId).eq('owner_id', userId);
-    if (sponsorshipError) return new Response('sponsorship_write_failed', { status: 500 });
+  const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false },
+  });
+  const { error } = await supabase.from("subscriptions").upsert(
+    {
+      user_id: userId,
+      service_id: serviceId,
+      plan,
+      offer_id: offerId,
+      status: databaseStatus(subscription.status),
+      price_amount: amount / 100,
+      price_currency: currency.toUpperCase(),
+      provider: "stripe",
+      provider_subscription_id: subscription.id,
+      current_period_end: subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000).toISOString()
+        : null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "provider_subscription_id" },
+  );
+  if (error) return new Response("subscription_write_failed", { status: 500 });
+  if (serviceId && plan === "sponsored") {
+    const { count, error: countError } = await supabase
+      .from("subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("service_id", serviceId)
+      .eq("plan", "sponsored")
+      .eq("status", "active");
+    if (countError)
+      return new Response("sponsorship_lookup_failed", { status: 500 });
+    const { error: sponsorshipError } = await supabase
+      .from("commercial_services")
+      .update({ is_sponsored: Boolean(count) })
+      .eq("id", serviceId)
+      .eq("owner_id", userId);
+    if (sponsorshipError)
+      return new Response("sponsorship_write_failed", { status: 500 });
   }
-  return new Response('ok', { status: 200 });
+  return new Response("ok", { status: 200 });
 });
 
-async function handleOneTimePass(session: StripeCheckoutSession, supabaseUrl: string, serviceKey: string) {
+async function handleOneTimePass(
+  session: StripeCheckoutSession,
+  supabaseUrl: string,
+  serviceKey: string,
+) {
   const offerId = session.metadata?.offer_id;
   const userId = session.metadata?.user_id;
   const offer = offerId && isOffer(offerId) ? offers[offerId] : undefined;
-  if (!offer || !userId || session.payment_status !== 'paid') return new Response('ignored', { status: 200 });
-  if (session.amount_total !== offer.amount * 100 || session.currency?.toLowerCase() !== offer.currency) return new Response('unexpected_price', { status: 400 });
+  if (!offer || !userId || session.payment_status !== "paid")
+    return new Response("ignored", { status: 200 });
+  if (
+    session.amount_total !== offer.amount * 100 ||
+    session.currency?.toLowerCase() !== offer.currency
+  )
+    return new Response("unexpected_price", { status: 400 });
   const startsAt = (session.created ?? Math.floor(Date.now() / 1000)) * 1000;
-  const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  if ('campaignType' in offer) {
+  const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false },
+  });
+  if ("campaignType" in offer) {
     const serviceId = session.metadata?.service_id;
     const targetUrl = session.metadata?.target_url || null;
     const imageUrl = session.metadata?.image_url || null;
-    if (!serviceId || session.metadata?.campaign_type !== offer.campaignType || (offer.campaignType === 'banner' && (!targetUrl || !imageUrl))) return new Response('invalid_campaign_metadata', { status: 400 });
-    const { data: business } = await supabase.from('commercial_services').select('id').eq('id', serviceId).eq('owner_id', userId).maybeSingle();
-    if (!business) return new Response('business_not_owned', { status: 403 });
-    const { error } = await supabase.from('commerce_ad_campaigns').insert({
+    if (
+      !serviceId ||
+      session.metadata?.campaign_type !== offer.campaignType ||
+      (offer.campaignType === "banner" && (!targetUrl || !imageUrl))
+    )
+      return new Response("invalid_campaign_metadata", { status: 400 });
+    const { data: business } = await supabase
+      .from("commercial_services")
+      .select("id")
+      .eq("id", serviceId)
+      .eq("owner_id", userId)
+      .maybeSingle();
+    if (!business) return new Response("business_not_owned", { status: 403 });
+    const { error } = await supabase.from("commerce_ad_campaigns").insert({
       service_id: serviceId,
       user_id: userId,
       campaign_type: offer.campaignType,
@@ -121,26 +220,42 @@ async function handleOneTimePass(session: StripeCheckoutSession, supabaseUrl: st
       starts_at: new Date(startsAt).toISOString(),
       ends_at: new Date(startsAt + 30 * 24 * 60 * 60 * 1000).toISOString(),
     });
-    return new Response(!error || error.code === '23505' ? 'ok' : 'campaign_write_failed', { status: !error || error.code === '23505' ? 200 : 500 });
+    return new Response(
+      !error || error.code === "23505" ? "ok" : "campaign_write_failed",
+      { status: !error || error.code === "23505" ? 200 : 500 },
+    );
   }
-  if (offerId !== 'visitor_pass_30d') return new Response('ignored', { status: 200 });
-  const { error } = await supabase.from('subscriptions').upsert({
-    user_id: userId,
-    service_id: null,
-    plan: offer.plan,
-    offer_id: offerId,
-    status: 'active',
-    price_amount: session.amount_total / 100,
-    price_currency: offer.currency.toUpperCase(),
-    provider: 'stripe',
-    provider_subscription_id: session.id,
-    current_period_end: new Date(startsAt + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'provider_subscription_id' });
-  return new Response(error ? 'subscription_write_failed' : 'ok', { status: error ? 500 : 200 });
+  if (offerId !== "visitor_pass_30d")
+    return new Response("ignored", { status: 200 });
+  const { error } = await supabase.from("subscriptions").upsert(
+    {
+      user_id: userId,
+      service_id: null,
+      plan: offer.plan,
+      offer_id: offerId,
+      status: "active",
+      price_amount: session.amount_total / 100,
+      price_currency: offer.currency.toUpperCase(),
+      provider: "stripe",
+      provider_subscription_id: session.id,
+      current_period_end: new Date(
+        startsAt + 30 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "provider_subscription_id" },
+  );
+  return new Response(error ? "subscription_write_failed" : "ok", {
+    status: error ? 500 : 200,
+  });
 }
 
-async function handleCampaignSubscription(subscription: StripeSubscription, eventType: string, supabaseUrl: string, serviceKey: string) {
+async function handleCampaignSubscription(
+  subscription: StripeSubscription,
+  eventType: string,
+  supabaseUrl: string,
+  serviceKey: string,
+) {
   const offerId = subscription.metadata?.offer_id;
   const offer = offerId && isOffer(offerId) ? offers[offerId] : undefined;
   const userId = subscription.metadata?.user_id;
@@ -149,51 +264,110 @@ async function handleCampaignSubscription(subscription: StripeSubscription, even
   const targetUrl = subscription.metadata?.target_url || null;
   const imageUrl = subscription.metadata?.image_url || null;
   const amount = subscription.items?.data?.[0]?.price?.unit_amount;
-  const currency = subscription.items?.data?.[0]?.price?.currency?.toLowerCase();
-  if (!offer || !('campaignType' in offer) || !userId || !serviceId || campaignType !== offer.campaignType || amount !== offer.amount * 100 || currency !== offer.currency || !subscription.current_period_end) return new Response('invalid_campaign_subscription', { status: 400 });
-  if (offer.campaignType === 'banner' && (!targetUrl || !imageUrl)) return new Response('invalid_campaign_metadata', { status: 400 });
-  const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  const { data: business } = await supabase.from('commercial_services').select('id').eq('id', serviceId).eq('owner_id', userId).maybeSingle();
-  if (!business) return new Response('business_not_owned', { status: 403 });
-  const active = eventType !== 'customer.subscription.deleted' && ['active', 'trialing'].includes(subscription.status);
-  const { error } = await supabase.from('commerce_ad_campaigns').upsert({
-    service_id: serviceId,
-    user_id: userId,
-    campaign_type: offer.campaignType,
-    target_url: targetUrl,
-    image_url: imageUrl,
-    status: active ? 'active' : 'expired',
-    amount_usd: amount / 100,
-    provider_session_id: null,
-    provider_subscription_id: subscription.id,
-    ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
-  }, { onConflict: 'provider_subscription_id' });
-  return new Response(error ? 'campaign_write_failed' : 'ok', { status: error ? 500 : 200 });
+  const currency =
+    subscription.items?.data?.[0]?.price?.currency?.toLowerCase();
+  if (
+    !offer ||
+    !("campaignType" in offer) ||
+    !userId ||
+    !serviceId ||
+    campaignType !== offer.campaignType ||
+    amount !== offer.amount * 100 ||
+    currency !== offer.currency ||
+    !subscription.current_period_end
+  )
+    return new Response("invalid_campaign_subscription", { status: 400 });
+  if (offer.campaignType === "banner" && (!targetUrl || !imageUrl))
+    return new Response("invalid_campaign_metadata", { status: 400 });
+  const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false },
+  });
+  const { data: business } = await supabase
+    .from("commercial_services")
+    .select("id")
+    .eq("id", serviceId)
+    .eq("owner_id", userId)
+    .maybeSingle();
+  if (!business) return new Response("business_not_owned", { status: 403 });
+  const active =
+    eventType !== "customer.subscription.deleted" &&
+    ["active", "trialing"].includes(subscription.status);
+  const { error } = await supabase.from("commerce_ad_campaigns").upsert(
+    {
+      service_id: serviceId,
+      user_id: userId,
+      campaign_type: offer.campaignType,
+      target_url: targetUrl,
+      image_url: imageUrl,
+      status: active ? "active" : "expired",
+      amount_usd: amount / 100,
+      provider_session_id: null,
+      provider_subscription_id: subscription.id,
+      ends_at: new Date(subscription.current_period_end * 1000).toISOString(),
+    },
+    { onConflict: "provider_subscription_id" },
+  );
+  return new Response(error ? "campaign_write_failed" : "ok", {
+    status: error ? 500 : 200,
+  });
 }
 
-function isPlan(value: unknown): value is 'no_ads' | 'business' | 'sponsored' {
-  return value === 'no_ads' || value === 'business' || value === 'sponsored';
+function isPlan(value: unknown): value is "no_ads" | "business" | "sponsored" {
+  return value === "no_ads" || value === "business" || value === "sponsored";
 }
 
 function isOffer(value: unknown): value is keyof typeof offers {
-  return typeof value === 'string' && value in offers;
+  return typeof value === "string" && value in offers;
 }
 
-function databaseStatus(status: string): 'pending' | 'active' | 'past_due' | 'canceled' | 'expired' {
-  if (status === 'active' || status === 'trialing') return 'active';
-  if (status === 'past_due' || status === 'unpaid') return 'past_due';
-  if (status === 'canceled') return 'canceled';
-  if (status === 'incomplete_expired') return 'expired';
-  return 'pending';
+function databaseStatus(
+  status: string,
+): "pending" | "active" | "past_due" | "canceled" | "expired" {
+  if (status === "active" || status === "trialing") return "active";
+  if (status === "past_due" || status === "unpaid") return "past_due";
+  if (status === "canceled") return "canceled";
+  if (status === "incomplete_expired") return "expired";
+  return "pending";
 }
 
-async function validSignature(payload: string, header: string | null, secret: string) {
+async function validSignature(
+  payload: string,
+  header: string | null,
+  secret: string,
+) {
   const timestamp = header?.match(/(?:^|,)t=(\d+)/)?.[1];
   const signature = header?.match(/(?:^|,)v1=([^,]+)/)?.[1];
-  if (!timestamp || !signature || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const bytes = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${timestamp}.${payload}`)));
-  const expected = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  if (
+    !timestamp ||
+    !signature ||
+    Math.abs(Date.now() / 1000 - Number(timestamp)) > 300
+  )
+    return false;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const bytes = new Uint8Array(
+    await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(`${timestamp}.${payload}`),
+    ),
+  );
+  const expected = Array.from(bytes, (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
   if (expected.length !== signature.length) return false;
-  return expected.split('').reduce((different, character, index) => different | (character.charCodeAt(0) ^ signature.charCodeAt(index)), 0) === 0;
+  return (
+    expected
+      .split("")
+      .reduce(
+        (different, character, index) =>
+          different | (character.charCodeAt(0) ^ signature.charCodeAt(index)),
+        0,
+      ) === 0
+  );
 }

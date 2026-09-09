@@ -1,22 +1,42 @@
-import { straightLineDistanceLabel } from '@/lib/location-quality';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Picker } from '@react-native-picker/picker';
-import { useScrollToTop } from 'expo-router/react-navigation';
-import { useQuery } from '@tanstack/react-query';
-import * as ImagePicker from 'expo-image-picker';
-import * as Linking from 'expo-linking';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useGlobalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, Modal, Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { straightLineDistanceLabel } from "@/lib/location-quality";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Picker } from "@react-native-picker/picker";
+import { useScrollToTop } from "expo-router/react-navigation";
+import { useQuery } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
+import * as Linking from "expo-linking";
+import { LinearGradient } from "expo-linear-gradient";
+import { useGlobalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
-import { InformationReportModal } from '@/components/information-report-modal';
-import { AnimatedShine } from '@/components/motion';
-import { MapCanvas, type MapCoordinate } from '@/components/explore/map-canvas';
-import { ThemedAlert as Alert } from '@/components/themed-alert';
-import { getAppOptions, type AppOption } from '@/lib/app-options';
-import { BannerCapacityError, campaignOffers, getMySubscriptions, hasActiveBusinessPlan, openCampaignCheckout, type CampaignOfferId } from '@/lib/billing';
-import { FrogLoader } from '@/components/frog-loader';
+import { InformationReportModal } from "@/components/information-report-modal";
+import { AnimatedShine } from "@/components/motion";
+import { MapCanvas, type MapCoordinate } from "@/components/explore/map-canvas";
+import { ThemedAlert as Alert } from "@/components/themed-alert";
+import { getAppOptions, type AppOption } from "@/lib/app-options";
+import { useGooglePlayCampaignBilling } from "@/hooks/use-google-play-campaign-billing";
+import {
+  BannerCapacityError,
+  campaignOffers,
+  getMySubscriptions,
+  hasActiveBusinessPlan,
+  openGooglePlayCampaignManagement,
+  openCampaignCheckout,
+  type CampaignOfferId,
+} from "@/lib/billing";
+import { FrogLoader } from "@/components/frog-loader";
 import {
   activateAdminTestCampaign,
   deleteBusinessPhoto,
@@ -50,11 +70,11 @@ import {
   type CommerceBannerCampaign,
   type CampaignBannerFocus,
   type PreparedCampaignBanner,
-} from '@/lib/commerce';
-import { openNavigation } from '@/lib/logistics';
-import { useApp } from '@/providers/app-provider';
-import { appTheme } from '@/theme/theme';
-import { getPreciseCurrentLocation } from '@/lib/current-location';
+} from "@/lib/commerce";
+import { openNavigation } from "@/lib/logistics";
+import { useApp } from "@/providers/app-provider";
+import { appTheme } from "@/theme/theme";
+import { getPreciseCurrentLocation } from "@/lib/current-location";
 
 type CommercialProfileForm = {
   title: string;
@@ -77,169 +97,979 @@ type CommercialProfileForm = {
   certifications: string;
 };
 
-const emptyProfileForm = (category: CommerceCategoryId = ''): CommercialProfileForm => ({
-  title: '', category, subcategories: [], phone: '', whatsapp: '', openingHours: '', description: '',
-  priceRange: '', bookingUrl: '', menuUrl: '', websiteUrl: '', parking: '', hasParking: false, paymentMethods: '',
-  accessibility: '', languages: '', experienceType: '', certifications: '',
+const emptyProfileForm = (
+  category: CommerceCategoryId = "",
+): CommercialProfileForm => ({
+  title: "",
+  category,
+  subcategories: [],
+  phone: "",
+  whatsapp: "",
+  openingHours: "",
+  description: "",
+  priceRange: "",
+  bookingUrl: "",
+  menuUrl: "",
+  websiteUrl: "",
+  parking: "",
+  hasParking: false,
+  paymentMethods: "",
+  accessibility: "",
+  languages: "",
+  experienceType: "",
+  certifications: "",
 });
 
-const categoryPastels = ['#2A7B4C20', '#1E5B7520', '#5F9EA020', '#B58A5A20', '#7D9E8A20', '#6F8FB320'];
+const categoryPastels = [
+  "#2A7B4C20",
+  "#1E5B7520",
+  "#5F9EA020",
+  "#B58A5A20",
+  "#7D9E8A20",
+  "#6F8FB320",
+];
 
-const listToText = (values: string[] | null | undefined) => (values ?? []).join(', ');
-const textToList = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
+const listToText = (values: string[] | null | undefined) =>
+  (values ?? []).join(", ");
+const textToList = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 const useCommerceTaxonomy = () => {
-  const categories = useQuery({ queryKey: ['app-options', 'commerce_category'], queryFn: () => getAppOptions('commerce_category'), staleTime: Infinity });
-  const subcategories = useQuery({ queryKey: ['app-options', 'commerce_subcategory'], queryFn: () => getAppOptions('commerce_subcategory'), staleTime: Infinity });
-  return { categories: categories.data ?? [], subcategories: subcategories.data ?? [], taxonomyError: categories.isError || subcategories.isError, retryTaxonomy: () => Promise.all([categories.refetch(), subcategories.refetch()]) };
+  const categories = useQuery({
+    queryKey: ["app-options", "commerce_category"],
+    queryFn: () => getAppOptions("commerce_category"),
+    staleTime: Infinity,
+  });
+  const subcategories = useQuery({
+    queryKey: ["app-options", "commerce_subcategory"],
+    queryFn: () => getAppOptions("commerce_subcategory"),
+    staleTime: Infinity,
+  });
+  return {
+    categories: categories.data ?? [],
+    subcategories: subcategories.data ?? [],
+    taxonomyError: categories.isError || subcategories.isError,
+    retryTaxonomy: () =>
+      Promise.all([categories.refetch(), subcategories.refetch()]),
+  };
 };
 const distanceLabel = straightLineDistanceLabel;
 
-function TrustBadge({ service, language }: { service: CommerceService; language: 'es' | 'en' }) {
-  const sourceLabel = service.source === 'ICT'
-    ? (language === 'es' ? 'FUENTE ICT' : 'ICT SOURCE')
-    : service.source === 'SINAC'
-      ? (language === 'es' ? 'FUENTE SINAC' : 'SINAC SOURCE')
-      : service.source === 'owner_registered'
-        ? (language === 'es' ? 'REGISTRADO POR EL NEGOCIO' : 'REGISTERED BY BUSINESS')
-        : (language === 'es' ? 'APORTE COMUNITARIO' : 'COMMUNITY CONTRIBUTION');
-  const officialOperator = service.source === 'ICT' || service.source === 'SINAC';
-  return <View className="flex-row flex-wrap gap-2">{service.business_verified_at && service.business_verification_evidence_url ? <Text className="rounded-full bg-ui-primary px-2 py-1 text-[10px] font-black text-white">{language === 'es' ? 'NEGOCIO VERIFICADO' : 'VERIFIED BUSINESS'}</Text> : null}{officialOperator ? <Text className="rounded-full bg-ui-secondary px-2 py-1 text-[10px] font-black text-white">{language === 'es' ? 'OPERADOR OFICIAL' : 'OFFICIAL OPERATOR'}</Text> : null}<Text className="rounded-full bg-ui-muted px-2 py-1 text-[10px] font-black text-ui-text-muted dark:bg-white/10 dark:text-ui-dark-text-muted">{sourceLabel}</Text></View>;
+function TrustBadge({
+  service,
+  language,
+}: {
+  service: CommerceService;
+  language: "es" | "en";
+}) {
+  const sourceLabel =
+    service.source === "ICT"
+      ? language === "es"
+        ? "FUENTE ICT"
+        : "ICT SOURCE"
+      : service.source === "SINAC"
+        ? language === "es"
+          ? "FUENTE SINAC"
+          : "SINAC SOURCE"
+        : service.source === "owner_registered"
+          ? language === "es"
+            ? "REGISTRADO POR EL NEGOCIO"
+            : "REGISTERED BY BUSINESS"
+          : language === "es"
+            ? "APORTE COMUNITARIO"
+            : "COMMUNITY CONTRIBUTION";
+  const officialOperator =
+    service.source === "ICT" || service.source === "SINAC";
+  return (
+    <View className="flex-row flex-wrap gap-2">
+      {service.business_verified_at &&
+      service.business_verification_evidence_url ? (
+        <Text className="rounded-full bg-ui-primary px-2 py-1 text-[10px] font-black text-white">
+          {language === "es" ? "NEGOCIO VERIFICADO" : "VERIFIED BUSINESS"}
+        </Text>
+      ) : null}
+      {officialOperator ? (
+        <Text className="rounded-full bg-ui-secondary px-2 py-1 text-[10px] font-black text-white">
+          {language === "es" ? "OPERADOR OFICIAL" : "OFFICIAL OPERATOR"}
+        </Text>
+      ) : null}
+      <Text className="rounded-full bg-ui-muted px-2 py-1 text-[10px] font-black text-ui-text-muted dark:bg-white/10 dark:text-ui-dark-text-muted">
+        {sourceLabel}
+      </Text>
+    </View>
+  );
 }
 
-function DirectoryShortcut({ icon, label, onPress, primary = false, premium = false }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>['name']; label: string; onPress: () => void; primary?: boolean; premium?: boolean }) {
+function DirectoryShortcut({
+  icon,
+  label,
+  onPress,
+  primary = false,
+  premium = false,
+}: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  label: string;
+  onPress: () => void;
+  primary?: boolean;
+  premium?: boolean;
+}) {
   const { isDark } = useApp();
   const gold = appTheme.colors.commerceGold;
   const action = appTheme.colors.commerceAction;
   const goldInk = isDark ? gold.darkInk : gold.ink;
   const dimensional = primary || premium;
-  return <Pressable
-    accessibilityRole="button"
-    className={primary ? 'min-h-11 flex-row items-center overflow-hidden rounded-control border px-4 active:translate-y-0.5' : 'min-h-11 flex-row items-center overflow-hidden rounded-control border border-ui-border bg-ui-surface px-4 active:translate-y-0.5 active:bg-ui-muted dark:border-ui-dark-border dark:bg-ui-dark-surface dark:active:bg-ui-dark-muted'}
-    onPress={onPress}
-    style={{
-      ...(primary ? { backgroundColor: action.base, borderColor: action.border } : {}),
-      ...(premium ? { backgroundColor: isDark ? gold.darkGlass : gold.glass, borderColor: isDark ? gold.darkBorder : gold.border } : {}),
-      ...(Platform.OS === 'web'
-        ? { boxShadow: `0 ${dimensional ? 7 : 4}px ${dimensional ? 8 : 6}px ${dimensional ? 0 : -1}px ${premium ? goldInk : primary ? action.shadow : '#1E5B75'}52` }
-        : {
-            elevation: dimensional ? 9 : 5,
-            shadowColor: premium ? goldInk : primary ? action.shadow : '#1E5B75',
-            shadowOffset: { height: dimensional ? 7 : 4, width: 0 },
-            shadowOpacity: dimensional ? 0.32 : 0.18,
-            shadowRadius: dimensional ? 8 : 6,
-          }),
-    }}
-  >
-    {primary ? <LinearGradient colors={[action.top, action.base]} end={{ x: 0.65, y: 1 }} start={{ x: 0.35, y: 0 }} style={{ bottom: 0, left: 0, pointerEvents: 'none', position: 'absolute', right: 0, top: 0 }} /> : null}
-    {dimensional ? <View style={{ backgroundColor: primary ? action.shadow : goldInk, bottom: 0, height: 3, left: 0, opacity: 0.28, pointerEvents: 'none', position: 'absolute', right: 0 }} /> : null}
-    {dimensional ? <AnimatedShine travel={240} /> : null}
-    <View className="absolute left-3 right-3 top-1 h-px rounded-full bg-white/80" style={{ pointerEvents: 'none' }} />
-    <MaterialCommunityIcons name={icon} size={18} color={premium ? goldInk : primary ? 'white' : '#087443'} />
-    <Text style={premium ? { color: goldInk } : undefined} className={primary ? 'ml-2 font-black text-white' : 'ml-2 font-black text-ui-primary dark:text-ui-dark-primary'}>{label}</Text>
-  </Pressable>;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      className={
+        primary
+          ? "min-h-11 flex-row items-center overflow-hidden rounded-control border px-4 active:translate-y-0.5"
+          : "min-h-11 flex-row items-center overflow-hidden rounded-control border border-ui-border bg-ui-surface px-4 active:translate-y-0.5 active:bg-ui-muted dark:border-ui-dark-border dark:bg-ui-dark-surface dark:active:bg-ui-dark-muted"
+      }
+      onPress={onPress}
+      style={{
+        ...(primary
+          ? { backgroundColor: action.base, borderColor: action.border }
+          : {}),
+        ...(premium
+          ? {
+              backgroundColor: isDark ? gold.darkGlass : gold.glass,
+              borderColor: isDark ? gold.darkBorder : gold.border,
+            }
+          : {}),
+        ...(Platform.OS === "web"
+          ? {
+              boxShadow: `0 ${dimensional ? 7 : 4}px ${dimensional ? 8 : 6}px ${dimensional ? 0 : -1}px ${premium ? goldInk : primary ? action.shadow : "#1E5B75"}52`,
+            }
+          : {
+              elevation: dimensional ? 9 : 5,
+              shadowColor: premium
+                ? goldInk
+                : primary
+                  ? action.shadow
+                  : "#1E5B75",
+              shadowOffset: { height: dimensional ? 7 : 4, width: 0 },
+              shadowOpacity: dimensional ? 0.32 : 0.18,
+              shadowRadius: dimensional ? 8 : 6,
+            }),
+      }}
+    >
+      {primary ? (
+        <LinearGradient
+          colors={[action.top, action.base]}
+          end={{ x: 0.65, y: 1 }}
+          start={{ x: 0.35, y: 0 }}
+          style={{
+            bottom: 0,
+            left: 0,
+            pointerEvents: "none",
+            position: "absolute",
+            right: 0,
+            top: 0,
+          }}
+        />
+      ) : null}
+      {dimensional ? (
+        <View
+          style={{
+            backgroundColor: primary ? action.shadow : goldInk,
+            bottom: 0,
+            height: 3,
+            left: 0,
+            opacity: 0.28,
+            pointerEvents: "none",
+            position: "absolute",
+            right: 0,
+          }}
+        />
+      ) : null}
+      {dimensional ? <AnimatedShine travel={240} /> : null}
+      <View
+        className="absolute left-3 right-3 top-1 h-px rounded-full bg-white/80"
+        style={{ pointerEvents: "none" }}
+      />
+      <MaterialCommunityIcons
+        name={icon}
+        size={18}
+        color={premium ? goldInk : primary ? "white" : "#087443"}
+      />
+      <Text
+        style={premium ? { color: goldInk } : undefined}
+        className={
+          primary
+            ? "ml-2 font-black text-white"
+            : "ml-2 font-black text-ui-primary dark:text-ui-dark-primary"
+        }
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
 }
 
-function CinemaPosterCarousel({ loading, movies }: { loading: boolean; movies: CinemaMovie[] }) {
+function CinemaPosterCarousel({
+  loading,
+  movies,
+}: {
+  loading: boolean;
+  movies: CinemaMovie[];
+}) {
   const { language } = useApp();
   if (!loading && !movies.length) return null;
-  return <View className="border-b border-ui-border px-5 py-5 dark:border-ui-dark-border"><View className="flex-row items-center justify-between"><View><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Películas en cartelera' : 'Now playing'}</Text><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Abrí la web oficial para ver funciones y comprar.' : 'Open the official site for showtimes and tickets.'}</Text></View><MaterialCommunityIcons name="movie-open-outline" size={24} color="#087443" /></View>{loading ? <FrogLoader className="py-8" color="#087443" /> : <ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 12 }} showsHorizontalScrollIndicator={false}>{movies.map((movie) => <Pressable accessibilityRole="link" className="w-32 overflow-hidden rounded-2xl bg-ui-muted dark:bg-ui-dark-muted" key={movie.id} onPress={() => void Linking.openURL(movie.official_url)}><Image source={{ uri: movie.poster_url }} className="h-48 w-32" resizeMode="cover" /><Text className="min-h-12 px-3 py-2 text-xs font-black leading-4 text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{language === 'es' ? movie.title_es : movie.title_en || movie.title_es}</Text></Pressable>)}</ScrollView>}</View>;
+  return (
+    <View className="border-b border-ui-border px-5 py-5 dark:border-ui-dark-border">
+      <View className="flex-row items-center justify-between">
+        <View>
+          <Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">
+            {language === "es" ? "Películas en cartelera" : "Now playing"}
+          </Text>
+          <Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">
+            {language === "es"
+              ? "Abrí la web oficial para ver funciones y comprar."
+              : "Open the official site for showtimes and tickets."}
+          </Text>
+        </View>
+        <MaterialCommunityIcons
+          name="movie-open-outline"
+          size={24}
+          color="#087443"
+        />
+      </View>
+      {loading ? (
+        <FrogLoader className="py-8" color="#087443" />
+      ) : (
+        <ScrollView
+          horizontal
+          className="mt-4"
+          contentContainerStyle={{ gap: 12 }}
+          showsHorizontalScrollIndicator={false}
+        >
+          {movies.map((movie) => (
+            <Pressable
+              accessibilityRole="link"
+              className="w-32 overflow-hidden rounded-2xl bg-ui-muted dark:bg-ui-dark-muted"
+              key={movie.id}
+              onPress={() => void Linking.openURL(movie.official_url)}
+            >
+              <Image
+                source={{ uri: movie.poster_url }}
+                className="h-48 w-32"
+                resizeMode="cover"
+              />
+              <Text
+                className="min-h-12 px-3 py-2 text-xs font-black leading-4 text-ui-text dark:text-ui-dark-text"
+                numberOfLines={2}
+              >
+                {language === "es"
+                  ? movie.title_es
+                  : movie.title_en || movie.title_es}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
 }
 
 function CampaignBanner({ campaign }: { campaign: CommerceBannerCampaign }) {
   const { language } = useApp();
   if (!campaign.target_url) return null;
   const imageUrl = campaign.image_url ?? campaign.business.cover_image_url;
-  return <Pressable accessibilityRole="link" className="mx-5 mb-1 mt-4 overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={() => void Linking.openURL(campaign.target_url!)}>{imageUrl ? <Image source={{ uri: imageUrl }} className="h-28 w-full" resizeMode="cover" /> : <View className="h-20 items-center justify-center bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="storefront-outline" size={30} color="#087443" /></View>}<View className="flex-row items-center px-4 py-2"><View className="flex-1 pr-3"><Text className="text-[9px] font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Publicidad' : 'Advertisement'}</Text><Text className="font-black text-ui-text dark:text-ui-dark-text" numberOfLines={1}>{campaign.business.title}</Text></View><Text className="text-sm font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Visitar sitio' : 'Visit site'} →</Text></View></Pressable>;
+  return (
+    <Pressable
+      accessibilityRole="link"
+      className="mx-5 mb-1 mt-4 overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface"
+      onPress={() => void Linking.openURL(campaign.target_url!)}
+    >
+      {imageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
+          className="h-28 w-full"
+          resizeMode="cover"
+        />
+      ) : (
+        <View className="h-20 items-center justify-center bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+          <MaterialCommunityIcons
+            name="storefront-outline"
+            size={30}
+            color="#087443"
+          />
+        </View>
+      )}
+      <View className="flex-row items-center px-4 py-2">
+        <View className="flex-1 pr-3">
+          <Text className="text-[9px] font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">
+            {language === "es" ? "Publicidad" : "Advertisement"}
+          </Text>
+          <Text
+            className="font-black text-ui-text dark:text-ui-dark-text"
+            numberOfLines={1}
+          >
+            {campaign.business.title}
+          </Text>
+        </View>
+        <Text className="text-sm font-black text-ui-primary dark:text-ui-dark-primary">
+          {language === "es" ? "Visitar sitio" : "Visit site"} →
+        </Text>
+      </View>
+    </Pressable>
+  );
 }
 
-function ServiceCard({ service, onOpen, nearby }: { service: CommerceService; nearby: boolean; onOpen: (service: CommerceService) => void }) {
+function ServiceCard({
+  service,
+  onOpen,
+  nearby,
+}: {
+  service: CommerceService;
+  nearby: boolean;
+  onOpen: (service: CommerceService) => void;
+}) {
   const { language } = useApp();
-  const { qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term } = useGlobalSearchParams();
-  const attribution = useMemo(() => normalizeBusinessAttribution({ qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term }), [qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term]);
-  const isCinema = service.category === 'cinemas';
-  const description = language === 'es'
-    ? service.description
-    : `Find visitor information, services, and contact details for ${service.title}.`;
-  useEffect(() => { void recordBusinessEvent(service.id, 'impression', attribution); }, [service.id, attribution]);
+  const {
+    qr,
+    qr_code,
+    utm_campaign,
+    utm_content,
+    utm_medium,
+    utm_source,
+    utm_term,
+  } = useGlobalSearchParams();
+  const attribution = useMemo(
+    () =>
+      normalizeBusinessAttribution({
+        qr,
+        qr_code,
+        utm_campaign,
+        utm_content,
+        utm_medium,
+        utm_source,
+        utm_term,
+      }),
+    [qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term],
+  );
+  const isCinema = service.category === "cinemas";
+  const description =
+    language === "es"
+      ? service.description
+      : `Find visitor information, services, and contact details for ${service.title}.`;
+  useEffect(() => {
+    void recordBusinessEvent(service.id, "impression", attribution);
+  }, [service.id, attribution]);
   return (
-    <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir detalles de' : 'Open details for'} ${service.title}`} accessibilityRole="button" className="mb-3 min-h-24 flex-row items-center rounded-card border border-ui-border bg-ui-surface p-3 shadow-card active:translate-y-0.5 active:opacity-90 dark:border-ui-dark-border dark:bg-ui-dark-surface" onPress={() => onOpen(service)} style={{ elevation: 7, shadowColor: '#0A5942', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.18, shadowRadius: 8 }}>
-      <View className="absolute left-4 right-4 top-1 h-px rounded-full bg-white/90" pointerEvents="none" />
-      {service.cover_image_url || service.photos[0] ? <Image source={{ uri: service.cover_image_url ?? service.photos[0] }} className="h-20 w-20 rounded-2xl" resizeMode="cover" /> : <View className="h-20 w-20 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name={isCinema ? 'movie-open-outline' : 'storefront-outline'} size={28} color="#087443" /></View>}
+    <Pressable
+      accessibilityLabel={`${language === "es" ? "Abrir detalles de" : "Open details for"} ${service.title}`}
+      accessibilityRole="button"
+      className="mb-3 min-h-24 flex-row items-center rounded-card border border-ui-border bg-ui-surface p-3 shadow-card active:translate-y-0.5 active:opacity-90 dark:border-ui-dark-border dark:bg-ui-dark-surface"
+      onPress={() => onOpen(service)}
+      style={{
+        elevation: 7,
+        shadowColor: "#0A5942",
+        shadowOffset: { height: 5, width: 0 },
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+      }}
+    >
+      <View
+        className="absolute left-4 right-4 top-1 h-px rounded-full bg-white/90"
+        pointerEvents="none"
+      />
+      {service.cover_image_url || service.photos[0] ? (
+        <Image
+          source={{ uri: service.cover_image_url ?? service.photos[0] }}
+          className="h-20 w-20 rounded-2xl"
+          resizeMode="cover"
+        />
+      ) : (
+        <View className="h-20 w-20 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+          <MaterialCommunityIcons
+            name={isCinema ? "movie-open-outline" : "storefront-outline"}
+            size={28}
+            color="#087443"
+          />
+        </View>
+      )}
       <View className="ml-3 flex-1">
-        <Text className="text-base font-black text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{service.title}</Text>
-        <Text className="mt-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary" numberOfLines={3}>{distanceLabel(service.distance_km, language, nearby)} · {service.price_range ?? '₡'}</Text>
-        <View className="mt-1 flex-row items-center"><MaterialCommunityIcons name="star" size={15} color="#E0A100" /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{service.avg_rating.toFixed(1)}</Text><Text className="ml-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">({service.total_reviews})</Text></View>
-        {description ? <Text className="mt-1 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{description}</Text> : null}
+        <Text
+          className="text-base font-black text-ui-text dark:text-ui-dark-text"
+          numberOfLines={2}
+        >
+          {service.title}
+        </Text>
+        <Text
+          className="mt-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary"
+          numberOfLines={3}
+        >
+          {distanceLabel(service.distance_km, language, nearby)} ·{" "}
+          {service.price_range ?? "₡"}
+        </Text>
+        <View className="mt-1 flex-row items-center">
+          <MaterialCommunityIcons name="star" size={15} color="#E0A100" />
+          <Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">
+            {service.avg_rating.toFixed(1)}
+          </Text>
+          <Text className="ml-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">
+            ({service.total_reviews})
+          </Text>
+        </View>
+        {description ? (
+          <Text
+            className="mt-1 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted"
+            numberOfLines={1}
+          >
+            {description}
+          </Text>
+        ) : null}
       </View>
       <MaterialCommunityIcons name="chevron-right" size={22} color="#087443" />
     </Pressable>
   );
 }
 
-function BusinessDetailModal({ service, nearby, saved, onClaim, onClose, onReport, onReviewed, onSaved, subcategoryOptions }: { service: CommerceService | null; nearby: boolean; saved: boolean; onClaim: (service: CommerceService) => void; onClose: () => void; onReport: (service: CommerceService) => void; onReviewed: () => Promise<void>; onSaved: (service: CommerceService) => void; subcategoryOptions: AppOption[] }) {
+function BusinessDetailModal({
+  service,
+  nearby,
+  saved,
+  onClaim,
+  onClose,
+  onReport,
+  onReviewed,
+  onSaved,
+  subcategoryOptions,
+}: {
+  service: CommerceService | null;
+  nearby: boolean;
+  saved: boolean;
+  onClaim: (service: CommerceService) => void;
+  onClose: () => void;
+  onReport: (service: CommerceService) => void;
+  onReviewed: () => Promise<void>;
+  onSaved: (service: CommerceService) => void;
+  subcategoryOptions: AppOption[];
+}) {
   const { language, requireAuth } = useApp();
-  const { qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term } = useGlobalSearchParams();
-  const attribution = useMemo(() => normalizeBusinessAttribution({ qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term }), [qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term]);
+  const {
+    qr,
+    qr_code,
+    utm_campaign,
+    utm_content,
+    utm_medium,
+    utm_source,
+    utm_term,
+  } = useGlobalSearchParams();
+  const attribution = useMemo(
+    () =>
+      normalizeBusinessAttribution({
+        qr,
+        qr_code,
+        utm_campaign,
+        utm_content,
+        utm_medium,
+        utm_source,
+        utm_term,
+      }),
+    [qr, qr_code, utm_campaign, utm_content, utm_medium, utm_source, utm_term],
+  );
   const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
-  const reviews = useQuery({ queryKey: ['business-reviews', service?.id], queryFn: () => getBusinessReviews(service!.id), enabled: Boolean(service) });
-  useEffect(() => { setRating(5); setComment(''); }, [service?.id]);
+  const reviews = useQuery({
+    queryKey: ["business-reviews", service?.id],
+    queryFn: () => getBusinessReviews(service!.id),
+    enabled: Boolean(service),
+  });
+  useEffect(() => {
+    setRating(5);
+    setComment("");
+  }, [service?.id]);
   if (!service) return null;
   const submit = async () => {
-    if (!requireAuth(language === 'es' ? 'publicar una reseña' : 'post a review')) return;
+    if (
+      !requireAuth(language === "es" ? "publicar una reseña" : "post a review")
+    )
+      return;
     setBusy(true);
     try {
       await saveBusinessReview(service.id, rating, comment);
-      setComment('');
+      setComment("");
       await Promise.all([reviews.refetch(), onReviewed()]);
-      Alert.alert(language === 'es' ? 'Reseña publicada' : 'Review posted', language === 'es' ? 'Gracias por compartir tu experiencia.' : 'Thanks for sharing your experience.');
+      Alert.alert(
+        language === "es" ? "Reseña publicada" : "Review posted",
+        language === "es"
+          ? "Gracias por compartir tu experiencia."
+          : "Thanks for sharing your experience.",
+      );
     } catch (error) {
-      Alert.alert(language === 'es' ? 'No se pudo publicar' : 'Could not post', error instanceof Error ? error.message : 'Error');
-    } finally { setBusy(false); }
+      Alert.alert(
+        language === "es" ? "No se pudo publicar" : "Could not post",
+        error instanceof Error ? error.message : "Error",
+      );
+    } finally {
+      setBusy(false);
+    }
   };
-  const categoryTags = subcategoryOptions.filter((option) => option.parent_id === service.category);
-  const tags = service.subcategories.map((id) => { const option = categoryTags.find((tag) => tag.id === id); return option ? (language === 'es' ? option.label_es : option.label_en) : id; });
-  const isCinema = service.category === 'cinemas';
-  const description = language === 'es'
-    ? service.description
-    : `Find visitor information, available services, and contact details for ${service.title}. Confirm current hours and availability directly with the business before visiting.`;
+  const categoryTags = subcategoryOptions.filter(
+    (option) => option.parent_id === service.category,
+  );
+  const tags = service.subcategories.map((id) => {
+    const option = categoryTags.find((tag) => tag.id === id);
+    return option
+      ? language === "es"
+        ? option.label_es
+        : option.label_en
+      : id;
+  });
+  const isCinema = service.category === "cinemas";
+  const description =
+    language === "es"
+      ? service.description
+      : `Find visitor information, available services, and contact details for ${service.title}. Confirm current hours and availability directly with the business before visiting.`;
   const phone = service.phone ?? service.whatsapp;
   const openWhatsApp = () => {
     if (!service.whatsapp) return;
-    void recordBusinessEvent(service.id, 'whatsapp_click', attribution);
-    void Linking.openURL(`https://wa.me/${service.whatsapp.replace(/[^\d]/g, '')}`);
+    void recordBusinessEvent(service.id, "whatsapp_click", attribution);
+    void Linking.openURL(
+      `https://wa.me/${service.whatsapp.replace(/[^\d]/g, "")}`,
+    );
   };
   const call = () => {
     if (!phone) return;
-    void recordBusinessEvent(service.id, 'call', attribution);
-    void Linking.openURL(`tel:${phone.replace(/[^+\d]/g, '')}`);
+    void recordBusinessEvent(service.id, "call", attribution);
+    void Linking.openURL(`tel:${phone.replace(/[^+\d]/g, "")}`);
   };
   const directions = () => {
-    void recordBusinessEvent(service.id, 'directions', attribution);
-    if (service.latitude != null && service.longitude != null) void openNavigation(service.latitude, service.longitude);
-    else void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.title}, Costa Rica`)}`);
+    void recordBusinessEvent(service.id, "directions", attribution);
+    if (service.latitude != null && service.longitude != null)
+      void openNavigation(service.latitude, service.longitude);
+    else
+      void Linking.openURL(
+        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.title}, Costa Rica`)}`,
+      );
   };
   const share = () => {
-    const link = service.latitude != null && service.longitude != null
-      ? `https://www.google.com/maps/search/?api=1&query=${service.latitude},${service.longitude}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.title}, Costa Rica`)}`;
-    void Share.share({ message: [service.title, link].filter(Boolean).join(' · ') });
+    const link =
+      service.latitude != null && service.longitude != null
+        ? `https://www.google.com/maps/search/?api=1&query=${service.latitude},${service.longitude}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${service.title}, Costa Rica`)}`;
+    void Share.share({
+      message: [service.title, link].filter(Boolean).join(" · "),
+    });
   };
-  return <Modal visible transparent animationType="slide" onRequestClose={onClose}><View className="flex-1 justify-end bg-black/40"><View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface"><View className="mb-5 h-1 w-10 self-center rounded-full bg-ui-border dark:bg-ui-dark-border" /><View className="flex-row items-start justify-between"><View className="flex-1 pr-3"><Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{service.title}</Text><View className="mt-2 flex-row flex-wrap items-center gap-x-4 gap-y-2"><View className="flex-row items-center"><MaterialCommunityIcons name="map-marker-distance" size={20} color="#087443" /><Text className="ml-1 font-black text-ui-primary dark:text-ui-dark-primary">{distanceLabel(service.distance_km, language, nearby)}</Text></View><View className="flex-row items-center"><MaterialCommunityIcons name="star" size={22} color="#E0A100" /><Text className="ml-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{service.avg_rating.toFixed(1)}</Text><Text className="ml-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{service.total_reviews} {language === 'es' ? 'reseñas' : 'reviews'}</Text></View></View></View><Pressable accessibilityLabel={language === 'es' ? 'Cerrar detalle' : 'Close details'} accessibilityRole="button" className="h-11 w-11 items-center justify-center" onPress={onClose}><MaterialCommunityIcons name="close" size={25} color="#68737A" /></Pressable></View><ScrollView className="mt-4" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-    {service.cover_image_url || service.photos[0] ? <Image source={{ uri: service.cover_image_url ?? service.photos[0] }} className="h-44 w-full rounded-2xl" resizeMode="cover" /> : null}
-    {description ? <Text className="mt-4 leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{description}</Text> : null}
-    <View className="mt-4 flex-row flex-wrap gap-2"><TrustBadge service={service} language={language} />{service.business_updated_at ? <Text className="rounded-full bg-ui-secondary px-2 py-1 text-[10px] font-black text-white">{language === 'es' ? 'ACTUALIZADO POR EL NEGOCIO' : 'UPDATED BY BUSINESS'}</Text> : null}</View>
-    <View className="mt-3 flex-row flex-wrap gap-2">{service.opening_hours ? <Text className="rounded-full bg-ui-muted px-3 py-1 text-xs font-bold text-ui-text dark:bg-white/10 dark:text-ui-dark-text">{service.opening_hours}</Text> : null}{service.has_parking || service.parking ? <Text className="rounded-full bg-ui-muted px-3 py-1 text-xs font-bold text-ui-text dark:bg-white/10 dark:text-ui-dark-text">{language === 'es' ? 'Estacionamiento' : 'Parking'}</Text> : null}{service.accessibility ? <Text className="rounded-full bg-ui-muted px-3 py-1 text-xs font-bold text-ui-text dark:bg-white/10 dark:text-ui-dark-text">{service.accessibility}</Text> : null}{service.experience_type ? <Text className="rounded-full bg-ui-muted px-3 py-1 text-xs font-bold text-ui-text dark:bg-white/10 dark:text-ui-dark-text">{service.experience_type}</Text> : null}{tags.map((tag) => <Text className="rounded-full bg-ui-primary-soft px-3 py-1 text-xs font-bold text-ui-primary dark:bg-ui-dark-primary-soft dark:text-ui-dark-primary" key={tag}>{tag}</Text>)}</View>
-    {service.payment_methods.length || service.languages.length || service.certifications.length ? <Text className="mt-3 text-xs font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">{[service.payment_methods.join(' · '), service.languages.join(' · '), service.certifications.join(' · ')].filter(Boolean).join(' · ')}</Text> : null}
-    <View className="mt-4 flex-row flex-wrap gap-2">{service.whatsapp ? <Pressable accessibilityRole="button" className="flex-1 flex-row items-center justify-center rounded-2xl bg-[#25D366] py-3" onPress={openWhatsApp}><MaterialCommunityIcons name="whatsapp" size={19} color="white" /><Text className="ml-2 font-black text-white">WhatsApp</Text></Pressable> : null}{phone ? <Pressable accessibilityRole="button" className="flex-1 flex-row items-center justify-center rounded-2xl bg-ui-secondary py-3 dark:bg-ui-dark-secondary" onPress={call}><MaterialCommunityIcons name="phone" size={19} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Llamar' : 'Call'}</Text></Pressable> : null}<Pressable accessibilityRole="button" className="flex-1 flex-row items-center justify-center rounded-2xl bg-ui-primary py-3 dark:bg-ui-dark-primary" onPress={directions}><MaterialCommunityIcons name="navigation-variant" size={19} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? 'Cómo llegar' : 'Directions'}</Text></Pressable></View>
-    <View className="mt-4 border-t border-ui-border pt-3 dark:border-ui-dark-border"><View className="flex-row flex-wrap gap-x-4">{service.menu_url || service.external_url ? <Pressable accessibilityRole="link" className="min-h-11 justify-center" onPress={() => void Linking.openURL(service.menu_url ?? service.external_url!)}><Text className="text-xs font-black text-ui-primary">{service.menu_url ? (language === 'es' ? 'Menú / catálogo' : 'Menu / catalog') : (language === 'es' ? 'Sitio web' : 'Website')}</Text></Pressable> : null}{service.booking_url ? <Pressable accessibilityRole="link" className="min-h-11 justify-center" onPress={() => { void recordBusinessEvent(service.id, 'reservation', attribution); void Linking.openURL(service.booking_url!); }}><Text className="text-xs font-black text-ui-primary">{isCinema ? (language === 'es' ? 'Cartelera y boletos' : 'Showtimes & tickets') : (language === 'es' ? 'Reservar' : 'Book')}</Text></Pressable> : null}<Pressable accessibilityLabel={saved ? (language === 'es' ? 'Quitar de guardados' : 'Remove from saved') : (language === 'es' ? 'Guardar comercio' : 'Save business')} accessibilityRole="button" className="min-h-11 flex-row items-center" onPress={() => onSaved(service)}><MaterialCommunityIcons name={saved ? 'heart' : 'heart-outline'} size={17} color="#087443" /><Text className="ml-1 text-xs font-black text-ui-primary">{saved ? (language === 'es' ? 'Guardado' : 'Saved') : (language === 'es' ? 'Guardar' : 'Save')}</Text></Pressable><Pressable accessibilityRole="button" className="min-h-11 justify-center" onPress={share}><Text className="text-xs font-black text-ui-primary">{language === 'es' ? 'Compartir' : 'Share'}</Text></Pressable><Pressable accessibilityRole="button" className="min-h-11 justify-center" onPress={() => { onClose(); onReport(service); }}><Text className="text-xs font-black text-ui-primary">{language === 'es' ? 'Reportar información' : 'Report information'}</Text></Pressable></View>{!service.is_claimed && !service.owner_id ? <Pressable accessibilityRole="button" className="min-h-12 flex-row items-center justify-center rounded-control border border-ui-secondary bg-ui-secondary/10 px-4 dark:border-ui-dark-secondary" onPress={() => { onClose(); onClaim(service); }}><MaterialCommunityIcons name="store-check-outline" size={18} color="#0077A8" /><Text className="ml-2 text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{language === 'es' ? '¿Administrás este lugar? Reclamá el perfil' : 'Manage this place? Claim the profile'}</Text></Pressable> : null}</View>
-    <View className="rounded-2xl bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Contá tu experiencia' : 'Share your experience'}</Text><View className="mt-3 flex-row">{[1, 2, 3, 4, 5].map((star) => <Pressable accessibilityLabel={`${star} ${language === 'es' ? 'estrellas' : 'stars'}`} key={star} className="mr-2" onPress={() => setRating(star)}><MaterialCommunityIcons name={star <= rating ? 'star' : 'star-outline'} size={31} color="#E0A100" /></Pressable>)}</View><TextInput value={comment} onChangeText={setComment} placeholder={language === 'es' ? '¿Qué deberían saber otros viajeros?' : 'What should other travelers know?'} multiline className="mt-3 min-h-20 rounded-2xl bg-white px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text" textAlignVertical="top" /><Pressable disabled={busy} className="mt-3 self-start rounded-xl bg-ui-primary px-5 py-3" onPress={() => void submit()}><Text className="font-black text-white">{busy ? (language === 'es' ? 'Publicando…' : 'Posting…') : (language === 'es' ? 'Publicar reseña' : 'Post review')}</Text></Pressable></View>
-    <Text className="mb-3 mt-5 text-sm font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Comentarios recientes' : 'Recent comments'}</Text>{reviews.isLoading ? <FrogLoader className="py-8" color="#087443" /> : reviews.isError ? <Text className="py-6 text-center text-red-600">{language === 'es' ? 'No pudimos cargar las reseñas.' : 'Reviews could not load.'}</Text> : reviews.data?.length ? reviews.data.map((review) => <View key={review.id} className="mb-3 rounded-2xl border border-ui-border p-4 dark:border-ui-dark-border"><View className="flex-row items-center justify-between"><View className="flex-row items-center gap-2"><Text className="font-black text-ui-text dark:text-ui-dark-text">{review.author_name}</Text>{review.author_role === 'admin' ? <View className="flex-row items-center rounded-full bg-ui-primary px-2 py-1"><MaterialCommunityIcons name="shield-crown" size={12} color="white" /><Text className="ml-1 text-[10px] font-black text-white">ADMIN</Text></View> : null}</View><View className="flex-row items-center"><MaterialCommunityIcons name="star" size={15} color="#E0A100" /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{review.rating}</Text></View></View>{review.comment ? <Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{review.comment}</Text> : null}<Text className="mt-2 text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted">{new Date(review.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></View>) : <Text className="py-8 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé la primera persona en reseñar este comercio.' : 'Be the first to review this business.'}</Text>}
-  </ScrollView></View></View></Modal>;
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <View className="flex-1 justify-end bg-black/40">
+        <View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
+          <View className="mb-5 h-1 w-10 self-center rounded-full bg-ui-border dark:bg-ui-dark-border" />
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 pr-3">
+              <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">
+                {service.title}
+              </Text>
+              <View className="mt-2 flex-row flex-wrap items-center gap-x-4 gap-y-2">
+                <View className="flex-row items-center">
+                  <MaterialCommunityIcons
+                    name="map-marker-distance"
+                    size={20}
+                    color="#087443"
+                  />
+                  <Text className="ml-1 font-black text-ui-primary dark:text-ui-dark-primary">
+                    {distanceLabel(service.distance_km, language, nearby)}
+                  </Text>
+                </View>
+                <View className="flex-row items-center">
+                  <MaterialCommunityIcons
+                    name="star"
+                    size={22}
+                    color="#E0A100"
+                  />
+                  <Text className="ml-1 text-lg font-black text-ui-text dark:text-ui-dark-text">
+                    {service.avg_rating.toFixed(1)}
+                  </Text>
+                  <Text className="ml-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">
+                    {service.total_reviews}{" "}
+                    {language === "es" ? "reseñas" : "reviews"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <Pressable
+              accessibilityLabel={
+                language === "es" ? "Cerrar detalle" : "Close details"
+              }
+              accessibilityRole="button"
+              className="h-11 w-11 items-center justify-center"
+              onPress={onClose}
+            >
+              <MaterialCommunityIcons name="close" size={25} color="#68737A" />
+            </Pressable>
+          </View>
+          <ScrollView
+            className="mt-4"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {service.cover_image_url || service.photos[0] ? (
+              <Image
+                source={{ uri: service.cover_image_url ?? service.photos[0] }}
+                className="h-44 w-full rounded-2xl"
+                resizeMode="cover"
+              />
+            ) : null}
+            {description ? (
+              <Text className="mt-4 leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+                {description}
+              </Text>
+            ) : null}
+            <View className="mt-4 flex-row flex-wrap gap-2">
+              <TrustBadge service={service} language={language} />
+              {service.business_updated_at ? (
+                <Text className="rounded-full bg-ui-secondary px-2 py-1 text-[10px] font-black text-white">
+                  {language === "es"
+                    ? "ACTUALIZADO POR EL NEGOCIO"
+                    : "UPDATED BY BUSINESS"}
+                </Text>
+              ) : null}
+            </View>
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              {service.opening_hours ? (
+                <Text className="rounded-full bg-ui-muted px-3 py-1 text-xs font-bold text-ui-text dark:bg-white/10 dark:text-ui-dark-text">
+                  {service.opening_hours}
+                </Text>
+              ) : null}
+              {service.has_parking || service.parking ? (
+                <Text className="rounded-full bg-ui-muted px-3 py-1 text-xs font-bold text-ui-text dark:bg-white/10 dark:text-ui-dark-text">
+                  {language === "es" ? "Estacionamiento" : "Parking"}
+                </Text>
+              ) : null}
+              {service.accessibility ? (
+                <Text className="rounded-full bg-ui-muted px-3 py-1 text-xs font-bold text-ui-text dark:bg-white/10 dark:text-ui-dark-text">
+                  {service.accessibility}
+                </Text>
+              ) : null}
+              {service.experience_type ? (
+                <Text className="rounded-full bg-ui-muted px-3 py-1 text-xs font-bold text-ui-text dark:bg-white/10 dark:text-ui-dark-text">
+                  {service.experience_type}
+                </Text>
+              ) : null}
+              {tags.map((tag) => (
+                <Text
+                  className="rounded-full bg-ui-primary-soft px-3 py-1 text-xs font-bold text-ui-primary dark:bg-ui-dark-primary-soft dark:text-ui-dark-primary"
+                  key={tag}
+                >
+                  {tag}
+                </Text>
+              ))}
+            </View>
+            {service.payment_methods.length ||
+            service.languages.length ||
+            service.certifications.length ? (
+              <Text className="mt-3 text-xs font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">
+                {[
+                  service.payment_methods.join(" · "),
+                  service.languages.join(" · "),
+                  service.certifications.join(" · "),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Text>
+            ) : null}
+            <View className="mt-4 flex-row flex-wrap gap-2">
+              {service.whatsapp ? (
+                <Pressable
+                  accessibilityRole="button"
+                  className="flex-1 flex-row items-center justify-center rounded-2xl bg-[#25D366] py-3"
+                  onPress={openWhatsApp}
+                >
+                  <MaterialCommunityIcons
+                    name="whatsapp"
+                    size={19}
+                    color="white"
+                  />
+                  <Text className="ml-2 font-black text-white">WhatsApp</Text>
+                </Pressable>
+              ) : null}
+              {phone ? (
+                <Pressable
+                  accessibilityRole="button"
+                  className="flex-1 flex-row items-center justify-center rounded-2xl bg-ui-secondary py-3 dark:bg-ui-dark-secondary"
+                  onPress={call}
+                >
+                  <MaterialCommunityIcons
+                    name="phone"
+                    size={19}
+                    color="white"
+                  />
+                  <Text className="ml-2 font-black text-white">
+                    {language === "es" ? "Llamar" : "Call"}
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                accessibilityRole="button"
+                className="flex-1 flex-row items-center justify-center rounded-2xl bg-ui-primary py-3 dark:bg-ui-dark-primary"
+                onPress={directions}
+              >
+                <MaterialCommunityIcons
+                  name="navigation-variant"
+                  size={19}
+                  color="white"
+                />
+                <Text className="ml-2 font-black text-white">
+                  {language === "es" ? "Cómo llegar" : "Directions"}
+                </Text>
+              </Pressable>
+            </View>
+            <View className="mt-4 border-t border-ui-border pt-3 dark:border-ui-dark-border">
+              <View className="flex-row flex-wrap gap-x-4">
+                {service.menu_url || service.external_url ? (
+                  <Pressable
+                    accessibilityRole="link"
+                    className="min-h-11 justify-center"
+                    onPress={() =>
+                      void Linking.openURL(
+                        service.menu_url ?? service.external_url!,
+                      )
+                    }
+                  >
+                    <Text className="text-xs font-black text-ui-primary">
+                      {service.menu_url
+                        ? language === "es"
+                          ? "Menú / catálogo"
+                          : "Menu / catalog"
+                        : language === "es"
+                          ? "Sitio web"
+                          : "Website"}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {service.booking_url ? (
+                  <Pressable
+                    accessibilityRole="link"
+                    className="min-h-11 justify-center"
+                    onPress={() => {
+                      void recordBusinessEvent(
+                        service.id,
+                        "reservation",
+                        attribution,
+                      );
+                      void Linking.openURL(service.booking_url!);
+                    }}
+                  >
+                    <Text className="text-xs font-black text-ui-primary">
+                      {isCinema
+                        ? language === "es"
+                          ? "Cartelera y boletos"
+                          : "Showtimes & tickets"
+                        : language === "es"
+                          ? "Reservar"
+                          : "Book"}
+                    </Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  accessibilityLabel={
+                    saved
+                      ? language === "es"
+                        ? "Quitar de guardados"
+                        : "Remove from saved"
+                      : language === "es"
+                        ? "Guardar comercio"
+                        : "Save business"
+                  }
+                  accessibilityRole="button"
+                  className="min-h-11 flex-row items-center"
+                  onPress={() => onSaved(service)}
+                >
+                  <MaterialCommunityIcons
+                    name={saved ? "heart" : "heart-outline"}
+                    size={17}
+                    color="#087443"
+                  />
+                  <Text className="ml-1 text-xs font-black text-ui-primary">
+                    {saved
+                      ? language === "es"
+                        ? "Guardado"
+                        : "Saved"
+                      : language === "es"
+                        ? "Guardar"
+                        : "Save"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  className="min-h-11 justify-center"
+                  onPress={share}
+                >
+                  <Text className="text-xs font-black text-ui-primary">
+                    {language === "es" ? "Compartir" : "Share"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  className="min-h-11 justify-center"
+                  onPress={() => {
+                    onClose();
+                    onReport(service);
+                  }}
+                >
+                  <Text className="text-xs font-black text-ui-primary">
+                    {language === "es"
+                      ? "Reportar información"
+                      : "Report information"}
+                  </Text>
+                </Pressable>
+              </View>
+              {!service.is_claimed && !service.owner_id ? (
+                <Pressable
+                  accessibilityRole="button"
+                  className="min-h-12 flex-row items-center justify-center rounded-control border border-ui-secondary bg-ui-secondary/10 px-4 dark:border-ui-dark-secondary"
+                  onPress={() => {
+                    onClose();
+                    onClaim(service);
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="store-check-outline"
+                    size={18}
+                    color="#0077A8"
+                  />
+                  <Text className="ml-2 text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">
+                    {language === "es"
+                      ? "¿Administrás este lugar? Reclamá el perfil"
+                      : "Manage this place? Claim the profile"}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <View className="rounded-2xl bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft">
+              <Text className="font-black text-ui-text dark:text-ui-dark-text">
+                {language === "es"
+                  ? "Contá tu experiencia"
+                  : "Share your experience"}
+              </Text>
+              <View className="mt-3 flex-row">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Pressable
+                    accessibilityLabel={`${star} ${language === "es" ? "estrellas" : "stars"}`}
+                    key={star}
+                    className="mr-2"
+                    onPress={() => setRating(star)}
+                  >
+                    <MaterialCommunityIcons
+                      name={star <= rating ? "star" : "star-outline"}
+                      size={31}
+                      color="#E0A100"
+                    />
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                value={comment}
+                onChangeText={setComment}
+                placeholder={
+                  language === "es"
+                    ? "¿Qué deberían saber otros viajeros?"
+                    : "What should other travelers know?"
+                }
+                multiline
+                className="mt-3 min-h-20 rounded-2xl bg-white px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text"
+                textAlignVertical="top"
+              />
+              <Pressable
+                disabled={busy}
+                className="mt-3 self-start rounded-xl bg-ui-primary px-5 py-3"
+                onPress={() => void submit()}
+              >
+                <Text className="font-black text-white">
+                  {busy
+                    ? language === "es"
+                      ? "Publicando…"
+                      : "Posting…"
+                    : language === "es"
+                      ? "Publicar reseña"
+                      : "Post review"}
+                </Text>
+              </Pressable>
+            </View>
+            <Text className="mb-3 mt-5 text-sm font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">
+              {language === "es" ? "Comentarios recientes" : "Recent comments"}
+            </Text>
+            {reviews.isLoading ? (
+              <FrogLoader className="py-8" color="#087443" />
+            ) : reviews.isError ? (
+              <Text className="py-6 text-center text-red-600">
+                {language === "es"
+                  ? "No pudimos cargar las reseñas."
+                  : "Reviews could not load."}
+              </Text>
+            ) : reviews.data?.length ? (
+              reviews.data.map((review) => (
+                <View
+                  key={review.id}
+                  className="mb-3 rounded-2xl border border-ui-border p-4 dark:border-ui-dark-border"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="font-black text-ui-text dark:text-ui-dark-text">
+                        {review.author_name}
+                      </Text>
+                      {review.author_role === "admin" ? (
+                        <View className="flex-row items-center rounded-full bg-ui-primary px-2 py-1">
+                          <MaterialCommunityIcons
+                            name="shield-crown"
+                            size={12}
+                            color="white"
+                          />
+                          <Text className="ml-1 text-[10px] font-black text-white">
+                            ADMIN
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View className="flex-row items-center">
+                      <MaterialCommunityIcons
+                        name="star"
+                        size={15}
+                        color="#E0A100"
+                      />
+                      <Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">
+                        {review.rating}
+                      </Text>
+                    </View>
+                  </View>
+                  {review.comment ? (
+                    <Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+                      {review.comment}
+                    </Text>
+                  ) : null}
+                  <Text className="mt-2 text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted">
+                    {new Date(review.created_at).toLocaleDateString(
+                      language === "es" ? "es-CR" : "en-US",
+                    )}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text className="py-8 text-center text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es"
+                  ? "Sé la primera persona en reseñar este comercio."
+                  : "Be the first to review this business."}
+              </Text>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
-type ProfileTextKey = Exclude<keyof CommercialProfileForm, 'category' | 'subcategories' | 'hasParking'>;
+type ProfileTextKey = Exclude<
+  keyof CommercialProfileForm,
+  "category" | "subcategories" | "hasParking"
+>;
 
 function ProfileEditorFields({
   form,
@@ -250,134 +1080,928 @@ function ProfileEditorFields({
   onToggleSubcategory,
 }: {
   form: CommercialProfileForm;
-  language: 'es' | 'en';
+  language: "es" | "en";
   onChange: (key: ProfileTextKey, value: string) => void;
   onCategoryChange: (category: CommerceCategoryId) => void;
   onToggleParking: () => void;
   onToggleSubcategory: (subcategory: string) => void;
 }) {
   const { categories, subcategories } = useCommerceTaxonomy();
-  const hourOptions = language === 'es'
-    ? ['Todos los días', 'Lunes a viernes', 'Fin de semana', 'Con cita previa']
-    : ['Every day', 'Monday to Friday', 'Weekends', 'By appointment'];
-  const customHours = Boolean(form.openingHours && !hourOptions.includes(form.openingHours));
-  const availableSubcategories = subcategories.filter((item) => item.parent_id === form.category);
-  const field = (key: ProfileTextKey, label: string, placeholder?: string, multiline = false) => <View className="mt-4"><Text className="mb-2 text-sm font-bold text-ui-text dark:text-ui-dark-text">{label}</Text><TextInput accessibilityLabel={label} value={form[key]} onChangeText={(value) => onChange(key, value)} placeholder={placeholder ?? label.replace(' *', '')} placeholderTextColor="#68737A" multiline={multiline} textAlignVertical={multiline ? 'top' : 'center'} className={multiline ? 'min-h-24 rounded-control border border-ui-border bg-ui-surface px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text' : 'min-h-12 rounded-control border border-ui-border bg-ui-surface px-4 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text'} /></View>;
+  const hourOptions =
+    language === "es"
+      ? [
+          "Todos los días",
+          "Lunes a viernes",
+          "Fin de semana",
+          "Con cita previa",
+        ]
+      : ["Every day", "Monday to Friday", "Weekends", "By appointment"];
+  const customHours = Boolean(
+    form.openingHours && !hourOptions.includes(form.openingHours),
+  );
+  const availableSubcategories = subcategories.filter(
+    (item) => item.parent_id === form.category,
+  );
+  const field = (
+    key: ProfileTextKey,
+    label: string,
+    placeholder?: string,
+    multiline = false,
+  ) => (
+    <View className="mt-4">
+      <Text className="mb-2 text-sm font-bold text-ui-text dark:text-ui-dark-text">
+        {label}
+      </Text>
+      <TextInput
+        accessibilityLabel={label}
+        value={form[key]}
+        onChangeText={(value) => onChange(key, value)}
+        placeholder={placeholder ?? label.replace(" *", "")}
+        placeholderTextColor="#68737A"
+        multiline={multiline}
+        textAlignVertical={multiline ? "top" : "center"}
+        className={
+          multiline
+            ? "min-h-24 rounded-control border border-ui-border bg-ui-surface px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text"
+            : "min-h-12 rounded-control border border-ui-border bg-ui-surface px-4 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text"
+        }
+      />
+    </View>
+  );
 
-  return <>
-    {field('title', language === 'es' ? 'Nombre del comercio o servicio *' : 'Business or service name *')}
-    <View className="mt-4"><Text className="mb-2 text-sm font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Tipo de comercio o servicio *' : 'Business or service type *'}</Text><View className="min-h-12 justify-center overflow-hidden rounded-control border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface"><Picker accessibilityLabel={language === 'es' ? 'Tipo de comercio o servicio' : 'Business or service type'} selectedValue={form.category} onValueChange={(value) => onCategoryChange(String(value))} style={{ color: '#151B1F' }}><Picker.Item label={language === 'es' ? 'Elegí una opción' : 'Choose an option'} value="" enabled={false} />{categories.map((item) => <Picker.Item key={item.id} label={language === 'es' ? item.label_es : item.label_en} value={item.id} />)}</Picker></View></View>
-    {availableSubcategories.length ? <View className="mt-4"><Text className="mb-2 text-sm font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Especialidades' : 'Specialties'}</Text><View className="flex-row flex-wrap gap-2">{availableSubcategories.map((item) => { const selected = form.subcategories.includes(item.id); return <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} className={selected ? 'min-h-11 justify-center rounded-full bg-ui-primary px-4' : 'min-h-11 justify-center rounded-full border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface'} key={item.id} onPress={() => onToggleSubcategory(item.id)}><Text className={selected ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? item.label_es : item.label_en}</Text></Pressable>; })}</View></View> : null}
-    {form.category === 'other' ? field('experienceType', language === 'es' ? '¿Qué tipo es? *' : 'What type is it? *', language === 'es' ? 'Escribí el tipo de comercio o servicio' : 'Enter the business or service type') : null}
-    <View className="mt-4"><Text className="mb-2 text-sm font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Horario' : 'Hours'}</Text><View className="min-h-12 justify-center overflow-hidden rounded-control border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface"><Picker accessibilityLabel={language === 'es' ? 'Horario' : 'Hours'} selectedValue={customHours ? 'other' : form.openingHours} onValueChange={(value) => onChange('openingHours', value === 'other' ? ' ' : String(value))} style={{ color: '#151B1F' }}><Picker.Item label={language === 'es' ? 'Elegí una opción' : 'Choose an option'} value="" />{hourOptions.map((option) => <Picker.Item key={option} label={option} value={option} />)}<Picker.Item label={language === 'es' ? 'Otro' : 'Other'} value="other" /></Picker></View></View>
-    {customHours ? field('openingHours', language === 'es' ? 'Especificá el horario' : 'Enter the hours', language === 'es' ? 'Ejemplo: lunes a sábado, 8:00–18:00' : 'Example: Monday to Saturday, 8:00–18:00') : null}
-    <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border"><Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Contacto y ventas' : 'Contact and sales'}</Text>{field('phone', language === 'es' ? 'Teléfono' : 'Phone')}{field('whatsapp', 'WhatsApp', language === 'es' ? 'Ejemplo: 50688887777' : 'Example: 50688887777')}{field('websiteUrl', language === 'es' ? 'Sitio web' : 'Website', 'https://')}{field('bookingUrl', language === 'es' ? 'Enlace de reservas' : 'Booking link', 'https://')}{field('menuUrl', language === 'es' ? 'Menú o catálogo' : 'Menu or catalog', 'https://')}{field('priceRange', language === 'es' ? 'Rango de precios' : 'Price range', language === 'es' ? 'Ejemplo: ₡₡ o desde ₡15.000' : 'Example: $$ or from $30')}</View>
-    <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border"><Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Experiencia y facilidades' : 'Experience and amenities'}</Text>{field('description', language === 'es' ? 'Descripción completa' : 'Full description', language === 'es' ? 'Contá qué ofrece y qué hace especial al lugar.' : 'Describe what you offer and what makes it special.', true)}{field('parking', language === 'es' ? 'Información de parqueo' : 'Parking information')}{field('paymentMethods', language === 'es' ? 'Métodos de pago' : 'Payment methods', language === 'es' ? 'SINPE Móvil, efectivo, Visa' : 'Cash, Visa, mobile payment')}{field('accessibility', language === 'es' ? 'Accesibilidad' : 'Accessibility', undefined, true)}{field('languages', language === 'es' ? 'Idiomas de atención' : 'Service languages', language === 'es' ? 'Español, inglés' : 'Spanish, English')}{field('certifications', language === 'es' ? 'Certificaciones' : 'Certifications', undefined, true)}<Pressable accessibilityRole="checkbox" accessibilityState={{ checked: form.hasParking }} className="mt-4 min-h-12 flex-row items-center rounded-control border border-ui-border px-4 dark:border-ui-dark-border" onPress={onToggleParking}><MaterialCommunityIcons name={form.hasParking ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'} size={22} color="#087443" /><Text className="ml-3 font-bold text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Cuenta con parqueo' : 'Parking available'}</Text></Pressable></View>
-  </>;
+  return (
+    <>
+      {field(
+        "title",
+        language === "es"
+          ? "Nombre del comercio o servicio *"
+          : "Business or service name *",
+      )}
+      <View className="mt-4">
+        <Text className="mb-2 text-sm font-bold text-ui-text dark:text-ui-dark-text">
+          {language === "es"
+            ? "Tipo de comercio o servicio *"
+            : "Business or service type *"}
+        </Text>
+        <View className="min-h-12 justify-center overflow-hidden rounded-control border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface">
+          <Picker
+            accessibilityLabel={
+              language === "es"
+                ? "Tipo de comercio o servicio"
+                : "Business or service type"
+            }
+            selectedValue={form.category}
+            onValueChange={(value) => onCategoryChange(String(value))}
+            style={{ color: "#151B1F" }}
+          >
+            <Picker.Item
+              label={
+                language === "es" ? "Elegí una opción" : "Choose an option"
+              }
+              value=""
+              enabled={false}
+            />
+            {categories.map((item) => (
+              <Picker.Item
+                key={item.id}
+                label={language === "es" ? item.label_es : item.label_en}
+                value={item.id}
+              />
+            ))}
+          </Picker>
+        </View>
+      </View>
+      {availableSubcategories.length ? (
+        <View className="mt-4">
+          <Text className="mb-2 text-sm font-bold text-ui-text dark:text-ui-dark-text">
+            {language === "es" ? "Especialidades" : "Specialties"}
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            {availableSubcategories.map((item) => {
+              const selected = form.subcategories.includes(item.id);
+              return (
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selected }}
+                  className={
+                    selected
+                      ? "min-h-11 justify-center rounded-full bg-ui-primary px-4"
+                      : "min-h-11 justify-center rounded-full border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"
+                  }
+                  key={item.id}
+                  onPress={() => onToggleSubcategory(item.id)}
+                >
+                  <Text
+                    className={
+                      selected
+                        ? "text-xs font-black text-white"
+                        : "text-xs font-bold text-ui-text dark:text-ui-dark-text"
+                    }
+                  >
+                    {language === "es" ? item.label_es : item.label_en}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+      {form.category === "other"
+        ? field(
+            "experienceType",
+            language === "es" ? "¿Qué tipo es? *" : "What type is it? *",
+            language === "es"
+              ? "Escribí el tipo de comercio o servicio"
+              : "Enter the business or service type",
+          )
+        : null}
+      <View className="mt-4">
+        <Text className="mb-2 text-sm font-bold text-ui-text dark:text-ui-dark-text">
+          {language === "es" ? "Horario" : "Hours"}
+        </Text>
+        <View className="min-h-12 justify-center overflow-hidden rounded-control border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface">
+          <Picker
+            accessibilityLabel={language === "es" ? "Horario" : "Hours"}
+            selectedValue={customHours ? "other" : form.openingHours}
+            onValueChange={(value) =>
+              onChange("openingHours", value === "other" ? " " : String(value))
+            }
+            style={{ color: "#151B1F" }}
+          >
+            <Picker.Item
+              label={
+                language === "es" ? "Elegí una opción" : "Choose an option"
+              }
+              value=""
+            />
+            {hourOptions.map((option) => (
+              <Picker.Item key={option} label={option} value={option} />
+            ))}
+            <Picker.Item
+              label={language === "es" ? "Otro" : "Other"}
+              value="other"
+            />
+          </Picker>
+        </View>
+      </View>
+      {customHours
+        ? field(
+            "openingHours",
+            language === "es" ? "Especificá el horario" : "Enter the hours",
+            language === "es"
+              ? "Ejemplo: lunes a sábado, 8:00–18:00"
+              : "Example: Monday to Saturday, 8:00–18:00",
+          )
+        : null}
+      <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border">
+        <Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">
+          {language === "es" ? "Contacto y ventas" : "Contact and sales"}
+        </Text>
+        {field("phone", language === "es" ? "Teléfono" : "Phone")}
+        {field(
+          "whatsapp",
+          "WhatsApp",
+          language === "es" ? "Ejemplo: 50688887777" : "Example: 50688887777",
+        )}
+        {field(
+          "websiteUrl",
+          language === "es" ? "Sitio web" : "Website",
+          "https://",
+        )}
+        {field(
+          "bookingUrl",
+          language === "es" ? "Enlace de reservas" : "Booking link",
+          "https://",
+        )}
+        {field(
+          "menuUrl",
+          language === "es" ? "Menú o catálogo" : "Menu or catalog",
+          "https://",
+        )}
+        {field(
+          "priceRange",
+          language === "es" ? "Rango de precios" : "Price range",
+          language === "es"
+            ? "Ejemplo: ₡₡ o desde ₡15.000"
+            : "Example: $$ or from $30",
+        )}
+      </View>
+      <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border">
+        <Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">
+          {language === "es"
+            ? "Experiencia y facilidades"
+            : "Experience and amenities"}
+        </Text>
+        {field(
+          "description",
+          language === "es" ? "Descripción completa" : "Full description",
+          language === "es"
+            ? "Contá qué ofrece y qué hace especial al lugar."
+            : "Describe what you offer and what makes it special.",
+          true,
+        )}
+        {field(
+          "parking",
+          language === "es" ? "Información de parqueo" : "Parking information",
+        )}
+        {field(
+          "paymentMethods",
+          language === "es" ? "Métodos de pago" : "Payment methods",
+          language === "es"
+            ? "SINPE Móvil, efectivo, Visa"
+            : "Cash, Visa, mobile payment",
+        )}
+        {field(
+          "accessibility",
+          language === "es" ? "Accesibilidad" : "Accessibility",
+          undefined,
+          true,
+        )}
+        {field(
+          "languages",
+          language === "es" ? "Idiomas de atención" : "Service languages",
+          language === "es" ? "Español, inglés" : "Spanish, English",
+        )}
+        {field(
+          "certifications",
+          language === "es" ? "Certificaciones" : "Certifications",
+          undefined,
+          true,
+        )}
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: form.hasParking }}
+          className="mt-4 min-h-12 flex-row items-center rounded-control border border-ui-border px-4 dark:border-ui-dark-border"
+          onPress={onToggleParking}
+        >
+          <MaterialCommunityIcons
+            name={
+              form.hasParking
+                ? "checkbox-marked-circle"
+                : "checkbox-blank-circle-outline"
+            }
+            size={22}
+            color="#087443"
+          />
+          <Text className="ml-3 font-bold text-ui-text dark:text-ui-dark-text">
+            {language === "es" ? "Cuenta con parqueo" : "Parking available"}
+          </Text>
+        </Pressable>
+      </View>
+    </>
+  );
 }
 
-function BusinessLocationEditor({ language, location, onChange }: { language: 'es' | 'en'; location?: MapCoordinate; onChange: (location: MapCoordinate | undefined) => void }) {
+function BusinessLocationEditor({
+  language,
+  location,
+  onChange,
+}: {
+  language: "es" | "en";
+  location?: MapCoordinate;
+  onChange: (location: MapCoordinate | undefined) => void;
+}) {
   const [locating, setLocating] = useState(false);
   const selectCurrentLocation = async () => {
     setLocating(true);
     try {
       const current = await getPreciseCurrentLocation(language);
       onChange({ latitude: current.latitude, longitude: current.longitude });
-    } catch (error) { Alert.alert(language === 'es' ? 'Ubicación' : 'Location', error instanceof Error ? error.message : 'Error'); }
-    finally { setLocating(false); }
+    } catch (error) {
+      Alert.alert(
+        language === "es" ? "Ubicación" : "Location",
+        error instanceof Error ? error.message : "Error",
+      );
+    } finally {
+      setLocating(false);
+    }
   };
-  return <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border"><Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ubicación exacta' : 'Exact location'}</Text><Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Usá tu ubicación actual o tocá el mapa donde está el negocio.' : 'Use your current location or tap the business location on the map.'}</Text><Pressable accessibilityRole="button" className="my-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 disabled:opacity-50 dark:bg-ui-dark-secondary" disabled={locating} onPress={() => void selectCurrentLocation()}>{locating ? <FrogLoader color="white" /> : <MaterialCommunityIcons name="crosshairs-gps" size={20} color="white" />}<Text className="ml-2 font-black text-white">{language === 'es' ? 'Usar mi ubicación actual' : 'Use my current location'}</Text></Pressable><View className="overflow-hidden rounded-card"><MapCanvas onLocationPick={onChange} selectedLocation={location} /></View><Text className="mt-2 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{location ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}` : (language === 'es' ? 'Tocá el mapa para marcar la ubicación.' : 'Tap the map to set the location.')}</Text></View>;
+  return (
+    <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border">
+      <Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">
+        {language === "es" ? "Ubicación exacta" : "Exact location"}
+      </Text>
+      <Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+        {language === "es"
+          ? "Usá tu ubicación actual o tocá el mapa donde está el negocio."
+          : "Use your current location or tap the business location on the map."}
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        className="my-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 disabled:opacity-50 dark:bg-ui-dark-secondary"
+        disabled={locating}
+        onPress={() => void selectCurrentLocation()}
+      >
+        {locating ? (
+          <FrogLoader color="white" />
+        ) : (
+          <MaterialCommunityIcons
+            name="crosshairs-gps"
+            size={20}
+            color="white"
+          />
+        )}
+        <Text className="ml-2 font-black text-white">
+          {language === "es"
+            ? "Usar mi ubicación actual"
+            : "Use my current location"}
+        </Text>
+      </Pressable>
+      <View className="overflow-hidden rounded-card">
+        <MapCanvas onLocationPick={onChange} selectedLocation={location} />
+      </View>
+      <Text className="mt-2 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
+        {location
+          ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+          : language === "es"
+            ? "Tocá el mapa para marcar la ubicación."
+            : "Tap the map to set the location."}
+      </Text>
+    </View>
+  );
 }
 
-function CampaignOptions({ activeCampaigns, bannerCapacityReached, bannerUrl, busy, language, onBannerUrlChange, onBuy }: { activeCampaigns: { campaign_type: 'featured' | 'banner'; ends_at: string; status: string }[]; bannerCapacityReached: boolean; bannerUrl: string; busy?: string; language: 'es' | 'en'; onBannerUrlChange: (value: string) => void; onBuy: (offerId: CampaignOfferId, banner?: PreparedCampaignBanner) => void }) {
+function CampaignOptions({
+  activeCampaigns,
+  bannerCapacityReached,
+  bannerUrl,
+  busy,
+  language,
+  onCancel,
+  onBannerUrlChange,
+  onBuy,
+  storePrices,
+}: {
+  activeCampaigns: {
+    campaign_type: "featured" | "banner";
+    ends_at: string;
+    status: string;
+  }[];
+  bannerCapacityReached: boolean;
+  bannerUrl: string;
+  busy?: string;
+  language: "es" | "en";
+  onCancel: (offerId: CampaignOfferId) => void;
+  onBannerUrlChange: (value: string) => void;
+  onBuy: (offerId: CampaignOfferId, banner?: PreparedCampaignBanner) => void;
+  storePrices: Partial<Record<CampaignOfferId, string>>;
+}) {
   const { isDark } = useApp();
   const gold = appTheme.colors.commerceGold;
   const goldInk = isDark ? gold.darkInk : gold.ink;
-  const [bannerSource, setBannerSource] = useState<ImagePicker.ImagePickerAsset>();
+  const [bannerSource, setBannerSource] =
+    useState<ImagePicker.ImagePickerAsset>();
   const [bannerPreview, setBannerPreview] = useState<PreparedCampaignBanner>();
-  const [bannerFocus, setBannerFocus] = useState<CampaignBannerFocus>('center');
+  const [bannerFocus, setBannerFocus] = useState<CampaignBannerFocus>("center");
   const [bannerPreparing, setBannerPreparing] = useState(false);
-  const [bannerError, setBannerError] = useState('');
+  const [bannerError, setBannerError] = useState("");
   useEffect(() => {
-    setBannerError(bannerCapacityReached
-      ? (language === 'es' ? 'Lo lamentamos, el número máximo de banners activos ya fue alcanzado.' : 'Sorry, the maximum number of active banners has already been reached.')
-      : '');
+    setBannerError(
+      bannerCapacityReached
+        ? language === "es"
+          ? "Lo lamentamos, el número máximo de banners activos ya fue alcanzado."
+          : "Sorry, the maximum number of active banners has already been reached."
+        : "",
+    );
   }, [bannerCapacityReached, language]);
-  const processBanner = async (asset: ImagePicker.ImagePickerAsset, focus: CampaignBannerFocus) => {
+  const processBanner = async (
+    asset: ImagePicker.ImagePickerAsset,
+    focus: CampaignBannerFocus,
+  ) => {
     setBannerPreparing(true);
-    setBannerError('');
+    setBannerError("");
     try {
       const prepared = await prepareCampaignBanner(asset, focus);
       setBannerSource(asset);
       setBannerFocus(focus);
       setBannerPreview(prepared);
-    } catch (error) { setBannerError(error instanceof Error ? error.message : (language === 'es' ? 'No pudimos preparar la imagen.' : 'We could not prepare the image.')); }
-    finally { setBannerPreparing(false); }
+    } catch (error) {
+      setBannerError(
+        error instanceof Error
+          ? error.message
+          : language === "es"
+            ? "No pudimos preparar la imagen."
+            : "We could not prepare the image.",
+      );
+    } finally {
+      setBannerPreparing(false);
+    }
   };
   const pickBanner = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 1 });
-    if (!result.canceled) await processBanner(result.assets[0], 'center');
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      quality: 1,
+    });
+    if (!result.canceled) await processBanner(result.assets[0], "center");
   };
   const changeBannerFocus = async (focus: CampaignBannerFocus) => {
     if (bannerSource) await processBanner(bannerSource, focus);
   };
   const options = [
-    { type: 'featured' as const, icon: 'format-list-numbered' as const, oneTime: 'featured_30d' as const, recurring: 'featured_monthly' as const },
-    { type: 'banner' as const, icon: 'image-outline' as const, oneTime: 'banner_30d' as const, recurring: 'banner_monthly' as const },
+    {
+      type: "featured" as const,
+      icon: "format-list-numbered" as const,
+      offerId: "featured_monthly" as const,
+    },
+    {
+      type: "banner" as const,
+      icon: "image-outline" as const,
+      offerId: "banner_monthly" as const,
+    },
   ];
-  return <View className="mt-5 overflow-hidden rounded-card border p-4" style={{ backgroundColor: isDark ? gold.darkGlass : gold.glass, borderColor: isDark ? gold.darkBorder : gold.border }}><View className="mb-3 h-11 w-11 items-center justify-center rounded-2xl" style={{ backgroundColor: gold.highlight }}><MaterialCommunityIcons name="bullhorn-outline" size={24} color={goldInk} /></View><Text className="text-xl font-bold tracking-tight" style={{ color: goldInk }}>{language === 'es' ? 'Campañas publicitarias' : 'Advertising campaigns'}</Text><Text className="mt-1 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Son adicionales a tu plan actual. Cada periodo dura 30 días.' : 'These are separate from your current plan. Each period lasts 30 days.'}</Text>{options.map((option) => {
-    const offer = campaignOffers[option.oneTime];
-    const active = activeCampaigns.find((campaign) => campaign.campaign_type === option.type && campaign.status === 'active' && new Date(campaign.ends_at).getTime() > Date.now());
-    const unavailable = Boolean(active) || (option.type === 'banner' && bannerCapacityReached);
-    const bannerRequired = unavailable || (option.type === 'banner' && !bannerPreview);
-    return <View className="mt-4 rounded-2xl border bg-ui-surface/70 p-4 dark:bg-ui-dark-surface/70" style={{ borderColor: isDark ? gold.darkBorder : gold.border }} key={option.type}><View className="flex-row flex-wrap items-start gap-y-3"><MaterialCommunityIcons name={option.icon} size={22} color={goldInk} /><View className="ml-3 min-w-36 flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{offer.title[language === 'es' ? 0 : 1]}</Text><Text className="mt-1 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{offer.detail[language === 'es' ? 0 : 1]}</Text></View>{active ? <Text className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">{language === 'es' ? `ACTIVA HASTA ${new Date(active.ends_at).toLocaleDateString('es-CR')}` : `ACTIVE UNTIL ${new Date(active.ends_at).toLocaleDateString('en-US')}`}</Text> : null}</View>{option.type === 'banner' ? <View className="mt-3"><Text className="text-xs font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Imagen del banner' : 'Banner image'}</Text><Text className="mt-1 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Horizontal 3:1 · recomendado 1200 × 400 px · JPG, PNG o WebP · máximo 6 MB.' : 'Horizontal 3:1 · 1200 × 400 px recommended · JPG, PNG or WebP · 6 MB max.'}</Text>{bannerPreview ? <><View className="mt-3 overflow-hidden rounded-xl bg-ui-muted dark:bg-ui-dark-muted"><Image accessibilityLabel={language === 'es' ? 'Previsualización del banner' : 'Banner preview'} source={{ uri: bannerPreview.uri }} className="w-full" style={{ aspectRatio: 3 }} resizeMode="cover" /><View pointerEvents="none" className="absolute border border-dashed border-white/80" style={{ bottom: 10, left: '10%', right: '10%', top: 10 }}><Text className="self-center bg-black/50 px-2 py-0.5 text-[9px] font-black text-white">{language === 'es' ? 'ZONA SEGURA' : 'SAFE AREA'}</Text></View></View><View className="mt-2 flex-row gap-2">{(['top', 'center', 'bottom'] as CampaignBannerFocus[]).map((focus) => <Pressable accessibilityRole="button" accessibilityState={{ selected: bannerFocus === focus }} className={bannerFocus === focus ? 'min-h-11 flex-1 items-center justify-center rounded-full bg-ui-primary px-2' : 'min-h-11 flex-1 items-center justify-center rounded-full border border-ui-border px-2 dark:border-ui-dark-border'} disabled={bannerPreparing} key={focus} onPress={() => void changeBannerFocus(focus)}><Text className={bannerFocus === focus ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{focus === 'top' ? (language === 'es' ? 'Arriba' : 'Top') : focus === 'center' ? (language === 'es' ? 'Centro' : 'Center') : (language === 'es' ? 'Abajo' : 'Bottom')}</Text></Pressable>)}</View></> : null}<Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-dashed px-4 active:opacity-70 disabled:opacity-50" style={{ borderColor: goldInk }} disabled={bannerPreparing || Boolean(busy)} onPress={() => void pickBanner()}>{bannerPreparing ? <FrogLoader color={goldInk} /> : <MaterialCommunityIcons name="image-edit-outline" size={19} color={goldInk} />}<Text className="ml-2 font-black" style={{ color: goldInk }}>{bannerPreview ? (language === 'es' ? 'Cambiar imagen' : 'Replace image') : (language === 'es' ? 'Elegir imagen' : 'Choose image')}</Text></Pressable>{bannerError ? <Text accessibilityRole="alert" className="mt-2 text-xs font-semibold text-red-700 dark:text-red-300">{bannerError}</Text> : null}<TextInput accessibilityLabel={language === 'es' ? 'URL de destino del banner' : 'Banner destination URL'} autoCapitalize="none" autoCorrect={false} keyboardType="url" className="mt-3 min-h-12 rounded-control border border-ui-border bg-ui-surface px-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text" placeholder="https://tu-sitio.com" placeholderTextColor="#68737A" value={bannerUrl} onChangeText={onBannerUrlChange} /></View> : null}<View className="mt-3 flex-row gap-2"><Pressable accessibilityLabel={`${offer.title[language === 'es' ? 0 : 1]}, ${language === 'es' ? 'pago único' : 'one-time payment'}`} accessibilityRole="button" className="min-h-12 flex-1 items-center justify-center rounded-control border bg-ui-surface px-2 dark:bg-ui-dark-surface active:opacity-70 disabled:opacity-50" style={{ borderColor: goldInk }} disabled={Boolean(busy) || bannerRequired} onPress={() => onBuy(option.oneTime, bannerPreview)}>{busy === option.oneTime ? <FrogLoader color="#087443" /> : <><Text className="text-center text-xs font-black" style={{ color: goldInk }}>{language === 'es' ? 'Contratar una vez' : 'Buy once'}</Text><Text className="text-xs font-bold" style={{ color: goldInk }}>{campaignOffers[option.oneTime].price}</Text></>}</Pressable><Pressable accessibilityLabel={`${offer.title[language === 'es' ? 0 : 1]}, ${language === 'es' ? 'renovación automática' : 'automatic renewal'}`} accessibilityRole="button" className="min-h-12 flex-1 items-center justify-center rounded-control px-2 active:opacity-70 disabled:opacity-50" style={{ backgroundColor: gold.ink }} disabled={Boolean(busy) || bannerRequired} onPress={() => onBuy(option.recurring, bannerPreview)}>{busy === option.recurring ? <FrogLoader color="white" /> : <><Text className="text-center text-xs font-black text-white">{language === 'es' ? 'Renovación automática' : 'Auto-renew'}</Text><Text className="text-xs font-bold text-white">{campaignOffers[option.recurring].price}</Text></>}</Pressable></View>{bannerRequired ? <Text className="mt-2 text-center text-[11px] font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Elegí y revisá la imagen para habilitar la contratación.' : 'Choose and review the image to enable checkout.'}</Text> : null}</View>;
-  })}</View>;
+  return (
+    <View
+      className="mt-5 overflow-hidden rounded-card border p-4"
+      style={{
+        backgroundColor: isDark ? gold.darkGlass : gold.glass,
+        borderColor: isDark ? gold.darkBorder : gold.border,
+      }}
+    >
+      <View
+        className="mb-3 h-11 w-11 items-center justify-center rounded-2xl"
+        style={{ backgroundColor: gold.highlight }}
+      >
+        <MaterialCommunityIcons
+          name="bullhorn-outline"
+          size={24}
+          color={goldInk}
+        />
+      </View>
+      <Text
+        className="text-xl font-bold tracking-tight"
+        style={{ color: goldInk }}
+      >
+        {language === "es" ? "Campañas publicitarias" : "Advertising campaigns"}
+      </Text>
+      <Text className="mt-1 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+        {language === "es"
+          ? "Son adicionales a tu plan actual. Cada periodo dura 30 días."
+          : "These are separate from your current plan. Each period lasts 30 days."}
+      </Text>
+      {options.map((option) => {
+        const offer = campaignOffers[option.offerId];
+        const active = activeCampaigns.find(
+          (campaign) =>
+            campaign.campaign_type === option.type &&
+            campaign.status === "active" &&
+            new Date(campaign.ends_at).getTime() > Date.now(),
+        );
+        const unavailable =
+          Boolean(active) ||
+          (option.type === "banner" && bannerCapacityReached);
+        const bannerRequired =
+          unavailable || (option.type === "banner" && !bannerPreview);
+        return (
+          <View
+            className="mt-4 rounded-2xl border bg-ui-surface/70 p-4 dark:bg-ui-dark-surface/70"
+            style={{ borderColor: isDark ? gold.darkBorder : gold.border }}
+            key={option.type}
+          >
+            <View className="flex-row flex-wrap items-start gap-y-3">
+              <MaterialCommunityIcons
+                name={option.icon}
+                size={22}
+                color={goldInk}
+              />
+              <View className="ml-3 min-w-36 flex-1">
+                <Text className="font-black text-ui-text dark:text-ui-dark-text">
+                  {offer.title[language === "es" ? 0 : 1]}
+                </Text>
+                <Text className="mt-1 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+                  {offer.detail[language === "es" ? 0 : 1]}
+                </Text>
+              </View>
+              {active ? (
+                <Text className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">
+                  {language === "es"
+                    ? `ACTIVA HASTA ${new Date(active.ends_at).toLocaleDateString("es-CR")}`
+                    : `ACTIVE UNTIL ${new Date(active.ends_at).toLocaleDateString("en-US")}`}
+                </Text>
+              ) : null}
+            </View>
+            {option.type === "banner" ? (
+              <View className="mt-3">
+                <Text className="text-xs font-black text-ui-text dark:text-ui-dark-text">
+                  {language === "es" ? "Imagen del banner" : "Banner image"}
+                </Text>
+                <Text className="mt-1 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+                  {language === "es"
+                    ? "Horizontal 3:1 · recomendado 1200 × 400 px · JPG, PNG o WebP · máximo 6 MB."
+                    : "Horizontal 3:1 · 1200 × 400 px recommended · JPG, PNG or WebP · 6 MB max."}
+                </Text>
+                {bannerPreview ? (
+                  <>
+                    <View className="mt-3 overflow-hidden rounded-xl bg-ui-muted dark:bg-ui-dark-muted">
+                      <Image
+                        accessibilityLabel={
+                          language === "es"
+                            ? "Previsualización del banner"
+                            : "Banner preview"
+                        }
+                        source={{ uri: bannerPreview.uri }}
+                        className="w-full"
+                        style={{ aspectRatio: 3 }}
+                        resizeMode="cover"
+                      />
+                      <View
+                        pointerEvents="none"
+                        className="absolute border border-dashed border-white/80"
+                        style={{
+                          bottom: 10,
+                          left: "10%",
+                          right: "10%",
+                          top: 10,
+                        }}
+                      >
+                        <Text className="self-center bg-black/50 px-2 py-0.5 text-[9px] font-black text-white">
+                          {language === "es" ? "ZONA SEGURA" : "SAFE AREA"}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="mt-2 flex-row gap-2">
+                      {(
+                        ["top", "center", "bottom"] as CampaignBannerFocus[]
+                      ).map((focus) => (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityState={{
+                            selected: bannerFocus === focus,
+                          }}
+                          className={
+                            bannerFocus === focus
+                              ? "min-h-11 flex-1 items-center justify-center rounded-full bg-ui-primary px-2"
+                              : "min-h-11 flex-1 items-center justify-center rounded-full border border-ui-border px-2 dark:border-ui-dark-border"
+                          }
+                          disabled={bannerPreparing}
+                          key={focus}
+                          onPress={() => void changeBannerFocus(focus)}
+                        >
+                          <Text
+                            className={
+                              bannerFocus === focus
+                                ? "text-xs font-black text-white"
+                                : "text-xs font-bold text-ui-text dark:text-ui-dark-text"
+                            }
+                          >
+                            {focus === "top"
+                              ? language === "es"
+                                ? "Arriba"
+                                : "Top"
+                              : focus === "center"
+                                ? language === "es"
+                                  ? "Centro"
+                                  : "Center"
+                                : language === "es"
+                                  ? "Abajo"
+                                  : "Bottom"}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </>
+                ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  className="mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-dashed px-4 active:opacity-70 disabled:opacity-50"
+                  style={{ borderColor: goldInk }}
+                  disabled={bannerPreparing || Boolean(busy)}
+                  onPress={() => void pickBanner()}
+                >
+                  {bannerPreparing ? (
+                    <FrogLoader color={goldInk} />
+                  ) : (
+                    <MaterialCommunityIcons
+                      name="image-edit-outline"
+                      size={19}
+                      color={goldInk}
+                    />
+                  )}
+                  <Text className="ml-2 font-black" style={{ color: goldInk }}>
+                    {bannerPreview
+                      ? language === "es"
+                        ? "Cambiar imagen"
+                        : "Replace image"
+                      : language === "es"
+                        ? "Elegir imagen"
+                        : "Choose image"}
+                  </Text>
+                </Pressable>
+                {bannerError ? (
+                  <Text
+                    accessibilityRole="alert"
+                    className="mt-2 text-xs font-semibold text-red-700 dark:text-red-300"
+                  >
+                    {bannerError}
+                  </Text>
+                ) : null}
+                <TextInput
+                  accessibilityLabel={
+                    language === "es"
+                      ? "URL de destino del banner"
+                      : "Banner destination URL"
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  className="mt-3 min-h-12 rounded-control border border-ui-border bg-ui-surface px-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text"
+                  placeholder="https://tu-sitio.com"
+                  placeholderTextColor="#68737A"
+                  value={bannerUrl}
+                  onChangeText={onBannerUrlChange}
+                />
+              </View>
+            ) : null}
+            <View className="mt-3">
+              <Pressable
+                accessibilityLabel={`${offer.title[language === "es" ? 0 : 1]}, ${language === "es" ? "renovación automática" : "automatic renewal"}`}
+                accessibilityRole="button"
+                className="min-h-12 items-center justify-center rounded-control px-4 active:opacity-70 disabled:opacity-50"
+                style={{ backgroundColor: gold.ink }}
+                disabled={Boolean(busy) || bannerRequired}
+                onPress={() => onBuy(option.offerId, bannerPreview)}
+              >
+                {busy === option.offerId ? (
+                  <FrogLoader color="white" />
+                ) : (
+                  <>
+                    <Text className="text-center text-xs font-black text-white">
+                      {language === "es"
+                        ? "Renovación automática"
+                        : "Auto-renew"}
+                    </Text>
+                    <Text className="text-xs font-bold text-white">
+                      {storePrices[option.offerId] ??
+                        offer.price[language === "es" ? 0 : 1]}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+              {active ? (
+                <Pressable
+                  accessibilityRole="link"
+                  className="mt-2 min-h-11 items-center justify-center rounded-control border px-4 active:opacity-70"
+                  style={{ borderColor: goldInk }}
+                  onPress={() => onCancel(option.offerId)}
+                >
+                  <Text
+                    className="text-center text-xs font-black"
+                    style={{ color: goldInk }}
+                  >
+                    {language === "es"
+                      ? "Cancelar campaña publicitaria"
+                      : "Cancel advertising campaign"}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {active ? (
+              <Text className="mt-2 text-center text-[11px] font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es"
+                  ? "Al cancelar se detiene la renovación; la campaña seguirá activa hasta la fecha indicada."
+                  : "Canceling stops renewal; the campaign remains active until the date shown."}
+              </Text>
+            ) : null}
+            {bannerRequired ? (
+              <Text className="mt-2 text-center text-[11px] font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es"
+                  ? "Elegí y revisá la imagen para habilitar la contratación."
+                  : "Choose and review the image to enable checkout."}
+              </Text>
+            ) : null}
+          </View>
+        );
+      })}
+    </View>
+  );
 }
 
-function OwnerAnalytics({ language, service }: { language: 'es' | 'en'; service: OwnerDashboardService }) {
+function OwnerAnalytics({
+  language,
+  service,
+}: {
+  language: "es" | "en";
+  service: OwnerDashboardService;
+}) {
   const { metrics } = service;
   const maxDaily = Math.max(1, ...metrics.daily_views);
-  const completed = [service.cover_image_url, service.description, service.phone, service.whatsapp, service.opening_hours, service.booking_url || service.menu_url, service.latitude, service.payment_methods.length, service.languages.length].filter(Boolean).length;
-  const completeness = Math.round(completed / 9 * 100);
-  const totalContacts = metrics.whatsapp_clicks + metrics.calls + metrics.directions + metrics.reservations;
-  const trend = metrics.trend_percent == null ? (language === 'es' ? 'Sin periodo anterior para comparar' : 'No previous period to compare') : `${metrics.trend_percent >= 0 ? '+' : ''}${metrics.trend_percent}% ${language === 'es' ? 'frente a los 30 días anteriores' : 'vs previous 30 days'}`;
-  const recommendation = !service.cover_image_url ? (language === 'es' ? 'Agregá una portada para que tu ficha destaque en el directorio.' : 'Add a cover so your listing stands out in the directory.') : completeness < 80 ? (language === 'es' ? 'Completá horarios, enlaces y facilidades para convertir más visitas.' : 'Complete hours, links, and amenities to convert more visits.') : totalContacts === 0 ? (language === 'es' ? 'Compartí tu enlace o QR para empezar a medir contactos atribuidos.' : 'Share your link or QR to start measuring attributed contacts.') : (language === 'es' ? 'Tu perfil está listo. Revisá qué canal genera más contactos.' : 'Your profile is ready. Review which channel drives the most contacts.');
-  return <View>
-    <View className="mt-4 flex-row flex-wrap gap-2">{[
-      { icon: 'eye-outline' as const, label: language === 'es' ? 'Vistas' : 'Views', value: metrics.views },
-      { icon: 'account-arrow-right-outline' as const, label: language === 'es' ? 'Contactos' : 'Contacts', value: totalContacts },
-      { icon: 'chart-donut' as const, label: language === 'es' ? 'Conversión' : 'Conversion', value: `${metrics.conversion_rate}%` },
-      { icon: 'bookmark-outline' as const, label: language === 'es' ? 'Guardados' : 'Saves', value: metrics.saves },
-    ].map((metric) => <View className="min-w-[45%] flex-1 rounded-card border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface" key={metric.label}><View className="flex-row items-center"><MaterialCommunityIcons name={metric.icon} size={18} color="#087443" /><Text className="ml-2 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{metric.label}</Text></View><Text className="mt-3 text-3xl font-bold tracking-tight text-ui-text dark:text-ui-dark-text">{metric.value}</Text></View>)}</View>
-    <View className="mt-3 rounded-card border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"><View className="flex-row flex-wrap items-end justify-between gap-2"><View className="flex-1"><Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Actividad de los últimos 7 días' : 'Last 7 days activity'}</Text><Text className="mt-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{metrics.last_30_days} {language === 'es' ? 'acciones en 30 días' : 'actions in 30 days'} · {trend}</Text></View><Text className="text-xs font-black text-ui-text-muted dark:text-ui-dark-text-muted">{metrics.top_channel}</Text></View><View className="mt-5 h-20 flex-row items-end gap-2">{metrics.daily_views.map((value, index) => <View accessibilityLabel={`${value} ${language === 'es' ? 'vistas' : 'views'}`} className="flex-1 justify-end" key={index}><View className="min-h-1 rounded-t-lg bg-ui-secondary dark:bg-ui-dark-secondary" style={{ height: `${Math.max(6, value / maxDaily * 100)}%` }} /></View>)}</View></View>
-    <View className="mt-3 rounded-card bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><View className="flex-row items-center justify-between"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Calidad del perfil' : 'Profile quality'}</Text><Text className="text-lg font-black text-ui-primary dark:text-ui-dark-primary">{completeness}%</Text></View><View className="mt-3 h-2 overflow-hidden rounded-full bg-ui-border dark:bg-ui-dark-border"><View className="h-full rounded-full bg-ui-primary dark:bg-ui-dark-primary" style={{ width: `${completeness}%` }} /></View><Text className="mt-3 text-sm leading-5 text-ui-text dark:text-ui-dark-text">{recommendation}</Text></View>
-    <View className="mt-3 flex-row flex-wrap gap-2">{[
-      ['whatsapp', 'WhatsApp', metrics.whatsapp_clicks], ['phone-outline', language === 'es' ? 'Llamadas' : 'Calls', metrics.calls], ['navigation-variant', language === 'es' ? 'Rutas' : 'Directions', metrics.directions], ['calendar-check-outline', language === 'es' ? 'Reservas' : 'Bookings', metrics.reservations], ['qrcode', 'QR', metrics.qr_leads], ['link-variant', 'UTM', metrics.utm_leads],
-    ].map(([icon, label, value]) => <View className="min-h-11 flex-row items-center rounded-full border border-ui-border px-3 dark:border-ui-dark-border" key={String(label)}><MaterialCommunityIcons name={icon as React.ComponentProps<typeof MaterialCommunityIcons>['name']} size={16} color="#087443" /><Text className="ml-2 text-xs font-bold text-ui-text dark:text-ui-dark-text">{label}: {value}</Text></View>)}</View>
-  </View>;
+  const completed = [
+    service.cover_image_url,
+    service.description,
+    service.phone,
+    service.whatsapp,
+    service.opening_hours,
+    service.booking_url || service.menu_url,
+    service.latitude,
+    service.payment_methods.length,
+    service.languages.length,
+  ].filter(Boolean).length;
+  const completeness = Math.round((completed / 9) * 100);
+  const totalContacts =
+    metrics.whatsapp_clicks +
+    metrics.calls +
+    metrics.directions +
+    metrics.reservations;
+  const trend =
+    metrics.trend_percent == null
+      ? language === "es"
+        ? "Sin periodo anterior para comparar"
+        : "No previous period to compare"
+      : `${metrics.trend_percent >= 0 ? "+" : ""}${metrics.trend_percent}% ${language === "es" ? "frente a los 30 días anteriores" : "vs previous 30 days"}`;
+  const recommendation = !service.cover_image_url
+    ? language === "es"
+      ? "Agregá una portada para que tu ficha destaque en el directorio."
+      : "Add a cover so your listing stands out in the directory."
+    : completeness < 80
+      ? language === "es"
+        ? "Completá horarios, enlaces y facilidades para convertir más visitas."
+        : "Complete hours, links, and amenities to convert more visits."
+      : totalContacts === 0
+        ? language === "es"
+          ? "Compartí tu enlace o QR para empezar a medir contactos atribuidos."
+          : "Share your link or QR to start measuring attributed contacts."
+        : language === "es"
+          ? "Tu perfil está listo. Revisá qué canal genera más contactos."
+          : "Your profile is ready. Review which channel drives the most contacts.";
+  return (
+    <View>
+      <View className="mt-4 flex-row flex-wrap gap-2">
+        {[
+          {
+            icon: "eye-outline" as const,
+            label: language === "es" ? "Vistas" : "Views",
+            value: metrics.views,
+          },
+          {
+            icon: "account-arrow-right-outline" as const,
+            label: language === "es" ? "Contactos" : "Contacts",
+            value: totalContacts,
+          },
+          {
+            icon: "chart-donut" as const,
+            label: language === "es" ? "Conversión" : "Conversion",
+            value: `${metrics.conversion_rate}%`,
+          },
+          {
+            icon: "bookmark-outline" as const,
+            label: language === "es" ? "Guardados" : "Saves",
+            value: metrics.saves,
+          },
+        ].map((metric) => (
+          <View
+            className="min-w-[45%] flex-1 rounded-card border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface"
+            key={metric.label}
+          >
+            <View className="flex-row items-center">
+              <MaterialCommunityIcons
+                name={metric.icon}
+                size={18}
+                color="#087443"
+              />
+              <Text className="ml-2 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
+                {metric.label}
+              </Text>
+            </View>
+            <Text className="mt-3 text-3xl font-bold tracking-tight text-ui-text dark:text-ui-dark-text">
+              {metric.value}
+            </Text>
+          </View>
+        ))}
+      </View>
+      <View className="mt-3 rounded-card border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+        <View className="flex-row flex-wrap items-end justify-between gap-2">
+          <View className="flex-1">
+            <Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">
+              {language === "es"
+                ? "Actividad de los últimos 7 días"
+                : "Last 7 days activity"}
+            </Text>
+            <Text className="mt-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary">
+              {metrics.last_30_days}{" "}
+              {language === "es" ? "acciones en 30 días" : "actions in 30 days"}{" "}
+              · {trend}
+            </Text>
+          </View>
+          <Text className="text-xs font-black text-ui-text-muted dark:text-ui-dark-text-muted">
+            {metrics.top_channel}
+          </Text>
+        </View>
+        <View className="mt-5 h-20 flex-row items-end gap-2">
+          {metrics.daily_views.map((value, index) => (
+            <View
+              accessibilityLabel={`${value} ${language === "es" ? "vistas" : "views"}`}
+              className="flex-1 justify-end"
+              key={index}
+            >
+              <View
+                className="min-h-1 rounded-t-lg bg-ui-secondary dark:bg-ui-dark-secondary"
+                style={{ height: `${Math.max(6, (value / maxDaily) * 100)}%` }}
+              />
+            </View>
+          ))}
+        </View>
+      </View>
+      <View className="mt-3 rounded-card bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft">
+        <View className="flex-row items-center justify-between">
+          <Text className="font-black text-ui-primary dark:text-ui-dark-primary">
+            {language === "es" ? "Calidad del perfil" : "Profile quality"}
+          </Text>
+          <Text className="text-lg font-black text-ui-primary dark:text-ui-dark-primary">
+            {completeness}%
+          </Text>
+        </View>
+        <View className="mt-3 h-2 overflow-hidden rounded-full bg-ui-border dark:bg-ui-dark-border">
+          <View
+            className="h-full rounded-full bg-ui-primary dark:bg-ui-dark-primary"
+            style={{ width: `${completeness}%` }}
+          />
+        </View>
+        <Text className="mt-3 text-sm leading-5 text-ui-text dark:text-ui-dark-text">
+          {recommendation}
+        </Text>
+      </View>
+      <View className="mt-3 flex-row flex-wrap gap-2">
+        {[
+          ["whatsapp", "WhatsApp", metrics.whatsapp_clicks],
+          [
+            "phone-outline",
+            language === "es" ? "Llamadas" : "Calls",
+            metrics.calls,
+          ],
+          [
+            "navigation-variant",
+            language === "es" ? "Rutas" : "Directions",
+            metrics.directions,
+          ],
+          [
+            "calendar-check-outline",
+            language === "es" ? "Reservas" : "Bookings",
+            metrics.reservations,
+          ],
+          ["qrcode", "QR", metrics.qr_leads],
+          ["link-variant", "UTM", metrics.utm_leads],
+        ].map(([icon, label, value]) => (
+          <View
+            className="min-h-11 flex-row items-center rounded-full border border-ui-border px-3 dark:border-ui-dark-border"
+            key={String(label)}
+          >
+            <MaterialCommunityIcons
+              name={
+                icon as React.ComponentProps<
+                  typeof MaterialCommunityIcons
+                >["name"]
+              }
+              size={16}
+              color="#087443"
+            />
+            <Text className="ml-2 text-xs font-bold text-ui-text dark:text-ui-dark-text">
+              {label}: {value}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
 }
 
 export default function CommerceScreen() {
-  const { isAdmin, language, requireAuth, session, userLocation, isDark, locating, refreshUserLocation } = useApp();
+  const {
+    isAdmin,
+    language,
+    requireAuth,
+    session,
+    userLocation,
+    isDark,
+    locating,
+    refreshUserLocation,
+  } = useApp();
   const gold = appTheme.colors.commerceGold;
   const scrollRef = useRef<FlatList<CommerceService>>(null);
   useScrollToTop(scrollRef);
   const router = useRouter();
-  const [category, setCategory] = useState<CommerceCategoryId>('cinemas');
+  const [category, setCategory] = useState<CommerceCategoryId>("cinemas");
   const [subcategory, setSubcategory] = useState<string>();
   const [reporting, setReporting] = useState<CommerceService | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
-  const [businessPlanRequiredOpen, setBusinessPlanRequiredOpen] = useState(false);
+  const [businessPlanRequiredOpen, setBusinessPlanRequiredOpen] =
+    useState(false);
   const [businessFeeNoticeOpen, setBusinessFeeNoticeOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
-  const [registerError, setRegisterError] = useState('');
+  const [registerError, setRegisterError] = useState("");
   const [registerBusy, setRegisterBusy] = useState(false);
-  const [registerForm, setRegisterForm] = useState<CommercialProfileForm>(() => emptyProfileForm('food'));
-  const [registerPhotos, setRegisterPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
-  const [registrationLocation, setRegistrationLocation] = useState<MapCoordinate>();
+  const [registerForm, setRegisterForm] = useState<CommercialProfileForm>(() =>
+    emptyProfileForm("food"),
+  );
+  const [registerPhotos, setRegisterPhotos] = useState<
+    ImagePicker.ImagePickerAsset[]
+  >([]);
+  const [registrationLocation, setRegistrationLocation] =
+    useState<MapCoordinate>();
   const [editing, setEditing] = useState<OwnerDashboardService | null>(null);
-  const [editForm, setEditForm] = useState<CommercialProfileForm>(() => emptyProfileForm());
-  const [editError, setEditError] = useState('');
+  const [editForm, setEditForm] = useState<CommercialProfileForm>(() =>
+    emptyProfileForm(),
+  );
+  const [editError, setEditError] = useState("");
   const [editBusy, setEditBusy] = useState(false);
   const [editLocation, setEditLocation] = useState<MapCoordinate>();
   const [photoBusyId, setPhotoBusyId] = useState<string>();
@@ -385,44 +2009,145 @@ export default function CommerceScreen() {
   const [campaignBusy, setCampaignBusy] = useState<string>();
   const [bannerUrls, setBannerUrls] = useState<Record<string, string>>({});
   const [detail, setDetail] = useState<CommerceService | null>(null);
-  const { categories, subcategories, taxonomyError, retryTaxonomy } = useCommerceTaxonomy();
-  const categorySubcategories = subcategories.filter((option) => option.parent_id === category);
+  const { categories, subcategories, taxonomyError, retryTaxonomy } =
+    useCommerceTaxonomy();
+  const categorySubcategories = subcategories.filter(
+    (option) => option.parent_id === category,
+  );
 
   useEffect(() => {
     if (!category && categories[0]) setCategory(categories[0].id);
   }, [categories, category]);
 
-  const regionsQuery = useQuery({ queryKey: ['commerce-regions'], queryFn: getCommerceRegions, staleTime: 60 * 60 * 1000 });
-  const regions = useMemo<CommerceRegion[]>(() => regionsQuery.data ?? [], [regionsQuery.data]);
-  const viewMode = 'nearby';
+  const regionsQuery = useQuery({
+    queryKey: ["commerce-regions"],
+    queryFn: getCommerceRegions,
+    staleTime: 60 * 60 * 1000,
+  });
+  const regions = useMemo<CommerceRegion[]>(
+    () => regionsQuery.data ?? [],
+    [regionsQuery.data],
+  );
+  const viewMode = "nearby";
   const directoryOrigin = userLocation ?? undefined;
   const directory = useQuery({
-    queryKey: ['commerce-directory', category, subcategory, viewMode, directoryOrigin?.latitude, directoryOrigin?.longitude],
-    queryFn: () => getCommerceDirectory(category, directoryOrigin!, subcategory),
+    queryKey: [
+      "commerce-directory",
+      category,
+      subcategory,
+      viewMode,
+      directoryOrigin?.latitude,
+      directoryOrigin?.longitude,
+    ],
+    queryFn: () =>
+      getCommerceDirectory(category, directoryOrigin!, subcategory),
     enabled: Boolean(category && directoryOrigin),
     staleTime: 10 * 60 * 1000,
   });
-  const cinemaMovies = useQuery({ queryKey: ['cinema-movies'], queryFn: getCinemaMovies, enabled: category === 'cinemas', staleTime: 30 * 60 * 1000 });
-  const dashboard = useQuery({ queryKey: ['owner-dashboard'], queryFn: getOwnerDashboard, enabled: dashboardOpen });
-  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
-  const claims = useQuery({ queryKey: ['owner-claims'], queryFn: getOwnerClaims, enabled: dashboardOpen });
-  const campaigns = useQuery({ queryKey: ['commerce-campaigns', session?.user.id], queryFn: getMyCommerceCampaigns, enabled: dashboardOpen && Boolean(session) });
-  const banners = useQuery({ queryKey: ['commerce-banners'], queryFn: getActiveCommerceBanners, staleTime: 5 * 60 * 1000 });
-  const favoriteIds = useQuery({ queryKey: ['commercial-favorites', session?.user.id], queryFn: getCommercialFavoriteIds, enabled: Boolean(session) });
-  const categoryTiles = useMemo(() => [...categories].sort((a, b) => Number(b.id === 'cinemas') - Number(a.id === 'cinemas')), [categories]);
-  const selectedCategoryOption = categories.find((item) => item.id === category) ?? categories[0];
-  const selectedCategory = { ...selectedCategoryOption, icon: selectedCategoryOption?.icon ?? 'store-outline', label_es: selectedCategoryOption?.label_es ?? '', label_en: selectedCategoryOption?.label_en ?? '' };
+  const cinemaMovies = useQuery({
+    queryKey: ["cinema-movies"],
+    queryFn: getCinemaMovies,
+    enabled: category === "cinemas",
+    staleTime: 30 * 60 * 1000,
+  });
+  const dashboard = useQuery({
+    queryKey: ["owner-dashboard"],
+    queryFn: getOwnerDashboard,
+    enabled: dashboardOpen,
+  });
+  const subscriptions = useQuery({
+    queryKey: ["my-subscriptions"],
+    queryFn: getMySubscriptions,
+    enabled: Boolean(session),
+  });
+  const claims = useQuery({
+    queryKey: ["owner-claims"],
+    queryFn: getOwnerClaims,
+    enabled: dashboardOpen,
+  });
+  const campaigns = useQuery({
+    queryKey: ["commerce-campaigns", session?.user.id],
+    queryFn: getMyCommerceCampaigns,
+    enabled: dashboardOpen && Boolean(session),
+  });
+  const banners = useQuery({
+    queryKey: ["commerce-banners"],
+    queryFn: getActiveCommerceBanners,
+    staleTime: 5 * 60 * 1000,
+  });
+  const favoriteIds = useQuery({
+    queryKey: ["commercial-favorites", session?.user.id],
+    queryFn: getCommercialFavoriteIds,
+    enabled: Boolean(session),
+  });
+  const playCampaignBilling = useGooglePlayCampaignBilling({
+    campaigns: campaigns.data,
+    userId: session?.user.id,
+    onError: (message) => {
+      if (message) Alert.alert("Descubriendo CR", message);
+    },
+    onVerified: async () => {
+      await Promise.all([campaigns.refetch(), banners.refetch()]);
+      Alert.alert(
+        "Descubriendo CR",
+        language === "es"
+          ? "Google Play confirmó la campaña. Ya está activa."
+          : "Google Play confirmed the campaign. It is now active.",
+      );
+    },
+  });
+  const categoryTiles = useMemo(
+    () =>
+      [...categories].sort(
+        (a, b) => Number(b.id === "cinemas") - Number(a.id === "cinemas"),
+      ),
+    [categories],
+  );
+  const selectedCategoryOption =
+    categories.find((item) => item.id === category) ?? categories[0];
+  const selectedCategory = {
+    ...selectedCategoryOption,
+    icon: selectedCategoryOption?.icon ?? "store-outline",
+    label_es: selectedCategoryOption?.label_es ?? "",
+    label_en: selectedCategoryOption?.label_en ?? "",
+  };
   const registrationOrigin = registrationLocation;
-  const isCinemaCategory = category === 'cinemas';
-  const catalog = [...(directory.data?.featured ?? []), ...(directory.data?.organic ?? [])]
-    .sort((a, b) => commerceDistanceSortValue(a.distance_km) - commerceDistanceSortValue(b.distance_km) || a.title.localeCompare(b.title));
-  const catalogTitle = isCinemaCategory ? (language === 'es' ? 'Cines cerca de vos' : 'Cinemas near you') : (language === 'es' ? 'Resultados para vos' : 'Results for you');
-  const catalogDescription = isCinemaCategory ? (language === 'es' ? 'Ordenados de más cercano a más lejano; los sitios sin ubicación aparecen al final. La cartelera y compra abren en el sitio oficial.' : 'Ordered from nearest to farthest; places without a location appear last. Showtimes and purchase open on the official site.') : (language === 'es' ? 'Del más cercano al más lejano; los sitios sin ubicación aparecen al final.' : 'From nearest to farthest; places without a location appear last.');
+  const isCinemaCategory = category === "cinemas";
+  const catalog = [
+    ...(directory.data?.featured ?? []),
+    ...(directory.data?.organic ?? []),
+  ].sort(
+    (a, b) =>
+      commerceDistanceSortValue(a.distance_km) -
+        commerceDistanceSortValue(b.distance_km) ||
+      a.title.localeCompare(b.title),
+  );
+  const catalogTitle = isCinemaCategory
+    ? language === "es"
+      ? "Cines cerca de vos"
+      : "Cinemas near you"
+    : language === "es"
+      ? "Resultados para vos"
+      : "Results for you";
+  const catalogDescription = isCinemaCategory
+    ? language === "es"
+      ? "Ordenados de más cercano a más lejano; los sitios sin ubicación aparecen al final. La cartelera y compra abren en el sitio oficial."
+      : "Ordered from nearest to farthest; places without a location appear last. Showtimes and purchase open on the official site."
+    : language === "es"
+      ? "Del más cercano al más lejano; los sitios sin ubicación aparecen al final."
+      : "From nearest to farthest; places without a location appear last.";
   const activeBanner = banners.data?.[0];
-  const bannerCapacityReached = new Set((banners.data ?? []).map((campaign) => campaign.service_id)).size >= 3;
+  const bannerCapacityReached =
+    new Set((banners.data ?? []).map((campaign) => campaign.service_id)).size >=
+    3;
 
   const openBusinessRegistration = () => {
-    if (!requireAuth(language === 'es' ? 'registrar un comercio' : 'register a business')) return;
+    if (
+      !requireAuth(
+        language === "es" ? "registrar un comercio" : "register a business",
+      )
+    )
+      return;
     if (!isAdmin) {
       setBusinessFeeNoticeOpen(true);
       return;
@@ -430,13 +2155,22 @@ export default function CommerceScreen() {
     setRegisterForm(emptyProfileForm(category));
     setRegisterPhotos([]);
     setRegistrationLocation(undefined);
-    setRegisterError('');
+    setRegisterError("");
     setRegisterOpen(true);
   };
 
   const openOwnerDashboard = async () => {
-    if (!requireAuth(language === 'es' ? 'abrir el panel para propietarios' : 'open the owner dashboard')) return;
-    const currentSubscriptions = subscriptions.isLoading ? (await subscriptions.refetch()).data ?? [] : subscriptions.data ?? [];
+    if (
+      !requireAuth(
+        language === "es"
+          ? "abrir el panel para propietarios"
+          : "open the owner dashboard",
+      )
+    )
+      return;
+    const currentSubscriptions = subscriptions.isLoading
+      ? ((await subscriptions.refetch()).data ?? [])
+      : (subscriptions.data ?? []);
     if (isAdmin || hasActiveBusinessPlan(currentSubscriptions)) {
       setDashboardOpen(true);
       return;
@@ -444,48 +2178,145 @@ export default function CommerceScreen() {
     setBusinessPlanRequiredOpen(true);
   };
 
-  const startCampaignCheckout = async (service: OwnerDashboardService, offerId: CampaignOfferId, banner?: PreparedCampaignBanner) => {
+  const startCampaignCheckout = async (
+    service: OwnerDashboardService,
+    offerId: CampaignOfferId,
+    banner?: PreparedCampaignBanner,
+  ) => {
     const offer = campaignOffers[offerId];
     const targetUrl = bannerUrls[service.id]?.trim();
-    if (offer.campaignType === 'banner') {
-      try { const url = new URL(targetUrl); if (!['http:', 'https:'].includes(url.protocol)) throw new Error(); } catch { Alert.alert('Descubriendo CR', language === 'es' ? 'Ingresá una URL válida que empiece con https:// o http://.' : 'Enter a valid URL beginning with https:// or http://.'); return; }
-      if (!banner) { Alert.alert('Descubriendo CR', language === 'es' ? 'Elegí y revisá la imagen del banner antes de continuar.' : 'Choose and review the banner image before continuing.'); return; }
-    }
-    setCampaignBusy(`${service.id}:${offerId}`);
-    let uploadedBanner: Awaited<ReturnType<typeof uploadCampaignBanner>> | undefined;
-    try {
-      if (banner) uploadedBanner = await uploadCampaignBanner(service.id, banner);
-      if (isAdmin) {
-        await activateAdminTestCampaign({ serviceId: service.id, campaignType: offer.campaignType, targetUrl, imageUrl: uploadedBanner?.url });
-        await Promise.all([campaigns.refetch(), banners.refetch()]);
-        Alert.alert('Descubriendo CR', language === 'es' ? 'Campaña de prueba activada gratis por 30 días.' : 'Free 30-day test campaign activated.');
+    if (offer.campaignType === "banner") {
+      try {
+        const url = new URL(targetUrl);
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+      } catch {
+        Alert.alert(
+          "Descubriendo CR",
+          language === "es"
+            ? "Ingresá una URL válida que empiece con https:// o http://."
+            : "Enter a valid URL beginning with https:// or http://.",
+        );
         return;
       }
-      const result = await openCampaignCheckout({ offerId, serviceId: service.id, targetUrl, imageUrl: uploadedBanner?.url });
-      if (result.type === 'success') Alert.alert('Descubriendo CR', language === 'es' ? 'Pago recibido. La campaña se activará cuando el proveedor confirme la transacción.' : 'Payment received. The campaign activates after the payment provider confirms the transaction.');
-      else if (uploadedBanner) await deleteCampaignBannerUpload(uploadedBanner.path);
-    } catch (error) {
-      if (uploadedBanner) await deleteCampaignBannerUpload(uploadedBanner.path).catch(() => undefined);
-      const message = error instanceof BannerCapacityError
-        ? (language === 'es' ? 'Lo lamentamos, el número máximo de banners activos ya fue alcanzado.' : 'Sorry, the maximum number of active banners has already been reached.')
-        : error instanceof Error ? error.message : (language === 'es' ? 'No se pudo abrir el pago.' : 'Payment could not be opened.');
-      Alert.alert('Descubriendo CR', message);
+      if (!banner) {
+        Alert.alert(
+          "Descubriendo CR",
+          language === "es"
+            ? "Elegí y revisá la imagen del banner antes de continuar."
+            : "Choose and review the banner image before continuing.",
+        );
+        return;
+      }
     }
-    finally { setCampaignBusy(undefined); }
+    setCampaignBusy(`${service.id}:${offerId}`);
+    let uploadedBanner:
+      Awaited<ReturnType<typeof uploadCampaignBanner>> | undefined;
+    try {
+      if (banner)
+        uploadedBanner = await uploadCampaignBanner(service.id, banner);
+      if (isAdmin) {
+        await activateAdminTestCampaign({
+          serviceId: service.id,
+          campaignType: offer.campaignType,
+          targetUrl,
+          imageUrl: uploadedBanner?.url,
+        });
+        await Promise.all([campaigns.refetch(), banners.refetch()]);
+        Alert.alert(
+          "Descubriendo CR",
+          language === "es"
+            ? "Campaña de prueba activada gratis por 30 días."
+            : "Free 30-day test campaign activated.",
+        );
+        return;
+      }
+      if (Platform.OS === "android") {
+        await playCampaignBilling.purchase(offerId, {
+          serviceId: service.id,
+          targetUrl,
+          imageUrl: uploadedBanner?.url,
+        });
+      } else {
+        const result = await openCampaignCheckout({
+          offerId,
+          serviceId: service.id,
+          targetUrl,
+          imageUrl: uploadedBanner?.url,
+        });
+        if (result.type === "success")
+          Alert.alert(
+            "Descubriendo CR",
+            language === "es"
+              ? "Pago recibido. La campaña se activará cuando el proveedor confirme la transacción."
+              : "Payment received. The campaign activates after the payment provider confirms the transaction.",
+          );
+        else if (uploadedBanner)
+          await deleteCampaignBannerUpload(uploadedBanner.path);
+      }
+    } catch (error) {
+      if (uploadedBanner)
+        await deleteCampaignBannerUpload(uploadedBanner.path).catch(
+          () => undefined,
+        );
+      const message =
+        error instanceof BannerCapacityError
+          ? language === "es"
+            ? "Lo lamentamos, el número máximo de banners activos ya fue alcanzado."
+            : "Sorry, the maximum number of active banners has already been reached."
+          : error instanceof Error
+            ? error.message
+            : language === "es"
+              ? "No se pudo abrir el pago."
+              : "Payment could not be opened.";
+      Alert.alert("Descubriendo CR", message);
+    } finally {
+      setCampaignBusy(undefined);
+    }
   };
 
   const submitRegistration = async () => {
-    if (!requireAuth('registrar un comercio')) return;
-    if (!registerForm.title.trim()) { setRegisterError(language === 'es' ? 'Escribí el nombre del comercio o servicio.' : 'Enter the business or service name.'); return; }
-    if (!registerForm.category) { setRegisterError(language === 'es' ? 'Elegí el tipo de comercio o servicio.' : 'Choose the business or service type.'); return; }
-    if (registerForm.category === 'other' && !registerForm.experienceType.trim()) { setRegisterError(language === 'es' ? 'Escribí qué tipo de comercio o servicio es.' : 'Enter what type of business or service this is.'); return; }
-    if (!registrationOrigin) { setRegisterError(language === 'es' ? 'Usá tu ubicación actual o marcá el negocio en el mapa.' : 'Use your current location or mark the business on the map.'); return; }
-    setRegisterError('');
+    if (!requireAuth("registrar un comercio")) return;
+    if (!registerForm.title.trim()) {
+      setRegisterError(
+        language === "es"
+          ? "Escribí el nombre del comercio o servicio."
+          : "Enter the business or service name.",
+      );
+      return;
+    }
+    if (!registerForm.category) {
+      setRegisterError(
+        language === "es"
+          ? "Elegí el tipo de comercio o servicio."
+          : "Choose the business or service type.",
+      );
+      return;
+    }
+    if (
+      registerForm.category === "other" &&
+      !registerForm.experienceType.trim()
+    ) {
+      setRegisterError(
+        language === "es"
+          ? "Escribí qué tipo de comercio o servicio es."
+          : "Enter what type of business or service this is.",
+      );
+      return;
+    }
+    if (!registrationOrigin) {
+      setRegisterError(
+        language === "es"
+          ? "Usá tu ubicación actual o marcá el negocio en el mapa."
+          : "Use your current location or mark the business on the map.",
+      );
+      return;
+    }
+    setRegisterError("");
     setRegisterBusy(true);
     try {
       const serviceId = await registerCommercialService({
         mainCategory: registerForm.category,
-        subcategory: registerForm.subcategories.join(','),
+        subcategory: registerForm.subcategories.join(","),
         title: registerForm.title,
         latitude: registrationOrigin.latitude,
         longitude: registrationOrigin.longitude,
@@ -506,25 +2337,72 @@ export default function CommerceScreen() {
         certifications: textToList(registerForm.certifications),
       });
       let photoError: unknown;
-      if (registerPhotos.length) try { await uploadBusinessPhotos({ id: serviceId, photos: [], cover_image_url: null }, registerPhotos); } catch (error) { photoError = error; }
+      if (registerPhotos.length)
+        try {
+          await uploadBusinessPhotos(
+            { id: serviceId, photos: [], cover_image_url: null },
+            registerPhotos,
+          );
+        } catch (error) {
+          photoError = error;
+        }
       void directory.refetch();
       setRegisterOpen(false);
       setRegisterForm(emptyProfileForm(category));
       setRegisterPhotos([]);
       setRegistrationLocation(undefined);
-      Alert.alert(language === 'es' ? 'Enviado a revisión' : 'Sent for review', photoError ? (language === 'es' ? 'El comercio quedó pendiente, pero la portada no pudo subirse.' : 'The business is pending, but its cover could not be uploaded.') : (language === 'es' ? 'Un administrador lo revisará antes de publicarlo.' : 'An administrator will review it before publication.'));
-    } catch (error) { const message = error instanceof Error ? error.message : ''; setRegisterError(language === 'es' ? (message.includes('authentication_required') ? 'Tu sesión venció. Volvé a iniciar sesión e intentá de nuevo.' : message.includes('invalid commerce category') ? 'Ese tipo ya no está disponible. Elegí otro.' : 'No pudimos enviar el comercio. Revisá tu conexión e intentá de nuevo.') : (message.includes('authentication_required') ? 'Your session expired. Sign in again and retry.' : message.includes('invalid commerce category') ? 'That type is no longer available. Choose another.' : 'We could not send the business. Check your connection and retry.')); }
-    finally { setRegisterBusy(false); }
+      Alert.alert(
+        language === "es" ? "Enviado a revisión" : "Sent for review",
+        photoError
+          ? language === "es"
+            ? "El comercio quedó pendiente, pero la portada no pudo subirse."
+            : "The business is pending, but its cover could not be uploaded."
+          : language === "es"
+            ? "Un administrador lo revisará antes de publicarlo."
+            : "An administrator will review it before publication.",
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      setRegisterError(
+        language === "es"
+          ? message.includes("authentication_required")
+            ? "Tu sesión venció. Volvé a iniciar sesión e intentá de nuevo."
+            : message.includes("invalid commerce category")
+              ? "Ese tipo ya no está disponible. Elegí otro."
+              : "No pudimos enviar el comercio. Revisá tu conexión e intentá de nuevo."
+          : message.includes("authentication_required")
+            ? "Your session expired. Sign in again and retry."
+            : message.includes("invalid commerce category")
+              ? "That type is no longer available. Choose another."
+              : "We could not send the business. Check your connection and retry.",
+      );
+    } finally {
+      setRegisterBusy(false);
+    }
   };
 
   const pickRegistrationPhotos = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(language === 'es' ? 'Permiso requerido' : 'Permission required', language === 'es' ? 'Permití el acceso a tus fotos para elegir una portada.' : 'Allow photo access to choose a cover image.');
+      Alert.alert(
+        language === "es" ? "Permiso requerido" : "Permission required",
+        language === "es"
+          ? "Permití el acceso a tus fotos para elegir una portada."
+          : "Allow photo access to choose a cover image.",
+      );
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: Math.max(1, 12 - registerPhotos.length), quality: 0.9, exif: false });
-    if (!result.canceled) setRegisterPhotos((current) => [...current, ...result.assets].slice(0, 12));
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: Math.max(1, 12 - registerPhotos.length),
+      quality: 0.9,
+      exif: false,
+    });
+    if (!result.canceled)
+      setRegisterPhotos((current) =>
+        [...current, ...result.assets].slice(0, 12),
+      );
   };
 
   const openEditor = (service: OwnerDashboardService) => {
@@ -533,29 +2411,38 @@ export default function CommerceScreen() {
       title: service.title,
       category: service.category,
       subcategories: service.subcategories,
-      phone: service.phone ?? '',
-      whatsapp: service.whatsapp ?? '',
-      openingHours: service.opening_hours ?? '',
-      description: service.description ?? '',
-      priceRange: service.price_range ?? '',
-      bookingUrl: service.booking_url ?? '',
-      menuUrl: service.menu_url ?? '',
-      websiteUrl: service.external_url ?? '',
-      parking: service.parking ?? '',
+      phone: service.phone ?? "",
+      whatsapp: service.whatsapp ?? "",
+      openingHours: service.opening_hours ?? "",
+      description: service.description ?? "",
+      priceRange: service.price_range ?? "",
+      bookingUrl: service.booking_url ?? "",
+      menuUrl: service.menu_url ?? "",
+      websiteUrl: service.external_url ?? "",
+      parking: service.parking ?? "",
       hasParking: service.has_parking,
       paymentMethods: listToText(service.payment_methods),
-      accessibility: service.accessibility ?? '',
+      accessibility: service.accessibility ?? "",
       languages: listToText(service.languages),
-      experienceType: service.experience_type ?? '',
+      experienceType: service.experience_type ?? "",
       certifications: listToText(service.certifications),
     });
-    setEditLocation(service.latitude != null && service.longitude != null ? { latitude: service.latitude, longitude: service.longitude } : undefined);
-    setEditError('');
+    setEditLocation(
+      service.latitude != null && service.longitude != null
+        ? { latitude: service.latitude, longitude: service.longitude }
+        : undefined,
+    );
+    setEditError("");
   };
 
   const submitEdit = async () => {
     if (!editing) return;
-    if (!editForm.title.trim()) { setEditError(language === 'es' ? 'El nombre es obligatorio.' : 'Name is required.'); return; }
+    if (!editForm.title.trim()) {
+      setEditError(
+        language === "es" ? "El nombre es obligatorio." : "Name is required.",
+      );
+      return;
+    }
     setEditBusy(true);
     try {
       await updateCommercialServiceProfile(editing.id, {
@@ -580,10 +2467,22 @@ export default function CommerceScreen() {
         latitude: editLocation?.latitude,
         longitude: editLocation?.longitude,
       });
-      await Promise.all([dashboard.refetch({ throwOnError: true }), directory.refetch({ throwOnError: true })]);
+      await Promise.all([
+        dashboard.refetch({ throwOnError: true }),
+        directory.refetch({ throwOnError: true }),
+      ]);
       setEditing(null);
-    } catch (error) { setEditError(error instanceof Error ? error.message : (language === 'es' ? 'No pudimos guardar los cambios.' : 'Changes could not be saved.')); }
-    finally { setEditBusy(false); }
+    } catch (error) {
+      setEditError(
+        error instanceof Error
+          ? error.message
+          : language === "es"
+            ? "No pudimos guardar los cambios."
+            : "Changes could not be saved.",
+      );
+    } finally {
+      setEditBusy(false);
+    }
   };
 
   const refreshOwnerContent = async () => {
@@ -593,18 +2492,33 @@ export default function CommerceScreen() {
   const addPhotos = async (service: OwnerDashboardService) => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(language === 'es' ? 'Permiso requerido' : 'Permission required', language === 'es' ? 'Permití el acceso a tus fotos para administrar la galería del negocio.' : 'Allow photo access to manage the business gallery.');
+      Alert.alert(
+        language === "es" ? "Permiso requerido" : "Permission required",
+        language === "es"
+          ? "Permití el acceso a tus fotos para administrar la galería del negocio."
+          : "Allow photo access to manage the business gallery.",
+      );
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: Math.max(1, 12 - service.photos.length), quality: 0.9 });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: Math.max(1, 12 - service.photos.length),
+      quality: 0.9,
+    });
     if (result.canceled) return;
     setPhotoBusyId(service.id);
     try {
       await uploadBusinessPhotos(service, result.assets);
       await refreshOwnerContent();
     } catch (error) {
-      Alert.alert(language === 'es' ? 'No se pudo subir la foto' : 'Photo upload failed', error instanceof Error ? error.message : 'Error');
-    } finally { setPhotoBusyId(undefined); }
+      Alert.alert(
+        language === "es" ? "No se pudo subir la foto" : "Photo upload failed",
+        error instanceof Error ? error.message : "Error",
+      );
+    } finally {
+      setPhotoBusyId(undefined);
+    }
   };
 
   const chooseCover = async (service: OwnerDashboardService, url: string) => {
@@ -613,75 +2527,312 @@ export default function CommerceScreen() {
       await setBusinessCoverPhoto(service, url);
       await refreshOwnerContent();
     } catch (error) {
-      Alert.alert(language === 'es' ? 'No se pudo cambiar la portada' : 'Cover update failed', error instanceof Error ? error.message : 'Error');
-    } finally { setPhotoBusyId(undefined); }
+      Alert.alert(
+        language === "es"
+          ? "No se pudo cambiar la portada"
+          : "Cover update failed",
+        error instanceof Error ? error.message : "Error",
+      );
+    } finally {
+      setPhotoBusyId(undefined);
+    }
   };
 
   const removePhoto = (service: OwnerDashboardService, url: string) => {
-    Alert.alert(language === 'es' ? 'Eliminar foto' : 'Delete photo', language === 'es' ? 'La foto se eliminará de la galería.' : 'The photo will be removed from the gallery.', [
-      { text: language === 'es' ? 'Cancelar' : 'Cancel', style: 'cancel' },
-      { text: language === 'es' ? 'Eliminar' : 'Delete', style: 'destructive', onPress: async () => {
-        setPhotoBusyId(service.id);
-        try {
-          await deleteBusinessPhoto(service, url);
-          await refreshOwnerContent();
-        } catch (error) {
-          Alert.alert(language === 'es' ? 'No se pudo eliminar' : 'Delete failed', error instanceof Error ? error.message : 'Error');
-        } finally { setPhotoBusyId(undefined); }
-      } },
-    ]);
+    Alert.alert(
+      language === "es" ? "Eliminar foto" : "Delete photo",
+      language === "es"
+        ? "La foto se eliminará de la galería."
+        : "The photo will be removed from the gallery.",
+      [
+        { text: language === "es" ? "Cancelar" : "Cancel", style: "cancel" },
+        {
+          text: language === "es" ? "Eliminar" : "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setPhotoBusyId(service.id);
+            try {
+              await deleteBusinessPhoto(service, url);
+              await refreshOwnerContent();
+            } catch (error) {
+              Alert.alert(
+                language === "es" ? "No se pudo eliminar" : "Delete failed",
+                error instanceof Error ? error.message : "Error",
+              );
+            } finally {
+              setPhotoBusyId(undefined);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const removeBusiness = (service: OwnerDashboardService) => {
     Alert.alert(
-      language === 'es' ? 'Eliminar negocio' : 'Delete business',
-      language === 'es'
+      language === "es" ? "Eliminar negocio" : "Delete business",
+      language === "es"
         ? `¿Eliminar ${service.title}? Desaparecerá del directorio y se borrarán sus métricas, campañas, solicitudes y fotos. Esta acción no se puede deshacer.`
         : `Delete ${service.title}? It will disappear from the directory and its metrics, campaigns, claims, and photos will be deleted. This cannot be undone.`,
       [
-        { text: language === 'es' ? 'Cancelar' : 'Cancel', style: 'cancel' },
-        { text: language === 'es' ? 'Eliminar negocio' : 'Delete business', style: 'destructive', onPress: async () => {
-          setDeleteBusyId(service.id);
-          try {
-            await deleteOwnedCommercialService(service);
-            await Promise.all([dashboard.refetch(), directory.refetch(), campaigns.refetch(), claims.refetch()]);
-          } catch (error) {
-            Alert.alert(language === 'es' ? 'No se pudo eliminar' : 'Delete failed', error instanceof Error ? error.message : 'Error');
-          } finally { setDeleteBusyId(undefined); }
-        } },
+        { text: language === "es" ? "Cancelar" : "Cancel", style: "cancel" },
+        {
+          text: language === "es" ? "Eliminar negocio" : "Delete business",
+          style: "destructive",
+          onPress: async () => {
+            setDeleteBusyId(service.id);
+            try {
+              await deleteOwnedCommercialService(service);
+              await Promise.all([
+                dashboard.refetch(),
+                directory.refetch(),
+                campaigns.refetch(),
+                claims.refetch(),
+              ]);
+            } catch (error) {
+              Alert.alert(
+                language === "es" ? "No se pudo eliminar" : "Delete failed",
+                error instanceof Error ? error.message : "Error",
+              );
+            } finally {
+              setDeleteBusyId(undefined);
+            }
+          },
+        },
       ],
     );
   };
 
   const toggleFavorite = async (service: CommerceService) => {
-    if (!requireAuth(language === 'es' ? 'guardar un comercio' : 'save a business')) return;
+    if (
+      !requireAuth(
+        language === "es" ? "guardar un comercio" : "save a business",
+      )
+    )
+      return;
     const saved = (favoriteIds.data ?? []).includes(service.id);
     try {
       await setCommercialFavorite(service.id, !saved);
       await favoriteIds.refetch();
-    } catch (error) { Alert.alert(language === 'es' ? 'No se pudo guardar' : 'Could not save', error instanceof Error ? error.message : 'Error'); }
+    } catch (error) {
+      Alert.alert(
+        language === "es" ? "No se pudo guardar" : "Could not save",
+        error instanceof Error ? error.message : "Error",
+      );
+    }
   };
 
   const header = (
     <View>
       <View className="border-b border-ui-border bg-[#F8F6F0] px-5 py-2 dark:border-ui-dark-border dark:bg-ui-dark-surface">
-        <Text className="text-xs font-black uppercase tracking-[2px] text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Directorio de confianza' : 'Trusted directory'}</Text>
-        <Text className="mt-0.5 text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Comercios y servicios' : 'Businesses & services'}</Text>
-        <Text className="mt-0.5 max-w-xl text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{language === 'es' ? 'Todo lo útil para tu viaje, organizado por experiencia y cercanía.' : 'Everything useful for your trip, organized by experience and proximity.'}</Text>
-        <ScrollView horizontal className="mt-2" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>
-          <DirectoryShortcut icon="store-plus-outline" label={language === 'es' ? 'Registrar comercio' : 'Register business'} onPress={openBusinessRegistration} primary />
-          <DirectoryShortcut premium icon="chart-line" label={language === 'es' ? 'Panel de propietarios' : 'Owner dashboard'} onPress={() => void openOwnerDashboard()} />
-          {Platform.OS === 'web' ? <DirectoryShortcut icon="crown-outline" label={language === 'es' ? 'Planes Pro' : 'Pro plans'} onPress={() => { if (requireAuth('ver los planes Pro')) router.push('/subscriptions'); }} /> : null}
+        <Text className="text-xs font-black uppercase tracking-[2px] text-ui-primary dark:text-ui-dark-primary">
+          {language === "es" ? "Directorio de confianza" : "Trusted directory"}
+        </Text>
+        <Text className="mt-0.5 text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">
+          {language === "es"
+            ? "Comercios y servicios"
+            : "Businesses & services"}
+        </Text>
+        <Text
+          className="mt-0.5 max-w-xl text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted"
+          numberOfLines={1}
+        >
+          {language === "es"
+            ? "Todo lo útil para tu viaje, organizado por experiencia y cercanía."
+            : "Everything useful for your trip, organized by experience and proximity."}
+        </Text>
+        <ScrollView
+          horizontal
+          className="mt-2"
+          contentContainerStyle={{ gap: 10 }}
+          showsHorizontalScrollIndicator={false}
+        >
+          <DirectoryShortcut
+            icon="store-plus-outline"
+            label={
+              language === "es" ? "Registrar comercio" : "Register business"
+            }
+            onPress={openBusinessRegistration}
+            primary
+          />
+          <DirectoryShortcut
+            premium
+            icon="chart-line"
+            label={
+              language === "es" ? "Panel de propietarios" : "Owner dashboard"
+            }
+            onPress={() => void openOwnerDashboard()}
+          />
+          {Platform.OS === "web" ? (
+            <DirectoryShortcut
+              icon="crown-outline"
+              label={language === "es" ? "Planes Pro" : "Pro plans"}
+              onPress={() => {
+                if (requireAuth("ver los planes Pro"))
+                  router.push("/subscriptions");
+              }}
+            />
+          ) : null}
         </ScrollView>
       </View>
       {activeBanner ? <CampaignBanner campaign={activeBanner} /> : null}
-      <View className="pt-6"><Text className="px-5 text-xs font-black uppercase tracking-[1.5px] text-[#1E5B75] dark:text-ui-dark-text">{language === 'es' ? '¿Qué necesitás?' : 'What do you need?'}</Text><View className="mt-3 flex-row flex-wrap px-5">{categoryTiles.map((item, index) => <Pressable accessibilityRole="button" accessibilityState={{ selected: category === item.id }} key={item.id} onPress={() => { setCategory(item.id); setSubcategory(undefined); }} style={{ elevation: category === item.id ? 9 : 6, shadowColor: category === item.id ? '#2A7B4C' : '#1E5B75', shadowOffset: { height: category === item.id ? 6 : 4, width: 0 }, shadowOpacity: category === item.id ? 0.27 : 0.16, shadowRadius: category === item.id ? 8 : 6, width: '25%' }} className={category === item.id ? 'h-20 items-center justify-center rounded-card border border-[#2A7B4C] bg-white px-2 shadow-card active:translate-y-0.5' : 'h-20 items-center justify-center rounded-card border border-ui-border bg-white px-2 shadow-card active:translate-y-0.5 dark:border-ui-dark-border dark:bg-ui-dark-surface'}><View className="absolute left-3 right-3 top-1 h-px rounded-full bg-white/90" pointerEvents="none" /><View className="h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: categoryPastels[index % categoryPastels.length] }}><MaterialCommunityIcons name={(item.icon ?? 'store-outline') as React.ComponentProps<typeof MaterialCommunityIcons>['name']} size={19} color="#2A7B4C" /></View><Text className={category === item.id ? 'mt-1 text-center text-[11px] font-black leading-3 text-[#2A7B4C]' : 'mt-1 text-center text-[11px] font-bold leading-3 text-[#4B5563] dark:text-ui-dark-text'} numberOfLines={2}>{language === 'es' ? item.label_es : item.label_en}</Text></Pressable>)}</View></View>
-      {category === 'cinemas' ? <CinemaPosterCarousel loading={cinemaMovies.isLoading} movies={cinemaMovies.data ?? []} /> : null}
-      {categorySubcategories.length ? <View className="mt-5"><Text className="px-5 text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Afiná la experiencia' : 'Refine the experience'}</Text><ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}><Pressable accessibilityRole="button" accessibilityState={{ selected: !subcategory }} className={!subcategory ? 'min-h-11 justify-center rounded-full bg-ui-secondary px-4 dark:bg-ui-dark-secondary' : 'min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted'} onPress={() => setSubcategory(undefined)}><Text className={!subcategory ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? 'Todas' : 'All'}</Text></Pressable>{categorySubcategories.map((tag) => <Pressable accessibilityRole="button" accessibilityState={{ selected: subcategory === tag.id }} className={subcategory === tag.id ? 'min-h-11 justify-center rounded-full bg-ui-secondary px-4 dark:bg-ui-dark-secondary' : 'min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted'} key={tag.id} onPress={() => setSubcategory(tag.id)}><Text className={subcategory === tag.id ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{language === 'es' ? tag.label_es : tag.label_en}</Text></Pressable>)}</ScrollView></View> : null}
+      <View className="pt-6">
+        <Text className="px-5 text-xs font-black uppercase tracking-[1.5px] text-[#1E5B75] dark:text-ui-dark-text">
+          {language === "es" ? "¿Qué necesitás?" : "What do you need?"}
+        </Text>
+        <View className="mt-3 flex-row flex-wrap px-5">
+          {categoryTiles.map((item, index) => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: category === item.id }}
+              key={item.id}
+              onPress={() => {
+                setCategory(item.id);
+                setSubcategory(undefined);
+              }}
+              style={{
+                elevation: category === item.id ? 9 : 6,
+                shadowColor: category === item.id ? "#2A7B4C" : "#1E5B75",
+                shadowOffset: {
+                  height: category === item.id ? 6 : 4,
+                  width: 0,
+                },
+                shadowOpacity: category === item.id ? 0.27 : 0.16,
+                shadowRadius: category === item.id ? 8 : 6,
+                width: "25%",
+              }}
+              className={
+                category === item.id
+                  ? "h-20 items-center justify-center rounded-card border border-[#2A7B4C] bg-white px-2 shadow-card active:translate-y-0.5"
+                  : "h-20 items-center justify-center rounded-card border border-ui-border bg-white px-2 shadow-card active:translate-y-0.5 dark:border-ui-dark-border dark:bg-ui-dark-surface"
+              }
+            >
+              <View
+                className="absolute left-3 right-3 top-1 h-px rounded-full bg-white/90"
+                pointerEvents="none"
+              />
+              <View
+                className="h-10 w-10 items-center justify-center rounded-full"
+                style={{
+                  backgroundColor:
+                    categoryPastels[index % categoryPastels.length],
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={
+                    (item.icon ?? "store-outline") as React.ComponentProps<
+                      typeof MaterialCommunityIcons
+                    >["name"]
+                  }
+                  size={19}
+                  color="#2A7B4C"
+                />
+              </View>
+              <Text
+                className={
+                  category === item.id
+                    ? "mt-1 text-center text-[11px] font-black leading-3 text-[#2A7B4C]"
+                    : "mt-1 text-center text-[11px] font-bold leading-3 text-[#4B5563] dark:text-ui-dark-text"
+                }
+                numberOfLines={2}
+              >
+                {language === "es" ? item.label_es : item.label_en}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      {category === "cinemas" ? (
+        <CinemaPosterCarousel
+          loading={cinemaMovies.isLoading}
+          movies={cinemaMovies.data ?? []}
+        />
+      ) : null}
+      {categorySubcategories.length ? (
+        <View className="mt-5">
+          <Text className="px-5 text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">
+            {language === "es"
+              ? "Afiná la experiencia"
+              : "Refine the experience"}
+          </Text>
+          <ScrollView
+            horizontal
+            className="mt-3"
+            contentContainerStyle={{ gap: 8, paddingHorizontal: 20 }}
+            showsHorizontalScrollIndicator={false}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: !subcategory }}
+              className={
+                !subcategory
+                  ? "min-h-11 justify-center rounded-full bg-ui-secondary px-4 dark:bg-ui-dark-secondary"
+                  : "min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted"
+              }
+              onPress={() => setSubcategory(undefined)}
+            >
+              <Text
+                className={
+                  !subcategory
+                    ? "text-xs font-black text-white"
+                    : "text-xs font-bold text-ui-text dark:text-ui-dark-text"
+                }
+              >
+                {language === "es" ? "Todas" : "All"}
+              </Text>
+            </Pressable>
+            {categorySubcategories.map((tag) => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: subcategory === tag.id }}
+                className={
+                  subcategory === tag.id
+                    ? "min-h-11 justify-center rounded-full bg-ui-secondary px-4 dark:bg-ui-dark-secondary"
+                    : "min-h-11 justify-center rounded-full bg-ui-muted px-4 dark:bg-ui-dark-muted"
+                }
+                key={tag.id}
+                onPress={() => setSubcategory(tag.id)}
+              >
+                <Text
+                  className={
+                    subcategory === tag.id
+                      ? "text-xs font-black text-white"
+                      : "text-xs font-bold text-ui-text dark:text-ui-dark-text"
+                  }
+                >
+                  {language === "es" ? tag.label_es : tag.label_en}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
     </View>
   );
 
-  if (taxonomyError) return <View className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><MaterialCommunityIcons name="database-alert-outline" size={46} color="#B42318" /><Text className="mt-4 text-center font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No pudimos cargar las categorías.' : 'Categories could not be loaded.'}</Text><Pressable className="mt-4 rounded-2xl bg-ui-primary px-5 py-3" onPress={() => void retryTaxonomy()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View>;
+  if (taxonomyError)
+    return (
+      <View className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background">
+        <MaterialCommunityIcons
+          name="database-alert-outline"
+          size={46}
+          color="#B42318"
+        />
+        <Text className="mt-4 text-center font-black text-ui-text dark:text-ui-dark-text">
+          {language === "es"
+            ? "No pudimos cargar las categorías."
+            : "Categories could not be loaded."}
+        </Text>
+        <Pressable
+          className="mt-4 rounded-2xl bg-ui-primary px-5 py-3"
+          onPress={() => void retryTaxonomy()}
+        >
+          <Text className="font-black text-white">
+            {language === "es" ? "Reintentar" : "Retry"}
+          </Text>
+        </Pressable>
+      </View>
+    );
 
   return (
     <View className="flex-1 bg-[#F8F6F0] dark:bg-ui-dark-background">
@@ -691,97 +2842,979 @@ export default function CommerceScreen() {
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <View className="px-5"><ServiceCard nearby={viewMode === 'nearby'} service={item} onOpen={setDetail} /></View>}
+        renderItem={({ item }) => (
+          <View className="px-5">
+            <ServiceCard
+              nearby={viewMode === "nearby"}
+              service={item}
+              onOpen={setDetail}
+            />
+          </View>
+        )}
         contentContainerStyle={{ paddingBottom: 28 }}
-        ListHeaderComponent={<>{header}{catalog.length ? <View className="mb-3 px-5"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{catalogTitle}</Text><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{catalogDescription} {catalog.length} {language === 'es' ? 'lugares.' : 'places.'}</Text></View> : null}</>}
-        ListEmptyComponent={!directoryOrigin ? <View className="mx-5 min-h-40 items-center justify-center px-6 py-8">{locating ? <FrogLoader size="large" color="#087443" /> : <MaterialCommunityIcons name="crosshairs-gps" size={32} color="#087443" />}<Text className="mt-4 text-center text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{locating ? (language === 'es' ? 'Obteniendo tu ubicación precisa…' : 'Getting your precise location…') : (language === 'es' ? 'Activá la ubicación precisa para ver comercios cercanos.' : 'Enable precise location to see nearby businesses.')}</Text>{!locating ? <Pressable accessibilityRole="button" className="mt-3 min-h-11 justify-center" onPress={() => void refreshUserLocation()}><Text className="font-black text-ui-primary">{language === 'es' ? 'Reintentar ubicación' : 'Retry location'}</Text></Pressable> : null}</View> : directory.isLoading ? <View className="mx-5 min-h-52 items-center justify-center"><FrogLoader size="large" color="#087443" /><Text className="mt-4 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Cargando comercios…' : 'Loading businesses…'}</Text></View> : directory.isError ? <View accessibilityRole="alert" className="mx-5 min-h-52 items-center justify-center rounded-card border border-ui-border bg-ui-surface px-6 py-10 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name="cloud-alert-outline" size={44} color="#B42318" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No pudimos cargar el directorio' : 'Directory could not load'}</Text><Text className="mt-2 text-center text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Revisá tu conexión e intentá de nuevo.' : 'Check your connection and try again.'}</Text><Pressable accessibilityRole="button" className="mt-5 min-h-11 justify-center rounded-control bg-ui-primary px-5" onPress={() => void directory.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : <View className="mx-5 min-h-52 items-center justify-center rounded-card border border-dashed border-ui-border bg-ui-surface px-6 py-10 dark:border-ui-dark-border dark:bg-ui-dark-surface"><MaterialCommunityIcons name={selectedCategory.icon} size={44} color="#68737A" /><Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Aún no hay perfiles en esta selección' : 'No profiles in this selection yet'}</Text><Text className="mt-2 text-center text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Probá otra categoría. Si administrás un negocio, podés registrarlo desde arriba.' : 'Try another category. If you manage a business, you can register it above.'}</Text></View>}
+        ListHeaderComponent={
+          <>
+            {header}
+            {catalog.length ? (
+              <View className="mb-3 px-5">
+                <Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">
+                  {catalogTitle}
+                </Text>
+                <Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">
+                  {catalogDescription} {catalog.length}{" "}
+                  {language === "es" ? "lugares." : "places."}
+                </Text>
+              </View>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          !directoryOrigin ? (
+            <View className="mx-5 min-h-40 items-center justify-center px-6 py-8">
+              {locating ? (
+                <FrogLoader size="large" color="#087443" />
+              ) : (
+                <MaterialCommunityIcons
+                  name="crosshairs-gps"
+                  size={32}
+                  color="#087443"
+                />
+              )}
+              <Text className="mt-4 text-center text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
+                {locating
+                  ? language === "es"
+                    ? "Obteniendo tu ubicación precisa…"
+                    : "Getting your precise location…"
+                  : language === "es"
+                    ? "Activá la ubicación precisa para ver comercios cercanos."
+                    : "Enable precise location to see nearby businesses."}
+              </Text>
+              {!locating ? (
+                <Pressable
+                  accessibilityRole="button"
+                  className="mt-3 min-h-11 justify-center"
+                  onPress={() => void refreshUserLocation()}
+                >
+                  <Text className="font-black text-ui-primary">
+                    {language === "es"
+                      ? "Reintentar ubicación"
+                      : "Retry location"}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : directory.isLoading ? (
+            <View className="mx-5 min-h-52 items-center justify-center">
+              <FrogLoader size="large" color="#087443" />
+              <Text className="mt-4 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es"
+                  ? "Cargando comercios…"
+                  : "Loading businesses…"}
+              </Text>
+            </View>
+          ) : directory.isError ? (
+            <View
+              accessibilityRole="alert"
+              className="mx-5 min-h-52 items-center justify-center rounded-card border border-ui-border bg-ui-surface px-6 py-10 dark:border-ui-dark-border dark:bg-ui-dark-surface"
+            >
+              <MaterialCommunityIcons
+                name="cloud-alert-outline"
+                size={44}
+                color="#B42318"
+              />
+              <Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">
+                {language === "es"
+                  ? "No pudimos cargar el directorio"
+                  : "Directory could not load"}
+              </Text>
+              <Text className="mt-2 text-center text-sm text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es"
+                  ? "Revisá tu conexión e intentá de nuevo."
+                  : "Check your connection and try again."}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                className="mt-5 min-h-11 justify-center rounded-control bg-ui-primary px-5"
+                onPress={() => void directory.refetch()}
+              >
+                <Text className="font-black text-white">
+                  {language === "es" ? "Reintentar" : "Retry"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View className="mx-5 min-h-52 items-center justify-center rounded-card border border-dashed border-ui-border bg-ui-surface px-6 py-10 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+              <MaterialCommunityIcons
+                name={selectedCategory.icon}
+                size={44}
+                color="#68737A"
+              />
+              <Text className="mt-4 text-center text-lg font-black text-ui-text dark:text-ui-dark-text">
+                {language === "es"
+                  ? "Aún no hay perfiles en esta selección"
+                  : "No profiles in this selection yet"}
+              </Text>
+              <Text className="mt-2 text-center text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es"
+                  ? "Probá otra categoría. Si administrás un negocio, podés registrarlo desde arriba."
+                  : "Try another category. If you manage a business, you can register it above."}
+              </Text>
+            </View>
+          )
+        }
       />
-      <BusinessDetailModal nearby={viewMode === 'nearby'} service={detail} saved={detail ? (favoriteIds.data ?? []).includes(detail.id) : false} onClaim={(service) => router.push({ pathname: '/claim-business', params: { serviceId: service.id } })} onClose={() => setDetail(null)} onReport={setReporting} onReviewed={async () => { await directory.refetch(); }} onSaved={(service) => void toggleFavorite(service)} subcategoryOptions={subcategories} />
-      <Modal visible={businessFeeNoticeOpen} transparent animationType="fade" onRequestClose={() => setBusinessFeeNoticeOpen(false)}>
+      <BusinessDetailModal
+        nearby={viewMode === "nearby"}
+        service={detail}
+        saved={detail ? (favoriteIds.data ?? []).includes(detail.id) : false}
+        onClaim={(service) =>
+          router.push({
+            pathname: "/claim-business",
+            params: { serviceId: service.id },
+          })
+        }
+        onClose={() => setDetail(null)}
+        onReport={setReporting}
+        onReviewed={async () => {
+          await directory.refetch();
+        }}
+        onSaved={(service) => void toggleFavorite(service)}
+        subcategoryOptions={subcategories}
+      />
+      <Modal
+        visible={businessFeeNoticeOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBusinessFeeNoticeOpen(false)}
+      >
         <View className="flex-1 items-center justify-center bg-black/45 px-5">
-          <View accessibilityRole="alert" className="w-full max-w-md rounded-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="credit-card-outline" size={25} color="#087443" /></View>
-            <Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Registrar un negocio requiere el plan comercial' : 'Registering a business requires the business plan'}</Text>
-            <Text className="mt-2 text-sm leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'El costo es de US$9,99 al mes. Podés completar el registro ahora y emitir el pago desde Planes Pro.' : 'The cost is US$9.99 per month. You can complete registration now and pay from Pro plans.'}</Text>
-            <Pressable accessibilityRole="link" className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => { setBusinessFeeNoticeOpen(false); router.push('/subscriptions'); }}><Text className="font-black text-white">{language === 'es' ? 'Ir a emitir el pago' : 'Continue to payment'}</Text></Pressable>
-            <Pressable accessibilityRole="button" className="mt-2 min-h-11 items-center justify-center" onPress={() => { setBusinessFeeNoticeOpen(false); setRegisterForm(emptyProfileForm(category)); setRegisterPhotos([]); setRegistrationLocation(undefined); setRegisterError(''); setRegisterOpen(true); }}><Text className="font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Completar el registro primero' : 'Complete registration first'}</Text></Pressable>
-            <Pressable accessibilityRole="button" className="min-h-11 items-center justify-center" onPress={() => setBusinessFeeNoticeOpen(false)}><Text className="font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ahora no' : 'Not now'}</Text></Pressable>
+          <View
+            accessibilityRole="alert"
+            className="w-full max-w-md rounded-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface"
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+              <MaterialCommunityIcons
+                name="credit-card-outline"
+                size={25}
+                color="#087443"
+              />
+            </View>
+            <Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">
+              {language === "es"
+                ? "Registrar un negocio requiere el plan comercial"
+                : "Registering a business requires the business plan"}
+            </Text>
+            <Text className="mt-2 text-sm leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">
+              {language === "es"
+                ? "El costo es de US$9,99 al mes. Podés completar el registro ahora y emitir el pago desde Planes Pro."
+                : "The cost is US$9.99 per month. You can complete registration now and pay from Pro plans."}
+            </Text>
+            <Pressable
+              accessibilityRole="link"
+              className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4"
+              onPress={() => {
+                setBusinessFeeNoticeOpen(false);
+                router.push("/subscriptions");
+              }}
+            >
+              <Text className="font-black text-white">
+                {language === "es"
+                  ? "Ir a emitir el pago"
+                  : "Continue to payment"}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              className="mt-2 min-h-11 items-center justify-center"
+              onPress={() => {
+                setBusinessFeeNoticeOpen(false);
+                setRegisterForm(emptyProfileForm(category));
+                setRegisterPhotos([]);
+                setRegistrationLocation(undefined);
+                setRegisterError("");
+                setRegisterOpen(true);
+              }}
+            >
+              <Text className="font-bold text-ui-primary dark:text-ui-dark-primary">
+                {language === "es"
+                  ? "Completar el registro primero"
+                  : "Complete registration first"}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              className="min-h-11 items-center justify-center"
+              onPress={() => setBusinessFeeNoticeOpen(false)}
+            >
+              <Text className="font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es" ? "Ahora no" : "Not now"}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
-      <Modal visible={businessPlanRequiredOpen} transparent animationType="fade" onRequestClose={() => setBusinessPlanRequiredOpen(false)}>
+      <Modal
+        visible={businessPlanRequiredOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBusinessPlanRequiredOpen(false)}
+      >
         <View className="flex-1 items-center justify-center bg-black/45 px-5">
           <View className="w-full max-w-md rounded-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="lock-outline" size={25} color="#087443" /></View>
-            <Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Necesitás el plan para comercios' : 'You need the business plan'}</Text>
-            <Text className="mt-2 text-sm leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'El Panel para propietarios está incluido en la suscripción Comercio o servicio de US$9,99 al mes. Se renueva automáticamente y podés cancelarla cuando querás.' : 'The Owner dashboard is included with the US$9.99/month Business or service subscription. It renews automatically and can be canceled anytime.'}</Text>
-            <Pressable accessibilityRole="link" className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => { setBusinessPlanRequiredOpen(false); router.push('/subscriptions'); }}><Text className="font-black text-white">{language === 'es' ? 'Ver plan para comercios' : 'View business plan'}</Text></Pressable>
-            <Pressable accessibilityRole="button" className="mt-2 min-h-11 items-center justify-center" onPress={() => setBusinessPlanRequiredOpen(false)}><Text className="font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ahora no' : 'Not now'}</Text></Pressable>
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+              <MaterialCommunityIcons
+                name="lock-outline"
+                size={25}
+                color="#087443"
+              />
+            </View>
+            <Text className="mt-4 text-xl font-black text-ui-text dark:text-ui-dark-text">
+              {language === "es"
+                ? "Necesitás el plan para comercios"
+                : "You need the business plan"}
+            </Text>
+            <Text className="mt-2 text-sm leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">
+              {language === "es"
+                ? "El Panel para propietarios está incluido en la suscripción Comercio o servicio de US$9,99 al mes. Se renueva automáticamente y podés cancelarla cuando querás."
+                : "The Owner dashboard is included with the US$9.99/month Business or service subscription. It renews automatically and can be canceled anytime."}
+            </Text>
+            <Pressable
+              accessibilityRole="link"
+              className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4"
+              onPress={() => {
+                setBusinessPlanRequiredOpen(false);
+                router.push("/subscriptions");
+              }}
+            >
+              <Text className="font-black text-white">
+                {language === "es"
+                  ? "Ver plan para comercios"
+                  : "View business plan"}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              className="mt-2 min-h-11 items-center justify-center"
+              onPress={() => setBusinessPlanRequiredOpen(false)}
+            >
+              <Text className="font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es" ? "Ahora no" : "Not now"}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
-      <Modal visible={dashboardOpen} transparent animationType="slide" onRequestClose={() => setDashboardOpen(false)}>
+      <Modal
+        visible={dashboardOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDashboardOpen(false)}
+      >
         <View className="flex-1 justify-end bg-black/40">
           <View className="max-h-[92%] w-full max-w-3xl self-center rounded-t-3xl bg-ui-background p-5 dark:bg-ui-dark-background">
             <View className="mb-5 h-1 w-10 self-center rounded-full bg-ui-border dark:bg-ui-dark-border" />
-            <View className="flex-row items-center justify-between"><View className="flex-1 pr-3"><Text className="text-[10px] font-bold uppercase tracking-[2px]" style={{ color: isDark ? gold.darkInk : gold.ink }}>{language === 'es' ? 'Tu espacio de negocio' : 'Your business space'}</Text><Text className="mt-1 text-2xl font-bold tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Panel para propietarios' : 'Owner dashboard'}</Text><Text className="mt-2 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Gestioná tu presencia, medí resultados y destacá tu negocio.' : 'Manage your presence, measure results, and promote your business.'}</Text></View><Pressable accessibilityLabel={language === 'es' ? 'Cerrar panel' : 'Close dashboard'} accessibilityRole="button" className="h-11 w-11 items-center justify-center" onPress={() => setDashboardOpen(false)}><MaterialCommunityIcons name="close" size={24} color="#68737A" /></Pressable></View>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1 pr-3">
+                <Text
+                  className="text-[10px] font-bold uppercase tracking-[2px]"
+                  style={{ color: isDark ? gold.darkInk : gold.ink }}
+                >
+                  {language === "es"
+                    ? "Tu espacio de negocio"
+                    : "Your business space"}
+                </Text>
+                <Text className="mt-1 text-2xl font-bold tracking-tight text-ui-text dark:text-ui-dark-text">
+                  {language === "es"
+                    ? "Panel para propietarios"
+                    : "Owner dashboard"}
+                </Text>
+                <Text className="mt-2 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+                  {language === "es"
+                    ? "Gestioná tu presencia, medí resultados y destacá tu negocio."
+                    : "Manage your presence, measure results, and promote your business."}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityLabel={
+                  language === "es" ? "Cerrar panel" : "Close dashboard"
+                }
+                accessibilityRole="button"
+                className="h-11 w-11 items-center justify-center"
+                onPress={() => setDashboardOpen(false)}
+              >
+                <MaterialCommunityIcons
+                  name="close"
+                  size={24}
+                  color="#68737A"
+                />
+              </Pressable>
+            </View>
             <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
-              <Text className="mt-6 text-xs font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Mis negocios' : 'My businesses'}</Text>
-              {dashboard.isLoading ? <FrogLoader className="py-8" color="#087443" /> : dashboard.isError ? <View accessibilityRole="alert" className="mt-3 rounded-card border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30"><Text className="text-sm font-semibold text-red-700 dark:text-red-300">{language === 'es' ? 'No pudimos cargar tus negocios.' : 'Your businesses could not load.'}</Text><Pressable accessibilityRole="button" className="mt-3 min-h-11 items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => void dashboard.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : dashboard.data?.length ? dashboard.data.map((service) => {
-                const categoryInfo = categories.find((item) => item.id === service.category);
-                const tagLabels = subcategories.filter((tag) => tag.parent_id === service.category && service.subcategories.includes(tag.id)).map((tag) => language === 'es' ? tag.label_es : tag.label_en);
-                return <View key={service.id} className="mt-4 overflow-hidden rounded-card border border-ui-border bg-ui-background dark:border-ui-dark-border dark:bg-ui-dark-background">
-                  <View className="relative min-h-44 justify-end overflow-hidden bg-ui-primary p-5 dark:bg-ui-dark-surface">{service.cover_image_url ? <Image source={{ uri: service.cover_image_url }} className="absolute inset-0 h-full w-full opacity-35" resizeMode="cover" /> : null}<View className="absolute inset-0 bg-black/25" /><View><View className="flex-row flex-wrap items-center gap-y-2"><Text className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white">{service.subscription ? `${service.subscription.plan} · ${service.subscription.status}` : (language === 'es' ? 'PERFIL PROPIETARIO' : 'OWNER PROFILE')}</Text><Text className="ml-2 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black text-ui-primary">{service.claim_status.toUpperCase()}</Text></View><Text className="mt-3 text-2xl font-black text-white">{service.title}</Text><Text className="mt-1 text-xs font-bold text-white/80">{(language === 'es' ? categoryInfo?.label_es : categoryInfo?.label_en) ?? service.category} · {regions.find((region) => region.id === service.region_id)?.[language === 'es' ? 'name_es' : 'name_en'] ?? (service.latitude != null ? (language === 'es' ? 'Ubicación exacta configurada' : 'Exact location set') : (language === 'es' ? 'Ubicación pendiente' : 'Location pending'))}</Text>{service.subscription ? <Text className="mt-2 text-xs font-bold text-white">{service.subscription.price_currency} {Number(service.subscription.price_amount).toFixed(2)} · {service.subscription.current_period_end ? `${language === 'es' ? 'vigente hasta' : 'active until'} ${new Date(service.subscription.current_period_end).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}` : (language === 'es' ? 'activación pendiente' : 'activation pending')}</Text> : null}</View></View>
-                  <View className="p-4">
-                  {tagLabels.length ? <View className="mt-2 flex-row flex-wrap gap-2">{tagLabels.map((tag) => <Text key={tag} className="rounded-full bg-ui-primary-soft px-2 py-1 text-[10px] font-black text-ui-primary dark:bg-ui-dark-primary-soft">{tag}</Text>)}</View> : null}
-                  <CampaignOptions activeCampaigns={(campaigns.data ?? []).filter((campaign) => campaign.service_id === service.id)} bannerCapacityReached={bannerCapacityReached} bannerUrl={bannerUrls[service.id] ?? service.booking_url ?? service.menu_url ?? ''} busy={campaignBusy?.startsWith(`${service.id}:`) ? campaignBusy.slice(service.id.length + 1) : undefined} language={language} onBannerUrlChange={(value) => setBannerUrls((current) => ({ ...current, [service.id]: value }))} onBuy={(offerId, banner) => void startCampaignCheckout(service, offerId, banner)} />
-                  <OwnerAnalytics language={language} service={service} />
-                  <View className="mt-4 flex-row items-center justify-between"><View><Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Galería del negocio' : 'Business gallery'}</Text><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{service.photos.length}/12 · {language === 'es' ? 'selección múltiple disponible' : 'multiple selection available'}</Text></View><Pressable accessibilityRole="button" disabled={photoBusyId === service.id || service.photos.length >= 12} className="min-h-11 flex-row items-center rounded-control bg-ui-primary px-3 disabled:opacity-50" onPress={() => void addPhotos(service)}>{photoBusyId === service.id ? <FrogLoader size="small" color="white" /> : <MaterialCommunityIcons name="image-multiple-outline" size={17} color="white" />}<Text className="ml-1 text-xs font-black text-white">{language === 'es' ? 'Agregar fotos' : 'Add photos'}</Text></Pressable></View>
-                  {service.photos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10 }} showsHorizontalScrollIndicator={false}>{service.photos.map((photo) => <View key={photo} className="overflow-hidden rounded-2xl bg-ui-muted"><Image source={{ uri: photo }} className="h-28 w-36" resizeMode="cover" />{service.cover_image_url === photo ? <Text className="absolute left-2 top-2 rounded-full bg-ui-primary px-2 py-1 text-[9px] font-black text-white">{language === 'es' ? 'PORTADA' : 'COVER'}</Text> : null}<View className="flex-row justify-end gap-1 p-1"><Pressable accessibilityLabel={language === 'es' ? 'Usar como portada' : 'Use as cover'} className="rounded-lg bg-white p-1.5" onPress={() => void chooseCover(service, photo)}><MaterialCommunityIcons name={service.cover_image_url === photo ? 'star' : 'star-outline'} size={17} color="#087443" /></Pressable><Pressable accessibilityLabel={language === 'es' ? 'Eliminar foto' : 'Delete photo'} className="rounded-lg bg-white p-1.5" onPress={() => removePhoto(service, photo)}><MaterialCommunityIcons name="trash-can-outline" size={17} color="#B42318" /></Pressable></View></View>)}</ScrollView> : <View className="mt-3 items-center rounded-2xl border border-dashed border-ui-border py-5 dark:border-ui-dark-border"><MaterialCommunityIcons name="image-multiple-outline" size={28} color="#68737A" /><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Agregá una foto; la primera será la portada.' : 'Add a photo; the first one becomes the cover.'}</Text></View>}
-                  <Pressable accessibilityRole="button" className="mt-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-primary px-4" onPress={() => openEditor(service)}><MaterialCommunityIcons name="tune-variant" size={18} color="white" /><Text className="ml-2 text-center font-black text-white">{language === 'es' ? 'Editar todo el perfil' : 'Edit full profile'}</Text></Pressable>
-                  <Pressable accessibilityRole="button" accessibilityState={{ busy: deleteBusyId === service.id, disabled: Boolean(deleteBusyId) }} disabled={Boolean(deleteBusyId)} className="mt-5 min-h-12 flex-row items-center justify-center border-t border-red-200 pt-4 disabled:opacity-50 dark:border-red-900" onPress={() => removeBusiness(service)}>{deleteBusyId === service.id ? <FrogLoader size="small" color="#B42318" /> : <MaterialCommunityIcons name="trash-can-outline" size={18} color="#B42318" />}<Text className="ml-2 font-black text-red-700 dark:text-red-300">{language === 'es' ? 'Eliminar este negocio' : 'Delete this business'}</Text></Pressable>
-                  </View>
-                </View>;
-              }) : <View className="items-center py-10"><MaterialCommunityIcons name="store-plus-outline" size={42} color="#68737A" /><Text className="mt-3 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Todavía no tenés comercios reclamados.' : 'You have no claimed businesses yet.'}</Text></View>}
-              <Text className="mt-5 text-xs font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Solicitudes de reclamo' : 'Ownership claims'}</Text>
-              {claims.isLoading ? <FrogLoader className="py-5" color="#087443" /> : claims.isError ? <Text className="mt-3 text-sm font-semibold text-red-600">{language === 'es' ? 'No pudimos cargar tus solicitudes.' : 'Your claims could not load.'}</Text> : claims.data?.length ? claims.data.map((claim) => {
-                const appearance = claim.status === 'approved' ? { label: language === 'es' ? 'Aprobado' : 'Approved', icon: 'check-circle-outline' as const, color: '#087443', background: '#E7F5ED' } : claim.status === 'rejected' ? { label: language === 'es' ? 'Rechazado' : 'Rejected', icon: 'close-circle-outline' as const, color: '#B42318', background: '#FDECEC' } : { label: language === 'es' ? 'Pendiente' : 'Pending', icon: 'clock-outline' as const, color: '#9A6700', background: '#FFF6D8' };
-                return <View key={claim.id} className="mt-3 rounded-2xl border border-ui-border p-4 dark:border-ui-dark-border">
-                  <View className="flex-row items-start justify-between gap-3"><View className="flex-1"><Text className="font-black text-ui-text dark:text-ui-dark-text">{claim.service_title}</Text><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{new Date(claim.created_at).toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US')}</Text></View><View className="flex-row items-center rounded-full px-3 py-1.5" style={{ backgroundColor: appearance.background }}><MaterialCommunityIcons name={appearance.icon} size={15} color={appearance.color} /><Text className="ml-1 text-xs font-black" style={{ color: appearance.color }}>{appearance.label}</Text></View></View>
-                  {claim.message ? <Text className="mt-2 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{claim.message}</Text> : null}
-                </View>;
-              }) : <Text className="mt-3 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Todavía no enviaste solicitudes.' : 'You have not submitted any claims yet.'}</Text>}
-
+              <Text className="mt-6 text-xs font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es" ? "Mis negocios" : "My businesses"}
+              </Text>
+              {dashboard.isLoading ? (
+                <FrogLoader className="py-8" color="#087443" />
+              ) : dashboard.isError ? (
+                <View
+                  accessibilityRole="alert"
+                  className="mt-3 rounded-card border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30"
+                >
+                  <Text className="text-sm font-semibold text-red-700 dark:text-red-300">
+                    {language === "es"
+                      ? "No pudimos cargar tus negocios."
+                      : "Your businesses could not load."}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    className="mt-3 min-h-11 items-center justify-center rounded-control bg-ui-primary px-4"
+                    onPress={() => void dashboard.refetch()}
+                  >
+                    <Text className="font-black text-white">
+                      {language === "es" ? "Reintentar" : "Retry"}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : dashboard.data?.length ? (
+                dashboard.data.map((service) => {
+                  const categoryInfo = categories.find(
+                    (item) => item.id === service.category,
+                  );
+                  const tagLabels = subcategories
+                    .filter(
+                      (tag) =>
+                        tag.parent_id === service.category &&
+                        service.subcategories.includes(tag.id),
+                    )
+                    .map((tag) =>
+                      language === "es" ? tag.label_es : tag.label_en,
+                    );
+                  return (
+                    <View
+                      key={service.id}
+                      className="mt-4 overflow-hidden rounded-card border border-ui-border bg-ui-background dark:border-ui-dark-border dark:bg-ui-dark-background"
+                    >
+                      <View className="relative min-h-44 justify-end overflow-hidden bg-ui-primary p-5 dark:bg-ui-dark-surface">
+                        {service.cover_image_url ? (
+                          <Image
+                            source={{ uri: service.cover_image_url }}
+                            className="absolute inset-0 h-full w-full opacity-35"
+                            resizeMode="cover"
+                          />
+                        ) : null}
+                        <View className="absolute inset-0 bg-black/25" />
+                        <View>
+                          <View className="flex-row flex-wrap items-center gap-y-2">
+                            <Text className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+                              {service.subscription
+                                ? `${service.subscription.plan} · ${service.subscription.status}`
+                                : language === "es"
+                                  ? "PERFIL PROPIETARIO"
+                                  : "OWNER PROFILE"}
+                            </Text>
+                            <Text className="ml-2 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black text-ui-primary">
+                              {service.claim_status.toUpperCase()}
+                            </Text>
+                          </View>
+                          <Text className="mt-3 text-2xl font-black text-white">
+                            {service.title}
+                          </Text>
+                          <Text className="mt-1 text-xs font-bold text-white/80">
+                            {(language === "es"
+                              ? categoryInfo?.label_es
+                              : categoryInfo?.label_en) ??
+                              service.category}{" "}
+                            ·{" "}
+                            {regions.find(
+                              (region) => region.id === service.region_id,
+                            )?.[language === "es" ? "name_es" : "name_en"] ??
+                              (service.latitude != null
+                                ? language === "es"
+                                  ? "Ubicación exacta configurada"
+                                  : "Exact location set"
+                                : language === "es"
+                                  ? "Ubicación pendiente"
+                                  : "Location pending")}
+                          </Text>
+                          {service.subscription ? (
+                            <Text className="mt-2 text-xs font-bold text-white">
+                              {service.subscription.price_currency}{" "}
+                              {Number(
+                                service.subscription.price_amount,
+                              ).toFixed(2)}{" "}
+                              ·{" "}
+                              {service.subscription.current_period_end
+                                ? `${language === "es" ? "vigente hasta" : "active until"} ${new Date(service.subscription.current_period_end).toLocaleDateString(language === "es" ? "es-CR" : "en-US")}`
+                                : language === "es"
+                                  ? "activación pendiente"
+                                  : "activation pending"}
+                            </Text>
+                          ) : null}
+                        </View>
+                      </View>
+                      <View className="p-4">
+                        {tagLabels.length ? (
+                          <View className="mt-2 flex-row flex-wrap gap-2">
+                            {tagLabels.map((tag) => (
+                              <Text
+                                key={tag}
+                                className="rounded-full bg-ui-primary-soft px-2 py-1 text-[10px] font-black text-ui-primary dark:bg-ui-dark-primary-soft"
+                              >
+                                {tag}
+                              </Text>
+                            ))}
+                          </View>
+                        ) : null}
+                        <CampaignOptions
+                          activeCampaigns={(campaigns.data ?? []).filter(
+                            (campaign) => campaign.service_id === service.id,
+                          )}
+                          bannerCapacityReached={bannerCapacityReached}
+                          bannerUrl={
+                            bannerUrls[service.id] ??
+                            service.booking_url ??
+                            service.menu_url ??
+                            ""
+                          }
+                          busy={
+                            campaignBusy?.startsWith(`${service.id}:`)
+                              ? campaignBusy.slice(service.id.length + 1)
+                              : undefined
+                          }
+                          language={language}
+                          storePrices={playCampaignBilling.storePrices}
+                          onCancel={(offerId) => {
+                            void openGooglePlayCampaignManagement(
+                              offerId,
+                            ).catch(() =>
+                              Alert.alert(
+                                "Descubriendo CR",
+                                language === "es"
+                                  ? "No pudimos abrir las suscripciones de Google Play. Abrí Play Store > Pagos y suscripciones > Suscripciones."
+                                  : "We could not open Google Play subscriptions. Open Play Store > Payments & subscriptions > Subscriptions.",
+                              ),
+                            );
+                          }}
+                          onBannerUrlChange={(value) =>
+                            setBannerUrls((current) => ({
+                              ...current,
+                              [service.id]: value,
+                            }))
+                          }
+                          onBuy={(offerId, banner) =>
+                            void startCampaignCheckout(service, offerId, banner)
+                          }
+                        />
+                        <OwnerAnalytics language={language} service={service} />
+                        <View className="mt-4 flex-row items-center justify-between">
+                          <View>
+                            <Text className="text-sm font-black text-ui-text dark:text-ui-dark-text">
+                              {language === "es"
+                                ? "Galería del negocio"
+                                : "Business gallery"}
+                            </Text>
+                            <Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">
+                              {service.photos.length}/12 ·{" "}
+                              {language === "es"
+                                ? "selección múltiple disponible"
+                                : "multiple selection available"}
+                            </Text>
+                          </View>
+                          <Pressable
+                            accessibilityRole="button"
+                            disabled={
+                              photoBusyId === service.id ||
+                              service.photos.length >= 12
+                            }
+                            className="min-h-11 flex-row items-center rounded-control bg-ui-primary px-3 disabled:opacity-50"
+                            onPress={() => void addPhotos(service)}
+                          >
+                            {photoBusyId === service.id ? (
+                              <FrogLoader size="small" color="white" />
+                            ) : (
+                              <MaterialCommunityIcons
+                                name="image-multiple-outline"
+                                size={17}
+                                color="white"
+                              />
+                            )}
+                            <Text className="ml-1 text-xs font-black text-white">
+                              {language === "es"
+                                ? "Agregar fotos"
+                                : "Add photos"}
+                            </Text>
+                          </Pressable>
+                        </View>
+                        {service.photos.length ? (
+                          <ScrollView
+                            horizontal
+                            className="mt-3"
+                            contentContainerStyle={{ gap: 10 }}
+                            showsHorizontalScrollIndicator={false}
+                          >
+                            {service.photos.map((photo) => (
+                              <View
+                                key={photo}
+                                className="overflow-hidden rounded-2xl bg-ui-muted"
+                              >
+                                <Image
+                                  source={{ uri: photo }}
+                                  className="h-28 w-36"
+                                  resizeMode="cover"
+                                />
+                                {service.cover_image_url === photo ? (
+                                  <Text className="absolute left-2 top-2 rounded-full bg-ui-primary px-2 py-1 text-[9px] font-black text-white">
+                                    {language === "es" ? "PORTADA" : "COVER"}
+                                  </Text>
+                                ) : null}
+                                <View className="flex-row justify-end gap-1 p-1">
+                                  <Pressable
+                                    accessibilityLabel={
+                                      language === "es"
+                                        ? "Usar como portada"
+                                        : "Use as cover"
+                                    }
+                                    className="rounded-lg bg-white p-1.5"
+                                    onPress={() =>
+                                      void chooseCover(service, photo)
+                                    }
+                                  >
+                                    <MaterialCommunityIcons
+                                      name={
+                                        service.cover_image_url === photo
+                                          ? "star"
+                                          : "star-outline"
+                                      }
+                                      size={17}
+                                      color="#087443"
+                                    />
+                                  </Pressable>
+                                  <Pressable
+                                    accessibilityLabel={
+                                      language === "es"
+                                        ? "Eliminar foto"
+                                        : "Delete photo"
+                                    }
+                                    className="rounded-lg bg-white p-1.5"
+                                    onPress={() => removePhoto(service, photo)}
+                                  >
+                                    <MaterialCommunityIcons
+                                      name="trash-can-outline"
+                                      size={17}
+                                      color="#B42318"
+                                    />
+                                  </Pressable>
+                                </View>
+                              </View>
+                            ))}
+                          </ScrollView>
+                        ) : (
+                          <View className="mt-3 items-center rounded-2xl border border-dashed border-ui-border py-5 dark:border-ui-dark-border">
+                            <MaterialCommunityIcons
+                              name="image-multiple-outline"
+                              size={28}
+                              color="#68737A"
+                            />
+                            <Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">
+                              {language === "es"
+                                ? "Agregá una foto; la primera será la portada."
+                                : "Add a photo; the first one becomes the cover."}
+                            </Text>
+                          </View>
+                        )}
+                        <Pressable
+                          accessibilityRole="button"
+                          className="mt-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-primary px-4"
+                          onPress={() => openEditor(service)}
+                        >
+                          <MaterialCommunityIcons
+                            name="tune-variant"
+                            size={18}
+                            color="white"
+                          />
+                          <Text className="ml-2 text-center font-black text-white">
+                            {language === "es"
+                              ? "Editar todo el perfil"
+                              : "Edit full profile"}
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityState={{
+                            busy: deleteBusyId === service.id,
+                            disabled: Boolean(deleteBusyId),
+                          }}
+                          disabled={Boolean(deleteBusyId)}
+                          className="mt-5 min-h-12 flex-row items-center justify-center border-t border-red-200 pt-4 disabled:opacity-50 dark:border-red-900"
+                          onPress={() => removeBusiness(service)}
+                        >
+                          {deleteBusyId === service.id ? (
+                            <FrogLoader size="small" color="#B42318" />
+                          ) : (
+                            <MaterialCommunityIcons
+                              name="trash-can-outline"
+                              size={18}
+                              color="#B42318"
+                            />
+                          )}
+                          <Text className="ml-2 font-black text-red-700 dark:text-red-300">
+                            {language === "es"
+                              ? "Eliminar este negocio"
+                              : "Delete this business"}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                })
+              ) : (
+                <View className="items-center py-10">
+                  <MaterialCommunityIcons
+                    name="store-plus-outline"
+                    size={42}
+                    color="#68737A"
+                  />
+                  <Text className="mt-3 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
+                    {language === "es"
+                      ? "Todavía no tenés comercios reclamados."
+                      : "You have no claimed businesses yet."}
+                  </Text>
+                </View>
+              )}
+              <Text className="mt-5 text-xs font-black uppercase tracking-wide text-ui-text-muted dark:text-ui-dark-text-muted">
+                {language === "es"
+                  ? "Solicitudes de reclamo"
+                  : "Ownership claims"}
+              </Text>
+              {claims.isLoading ? (
+                <FrogLoader className="py-5" color="#087443" />
+              ) : claims.isError ? (
+                <Text className="mt-3 text-sm font-semibold text-red-600">
+                  {language === "es"
+                    ? "No pudimos cargar tus solicitudes."
+                    : "Your claims could not load."}
+                </Text>
+              ) : claims.data?.length ? (
+                claims.data.map((claim) => {
+                  const appearance =
+                    claim.status === "approved"
+                      ? {
+                          label: language === "es" ? "Aprobado" : "Approved",
+                          icon: "check-circle-outline" as const,
+                          color: "#087443",
+                          background: "#E7F5ED",
+                        }
+                      : claim.status === "rejected"
+                        ? {
+                            label: language === "es" ? "Rechazado" : "Rejected",
+                            icon: "close-circle-outline" as const,
+                            color: "#B42318",
+                            background: "#FDECEC",
+                          }
+                        : {
+                            label: language === "es" ? "Pendiente" : "Pending",
+                            icon: "clock-outline" as const,
+                            color: "#9A6700",
+                            background: "#FFF6D8",
+                          };
+                  return (
+                    <View
+                      key={claim.id}
+                      className="mt-3 rounded-2xl border border-ui-border p-4 dark:border-ui-dark-border"
+                    >
+                      <View className="flex-row items-start justify-between gap-3">
+                        <View className="flex-1">
+                          <Text className="font-black text-ui-text dark:text-ui-dark-text">
+                            {claim.service_title}
+                          </Text>
+                          <Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">
+                            {new Date(claim.created_at).toLocaleDateString(
+                              language === "es" ? "es-CR" : "en-US",
+                            )}
+                          </Text>
+                        </View>
+                        <View
+                          className="flex-row items-center rounded-full px-3 py-1.5"
+                          style={{ backgroundColor: appearance.background }}
+                        >
+                          <MaterialCommunityIcons
+                            name={appearance.icon}
+                            size={15}
+                            color={appearance.color}
+                          />
+                          <Text
+                            className="ml-1 text-xs font-black"
+                            style={{ color: appearance.color }}
+                          >
+                            {appearance.label}
+                          </Text>
+                        </View>
+                      </View>
+                      {claim.message ? (
+                        <Text className="mt-2 text-xs leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">
+                          {claim.message}
+                        </Text>
+                      ) : null}
+                    </View>
+                  );
+                })
+              ) : (
+                <Text className="mt-3 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">
+                  {language === "es"
+                    ? "Todavía no enviaste solicitudes."
+                    : "You have not submitted any claims yet."}
+                </Text>
+              )}
             </ScrollView>
           </View>
         </View>
       </Modal>
-      <Modal visible={registerOpen} transparent animationType="slide" onRequestClose={() => setRegisterOpen(false)}>
-        <View className="flex-1 justify-end bg-black/40"><View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
-          <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Registrar comercio' : 'Register business'}</Text>
-          <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Completá la información. Se enviará a revisión y, cuando un administrador lo apruebe, se mostrará según cercanía desde tu ubicación.' : 'Complete the information. It will be reviewed and, after an administrator approves it, shown by distance from your location.'}</Text>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <ProfileEditorFields form={registerForm} language={language} onChange={(key, value) => setRegisterForm((current) => ({ ...current, [key]: value }))} onCategoryChange={(nextCategory) => setRegisterForm((current) => ({ ...current, category: nextCategory, subcategories: [], experienceType: nextCategory === 'other' ? current.experienceType : '' }))} onToggleParking={() => setRegisterForm((current) => ({ ...current, hasParking: !current.hasParking }))} onToggleSubcategory={(tag) => setRegisterForm((current) => ({ ...current, subcategories: current.subcategories.includes(tag) ? current.subcategories.filter((item) => item !== tag) : [...current.subcategories, tag] }))} />
-            <BusinessLocationEditor language={language} location={registrationLocation} onChange={setRegistrationLocation} />
-            <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border"><Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Fotos' : 'Photos'}</Text><Pressable accessibilityRole="button" className="mt-3 min-h-16 items-center justify-center rounded-card border border-dashed border-ui-primary bg-ui-primary-soft px-4 dark:bg-ui-dark-primary-soft" onPress={() => void pickRegistrationPhotos()}><MaterialCommunityIcons name="image-multiple-outline" size={25} color="#087443" /><Text className="mt-1 font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Elegir varias fotos' : 'Choose multiple photos'}</Text><Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{registerPhotos.length}/12 · JPG, PNG o WebP · máximo 6 MB por archivo</Text></Pressable>{registerPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>{registerPhotos.map((photo, index) => <View className="relative" key={`${photo.uri}-${index}`}><Image source={{ uri: photo.uri }} className="h-24 w-32 rounded-2xl" resizeMode="cover" /><Pressable accessibilityLabel={language === 'es' ? `Quitar foto ${index + 1}` : `Remove photo ${index + 1}`} className="absolute right-1 top-1 h-9 w-9 items-center justify-center rounded-full bg-black/60" onPress={() => setRegisterPhotos((current) => current.filter((_, itemIndex) => itemIndex !== index))}><MaterialCommunityIcons name="close" size={18} color="white" /></Pressable></View>)}</ScrollView> : null}</View>
-            {registerError ? <Text className="mt-2 text-xs font-semibold text-red-600">{registerError}</Text> : null}
-            <View className="mt-4 flex-row gap-3"><Pressable disabled={registerBusy} className="flex-1 rounded-2xl border border-ui-border py-3 dark:border-ui-dark-border" onPress={() => setRegisterOpen(false)}><Text className="text-center font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Cancelar' : 'Cancel'}</Text></Pressable><Pressable disabled={registerBusy || !registerForm.category} className="flex-1 rounded-2xl bg-ui-primary py-3 disabled:opacity-40" onPress={() => void submitRegistration()}><Text className="text-center font-black text-white">{registerBusy ? (language === 'es' ? 'Enviando…' : 'Sending…') : (language === 'es' ? 'Enviar a revisión' : 'Send for review')}</Text></Pressable></View>
-          </ScrollView>
-        </View></View>
+      <Modal
+        visible={registerOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setRegisterOpen(false)}
+      >
+        <View className="flex-1 justify-end bg-black/40">
+          <View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
+            <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">
+              {language === "es" ? "Registrar comercio" : "Register business"}
+            </Text>
+            <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">
+              {language === "es"
+                ? "Completá la información. Se enviará a revisión y, cuando un administrador lo apruebe, se mostrará según cercanía desde tu ubicación."
+                : "Complete the information. It will be reviewed and, after an administrator approves it, shown by distance from your location."}
+            </Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <ProfileEditorFields
+                form={registerForm}
+                language={language}
+                onChange={(key, value) =>
+                  setRegisterForm((current) => ({ ...current, [key]: value }))
+                }
+                onCategoryChange={(nextCategory) =>
+                  setRegisterForm((current) => ({
+                    ...current,
+                    category: nextCategory,
+                    subcategories: [],
+                    experienceType:
+                      nextCategory === "other" ? current.experienceType : "",
+                  }))
+                }
+                onToggleParking={() =>
+                  setRegisterForm((current) => ({
+                    ...current,
+                    hasParking: !current.hasParking,
+                  }))
+                }
+                onToggleSubcategory={(tag) =>
+                  setRegisterForm((current) => ({
+                    ...current,
+                    subcategories: current.subcategories.includes(tag)
+                      ? current.subcategories.filter((item) => item !== tag)
+                      : [...current.subcategories, tag],
+                  }))
+                }
+              />
+              <BusinessLocationEditor
+                language={language}
+                location={registrationLocation}
+                onChange={setRegistrationLocation}
+              />
+              <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border">
+                <Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">
+                  {language === "es" ? "Fotos" : "Photos"}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  className="mt-3 min-h-16 items-center justify-center rounded-card border border-dashed border-ui-primary bg-ui-primary-soft px-4 dark:bg-ui-dark-primary-soft"
+                  onPress={() => void pickRegistrationPhotos()}
+                >
+                  <MaterialCommunityIcons
+                    name="image-multiple-outline"
+                    size={25}
+                    color="#087443"
+                  />
+                  <Text className="mt-1 font-black text-ui-primary dark:text-ui-dark-primary">
+                    {language === "es"
+                      ? "Elegir varias fotos"
+                      : "Choose multiple photos"}
+                  </Text>
+                  <Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">
+                    {registerPhotos.length}/12 · JPG, PNG o WebP · máximo 6 MB
+                    por archivo
+                  </Text>
+                </Pressable>
+                {registerPhotos.length ? (
+                  <ScrollView
+                    horizontal
+                    className="mt-3"
+                    contentContainerStyle={{ gap: 8 }}
+                    showsHorizontalScrollIndicator={false}
+                  >
+                    {registerPhotos.map((photo, index) => (
+                      <View className="relative" key={`${photo.uri}-${index}`}>
+                        <Image
+                          source={{ uri: photo.uri }}
+                          className="h-24 w-32 rounded-2xl"
+                          resizeMode="cover"
+                        />
+                        <Pressable
+                          accessibilityLabel={
+                            language === "es"
+                              ? `Quitar foto ${index + 1}`
+                              : `Remove photo ${index + 1}`
+                          }
+                          className="absolute right-1 top-1 h-9 w-9 items-center justify-center rounded-full bg-black/60"
+                          onPress={() =>
+                            setRegisterPhotos((current) =>
+                              current.filter(
+                                (_, itemIndex) => itemIndex !== index,
+                              ),
+                            )
+                          }
+                        >
+                          <MaterialCommunityIcons
+                            name="close"
+                            size={18}
+                            color="white"
+                          />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </ScrollView>
+                ) : null}
+              </View>
+              {registerError ? (
+                <Text className="mt-2 text-xs font-semibold text-red-600">
+                  {registerError}
+                </Text>
+              ) : null}
+              <View className="mt-4 flex-row gap-3">
+                <Pressable
+                  disabled={registerBusy}
+                  className="flex-1 rounded-2xl border border-ui-border py-3 dark:border-ui-dark-border"
+                  onPress={() => setRegisterOpen(false)}
+                >
+                  <Text className="text-center font-black text-ui-text dark:text-ui-dark-text">
+                    {language === "es" ? "Cancelar" : "Cancel"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  disabled={registerBusy || !registerForm.category}
+                  className="flex-1 rounded-2xl bg-ui-primary py-3 disabled:opacity-40"
+                  onPress={() => void submitRegistration()}
+                >
+                  <Text className="text-center font-black text-white">
+                    {registerBusy
+                      ? language === "es"
+                        ? "Enviando…"
+                        : "Sending…"
+                      : language === "es"
+                        ? "Enviar a revisión"
+                        : "Send for review"}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
-      <Modal visible={Boolean(editing)} transparent animationType="slide" onRequestClose={() => setEditing(null)}>
-        <View className="flex-1 justify-end bg-black/40"><View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
-          <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Editar opciones del perfil' : 'Edit profile options'}</Text>
-          <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{editing?.title}</Text>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <ProfileEditorFields form={editForm} language={language} onChange={(key, value) => setEditForm((current) => ({ ...current, [key]: value }))} onCategoryChange={(nextCategory) => setEditForm((current) => ({ ...current, category: nextCategory, subcategories: [], experienceType: nextCategory === 'other' ? current.experienceType : '' }))} onToggleParking={() => setEditForm((current) => ({ ...current, hasParking: !current.hasParking }))} onToggleSubcategory={(tag) => setEditForm((current) => ({ ...current, subcategories: current.subcategories.includes(tag) ? current.subcategories.filter((item) => item !== tag) : [...current.subcategories, tag] }))} />
-            <BusinessLocationEditor language={language} location={editLocation} onChange={setEditLocation} />
-            {editError ? <Text className="mt-2 text-xs font-semibold text-red-600">{editError}</Text> : null}
-            <View className="mt-4 flex-row gap-3"><Pressable disabled={editBusy} className="flex-1 rounded-2xl border border-ui-border py-3 dark:border-ui-dark-border" onPress={() => setEditing(null)}><Text className="text-center font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Cancelar' : 'Cancel'}</Text></Pressable><Pressable disabled={editBusy} className="flex-1 rounded-2xl bg-ui-primary py-3 disabled:opacity-40" onPress={() => void submitEdit()}><Text className="text-center font-black text-white">{editBusy ? (language === 'es' ? 'Guardando…' : 'Saving…') : (language === 'es' ? 'Guardar' : 'Save')}</Text></Pressable></View>
-          </ScrollView>
-        </View></View>
+      <Modal
+        visible={Boolean(editing)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditing(null)}
+      >
+        <View className="flex-1 justify-end bg-black/40">
+          <View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
+            <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">
+              {language === "es"
+                ? "Editar opciones del perfil"
+                : "Edit profile options"}
+            </Text>
+            <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">
+              {editing?.title}
+            </Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <ProfileEditorFields
+                form={editForm}
+                language={language}
+                onChange={(key, value) =>
+                  setEditForm((current) => ({ ...current, [key]: value }))
+                }
+                onCategoryChange={(nextCategory) =>
+                  setEditForm((current) => ({
+                    ...current,
+                    category: nextCategory,
+                    subcategories: [],
+                    experienceType:
+                      nextCategory === "other" ? current.experienceType : "",
+                  }))
+                }
+                onToggleParking={() =>
+                  setEditForm((current) => ({
+                    ...current,
+                    hasParking: !current.hasParking,
+                  }))
+                }
+                onToggleSubcategory={(tag) =>
+                  setEditForm((current) => ({
+                    ...current,
+                    subcategories: current.subcategories.includes(tag)
+                      ? current.subcategories.filter((item) => item !== tag)
+                      : [...current.subcategories, tag],
+                  }))
+                }
+              />
+              <BusinessLocationEditor
+                language={language}
+                location={editLocation}
+                onChange={setEditLocation}
+              />
+              {editError ? (
+                <Text className="mt-2 text-xs font-semibold text-red-600">
+                  {editError}
+                </Text>
+              ) : null}
+              <View className="mt-4 flex-row gap-3">
+                <Pressable
+                  disabled={editBusy}
+                  className="flex-1 rounded-2xl border border-ui-border py-3 dark:border-ui-dark-border"
+                  onPress={() => setEditing(null)}
+                >
+                  <Text className="text-center font-black text-ui-text dark:text-ui-dark-text">
+                    {language === "es" ? "Cancelar" : "Cancel"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  disabled={editBusy}
+                  className="flex-1 rounded-2xl bg-ui-primary py-3 disabled:opacity-40"
+                  onPress={() => void submitEdit()}
+                >
+                  <Text className="text-center font-black text-white">
+                    {editBusy
+                      ? language === "es"
+                        ? "Guardando…"
+                        : "Saving…"
+                      : language === "es"
+                        ? "Guardar"
+                        : "Save"}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
-      <InformationReportModal open={Boolean(reporting)} targetType="commercial_service" targetId={reporting?.id} targetLabel={reporting?.title ?? ''} language={language} onClose={() => setReporting(null)} />
+      <InformationReportModal
+        open={Boolean(reporting)}
+        targetType="commercial_service"
+        targetId={reporting?.id}
+        targetLabel={reporting?.title ?? ""}
+        language={language}
+        onClose={() => setReporting(null)}
+      />
     </View>
   );
 }
