@@ -1,9 +1,9 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQueries } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import mapboxgl, { type GeoJSONSource } from 'mapbox-gl';
+import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 
 import { getWeather, WEATHER_STALE_TIME } from '@/lib/logistics';
@@ -21,13 +21,9 @@ const provinceShape: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
   features: provinces.map((province) => ({ type: 'Feature', id: province.code, properties: { code: province.code, name: province.name }, geometry: { type: 'MultiPolygon', coordinates: province.polygons.map((ring) => [ring]) } })),
 };
-const initialWeatherShape: GeoJSON.FeatureCollection = {
-  type: 'FeatureCollection',
-  features: provinces.map((province) => ({ type: 'Feature', id: province.code, properties: { icon: '☁', name: province.name, label: `${province.name}\n…` }, geometry: { type: 'Point', coordinates: [province.center.longitude, province.center.latitude] } })),
-};
-
 export type MapCoordinate = { latitude: number; longitude: number };
 type MapCanvasProps = { onLocationPick?: (coordinate: MapCoordinate) => void; selectedLocation?: MapCoordinate };
+type WeatherMarker = { icon: HTMLSpanElement; label: HTMLSpanElement; marker: mapboxgl.Marker };
 
 function weatherSymbol(icon?: string) {
   if (icon?.startsWith('01')) return '☀';
@@ -44,24 +40,18 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const locationMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const weatherMarkersRef = useRef(new Map<string, WeatherMarker>());
   const onLocationPickRef = useRef(onLocationPick);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(false);
   const wide = width >= 900;
   const selectionMode = Boolean(onLocationPick);
   const weather = useQueries({ queries: provinces.map((province) => ({ queryKey: ['weather', 'province', province.code, language], queryFn: () => getWeather(province.center, language), enabled: !selectionMode, staleTime: WEATHER_STALE_TIME })) });
-  const weatherShape = useMemo<GeoJSON.FeatureCollection>(() => ({
-    type: 'FeatureCollection',
-    features: provinces.map((province, index) => {
-      const current = weather[index].data;
-      return { type: 'Feature', id: province.code, properties: { icon: weatherSymbol(current?.icon), name: province.name, label: `${province.name}\n${current ? `${current.temperature}°${current.temperatureUnit}` : '…'}` }, geometry: { type: 'Point', coordinates: [province.center.longitude, province.center.latitude] } };
-    }),
-  }), [weather]);
-
   useEffect(() => { onLocationPickRef.current = onLocationPick; }, [onLocationPick]);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
+    const weatherMarkers = weatherMarkersRef.current;
     let loaded = false;
     const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: selectionMode ? 'mapbox://styles/mapbox/outdoors-v12' : PROVINCE_MAP_STYLE, center: [-84.12, 9.88], zoom: wide ? 7.37 : 6.67, minZoom: 5.7, maxZoom: selectionMode ? 19 : 10, dragRotate: false, pitchWithRotate: false, attributionControl: selectionMode });
     if (selectionMode) map.scrollZoom.enable(); else map.scrollZoom.disable();
@@ -78,15 +68,38 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
       map.addLayer({ id: 'province-fills', type: 'fill', source: 'provinces', paint: { 'fill-color': [...provinceColors] as mapboxgl.Expression, 'fill-opacity': 1 } });
       map.addLayer({ id: 'province-halo', type: 'line', source: 'provinces', paint: { 'line-color': '#F8F6F0', 'line-opacity': 0.8, 'line-width': 6 } });
       map.addLayer({ id: 'province-lines', type: 'line', source: 'provinces', paint: { 'line-color': '#1E5B75', 'line-opacity': 1, 'line-width': 3 } });
-      map.addSource('province-weather', { type: 'geojson', data: initialWeatherShape });
-      map.addLayer({ id: 'province-weather-icons', type: 'symbol', source: 'province-weather', layout: { 'text-allow-overlap': true, 'text-field': ['get', 'icon'], 'text-offset': [0, -0.8], 'text-size': wide ? 34 : 25 }, paint: { 'text-color': '#F26A44', 'text-halo-color': '#F8F6F0', 'text-halo-width': 2 } });
-      map.addLayer({ id: 'province-weather-labels', type: 'symbol', source: 'province-weather', layout: { 'text-allow-overlap': true, 'text-field': ['get', 'label'], 'text-offset': [0, 1], 'text-size': wide ? 15 : 12 }, paint: { 'text-color': '#F8F6F0', 'text-halo-color': '#1E5B75', 'text-halo-width': 2 } });
+      provinces.forEach((province) => {
+        const element = document.createElement('button');
+        element.type = 'button';
+        element.setAttribute('aria-label', `Abrir ${province.name}`);
+        element.dataset.weatherProvince = province.code;
+        Object.assign(element.style, {
+          alignItems: 'center', background: 'rgba(30, 91, 117, 0.94)', border: '1px solid rgba(248, 246, 240, 0.8)',
+          borderRadius: '14px', color: '#F8F6F0', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+          fontFamily: 'inherit', minWidth: wide ? '96px' : '78px', padding: wide ? '6px 9px' : '4px 6px', textAlign: 'center',
+        });
+        const icon = document.createElement('span');
+        Object.assign(icon.style, { color: '#F26A44', fontSize: wide ? '28px' : '21px', fontWeight: '700', lineHeight: '1' });
+        icon.textContent = '☁';
+        const label = document.createElement('span');
+        Object.assign(label.style, { fontSize: wide ? '15px' : '12px', fontWeight: '700', lineHeight: wide ? '19px' : '16px', whiteSpace: 'pre-line' });
+        label.textContent = `${province.name}\n…`;
+        element.append(icon, label);
+        element.addEventListener('click', (event) => {
+          event.stopPropagation();
+          router.push({ pathname: '/(aux)/province', params: { province: province.name } });
+        });
+        const marker = new mapboxgl.Marker({ anchor: 'center', element })
+          .setLngLat([province.center.longitude, province.center.latitude])
+          .addTo(map);
+        weatherMarkersRef.current.set(province.code, { icon, label, marker });
+      });
       const handleMapClick = (event: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
         if (onLocationPickRef.current) {
           onLocationPickRef.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
           return;
         }
-        const feature = map.queryRenderedFeatures(event.point, { layers: ['province-weather-icons', 'province-weather-labels', 'province-fills'] })[0];
+        const feature = map.queryRenderedFeatures(event.point, { layers: ['province-fills'] })[0];
         const name = feature?.properties?.name as string | undefined;
         if (name) router.push({ pathname: '/(aux)/province', params: { province: name } });
       };
@@ -95,7 +108,15 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
       map.on('mouseleave', 'province-fills', () => { map.getCanvas().style.cursor = ''; });
     });
     map.on('error', () => { if (!loaded) setMapError(true); });
-    return () => { locationMarkerRef.current?.remove(); locationMarkerRef.current = null; setMapReady(false); map.remove(); mapRef.current = null; };
+    return () => {
+      locationMarkerRef.current?.remove();
+      locationMarkerRef.current = null;
+      weatherMarkers.forEach(({ marker }) => marker.remove());
+      weatherMarkers.clear();
+      setMapReady(false);
+      map.remove();
+      mapRef.current = null;
+    };
   }, [router, selectionMode, wide]);
 
   useEffect(() => {
@@ -113,7 +134,16 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
 
   useEffect(() => () => { locationMarkerRef.current?.remove(); }, []);
 
-  useEffect(() => { if (!selectionMode) (mapRef.current?.getSource('province-weather') as GeoJSONSource | undefined)?.setData(weatherShape); }, [selectionMode, weatherShape]);
+  useEffect(() => {
+    if (selectionMode || !mapReady) return;
+    provinces.forEach((province, index) => {
+      const marker = weatherMarkersRef.current.get(province.code);
+      const current = weather[index].data;
+      if (!marker) return;
+      marker.icon.textContent = weatherSymbol(current?.icon);
+      marker.label.textContent = `${province.name}\n${current ? `${current.temperature}°${current.temperatureUnit}` : '…'}`;
+    });
+  }, [mapReady, selectionMode, weather]);
 
   return (
     <View className="relative overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, boxShadow: '0 10px 28px rgba(30, 91, 117, 0.28)', height: wide ? 530 : 460 }}>

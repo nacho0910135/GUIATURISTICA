@@ -2,7 +2,7 @@ import Mapbox from '@rnmapbox/maps';
 import { useQueries } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { memo, useCallback, useMemo } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { FrogLoader } from '@/components/frog-loader';
 import { getWeather, WEATHER_STALE_TIME } from '@/lib/logistics';
@@ -65,14 +65,14 @@ export const MapCanvas = memo(function MapCanvas({ onLocationPick, selectedLocat
   const weatherAnnotations = useMemo(() => selectionMode ? null : provinces.map((province, index) => {
     const current = weather[index].data;
     return (
-      <Mapbox.PointAnnotation id={`province-${province.code}`} key={province.code} coordinate={[province.center.longitude, province.center.latitude]} onSelected={() => openProvince(province.name)}>
-        <View collapsable={false} style={styles.weatherMarker}>
+      <Mapbox.MarkerView allowOverlap allowOverlapWithPuck id={`province-${province.code}`} key={province.code} coordinate={[province.center.longitude, province.center.latitude]}>
+        <Pressable accessibilityLabel={`Abrir ${province.name}`} accessibilityRole="button" onPress={() => openProvince(province.name)} style={styles.weatherMarker}>
           <Text allowFontScaling={false} style={[styles.weatherIcon, { fontSize: wide ? 28 : 21 }]}>{weatherSymbol(current?.icon)}</Text>
           <Text allowFontScaling={false} numberOfLines={2} style={[styles.weatherLabel, { fontSize: wide ? 15 : 12, lineHeight: wide ? 19 : 16 }]}>
             {province.name}{'\n'}{current ? `${current.temperature}°${current.temperatureUnit}` : '…'}
           </Text>
-        </View>
-      </Mapbox.PointAnnotation>
+        </Pressable>
+      </Mapbox.MarkerView>
     );
   }), [openProvince, selectionMode, weather, wide]);
 
