@@ -81,7 +81,7 @@ Deno.serve(async (request) => {
   const priceCurrency = money?.currencyCode?.toUpperCase() || 'USD';
   const providerId = `google_play:${await sha256(purchaseToken)}`;
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error: writeError } = await admin.from('subscriptions').upsert({
+  const subscription = {
     user_id: user.id,
     service_id: serviceId ?? null,
     plan: offer.plan,
@@ -93,7 +93,14 @@ Deno.serve(async (request) => {
     provider_subscription_id: providerId,
     current_period_end: expiresAt,
     updated_at: new Date().toISOString(),
-  }, { onConflict: 'provider_subscription_id' });
+  };
+  let existingQuery = admin.from('subscriptions').select('id').eq('user_id', user.id).eq('offer_id', productId).eq('provider', 'google_play');
+  existingQuery = serviceId ? existingQuery.eq('service_id', serviceId) : existingQuery.is('service_id', null);
+  const { data: existing, error: existingError } = await existingQuery.maybeSingle();
+  if (existingError) return json({ error: 'subscription_lookup_failed' }, 500);
+  const { error: writeError } = existing
+    ? await admin.from('subscriptions').update(subscription).eq('id', existing.id)
+    : await admin.from('subscriptions').insert(subscription);
   if (writeError) return json({ error: 'subscription_write_failed' }, 500);
 
   return json({ verified: true, expiresAt, testPurchase: Boolean(purchase.testPurchase), orderId: purchase.latestOrderId ?? null });

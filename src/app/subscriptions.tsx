@@ -7,7 +7,7 @@ import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { billingOffers, getMySubscriptions, hasActiveBusinessPlan, hasActivePersonalPlan, openSubscriptionCheckout, type BillingOfferId } from '@/lib/billing';
 import { getOwnerDashboard } from '@/lib/commerce';
-import { useGooglePlayBilling } from '@/hooks/use-google-play-billing';
+import { useGooglePlayBilling } from '../hooks/use-google-play-billing';
 import { useApp } from '@/providers/app-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
