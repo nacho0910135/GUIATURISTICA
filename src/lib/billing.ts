@@ -44,7 +44,7 @@ export type Subscription = {
   offer_id: BillingOfferId | LegacySubscriptionOfferId;
   status: SubscriptionStatus;
   price_amount: number;
-  price_currency: 'CRC' | 'USD';
+  price_currency: string;
   current_period_end: string | null;
 };
 
