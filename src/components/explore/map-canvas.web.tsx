@@ -11,6 +11,11 @@ import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN ?? '';
+const PROVINCE_MAP_STYLE = {
+  version: 8 as const,
+  sources: {},
+  layers: [{ id: 'background', type: 'background' as const, paint: { 'background-color': '#F8F6F0' } }],
+};
 const provinceColors = ['match', ['get', 'code'], '1', '#2A7B4C', '2', '#1E5B75', '3', '#4A9874', '4', '#326F8B', '5', '#82B99C', '6', '#568BA4', '7', '#1E6038', '#2A7B4C'] as const;
 const provinceShape: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
@@ -58,7 +63,7 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
     let loaded = false;
-    const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: 'mapbox://styles/mapbox/outdoors-v12', center: [-84.12, 9.88], zoom: wide ? 7.37 : 6.67, minZoom: 5.7, maxZoom: selectionMode ? 19 : 10, dragRotate: false, pitchWithRotate: false, attributionControl: true });
+    const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: selectionMode ? 'mapbox://styles/mapbox/outdoors-v12' : PROVINCE_MAP_STYLE, center: [-84.12, 9.88], zoom: wide ? 7.37 : 6.67, minZoom: 5.7, maxZoom: selectionMode ? 19 : 10, dragRotate: false, pitchWithRotate: false, attributionControl: selectionMode });
     if (selectionMode) map.scrollZoom.enable(); else map.scrollZoom.disable();
     mapRef.current = map;
     map.on('load', () => {
@@ -70,7 +75,7 @@ export function MapCanvas({ onLocationPick, selectedLocation }: MapCanvasProps =
         return;
       }
       map.addSource('provinces', { type: 'geojson', data: provinceShape });
-      map.addLayer({ id: 'province-fills', type: 'fill', source: 'provinces', paint: { 'fill-color': [...provinceColors] as mapboxgl.Expression, 'fill-opacity': 0.72 } });
+      map.addLayer({ id: 'province-fills', type: 'fill', source: 'provinces', paint: { 'fill-color': [...provinceColors] as mapboxgl.Expression, 'fill-opacity': 1 } });
       map.addLayer({ id: 'province-halo', type: 'line', source: 'provinces', paint: { 'line-color': '#F8F6F0', 'line-opacity': 0.8, 'line-width': 6 } });
       map.addLayer({ id: 'province-lines', type: 'line', source: 'provinces', paint: { 'line-color': '#1E5B75', 'line-opacity': 1, 'line-width': 3 } });
       map.addSource('province-weather', { type: 'geojson', data: initialWeatherShape });

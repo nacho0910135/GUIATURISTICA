@@ -12,6 +12,12 @@ import { useApp } from '@/providers/app-provider';
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN ?? '';
 Mapbox.setAccessToken(MAPBOX_TOKEN);
 
+const PROVINCE_MAP_STYLE = JSON.stringify({
+  version: 8,
+  sources: {},
+  layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#F8F6F0' } }],
+});
+
 const provinceColors = ['#2A7B4C', '#1E5B75', '#4A9874', '#326F8B', '#82B99C', '#568BA4', '#1E6038'];
 const provinceShape: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
@@ -72,11 +78,11 @@ export const MapCanvas = memo(function MapCanvas({ onLocationPick, selectedLocat
 
   return (
     <View className="overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={{ borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 371 : 322, position: 'relative' }}>
-      <Mapbox.MapView attributionEnabled compassEnabled={false} logoEnabled onPress={onLocationPick ? handleMapPress : undefined} pitchEnabled={false} rotateEnabled={false} scaleBarEnabled={false} style={StyleSheet.absoluteFill} styleURL={Mapbox.StyleURL.Outdoors}>
+      <Mapbox.MapView attributionEnabled compassEnabled={false} logoEnabled onPress={onLocationPick ? handleMapPress : undefined} pitchEnabled={false} rotateEnabled={false} scaleBarEnabled={false} style={StyleSheet.absoluteFill} styleJSON={selectionMode ? undefined : PROVINCE_MAP_STYLE} styleURL={selectionMode ? Mapbox.StyleURL.Outdoors : undefined}>
         <Mapbox.Camera defaultSettings={{ centerCoordinate: [-84.12, 9.88], zoomLevel: wide ? 7.37 : 6.67 }} maxZoomLevel={selectionMode ? 19 : 10} minZoomLevel={5} />
         {!selectionMode ? (
           <Mapbox.ShapeSource id="provinces" shape={provinceShape} onPress={handleProvincePress}>
-            <Mapbox.FillLayer id="province-fills" style={{ fillColor: ['get', 'color'], fillOpacity: 0.72 }} />
+            <Mapbox.FillLayer id="province-fills" style={{ fillColor: ['get', 'color'], fillOpacity: 1 }} />
             <Mapbox.LineLayer id="province-halo" style={{ lineColor: '#F8F6F0', lineOpacity: 0.8, lineWidth: 6 }} />
             <Mapbox.LineLayer id="province-lines" style={{ lineColor: '#1E5B75', lineWidth: 3 }} />
           </Mapbox.ShapeSource>

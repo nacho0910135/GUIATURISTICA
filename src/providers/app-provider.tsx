@@ -277,7 +277,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       window.location.assign(data.url);
       return false;
     }
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo, { showInRecents: true });
+    // Keep the Chrome custom tab attached to the authentication flow instead
+    // of exposing it as a second Android task in the recent-apps screen.
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (result.type !== 'success') return false;
     const sessionCreated = await createSessionFromUrl(result.url);
     if (!sessionCreated) throw new Error('Google completó el acceso, pero no fue posible crear la sesión. Intentá nuevamente.');

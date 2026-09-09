@@ -91,11 +91,10 @@ export default function AuthModal() {
             accessibilityRole="button" 
             className="mt-6 min-h-14 flex-row items-center justify-center rounded-control border border-ui-border bg-ui-surface px-4 active:bg-ui-muted disabled:opacity-60 dark:border-ui-dark-border dark:bg-ui-dark-surface dark:active:bg-ui-dark-muted" 
             disabled={busy} 
-            onPress={() => void run(async () => { 
-              const success = await signInWithGoogle();
-              if (success) {
-                router.replace('/(tabs)/profile');
-              }
+            onPress={() => void run(async () => {
+              // The deep-linked callback screen owns the final navigation.
+              // Navigating here too races Android's browser dismissal.
+              await signInWithGoogle();
             })}
           >
             <MaterialCommunityIcons name="google" size={22} color="#DB4437" />
