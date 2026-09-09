@@ -4,8 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { MotionPressable, MotionReveal, Skeleton } from '@/components/motion';
@@ -15,7 +15,7 @@ import { getAppOptions } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
 import { getExplorePlaces, type ExplorePlace } from '@/lib/places';
 import { submitInformationReport } from '@/lib/reports';
-import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
+import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, setTravelerReplyReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
@@ -123,6 +123,7 @@ function TravelerWallSkeleton({ language }: { language: 'es' | 'en' }) {
 
 export default function FriendsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ postId?: string; commentId?: string }>();
   const { avatarUrl, language, requireAuth, session } = useApp();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
@@ -142,6 +143,10 @@ export default function FriendsScreen() {
   const [error, setError] = useState<string>();
   const [publishError, setPublishError] = useState<string>();
   const [reactionPickerPostId, setReactionPickerPostId] = useState<string>();
+  const [reactionPickerReplyId, setReactionPickerReplyId] = useState<string>();
+  const postOffsets = useRef<Record<string, number>>({});
+  const replySectionOffsets = useRef<Record<string, number>>({});
+  const commentOffsets = useRef<Record<string, number>>({});
   const [topic, setTopic] = useState<TravelerTopic>('general');
   const longPressedPostId = useRef<string | undefined>(undefined);
   const topicOptions = useQuery({ queryKey: ['app-options', 'traveler_topic'], queryFn: () => getAppOptions('traveler_topic'), staleTime: Infinity });
@@ -160,6 +165,17 @@ export default function FriendsScreen() {
   }, [topic, userId]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  useEffect(() => {
+    if (!wall || !params.postId) return;
+    setReplying(params.postId);
+    const timeout = setTimeout(() => {
+      const postOffset = postOffsets.current[params.postId!] ?? 0;
+      const commentOffset = params.commentId ? (replySectionOffsets.current[params.postId!] ?? 0) + (commentOffsets.current[params.commentId] ?? 0) : 0;
+      scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, postOffset + commentOffset - 12) });
+    }, 200);
+    return () => clearTimeout(timeout);
+  }, [params.commentId, params.postId, wall]);
 
   const choosePhoto = async () => {
     if (!requireAuth(language === 'es' ? 'Compartir una foto' : 'Share a photo')) return;
@@ -220,6 +236,19 @@ export default function FriendsScreen() {
     } catch (reason) {
       void haptic('error');
       Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : 'No se pudo actualizar el me gusta.');
+    }
+  };
+
+  const reactToReply = async (replyId: string, reaction: ReactionType) => {
+    if (!requireAuth(language === 'es' ? 'Reaccionar a un comentario' : 'React to a comment') || !session || !wall) return;
+    try {
+      await setTravelerReplyReaction(replyId, session.user.id, reaction, wall.myReplyReactions[replyId]);
+      setReactionPickerReplyId(undefined);
+      await load();
+      void haptic('success');
+    } catch (reason) {
+      void haptic('error');
+      Alert.alert('Comunidad Viajera', reason instanceof Error ? reason.message : (language === 'es' ? 'No se pudo actualizar la reacción.' : 'The reaction could not be updated.'));
     }
   };
 
@@ -325,7 +354,7 @@ export default function FriendsScreen() {
           const leadingReactions = reactions.filter(({ id }) => postReactions[id]).sort((a, b) => (postReactions[b.id] ?? 0) - (postReactions[a.id] ?? 0)).slice(0, 2);
           const own = post.user_id === session?.user.id;
           const recommendedPlace = post.recommended_destination_id ? explorePlaces.data?.find((place) => place.id === post.recommended_destination_id && place.community === post.recommended_destination_is_community) : undefined;
-          return <View className="mt-5 overflow-hidden rounded-card border border-ui-border bg-ui-surface shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface" key={post.id} style={communityDepth}>
+          return <View className="mt-5 overflow-hidden rounded-card border border-ui-border bg-ui-surface shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface" key={post.id} onLayout={(event) => { postOffsets.current[post.id] = event.nativeEvent.layout.y; }} style={communityDepth}>
             <View className="p-5">
               <View className="flex-row items-center">
                 <Pressable accessibilityLabel={language === 'es' ? `Ver perfil de ${displayName(post)}` : `View ${displayName(post)} profile`} accessibilityRole="link" onPress={() => router.push({ pathname: '/(aux)/traveler-profile', params: { id: post.user_id } })}>{post.user?.avatar_url ? <Image source={{ uri: post.user.avatar_url }} style={{ borderRadius: 23, height: 46, width: 46 }} /> : <View className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="account" size={24} color="#0B6B4F" /></View>}</Pressable>
@@ -360,16 +389,22 @@ export default function FriendsScreen() {
               {post.user_id !== userId ? <Pressable accessibilityLabel={language === 'es' ? 'Reportar publicación' : 'Report post'} className="ml-1 h-11 w-11 items-center justify-center rounded-xl bg-ui-muted shadow-card dark:bg-ui-dark-muted" style={{ ...communityControlDepth, shadowColor: '#B42318' }} onPress={() => reportPost(post)}><MaterialCommunityIcons name="flag-outline" size={21} color="#B42318" /></Pressable> : null}
               </View>
             </View>
-            {replying === post.id ? <View className="border-t border-ui-border bg-ui-background p-4 dark:border-ui-dark-border dark:bg-ui-dark-background">{postReplies.map((item) => {
+            {replying === post.id ? <View className="border-t border-ui-border bg-ui-background p-4 dark:border-ui-dark-border dark:bg-ui-dark-background" onLayout={(event) => { replySectionOffsets.current[post.id] = event.nativeEvent.layout.y; }}>{postReplies.map((item) => {
               const commenterName = item.user?.username || item.user?.full_name || `Viajero ${item.user_id.slice(0, 5)}`;
-              return <View className={item.parent_reply_id ? 'mb-3 ml-7 flex-row items-start' : 'mb-3 flex-row items-start'} key={item.id}>
+              return <View className={item.parent_reply_id ? 'mb-3 ml-7 flex-row items-start' : 'mb-3 flex-row items-start'} key={item.id} onLayout={(event) => { commentOffsets.current[item.id] = event.nativeEvent.layout.y; }}>
                 <Pressable accessibilityLabel={language === 'es' ? `Ver perfil de ${commenterName}` : `View ${commenterName}'s profile`} accessibilityRole="link" className="mr-3" onPress={() => router.push({ pathname: '/(aux)/traveler-profile', params: { id: item.user_id } })}>
                   {item.user?.avatar_url ? <Image accessibilityLabel={commenterName} cachePolicy="none" contentFit="cover" source={{ uri: item.user.avatar_url }} style={{ borderRadius: 19, height: 38, width: 38 }} /> : <View className="h-[38px] w-[38px] items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="account" size={21} color="#0B6B4F" /></View>}
                 </Pressable>
-                <View className={item.parent_reply_id ? 'flex-1 rounded-control border-l-4 border-ui-primary bg-ui-surface p-3 shadow-card dark:border-ui-dark-primary dark:bg-ui-dark-surface' : 'flex-1 rounded-control bg-ui-surface p-3 shadow-card dark:bg-ui-dark-surface'} style={communityControlDepth}>
+                <View className={item.id === params.commentId ? 'flex-1 rounded-control border-2 border-ui-secondary bg-ui-primary-soft p-3 shadow-card dark:bg-ui-dark-primary-soft' : item.parent_reply_id ? 'flex-1 rounded-control border-l-4 border-ui-primary bg-ui-surface p-3 shadow-card dark:border-ui-dark-primary dark:bg-ui-dark-surface' : 'flex-1 rounded-control bg-ui-surface p-3 shadow-card dark:bg-ui-dark-surface'} style={communityControlDepth}>
                   <Pressable accessibilityRole="link" className="self-start" onPress={() => router.push({ pathname: '/(aux)/traveler-profile', params: { id: item.user_id } })}><View className="flex-row items-center"><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{commenterName}</Text>{item.user?.role === 'admin' ? <AdminBadge /> : null}</View></Pressable>
                   <Text className="mt-1 text-ui-text dark:text-ui-dark-text">{item.body}</Text>
-                  <Pressable className="mt-2 self-start rounded-lg bg-ui-primary-soft px-3 py-2 shadow-card dark:bg-ui-dark-primary-soft" style={communityControlDepth} onPress={() => { setParentReplyId(item.id); setReply(''); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Responder comentario' : 'Reply to comment'}</Text></Pressable>
+                  <View className="mt-2 flex-row items-center">
+                    <View className="relative mr-2">
+                      {reactionPickerReplyId === item.id ? <View className="absolute bottom-11 left-0 z-20"><MotionReveal><View className="flex-row rounded-full border border-ui-border bg-ui-surface p-1 shadow-lg dark:border-ui-dark-border dark:bg-ui-dark-surface">{reactions.map((option) => <MotionPressable accessibilityLabel={language === 'es' ? option.label_es : option.label_en} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full" key={option.id} onPress={() => void reactToReply(item.id, option.id)}><Text className="text-2xl">{option.icon}</Text></MotionPressable>)}</View></MotionReveal></View> : null}
+                      <Pressable accessibilityLabel={language === 'es' ? 'Reaccionar al comentario' : 'React to comment'} accessibilityRole="button" className="min-h-11 flex-row items-center rounded-lg bg-ui-muted px-3 dark:bg-ui-dark-muted" onPress={() => setReactionPickerReplyId(reactionPickerReplyId === item.id ? undefined : item.id)}><Text className="text-base">{reactions.find(({ id }) => id === wall.myReplyReactions[item.id])?.icon ?? '♡'}</Text><Text className="ml-1 text-xs font-black text-ui-primary dark:text-ui-dark-primary">{Object.values(wall.replyReactionCounts[item.id] ?? {}).reduce((sum, count) => sum + count, 0) || ''}</Text></Pressable>
+                    </View>
+                    <Pressable accessibilityRole="button" className="min-h-11 justify-center rounded-lg bg-ui-primary-soft px-3 shadow-card dark:bg-ui-dark-primary-soft" style={communityControlDepth} onPress={() => { setParentReplyId(item.id); setReply(''); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Responder comentario' : 'Reply to comment'}</Text></Pressable>
+                  </View>
                 </View>
               </View>;
             })}{parentReplyId ? <View className="mb-2 flex-row items-center"><Text className="flex-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Respondiendo a un comentario' : 'Replying to a comment'}</Text><Pressable onPress={() => setParentReplyId(undefined)}><Text className="font-black text-ui-danger dark:text-ui-dark-danger">×</Text></Pressable></View> : null}<View className="flex-row items-end"><TextInput className="mr-2 flex-1 rounded-control bg-ui-surface px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text" maxLength={1000} multiline onChangeText={setReply} placeholder={language === 'es' ? 'Escribí una respuesta…' : 'Write a reply…'} placeholderTextColor="#68737A" value={reply} /><Pressable className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary shadow-card disabled:opacity-40 dark:bg-ui-dark-primary" style={communityDepth} disabled={busy || !reply.trim()} onPress={() => void respond(post.id)}><MaterialCommunityIcons name="send" size={20} color="white" /></Pressable></View></View> : null}

@@ -81,8 +81,8 @@ export default function ExploreScreen() {
     if (resetToken) resetExplore();
   }, [resetExplore, resetToken]);
   useEffect(() => {
-    if (!isFocused) setSearch('');
-  }, [isFocused]);
+    if (!isFocused) resetExplore();
+  }, [isFocused, resetExplore]);
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
@@ -146,7 +146,7 @@ export default function ExploreScreen() {
               }
             }}
             onPress={() => {
-              setSearch('');
+              resetExplore();
               router.push({ pathname: '/(aux)/province', params: { category: place.category, destinationId: place.id, direct: '1', ...(place.community ? { community: '1' } : {}) } });
             }}
             origin={userLocation ?? undefined}
@@ -187,7 +187,7 @@ export default function ExploreScreen() {
             accessibilityRole="button"
             className="relative min-h-12 flex-row items-center justify-center overflow-hidden rounded-2xl border border-[#5DB990] bg-[#DDF3E8] px-3 py-3 dark:border-[#47C08A] dark:bg-[#164330]"
             containerStyle={{ width: 128 }}
-            onPress={() => { void haptic('selection'); router.push({ pathname: '/(tabs)/fauna', params: { from: 'explore' } }); }}
+            onPress={() => { resetExplore(); void haptic('selection'); router.push({ pathname: '/(tabs)/fauna', params: { from: 'explore' } }); }}
             style={{ elevation: 8, shadowColor: '#07543F', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.3, shadowRadius: 8 }}
           >
             <LinearGradient colors={['rgba(255,255,255,0.20)', 'rgba(7,84,63,0.10)']} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
@@ -202,7 +202,7 @@ export default function ExploreScreen() {
           <View className="flex-row items-stretch gap-2">
             <View className="min-w-0 flex-1 flex-row items-center rounded-control border border-ui-border bg-ui-surface px-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">
               <MaterialCommunityIcons name="magnify" size={23} color="#68737A" />
-              <TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} placeholder={language === 'es' ? 'Ej. Playa Doña Ana' : 'E.g. Doña Ana Beach'} placeholderTextColor="#68737A" value={search} />
+              <TextInput accessibilityLabel={language === 'es' ? 'Buscar lugares' : 'Search places'} className="ml-3 flex-1 py-4 text-ui-text dark:text-ui-dark-text" onChangeText={setSearch} onFocus={() => setNearbyEnabled(false)} placeholder={language === 'es' ? 'Ej. Playa Doña Ana' : 'E.g. Doña Ana Beach'} placeholderTextColor="#68737A" value={search} />
               {search ? (
                 <Pressable accessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'} accessibilityRole="button" className="rounded-full bg-ui-muted p-1 shadow-card dark:bg-ui-dark-muted" hitSlop={10} style={{ elevation: 4, shadowColor: '#073F31', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.18, shadowRadius: 4 }} onPress={() => setSearch('')}>
                   <MaterialCommunityIcons name="close-circle" size={21} color="#68737A" />
@@ -217,6 +217,7 @@ export default function ExploreScreen() {
               onPress={() => {
                 if (!requireAuth(language === 'es' ? 'Agregar un sitio' : 'Add a place') || !session) return;
                 void haptic('selection');
+                setNearbyEnabled(false);
                 setProposalOpen(true);
               }}
               style={{ elevation: 9, shadowColor: '#073F31', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.36, shadowRadius: 8 }}
@@ -243,7 +244,7 @@ export default function ExploreScreen() {
                   className="w-full items-center px-0.5 py-2"
                   containerStyle={{ paddingHorizontal: 2, width: '25%' }}
                   key={category.id}
-                  onPress={() => { router.push({ pathname: '/(aux)/province', params: { categoryId: category.id } }); void haptic('selection'); }}
+                  onPress={() => { resetExplore(); router.push({ pathname: '/(aux)/province', params: { categoryId: category.id } }); void haptic('selection'); }}
                 >
                   <View
                     className="items-center justify-center border border-white/80 shadow-card"
@@ -293,7 +294,7 @@ export default function ExploreScreen() {
           <View className="mt-2 gap-2">{roadAlerts.data?.alerts.map((alert) => <RoadAlertRow alert={alert} key={alert.id} language={language} onReport={setReportingRoad} />)}</View>
           <Text className="mt-3 text-[10px] leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Congestión, cierres e incidentes de Mapbox. Actualización aproximada cada 8 minutos.' : 'Congestion, closures, and incidents from Mapbox. Updated approximately every 8 minutes.'}</Text>
         </View>
-        <Pressable accessibilityRole="button" className="mx-5 mb-5 mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-coral-500/40 bg-ui-surface px-5 py-3 shadow-card dark:bg-ui-dark-surface" style={{ elevation: 7, shadowColor: '#B42318', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.2, shadowRadius: 7 }} onPress={() => setRoadReportOpen(true)}>
+        <Pressable accessibilityRole="button" className="mx-5 mb-5 mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-coral-500/40 bg-ui-surface px-5 py-3 shadow-card dark:bg-ui-dark-surface" style={{ elevation: 7, shadowColor: '#B42318', shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.2, shadowRadius: 7 }} onPress={() => { setNearbyEnabled(false); setRoadReportOpen(true); }}>
           <MaterialCommunityIcons name="road-variant" size={21} color="#B42318" />
           <Text className="ml-2 font-black text-coral-600">{language === 'es' ? 'Reportar carretera afectada' : 'Report an affected road'}</Text>
         </Pressable>

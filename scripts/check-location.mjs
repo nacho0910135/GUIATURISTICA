@@ -182,11 +182,16 @@ watchCallback(fix(8, Date.now() + 4900, 11));
 assert.equal(render().userLocation, beforeCleanup, 'Unmount invalidates pending callbacks');
 
 // Every explicit current-location action uses the same validated acquisition.
-for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx', 'src/app/(tabs)/friends.tsx']) {
+for (const path of ['src/app/(tabs)/friends.tsx']) {
   const source = readFileSync(path, 'utf8');
   assert.ok(source.includes('getPreciseCurrentLocation(language)'), path);
   assert.ok(!/Location\.(getCurrentPositionAsync|getLastKnownPositionAsync)/.test(source), path);
 }
+const exploreSource = readFileSync('src/app/(tabs)/explore.tsx', 'utf8');
+assert.ok(exploreSource.includes('await refreshUserLocation()'), 'Explore refreshes the provider-owned session location');
+assert.ok(readFileSync('src/app/(tabs)/commerce.tsx', 'utf8').includes('refreshUserLocation'), 'Commerce refreshes the provider-owned session location');
+assert.match(exploreSource, /if \(!isFocused\) resetExplore\(\)/, 'Explore clears temporary nearby results on blur');
+assert.match(exploreSource, /onPress=\{\(\) => \{\s*resetExplore\(\);\s*router\.push\(\{ pathname: '\/\(aux\)\/province'/, 'Opening a nearby destination clears the list first');
 for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx', 'src/app/(aux)/province.tsx']) {
   const source = readFileSync(path, 'utf8');
   assert.ok(source.includes('straightLineDistanceLabel'), `${path}: straight-line distance label`);

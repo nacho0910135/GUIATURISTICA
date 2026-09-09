@@ -43,11 +43,14 @@ export default function TabsLayout() {
   const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
   useEffect(() => {
     if (Platform.OS !== 'android') return;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (!pathname.endsWith('/explore')) router.replace('/(tabs)/explore');
-      return true;
-    });
-    return () => subscription.remove();
+    let subscription: ReturnType<typeof BackHandler.addEventListener> | undefined;
+    const timer = setTimeout(() => {
+      subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (!pathname.endsWith('/explore')) router.replace('/(tabs)/explore');
+        return true;
+      });
+    }, 0);
+    return () => { clearTimeout(timer); subscription?.remove(); };
   }, [pathname, router]);
   if (Platform.OS === 'web' && !isAdmin && access && !access.hasAccess && !subscriptions.isLoading) return <Redirect href="/subscriptions" />;
   return (

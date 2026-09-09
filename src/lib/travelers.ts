@@ -10,6 +10,7 @@ export type TravelerTopic = string;
 export type TravelerPost = { id: string; user_id: string; body: string; image_url: string | null; image_urls: string[]; latitude: number | null; longitude: number | null; recommended_destination_id: string | null; recommended_destination_is_community: boolean; topic: TravelerTopic; created_at: string; user?: TravelerProfile };
 export type ReactionType = string;
 export type TravelerReply = { id: string; post_id: string; parent_reply_id: string | null; user_id: string; body: string; created_at: string; user?: TravelerProfile };
+export type TravelerReplyReaction = { reply_id: string; user_id: string; reaction: ReactionType };
 export type GroupRideComment = { id: string; ride_id: string; user_id: string; body: string; created_at: string; user?: TravelerProfile };
 export type GroupRide = {
   id: string;
@@ -120,25 +121,31 @@ export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'g
   const blockedIds = new Set((blocksResult.data ?? []).map((row) => row.blocker_id === userId ? row.blocked_id : row.blocker_id));
   const postRows = (postsResult.data ?? []).filter((post) => !blockedIds.has(post.user_id));
   const postIds = (postRows ?? []).map((post) => post.id);
-  const [replies, reactions, follows] = await Promise.all([
+  const [replies, reactions, replyReactions, follows] = await Promise.all([
     postIds.length
       ? supabase.from('traveler_replies').select('id,post_id,parent_reply_id,user_id,body,created_at,user:users(id,username,full_name,avatar_url,role)').in('post_id', postIds).order('created_at').limit(200)
       : Promise.resolve({ data: [], error: null }),
     postIds.length
       ? supabase.from('traveler_reactions').select('post_id,user_id,reaction').in('post_id', postIds)
       : Promise.resolve({ data: [], error: null }),
+    postIds.length
+      ? supabase.from('traveler_reply_reactions').select('reply_id,user_id,reaction,traveler_replies!inner(post_id)').in('traveler_replies.post_id', postIds)
+      : Promise.resolve({ data: [], error: null }),
     userId ? supabase.from('user_follows').select('followed_id').eq('follower_id', userId) : Promise.resolve({ data: [], error: null }),
   ]);
-  const error = replies.error ?? reactions.error ?? follows.error;
+  const error = replies.error ?? reactions.error ?? replyReactions.error ?? follows.error;
   if (error) throw error;
   const oneProfile = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] : value;
   const reactionRows = (reactions.data ?? []) as { post_id: string; user_id: string; reaction: ReactionType }[];
+  const replyReactionRows = (replyReactions.data ?? []) as unknown as TravelerReplyReaction[];
   return {
     posts: (postRows ?? []).map((post) => ({ ...post, user: oneProfile(post.user) ?? undefined })) as TravelerPost[],
     replies: (replies.data ?? []).map((reply) => ({ ...reply, user: oneProfile(reply.user) ?? undefined })) as TravelerReply[],
     myReactions: reactionRows.reduce<Record<string, ReactionType>>((mine, row) => { if (row.user_id === userId) mine[row.post_id] = row.reaction; return mine; }, {}),
     followedUserIds: new Set((follows.data ?? []).map((row) => row.followed_id as string)),
     reactionCounts: reactionRows.reduce<Record<string, Record<ReactionType, number>>>((counts, row) => { const post = counts[row.post_id] ??= {} as Record<ReactionType, number>; post[row.reaction] = (post[row.reaction] ?? 0) + 1; return counts; }, {}),
+    myReplyReactions: replyReactionRows.reduce<Record<string, ReactionType>>((mine, row) => { if (row.user_id === userId) mine[row.reply_id] = row.reaction; return mine; }, {}),
+    replyReactionCounts: replyReactionRows.reduce<Record<string, Record<ReactionType, number>>>((counts, row) => { const reply = counts[row.reply_id] ??= {} as Record<ReactionType, number>; reply[row.reaction] = (reply[row.reaction] ?? 0) + 1; return counts; }, {}),
   };
 }
 
@@ -192,6 +199,14 @@ export async function setTravelerReaction(postId: string, userId: string, reacti
   const query = current === reaction
     ? supabase.from('traveler_reactions').delete().eq('user_id', userId).eq('post_id', postId)
     : supabase.from('traveler_reactions').upsert({ user_id: userId, post_id: postId, reaction });
+  const { error } = await query;
+  if (error) throw error;
+}
+
+export async function setTravelerReplyReaction(replyId: string, userId: string, reaction: ReactionType, current?: ReactionType) {
+  const query = current === reaction
+    ? supabase.from('traveler_reply_reactions').delete().eq('user_id', userId).eq('reply_id', replyId)
+    : supabase.from('traveler_reply_reactions').upsert({ user_id: userId, reply_id: replyId, reaction });
   const { error } = await query;
   if (error) throw error;
 }

@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.descubriendo.cr",
-      "versionCode": 19,
+      "versionCode": 20,
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",
@@ -77,22 +77,22 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Descubriendo CR usa el micrófono únicamente para grabar notas de voz que decidís enviar.",
+          "microphonePermission": "Descubriendo CR usa el micrÃ³fono Ãºnicamente para grabar notas de voz que decidÃ­s enviar.",
           "recordAudioAndroid": true
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Descubriendo CR accede a tus fotos para compartir imágenes de fauna, destinos y comercios.",
-          "cameraPermission": "Descubriendo CR usa la cámara para fotografiar fauna de forma responsable.",
+          "photosPermission": "Descubriendo CR accede a tus fotos para compartir imÃ¡genes de fauna, destinos y comercios.",
+          "cameraPermission": "Descubriendo CR usa la cÃ¡mara para fotografiar fauna de forma responsable.",
           "microphonePermission": false
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Descubriendo CR usa tu ubicación para recomendar destinos cercanos y calcular rutas."
+          "locationWhenInUsePermission": "Descubriendo CR usa tu ubicaciÃ³n para recomendar destinos cercanos y calcular rutas."
         }
       ]
     ],

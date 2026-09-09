@@ -365,6 +365,16 @@ export default function ProfileScreen() {
                       await load();
                     })
                   }
+                  onOpen={() => void run(async () => {
+                    if (!item.read_status) await markNotificationRead(item.id);
+                    if (item.type === 'comment_reply' || item.type === 'comment_reaction') {
+                      const { data: reply, error: replyError } = await supabase.from('traveler_replies').select('post_id').eq('id', item.target_id).single();
+                      if (replyError) throw replyError;
+                      router.push({ pathname: '/(tabs)/friends', params: { postId: reply.post_id, commentId: item.target_id } });
+                    } else if (item.type === 'comment' || item.type === 'like') {
+                      router.push({ pathname: '/(tabs)/friends', params: { postId: item.target_id } });
+                    }
+                  })}
                 />
               ))}
             </ListEmpty>
@@ -828,20 +838,20 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
   );
 }
 
-function NotificationRow({ item, language, notificationType, busy, onRead }: { item: NotificationItem; language: 'es' | 'en'; notificationType?: AppOption; busy: boolean; onRead: () => void }) {
+function NotificationRow({ item, language, notificationType, busy, onRead, onOpen }: { item: NotificationItem; language: 'es' | 'en'; notificationType?: AppOption; busy: boolean; onRead: () => void; onOpen: () => void }) {
   const actor = Array.isArray(item.actor) ? item.actor[0] : item.actor;
   const unread = !item.read_status;
   return (
-    <View className={unread ? 'mb-3 rounded-2xl border border-ui-primary/30 bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft' : 'mb-3 rounded-2xl bg-ui-muted p-4 dark:bg-ui-dark-muted'}>
+    <Pressable accessibilityRole="button" className={unread ? 'mb-3 rounded-2xl border border-ui-primary/30 bg-ui-primary-soft p-4 active:opacity-75 dark:bg-ui-dark-primary-soft' : 'mb-3 rounded-2xl bg-ui-muted p-4 active:opacity-75 dark:bg-ui-dark-muted'} disabled={busy} onPress={onOpen}>
       <View className="flex-row items-start">
         <MaterialCommunityIcons name={notificationType?.icon ?? (unread ? 'bell-ring-outline' : 'bell-outline')} size={24} color="#0B6B4F" />
         <View className="ml-3 flex-1">
           <Text className="font-semibold text-ui-text dark:text-ui-dark-text">{`${actor?.username || actor?.full_name || tr(language, 'Un viajero', 'A traveler')} ${notificationType ? (language === 'es' ? notificationType.label_es : notificationType.label_en) : tr(language, 'generó una actividad nueva', 'created new activity')}`}</Text>
           <Text className="mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{new Date(item.created_at).toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text>
         </View>
-        {unread ? <ProfileButton label={tr(language, 'Marcar leída', 'Mark read')} disabled={busy} onPress={onRead} /> : <Text className="text-xs font-bold text-ui-primary dark:text-ui-dark-primary">{tr(language, 'Leída', 'Read')}</Text>}
+        {unread ? <ProfileButton label={tr(language, 'Marcar leída', 'Mark read')} disabled={busy} onPress={onRead} /> : <MaterialCommunityIcons name="chevron-right" size={22} color="#0B6B4F" />}
       </View>
-    </View>
+    </Pressable>
   );
 }
 

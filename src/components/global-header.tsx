@@ -24,7 +24,7 @@ const visitorOptions: readonly { id: VisitorType; label: string; labelEs: string
   { id: 'tico', label: 'Tico', labelEs: 'Tico' },
   { id: 'foreigner', label: 'Foreigner', labelEs: 'Foreigner' },
 ];
-const SOCIAL_NOTIFICATION_TYPES = ['like', 'comment', 'ride_comment'] as const;
+const SOCIAL_NOTIFICATION_TYPES = ['like', 'comment', 'comment_reply', 'ride_comment'] as const;
 type SocialNotificationType = typeof SOCIAL_NOTIFICATION_TYPES[number];
 let lastPresentedSocialNotificationId: string | null = null;
 
@@ -49,7 +49,13 @@ export function GlobalHeader() {
     queryFn: async () => {
       const { data, error } = await supabase.from('notifications').select('id,actor_id,type,target_id,created_at,actor:users!notifications_actor_id_fkey(username,full_name)').eq('recipient_id', session!.user.id).in('type', SOCIAL_NOTIFICATION_TYPES).eq('read_status', false).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data) return null;
+      if (data.type === 'comment_reply') {
+        const { data: reply, error: replyError } = await supabase.from('traveler_replies').select('post_id').eq('id', data.target_id).maybeSingle();
+        if (replyError) throw replyError;
+        return { ...data, postId: reply?.post_id };
+      }
+      return { ...data, postId: data.type === 'like' || data.type === 'comment' ? data.target_id : undefined };
     },
     enabled: Boolean(session) && isFocused,
     staleTime: 0,
@@ -80,7 +86,9 @@ export function GlobalHeader() {
   const socialType = socialActivity.data?.type as SocialNotificationType | undefined;
   const socialCopy = socialType === 'like'
     ? { es: 'reaccionó a tu publicación:', en: 'reacted to your post:', icon: 'thumb-up-outline' as const }
-    : { es: 'comentó en tu publicación:', en: 'commented on your post:', icon: 'comment-outline' as const };
+    : socialType === 'comment_reply'
+      ? { es: 'respondió a tu comentario:', en: 'replied to your comment:', icon: 'message-reply-text-outline' as const }
+      : { es: 'comentó en tu publicación:', en: 'commented on your post:', icon: 'comment-outline' as const };
 
   useEffect(() => {
     if (!session?.user.id || !isFocused) return;
@@ -125,7 +133,7 @@ export function GlobalHeader() {
     if (!notificationId || notificationId === lastPresentedSocialNotificationId) return;
     lastPresentedSocialNotificationId = notificationId;
     setVisibleSocialNotificationId(notificationId);
-    const timeout = setTimeout(() => setVisibleSocialNotificationId(undefined), 2000);
+    const timeout = setTimeout(() => setVisibleSocialNotificationId(undefined), 5000);
     return () => clearTimeout(timeout);
   }, [isFocused, socialActivity.data?.id]);
 
@@ -191,7 +199,12 @@ export function GlobalHeader() {
   const openSocialNotification = () => {
     if (!socialActivity.data) return;
     setVisibleSocialNotificationId(undefined);
-    router.push({ pathname: '/(tabs)/profile', params: { section: 'notifications' } });
+    if (socialActivity.data.postId) {
+      router.push({ pathname: '/(tabs)/friends', params: { postId: socialActivity.data.postId, ...(socialType === 'comment_reply' ? { commentId: socialActivity.data.target_id } : {}) } });
+    } else {
+      router.push({ pathname: '/(tabs)/profile', params: { section: 'notifications' } });
+    }
+    void markNotificationRead(socialActivity.data.id).then(() => socialActivity.refetch());
   };
   const dismissCancelledRide = async () => {
     if (!cancelledRide.data) return;
