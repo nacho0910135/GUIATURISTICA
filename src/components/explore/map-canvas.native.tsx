@@ -19,6 +19,7 @@ const PROVINCE_MAP_STYLE = JSON.stringify({
 });
 
 const provinceColors = ['#B8DCC5', '#B8DDEA', '#F0C9B5', '#D4C9E8', '#E8D9A8', '#AFCFD0', '#C7DDB7'];
+const markerCenters: Record<string, [number, number]> = { '1': [-84.28, 9.46], '3': [-83.55, 9.67], '4': [-83.84, 10.55] };
 const provinceShape: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
   features: provinces.map((province) => ({
@@ -75,7 +76,7 @@ export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, onLo
   const weatherAnnotations = useMemo(() => selectionMode ? null : provinces.map((province, index) => {
     const current = weather[index].data;
     return (
-      <Mapbox.MarkerView id={`province-${province.code}`} key={province.code} coordinate={[province.center.longitude, province.center.latitude]}>
+      <Mapbox.MarkerView allowOverlap id={`province-${province.code}`} key={province.code} coordinate={markerCenters[province.code] ?? [province.center.longitude, province.center.latitude]}>
         <Pressable accessibilityLabel={`Abrir ${province.name}`} accessibilityRole="button" onPress={() => openProvince(province.name)} style={styles.weatherMarker}>
           <Text allowFontScaling={false} style={[styles.weatherIcon, { fontSize: wide ? 28 : 21 }]}>{weatherSymbol(current?.icon)}</Text>
           <Text allowFontScaling={false} numberOfLines={2} style={[styles.weatherLabel, { fontSize: wide ? 15 : 12, lineHeight: wide ? 19 : 16 }]}>

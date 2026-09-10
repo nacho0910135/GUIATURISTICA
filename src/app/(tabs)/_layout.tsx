@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
 import { getMyAccessStatus } from '@/lib/billing';
+import { haptic } from '@/lib/haptics';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -53,7 +54,7 @@ export default function TabsLayout() {
     <Tabs
       backBehavior="initialRoute"
       initialRouteName="explore"
-      screenListeners={{ tabPress: () => { void refreshUserLocation(); } }}
+      screenListeners={{ tabPress: () => { void haptic('error'); void refreshUserLocation(); } }}
       screenOptions={{
         header: () => <GlobalHeader />,
         tabBarActiveTintColor: colors.primary,
