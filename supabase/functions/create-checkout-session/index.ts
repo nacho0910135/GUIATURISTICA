@@ -103,6 +103,16 @@ Deno.serve(async (request) => {
       return json({ error: "business_not_subscription_governed" }, 409);
   }
 
+  if (!isCampaign && offer.plan === "no_ads" && offer.mode === "subscription") {
+    const now = new Date().toISOString();
+    const { count } = await supabase.from("subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("plan", "no_ads")
+      .in("status", ["active", "past_due", "canceled"])
+      .or(`current_period_end.is.null,current_period_end.gt.${now}`);
+    if (count) return json({ error: "personal_subscription_already_active" }, 409);
+  }
+
   if (isCampaign && offer.campaignType === "banner") {
     const now = new Date().toISOString();
     const { data, error } = await supabase
@@ -162,12 +172,20 @@ Deno.serve(async (request) => {
     if (offer.mode === "subscription")
       form.set("subscription_data[metadata][service_id]", serviceId);
   }
+  const idempotencyKey = await checkoutIdempotencyKey(
+    user.id,
+    offerId,
+    serviceId,
+    targetUrl,
+    imageUrl,
+  );
   const stripe = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${stripeKey}`,
       "Content-Type": "application/x-www-form-urlencoded",
       "Stripe-Version": "2026-02-25.clover",
+      "Idempotency-Key": idempotencyKey,
     },
     body: form,
   });
@@ -176,6 +194,13 @@ Deno.serve(async (request) => {
     return json({ error: "checkout_creation_failed" }, 502);
   return json({ url: result.url });
 });
+
+async function checkoutIdempotencyKey(...parts: (string | undefined)[]) {
+  const window = Math.floor(Date.now() / 600_000);
+  const input = new TextEncoder().encode([...parts, String(window)].join("\0"));
+  const hash = await crypto.subtle.digest("SHA-256", input);
+  return `checkout_${Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
 
 function isAllowedReturnUrl(value: string) {
   try {

@@ -29,6 +29,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     // the browser, while keeping SSR safe so the first screen can render.
     persistSession: !isWebServer,
     detectSessionInUrl: isWeb,
+    flowType: 'pkce',
+    experimental: { appendPkceFlowIdToRedirects: true },
   },
 });
 

@@ -199,6 +199,17 @@ export function useGooglePlayCampaignBilling({
         Crypto.CryptoDigestAlgorithm.SHA256,
         userId,
       );
+      const { error: intentError } = await supabase.rpc(
+        "save_google_play_purchase_intent",
+        {
+          p_product_id: productId,
+          p_service_id: metadata.serviceId,
+          p_target_url: metadata.targetUrl ?? null,
+          p_image_url: metadata.imageUrl ?? null,
+        },
+      );
+      if (intentError)
+        throw new Error("No se pudo preparar la compra. Intentá nuevamente.");
       metadataByProduct.current.set(productId, metadata);
       await requestPurchase({
         type: "subs",

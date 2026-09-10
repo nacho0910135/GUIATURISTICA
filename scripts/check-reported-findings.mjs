@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+const app = read('app.json');
+const manifest = read('android/app/src/main/AndroidManifest.xml');
+const tabs = read('src/app/(tabs)/_layout.tsx');
+const splash = read('src/components/animated-splash.tsx');
+const provider = read('src/providers/app-provider.tsx');
+const deletionPage = read('src/app/delete-account.tsx');
+const deletionFunction = read('supabase/functions/delete-account/index.ts');
+const root = read('src/app/_layout.tsx');
+const buses = read('src/lib/bus-routes.ts');
+const logistics = read('src/lib/logistics.ts');
+const commerce = read('src/lib/commerce.ts');
+
+assert.doesNotMatch(app, /Ã/);
+assert.match(manifest, /android\.permission\.RECORD_AUDIO/);
+assert.doesNotMatch(manifest, /RECORD_AUDIO[^>]+tools:node="remove"/);
+assert.doesNotMatch(tabs, /hardwareBackPress/);
+assert.match(splash, /setDeadlineReached\(true\)/);
+assert.match(provider, /getSession\(\)[\s\S]*\.finally\(\(\) => \{ if \(mounted\) setAuthReady\(true\)/);
+assert.match(deletionPage, /mailto:jose17mp3@gmail\.com/);
+assert.match(deletionFunction, /offset, sortBy/);
+assert.match(deletionFunction, /paths\.slice\(offset, offset \+ 1000\)/);
+assert.match(root, /export function ErrorBoundary/);
+assert.match(root, /setStartupDeadline\(true\)/);
+assert.match(root, /exploreReady \|\| startupDeadline/);
+assert.match(buses, /getOfflineBusRoutes\(query, group\)/);
+assert.match(logistics, /getOfflineFerryRoutes\(\)/);
+assert.doesNotMatch(commerce, /service\.owner_id === null && service\.source !== 'owner_registered'/);

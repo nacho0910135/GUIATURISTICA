@@ -135,7 +135,11 @@ export const ferryRoutes: FerryRoute[] = [
 
 export async function getFerryRoutes(): Promise<FerryRoute[]> {
   const { data, error } = await supabase.from('ferry_routes').select('source_key,route_name,operator,schedules,schedule_note,fare_adult_crc,fare_child_crc,fare_vehicle_crc,origin_terminal_name,origin_waze_url,ticket_url,schedule_source_url,fare_source_url,valid_until').eq('is_published', true).order('route_name');
-  if (error) throw error;
+  if (error) {
+    const cached = await (await import('@/lib/offline-trip-pack')).getOfflineFerryRoutes();
+    if (cached.length) return cached;
+    throw error;
+  }
   return (data ?? []).map((route) => ({
     id: route.source_key,
     route: route.route_name,

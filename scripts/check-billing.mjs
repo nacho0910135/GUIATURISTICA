@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [tabs, billing, screen, commerce, playCampaigns, playVerifier, checkout, webhook, migration, campaignMigration, bannerImageMigration, adminAccessMigration, campaignPricingMigration] = await Promise.all([
+const [tabs, billing, screen, commerce, playCampaigns, playVerifier, checkout, webhook, migration, campaignMigration, bannerImageMigration, adminAccessMigration, campaignPricingMigration, serverAccessMigration, rtdn, portal, intents, businessGuard] = await Promise.all([
   readFile(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/lib/billing.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/app/subscriptions.tsx', import.meta.url), 'utf8'),
@@ -15,6 +15,11 @@ const [tabs, billing, screen, commerce, playCampaigns, playVerifier, checkout, w
   readFile(new URL('../supabase/migrations/20260905230000_add_campaign_banner_images.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260906031010_admin_commerce_access.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260909091743_update_campaign_subscription_pricing.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20260910120000_server_personal_access.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/functions/google-play-rtdn/index.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/functions/create-customer-portal/index.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20260910140000_google_play_purchase_intents.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20260910150000_guard_paid_business_mutations.sql', import.meta.url), 'utf8'),
 ]);
 
 for (const tab of ['explore', 'my-trip', 'commerce', 'friends']) assert.match(tabs, new RegExp(`name="${tab}"`));
@@ -40,12 +45,14 @@ assert.match(playCampaigns, /useIAP/);
 for (const price of ['US$2 / mes', 'US$20 / año', 'US$5 / 30 días', 'US$9,99 / mes']) assert.match(billing, new RegExp(price.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 assert.match(screen, /billingOffers/);
 assert.match(screen, /!businessIntent \? universalOffers\.map/);
-assert.match(screen, /businessIntent \? <>/);
+assert.match(screen, /businessIntent \? businessOffers\.map/);
 assert.doesNotMatch(screen, /visitor_pass_30d/);
 assert.match(screen, /MEJOR VALOR/);
 assert.match(checkout, /supabase\.auth\.getUser/);
 assert.match(checkout, /eq\(["']owner_id["'], user\.id\)/);
 assert.match(checkout, /STRIPE_SECRET_KEY/);
+assert.match(checkout, /Idempotency-Key/);
+assert.match(screen, /checkoutInProgress\.current/);
 assert.match(checkout, /banner_capacity_reached/);
 assert.match(checkout, /new Set\(\(data \?\? \[\]\)\.map\(\(campaign\) => campaign\.service_id\)\)\.size >= 3/);
 assert.match(checkout, /mode: offer\.mode/);
@@ -88,6 +95,20 @@ assert.match(webhook, /image_url: imageUrl/);
 assert.match(bannerImageMigration, /campaign-banners/);
 assert.match(bannerImageMigration, /image_url/);
 assert.match(billing, /hasActiveBusinessPlan/);
+assert.match(billing, /getMyAccessStatus/);
+assert.doesNotMatch(billing, /accountCreatedAt|TRIAL_DAYS/);
+assert.doesNotMatch(tabs, /Platform\.OS === ['"]web['"]/);
+assert.match(serverAccessMigration, /auth\.users/);
+assert.match(serverAccessMigration, /now\(\)/);
+assert.match(serverAccessMigration, /status in \('active', 'past_due', 'canceled'\)/);
+assert.match(serverAccessMigration, /grant execute .* to authenticated/);
+assert.match(rtdn, /validGoogleIdentity/);
+assert.match(rtdn, /getGoogleSubscription/);
+assert.match(portal, /billing_portal\/sessions/);
+assert.match(intents, /save_google_play_purchase_intent/);
+assert.match(playCampaigns, /save_google_play_purchase_intent/);
+assert.match(businessGuard, /active_business_subscription_required/);
+assert.match(screen, /openSubscriptionManagement/);
 assert.match(commerce, /Necesitás el plan para comercios/);
 assert.match(commerce, /activateAdminTestCampaign/);
 assert.match(adminAccessMigration, /role = 'admin'/);

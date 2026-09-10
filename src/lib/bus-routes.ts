@@ -29,7 +29,11 @@ export async function getBusRoutes(query: string, group: 'tourist' | 'cantonal' 
 
   if (term) request = request.ilike('route_name', `%${term}%`);
   const { data, error } = await request;
-  if (error) throw error;
+  if (error) {
+    const cached = await (await import('@/lib/offline-trip-pack')).getOfflineBusRoutes(query, group);
+    if (cached.length) return cached;
+    throw error;
+  }
 
   return (data ?? []).map((route) => ({
     ...route,

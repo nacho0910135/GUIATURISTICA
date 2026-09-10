@@ -1,6 +1,6 @@
 import '@/global.css';
 
-import { Stack } from 'expo-router';
+import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
 import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
@@ -14,7 +14,7 @@ import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from 'nativewind';
 
@@ -27,10 +27,15 @@ import { AppThemeProvider } from '@/theme/theme-provider';
 
 void SplashScreen.preventAutoHideAsync();
 
+export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+  return <View className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text accessibilityRole="alert" className="text-center text-xl font-black text-ui-text dark:text-ui-dark-text">Algo salió mal</Text><Text className="mt-2 text-center text-ui-text-muted dark:text-ui-dark-text-muted">Podés volver a intentar sin cerrar la aplicación.</Text><Pressable accessibilityRole="button" className="mt-5 rounded-control bg-ui-primary px-6 py-4" onPress={() => void retry()}><Text className="font-black text-white">Reintentar</Text></Pressable></View>;
+}
+
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
   const [exploreReady, setExploreReady] = useState(isExploreStartupReady);
+  const [startupDeadline, setStartupDeadline] = useState(false);
   const finishSplash = useCallback(() => setShowSplash(false), []);
   const [fontsLoaded, fontError] = useFonts({
     PlusJakartaSans_400Regular,
@@ -45,8 +50,12 @@ export default function RootLayout() {
   }, [fontError, fontsLoaded]);
 
   useEffect(() => subscribeToExploreStartupReady(() => setExploreReady(true)), []);
+  useEffect(() => {
+    const timer = setTimeout(() => setStartupDeadline(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!fontsLoaded && !fontError && !startupDeadline) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -75,7 +84,7 @@ export default function RootLayout() {
                     <Stack.Screen name="(aux)/auth-modal" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
                   </Stack>
                 </View>
-                {showSplash ? <AnimatedSplash appReady={exploreReady} onFinish={finishSplash} /> : null}
+                {showSplash ? <AnimatedSplash appReady={exploreReady || startupDeadline} onFinish={finishSplash} /> : null}
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
               </ThemedAlertProvider>
           </AppProvider>

@@ -141,6 +141,7 @@ Deno.serve(async (request) => {
       plan,
       offer_id: offerId,
       status: databaseStatus(subscription.status),
+      provider_status: subscription.status,
       price_amount: amount / 100,
       price_currency: currency.toUpperCase(),
       provider: "stripe",

@@ -9,6 +9,7 @@ export function AnimatedSplash({ appReady, onFinish }: { appReady: boolean; onFi
   const player = useAudioPlayer(require('@/assets/audio/startup-transition.mp3'));
   const [showAnimation, setShowAnimation] = useState(true);
   const [animationFinished, setAnimationFinished] = useState(false);
+  const [deadlineReached, setDeadlineReached] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web' && !startupSoundPlayed) {
@@ -25,10 +26,15 @@ export function AnimatedSplash({ appReady, onFinish }: { appReady: boolean; onFi
   }, [player]);
 
   useEffect(() => {
-    if (!animationFinished || !appReady) return;
+    const timer = setTimeout(() => setDeadlineReached(true), 8000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!animationFinished || (!appReady && !deadlineReached)) return;
     const finishTimer = setTimeout(onFinish, 300);
     return () => clearTimeout(finishTimer);
-  }, [animationFinished, appReady, onFinish]);
+  }, [animationFinished, appReady, deadlineReached, onFinish]);
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>

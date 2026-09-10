@@ -19,16 +19,19 @@ Deno.serve(async (request) => {
   for (const bucket of buckets) {
     const paths: string[] = [];
     const walk = async (prefix: string) => {
-      const { data, error } = await admin.storage.from(bucket).list(prefix, { limit: 1000 });
-      if (error) throw error;
-      for (const entry of data ?? []) {
-        const path = `${prefix}/${entry.name}`;
-        if (entry.id) paths.push(path); else await walk(path);
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await admin.storage.from(bucket).list(prefix, { limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } });
+        if (error) throw error;
+        for (const entry of data ?? []) {
+          const path = `${prefix}/${entry.name}`;
+          if (entry.id) paths.push(path); else await walk(path);
+        }
+        if (!data || data.length < 1000) break;
       }
     };
     await walk(user.id);
-    if (paths.length) {
-      const { error } = await admin.storage.from(bucket).remove(paths);
+    for (let offset = 0; offset < paths.length; offset += 1000) {
+      const { error } = await admin.storage.from(bucket).remove(paths.slice(offset, offset + 1000));
       if (error) throw error;
     }
   }

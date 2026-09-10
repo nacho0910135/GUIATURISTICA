@@ -50,6 +50,24 @@ if ($IncrementVersion) {
 $gradlePath = Join-Path $project "android\app\build.gradle"
 $gradleText = Get-Content -LiteralPath $gradlePath -Raw
 $gradleText = [regex]::Replace($gradleText, 'versionCode\s+\d+', "versionCode $versionCode", 1)
+$releaseSigning = @'
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+        release {
+            storeFile file(System.getenv('DESCUBRIENDO_KEYSTORE_PATH'))
+            storePassword System.getenv('DESCUBRIENDO_STORE_PASSWORD')
+            keyAlias System.getenv('DESCUBRIENDO_KEY_ALIAS')
+            keyPassword System.getenv('DESCUBRIENDO_KEY_PASSWORD')
+        }
+    }
+'@
+$gradleText = [regex]::Replace($gradleText, '(?s)    signingConfigs \{.*?\r?\n    \}\r?\n    buildTypes \{', ($releaseSigning + "`r`n    buildTypes {"), 1)
+$gradleText = [regex]::Replace($gradleText, '(?s)(buildTypes\s*\{\s*debug\s*\{.*?\}\s*release\s*\{.*?signingConfig\s*=\s*)signingConfigs\.debug', '${1}signingConfigs.release', 1)
 [IO.File]::WriteAllText($gradlePath, $gradleText, [Text.UTF8Encoding]::new($false))
 
 npm run typecheck
@@ -69,6 +87,20 @@ Copy-Item -LiteralPath "$project\android\app\build\outputs\bundle\release\app-re
 $verification = & "$env:JAVA_HOME\bin\jarsigner.exe" -verify $output 2>&1
 if ($LASTEXITCODE -ne 0 -or -not ($verification -match "jar verified")) {
     throw "La firma del AAB no es válida."
+}
+
+$certificatePattern = '(?s)-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----'
+$ErrorActionPreference = "Continue"
+try {
+    $expectedCertificate = [regex]::Match(((& "$env:JAVA_HOME\bin\keytool.exe" -exportcert -rfc -keystore $keystore -storepass $env:DESCUBRIENDO_STORE_PASSWORD -alias $env:DESCUBRIENDO_KEY_ALIAS 2>$null) -join "`n"), $certificatePattern).Value -replace '\s', ''
+    $expectedCertificateExitCode = $LASTEXITCODE
+    $actualCertificate = [regex]::Match(((& "$env:JAVA_HOME\bin\keytool.exe" -printcert -rfc -jarfile $output 2>$null) -join "`n"), $certificatePattern).Value -replace '\s', ''
+    $actualCertificateExitCode = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = "Stop"
+}
+if ($expectedCertificateExitCode -ne 0 -or $actualCertificateExitCode -ne 0 -or -not $expectedCertificate -or $expectedCertificate -ne $actualCertificate) {
+    throw "El AAB no está firmado con el certificado de producción esperado."
 }
 
 $hash = (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash

@@ -1,12 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, Tabs, usePathname, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect, Tabs, useFocusEffect, usePathname, useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import { BackHandler, Platform, Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
-import { getAccessStatus, getMySubscriptions } from '@/lib/billing';
+import { getMyAccessStatus } from '@/lib/billing';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -39,20 +39,16 @@ export default function TabsLayout() {
   const { bottom } = useSafeAreaInsets();
   const pathname = usePathname();
   const router = useRouter();
-  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
-  const access = session ? getAccessStatus(session.user.created_at, subscriptions.data ?? []) : null;
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    let subscription: ReturnType<typeof BackHandler.addEventListener> | undefined;
-    const timer = setTimeout(() => {
-      subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (!pathname.endsWith('/explore')) router.replace('/(tabs)/explore');
-        return true;
-      });
-    }, 0);
-    return () => { clearTimeout(timer); subscription?.remove(); };
-  }, [pathname, router]);
-  if (Platform.OS === 'web' && !isAdmin && access && !access.hasAccess && !subscriptions.isLoading) return <Redirect href="/subscriptions" />;
+  const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session) });
+  useFocusEffect(useCallback(() => {
+    if (Platform.OS !== 'android') return undefined;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (pathname !== '/explore') router.replace('/(tabs)/explore');
+      return true;
+    });
+    return () => subscription.remove();
+  }, [pathname, router]));
+  if (!isAdmin && session && !access.isLoading && access.data?.hasAccess !== true) return <Redirect href="/subscriptions" />;
   return (
     <Tabs
       backBehavior="initialRoute"

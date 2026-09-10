@@ -81,6 +81,8 @@
     "check:categories": "node --env-file=.env.local scripts/check-destination-categories.mjs",
     "check:marketplace": "node scripts/check-marketplace.mjs",
     "check:billing": "node scripts/check-billing.mjs",
+    "check:oauth": "node scripts/check-oauth-security.mjs",
+    "check:findings": "node scripts/check-reported-findings.mjs",
     "check:play": "node scripts/check-google-play-readiness.mjs",
     "sync:commerce": "node scripts/sync-official-commerce.mjs",
     "sync:destination-photos": "node --env-file=.env.local scripts/sync-destination-photos.mjs",

@@ -2138,8 +2138,7 @@ export default function CommerceScreen() {
     const currentSubscriptions = subscriptions.isLoading
       ? ((await subscriptions.refetch()).data ?? [])
       : (subscriptions.data ?? []);
-    const ownedBusinesses = await getOwnerDashboard();
-    if (isAdmin || hasActiveBusinessPlan(currentSubscriptions) || ownedBusinesses.length) {
+    if (isAdmin || hasActiveBusinessPlan(currentSubscriptions)) {
       setDashboardOpen(true);
       return;
     }
@@ -2983,7 +2982,7 @@ export default function CommerceScreen() {
               className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary px-4"
               onPress={() => {
                 setBusinessPlanRequiredOpen(false);
-                router.push("/subscriptions");
+                router.push({ pathname: "/subscriptions", params: { intent: "business" } });
               }}
             >
               <Text className="font-black text-white">

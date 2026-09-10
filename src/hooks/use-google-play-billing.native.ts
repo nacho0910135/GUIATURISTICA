@@ -3,7 +3,7 @@ import { ErrorCode, finishTransaction, type ProductSubscription, type Purchase, 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { googlePlayProductIds, type BillingOfferId } from '@/lib/billing';
+import { billingOffers, googlePlayProductIds, type BillingOfferId } from '@/lib/billing';
 import { supabase } from '@/lib/supabase';
 
 type Options = {
@@ -48,7 +48,15 @@ export function useGooglePlayBilling({ onError, onVerified, userId }: Options) {
         const payload = response ? await response.clone().json().catch(() => undefined) as { error?: string } | undefined : undefined;
         throw new Error(payload?.error === 'google_play_not_configured'
           ? 'La validación de Google Play todavía no está configurada en el servidor.'
-          : 'Google Play no pudo validar la compra. Intentá nuevamente.');
+          : payload?.error === 'purchase_pending'
+            ? 'El pago está pendiente. Google Play lo activará cuando se complete.'
+            : payload?.error === 'purchase_on_hold'
+              ? 'Google Play suspendió temporalmente el plan. Revisá tu método de pago.'
+              : payload?.error === 'purchase_paused'
+              ? 'La suscripción está pausada en Google Play.'
+                : payload?.error === 'purchase_expired'
+                  ? 'La suscripción venció. Podés activarla nuevamente desde Planes Pro.'
+                  : 'Google Play no pudo validar la compra. Intentá nuevamente.');
       }
       if (!data?.verified) throw new Error('Google Play todavía no confirmó esta compra.');
       await finishTransaction({ purchase, isConsumable: false });
@@ -98,6 +106,9 @@ export function useGooglePlayBilling({ onError, onVerified, userId }: Options) {
     const storeOffer = product.subscriptionOffers.find((item) => item.offerTokenAndroid);
     if (!storeOffer?.offerTokenAndroid) throw new Error('Google Play no devolvió un plan de cobro válido.');
     const obfuscatedAccountId = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, userId);
+    const replacedPurchase = !billingOffers[offerId].business
+      ? availablePurchases.find((item) => item.productId !== productId && productToOffer.has(item.productId) && item.purchaseToken)
+      : undefined;
     serviceByProduct.current.set(productId, serviceId);
     await requestPurchase({
       type: 'subs',
@@ -106,10 +117,17 @@ export function useGooglePlayBilling({ onError, onVerified, userId }: Options) {
           skus: [productId],
           obfuscatedAccountId,
           subscriptionOffers: [{ sku: productId, offerToken: storeOffer.offerTokenAndroid }],
+          ...(replacedPurchase?.purchaseToken ? {
+            purchaseToken: replacedPurchase.purchaseToken,
+            subscriptionProductReplacementParams: {
+              oldProductId: replacedPurchase.productId,
+              replacementMode: 'charge-full-price' as const,
+            },
+          } : {}),
         },
       },
     });
-  }, [connected, requestPurchase, subscriptions, userId]);
+  }, [availablePurchases, connected, requestPurchase, subscriptions, userId]);
 
   return { connected, productsLoaded, purchase, storePrices };
 }

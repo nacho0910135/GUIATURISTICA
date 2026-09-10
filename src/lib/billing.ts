@@ -119,15 +119,22 @@ export type Subscription = {
   id: string;
   service_id: string | null;
   plan: SubscriptionPlan;
+  provider?: string | null;
   offer_id: BillingOfferId | LegacySubscriptionOfferId;
   status: SubscriptionStatus;
   price_amount: number;
   price_currency: string;
   current_period_end: string | null;
+  provider_status?: string | null;
 };
 
-const TRIAL_DAYS = 15;
-const DAY_MS = 24 * 60 * 60 * 1000;
+export type AccessStatus = {
+  hasAccess: boolean;
+  hasPersonalPlan: boolean;
+  trialDaysRemaining: number;
+  trialEndsAt: string;
+  showTrialWarning: boolean;
+};
 
 export function hasActivePersonalPlan(
   subscriptions: Subscription[],
@@ -136,7 +143,7 @@ export function hasActivePersonalPlan(
   return subscriptions.some(
     (item) =>
       item.plan === "no_ads" &&
-      item.status === "active" &&
+      ["active", "past_due", "canceled"].includes(item.status) &&
       (!item.current_period_end ||
         new Date(item.current_period_end).getTime() > now),
   );
@@ -173,28 +180,6 @@ export function hasAvailableBusinessPlan(
   );
 }
 
-export function getAccessStatus(
-  accountCreatedAt: string,
-  subscriptions: Subscription[],
-  now = Date.now(),
-) {
-  const trialEndsAt =
-    new Date(accountCreatedAt).getTime() + TRIAL_DAYS * DAY_MS;
-  const trialDaysRemaining = Math.max(
-    0,
-    Math.ceil((trialEndsAt - now) / DAY_MS),
-  );
-  const hasPersonalPlan = hasActivePersonalPlan(subscriptions, now);
-  return {
-    hasAccess: hasPersonalPlan || trialDaysRemaining > 0,
-    hasPersonalPlan,
-    trialDaysRemaining,
-    trialEndsAt: new Date(trialEndsAt).toISOString(),
-    showTrialWarning:
-      !hasPersonalPlan && trialDaysRemaining > 0 && trialDaysRemaining <= 5,
-  };
-}
-
 export async function getMySubscriptions(): Promise<Subscription[]> {
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError) throw authError;
@@ -203,12 +188,19 @@ export async function getMySubscriptions(): Promise<Subscription[]> {
   const { data, error } = await supabase
     .from("subscriptions")
     .select(
-      "id, service_id, plan, offer_id, status, price_amount, price_currency, current_period_end",
+      "id, service_id, plan, offer_id, status, provider, provider_status, price_amount, price_currency, current_period_end",
     )
     .eq("user_id", auth.user.id)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Subscription[];
+}
+
+export async function getMyAccessStatus(): Promise<AccessStatus> {
+  const { data, error } = await supabase.rpc("get_my_app_access");
+  if (error) throw error;
+  if (!data) throw new Error("No se pudo verificar el acceso a la aplicación.");
+  return data as AccessStatus;
 }
 
 export async function openSubscriptionCheckout({
@@ -245,6 +237,15 @@ export async function openSubscriptionCheckout({
 
   if (!checkoutUrl) throw new Error("No se pudo crear una sesión de Checkout.");
   return WebBrowser.openAuthSessionAsync(checkoutUrl, returnUrl);
+}
+
+export async function openSubscriptionManagement(subscription: Subscription) {
+  if (subscription.provider === "google_play")
+    return Linking.openURL(`https://play.google.com/store/account/subscriptions?sku=${encodeURIComponent(subscription.offer_id)}&package=com.descubriendo.cr`);
+  const returnUrl = Linking.createURL("subscriptions");
+  const { data, error } = await supabase.functions.invoke("create-customer-portal", { body: { returnUrl } });
+  if (error || !data?.url) throw error ?? new Error("No se pudo abrir la administración de la suscripción.");
+  return WebBrowser.openAuthSessionAsync(data.url, returnUrl);
 }
 
 export async function openCampaignCheckout({

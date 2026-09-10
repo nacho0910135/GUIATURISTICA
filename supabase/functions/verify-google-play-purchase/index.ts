@@ -49,6 +49,7 @@ type GoogleSubscription = {
   acknowledgementState?: string;
   externalAccountIdentifiers?: { obfuscatedExternalAccountId?: string };
   latestOrderId?: string;
+  linkedPurchaseToken?: string;
   lineItems?: Array<{
     expiryTime?: string;
     productId?: string;
@@ -87,20 +88,36 @@ Deno.serve(async (request) => {
     error: userError,
   } = await userClient.auth.getUser();
   if (userError || !user) return json({ error: "unauthorized" }, 401);
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   const body = await request.json().catch(() => ({}));
   const productId = typeof body.productId === "string" ? body.productId : "";
   const purchaseToken =
     typeof body.purchaseToken === "string" ? body.purchaseToken : "";
-  const serviceId =
+  let serviceId =
     typeof body.serviceId === "string" ? body.serviceId : undefined;
-  const targetUrl =
+  let targetUrl =
     typeof body.targetUrl === "string" ? body.targetUrl.trim() : undefined;
-  const imageUrl =
+  let imageUrl =
     typeof body.imageUrl === "string" ? body.imageUrl.trim() : undefined;
   const offer = offers[productId as keyof typeof offers];
   if (!offer || !purchaseToken || purchaseToken.length > 4096)
     return json({ error: "invalid_purchase" }, 400);
+  let purchaseIntentId: string | undefined;
+  if (offer.kind === "campaign") {
+    const { data: intent } = await admin.from("google_play_purchase_intents")
+      .select("id,service_id,target_url,image_url")
+      .eq("user_id", user.id)
+      .eq("product_id", productId)
+      .is("consumed_at", null)
+      .maybeSingle();
+    purchaseIntentId = intent?.id;
+    serviceId ??= intent?.service_id;
+    targetUrl ??= intent?.target_url ?? undefined;
+    imageUrl ??= intent?.image_url ?? undefined;
+  }
   if (offer.kind === "plan" ? !offer.business && Boolean(serviceId) : !serviceId)
     return json({ error: "invalid_business_selection" }, 400);
   if (
@@ -159,14 +176,16 @@ Deno.serve(async (request) => {
     (item) => item.productId === productId,
   );
   const expiresAt = lineItem?.expiryTime;
-  if (
-    !lineItem ||
-    !expiresAt ||
-    new Date(expiresAt).getTime() <= Date.now() ||
-    !purchase.subscriptionState ||
-    !entitledStates.has(purchase.subscriptionState)
-  ) {
-    return json({ error: "purchase_not_entitled" }, 409);
+  const providerId = `google_play:${await sha256(purchaseToken)}`;
+  if (!purchase.subscriptionState) return json({ error: "purchase_state_missing" }, 502);
+  if (!lineItem || !expiresAt || new Date(expiresAt).getTime() <= Date.now() || !entitledStates.has(purchase.subscriptionState)) {
+    await admin.from("subscriptions").update({
+      status: googleDatabaseStatus(purchase.subscriptionState),
+      provider_status: purchase.subscriptionState,
+      current_period_end: expiresAt ?? null,
+      updated_at: new Date().toISOString(),
+    }).eq("provider_subscription_id", providerId);
+    return json({ error: googleStateError(purchase.subscriptionState), providerStatus: purchase.subscriptionState }, 409);
   }
 
   const expectedAccountId = await sha256(user.id);
@@ -181,10 +200,6 @@ Deno.serve(async (request) => {
     ? Number(money.units ?? 0) + Number(money.nanos ?? 0) / 1_000_000_000
     : offer.fallbackAmount;
   const priceCurrency = money?.currencyCode?.toUpperCase() || "USD";
-  const providerId = `google_play:${await sha256(purchaseToken)}`;
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
   if (offer.kind === "campaign") {
     if (offer.campaignType === "banner") {
       const now = new Date().toISOString();
@@ -212,7 +227,7 @@ Deno.serve(async (request) => {
           campaign_type: offer.campaignType,
           target_url: offer.campaignType === "banner" ? targetUrl : null,
           image_url: offer.campaignType === "banner" ? imageUrl : null,
-          status: "active",
+    status: googleDatabaseStatus(purchase.subscriptionState),
           amount_usd: offer.fallbackAmount,
           provider_session_id: null,
           provider_subscription_id: providerId,
@@ -221,6 +236,8 @@ Deno.serve(async (request) => {
         { onConflict: "provider_subscription_id" },
       );
     if (campaignError) return json({ error: "campaign_write_failed" }, 500);
+    if (purchaseIntentId)
+      await admin.from("google_play_purchase_intents").update({ consumed_at: new Date().toISOString() }).eq("id", purchaseIntentId);
     return json({
       verified: true,
       expiresAt,
@@ -233,14 +250,20 @@ Deno.serve(async (request) => {
     service_id: serviceId ?? null,
     plan: offer.plan,
     offer_id: productId,
-    status: "active",
+    status: googleDatabaseStatus(purchase.subscriptionState),
     price_amount: priceAmount,
     price_currency: priceCurrency,
     provider: "google_play",
+    provider_status: purchase.subscriptionState,
     provider_subscription_id: providerId,
     current_period_end: expiresAt,
     updated_at: new Date().toISOString(),
   };
+  if (purchase.linkedPurchaseToken) {
+    await admin.from("subscriptions").update({ status: "expired", updated_at: new Date().toISOString() })
+      .eq("provider_subscription_id", `google_play:${await sha256(purchase.linkedPurchaseToken)}`)
+      .neq("provider_subscription_id", providerId);
+  }
   let existingQuery = admin
     .from("subscriptions")
     .select("id")
@@ -277,6 +300,22 @@ function isSafeTargetUrl(value?: string) {
   } catch {
     return false;
   }
+}
+
+function googleDatabaseStatus(state: string): "pending" | "active" | "past_due" | "canceled" | "expired" {
+  if (state === "SUBSCRIPTION_STATE_ACTIVE") return "active";
+  if (state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" || state === "SUBSCRIPTION_STATE_ON_HOLD" || state === "SUBSCRIPTION_STATE_PAUSED") return "past_due";
+  if (state === "SUBSCRIPTION_STATE_CANCELED") return "canceled";
+  if (state === "SUBSCRIPTION_STATE_PENDING") return "pending";
+  return "expired";
+}
+
+function googleStateError(state: string) {
+  if (state === "SUBSCRIPTION_STATE_PENDING") return "purchase_pending";
+  if (state === "SUBSCRIPTION_STATE_ON_HOLD") return "purchase_on_hold";
+  if (state === "SUBSCRIPTION_STATE_PAUSED") return "purchase_paused";
+  if (state === "SUBSCRIPTION_STATE_EXPIRED") return "purchase_expired";
+  return "purchase_not_entitled";
 }
 
 function isOwnedBannerUrl(

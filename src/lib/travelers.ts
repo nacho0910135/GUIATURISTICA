@@ -123,7 +123,7 @@ export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'g
   const postIds = (postRows ?? []).map((post) => post.id);
   const [replies, reactions, replyReactions, follows] = await Promise.all([
     postIds.length
-      ? supabase.from('traveler_replies').select('id,post_id,parent_reply_id,user_id,body,created_at,user:users(id,username,full_name,avatar_url,role)').in('post_id', postIds).order('created_at').limit(200)
+      ? supabase.from('traveler_replies').select('id,post_id,parent_reply_id,user_id,body,created_at,user:users!traveler_replies_user_id_fkey(id,username,full_name,avatar_url,role)').in('post_id', postIds).order('created_at').limit(200)
       : Promise.resolve({ data: [], error: null }),
     postIds.length
       ? supabase.from('traveler_reactions').select('post_id,user_id,reaction').in('post_id', postIds)

@@ -58,3 +58,26 @@ export async function getOfflineCommerceServices(category: string) {
   }
   return [...services.values()];
 }
+
+async function getOfflinePacks() {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<{ data: string }>('SELECT data FROM offline_trip_packs');
+  return rows.flatMap(({ data }) => {
+    try { return [JSON.parse(data) as OfflineTripPack]; } catch { return []; }
+  });
+}
+
+export async function getOfflineBusRoutes(query: string, group: 'tourist' | 'cantonal') {
+  const term = query.trim().toLocaleLowerCase();
+  const routes = new Map<string, OfflineTripPack['buses'][number]>();
+  for (const pack of await getOfflinePacks()) {
+    for (const route of pack.buses ?? []) if (route.route_group === group && (!term || route.route_name.toLocaleLowerCase().includes(term))) routes.set(route.source_key, route);
+  }
+  return [...routes.values()].sort((a, b) => a.route_name.localeCompare(b.route_name));
+}
+
+export async function getOfflineFerryRoutes() {
+  const routes = new Map<string, FerryRoute>();
+  for (const pack of await getOfflinePacks()) for (const route of pack.ferries ?? []) routes.set(route.id, route);
+  return [...routes.values()].sort((a, b) => a.route.localeCompare(b.route));
+}

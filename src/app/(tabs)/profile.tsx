@@ -315,7 +315,7 @@ export default function ProfileScreen() {
           <MaterialCommunityIcons name="crown-outline" size={20} color="white" />
           <Text className="ml-2 font-black text-white">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
         </Pressable> : null}
-        <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950" onPress={() => void signOut()}>
+        <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950" disabled={busy} onPress={() => void run(signOut)}>
           <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
           <Text className="ml-2 font-black text-red-600 dark:text-red-400">{tr(language, 'Cerrar sesión', 'Sign out')}</Text>
         </Pressable>
@@ -465,7 +465,7 @@ export default function ProfileScreen() {
           <View>
             <Title>{tr(language, 'Sesión iniciada', 'Signed in')}</Title>
             <Text className="mb-4 mt-2 text-ui-text-muted dark:text-ui-dark-text-muted">{session?.user.email}</Text>
-            <ProfileButton label={tr(language, 'Cerrar sesión', 'Sign out')} outline onPress={() => void signOut()} />
+            <ProfileButton label={tr(language, 'Cerrar sesión', 'Sign out')} outline disabled={busy} onPress={() => void run(signOut)} />
           </View>
         ) : null}
         {section === 'login' && isAdmin ? adminDashboard.isError ? (
@@ -539,7 +539,7 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
     <View>
       <View className="flex-row items-center justify-between">
         <Title>{tr(language, 'Panel del administrador', 'Admin dashboard')}</Title>
-        <ProfileButton label={tr(language, 'Salir', 'Sign out')} outline onPress={() => void signOut()} />
+        <ProfileButton label={tr(language, 'Salir', 'Sign out')} outline disabled={busy} onPress={() => void run(signOut)} />
       </View>
       <View className="mt-5 flex-row items-center rounded-2xl bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft">
         <MaterialCommunityIcons name="clipboard-check-outline" size={28} color="#087443" />

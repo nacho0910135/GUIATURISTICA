@@ -142,7 +142,7 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
   } catch (error) {
     const cached = await getOfflineCommerceServices(categoryId) as ServiceRow[];
     if (!cached.length) throw error;
-    rows.push(...cached.filter((service) => service.owner_id === null && service.source !== 'owner_registered' && (!subcategory || service.subcategories?.includes(subcategory))));
+    rows.push(...cached.filter((service) => !subcategory || service.subcategories?.includes(subcategory)));
   }
 
   const services = rows

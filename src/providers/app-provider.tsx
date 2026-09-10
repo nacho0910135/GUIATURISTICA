@@ -191,22 +191,16 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (url === lastOAuthCallbackUrl.current && oauthCallbackInFlight.current) return oauthCallbackInFlight.current;
     lastOAuthCallbackUrl.current = url;
     const request = (async () => {
+      const callbackUrl = new URL(url);
+      if (Platform.OS !== 'web' && (callbackUrl.protocol !== 'descubriendocr:' || callbackUrl.hostname !== 'auth' || callbackUrl.pathname !== '/callback')) return false;
       const callback = new URL(url.replace('#', url.includes('?') ? '&' : '?'));
       const oauthError = callback.searchParams.get('error_description') ?? callback.searchParams.get('error');
       if (oauthError) throw new Error(oauthError);
 
       const code = callback.searchParams.get('code');
-      if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) throw error;
-        await syncSession(data.session);
-        return Boolean(data.session);
-      }
-
-      const access_token = callback.searchParams.get('access_token');
-      const refresh_token = callback.searchParams.get('refresh_token');
-      if (!access_token || !refresh_token) return false;
-      const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
+      const flowId = callback.searchParams.get('sb_flow_id');
+      if (!code || !flowId) return false;
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code, { flowId });
       if (error) throw error;
       await syncSession(data.session);
       return Boolean(data.session);
@@ -217,9 +211,10 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let mounted = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (mounted) void syncSession(data.session).finally(() => setAuthReady(true));
-    });
+    void supabase.auth.getSession()
+      .then(({ data, error }) => { if (error) throw error; if (mounted) return syncSession(data.session); })
+      .catch((error) => console.warn('No se pudo restaurar la sesión.', error))
+      .finally(() => { if (mounted) setAuthReady(true); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (mounted) void syncSession(nextSession);
     });
@@ -249,7 +244,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         setUserLocation(null);
         return;
       }
-      void supabase.auth.getSession().then(({ data }) => syncSession(data.session));
+      void supabase.auth.getSession().then(({ data, error }) => { if (error) throw error; return syncSession(data.session); }).catch((error) => console.warn('No se pudo actualizar la sesión.', error));
       void refreshUserLocation().catch(() => undefined);
     });
     return () => subscription.remove();
@@ -334,7 +329,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     supabase
       .from('system_exchange_rates')
-      .select('rate_buy,rate_sell,updated_at,source')
+      .select('rate_buy,updated_at')
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle()
