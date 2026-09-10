@@ -177,6 +177,7 @@ export default function FaunaScreen() {
           </Text>
         </View>
         <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center self-center rounded-control bg-ui-primary px-4 py-2.5 dark:bg-ui-dark-primary" onPress={() => { if (requireAuth(language === 'es' ? 'Agregar un animal' : 'Add an animal')) setProposalOpen(true); }}><MaterialCommunityIcons name="plus-circle-outline" size={18} color="white" /><Text className="ml-1.5 text-sm font-black text-white">{language === 'es' ? 'Agregar un animal' : 'Add an animal'}</Text></Pressable>
+        <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center self-center rounded-control border border-ui-primary bg-ui-surface px-4 py-2.5 dark:border-ui-dark-primary dark:bg-ui-dark-surface" onPress={() => router.push('../trivia')}><MaterialCommunityIcons name="head-question-outline" size={19} color={colors.primary} /><Text className="ml-1.5 text-sm font-black text-ui-primary dark:text-ui-dark-primary">Trivia CR</Text></Pressable>
       </View>
 
       {!home && !error ? <FrogLoader color="#13a95b" size="large" /> : null}

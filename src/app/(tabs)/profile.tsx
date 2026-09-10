@@ -1,6 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
-import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,6 +7,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
+import { AudioRecorderButton } from '@/components/audio-recorder-button';
 import { MotionPressable } from '@/components/motion';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
@@ -859,8 +859,6 @@ function MessagesPanel({ conversations, initialPartnerId, language, userId, user
   const [activePartnerId, setActivePartnerId] = useState<string | undefined>(initialPartnerId);
   const [reply, setReply] = useState('');
   const messageListRef = useRef<ScrollView>(null);
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(recorder);
   const active = conversations.find((conversation) => conversation.partner_id === activePartnerId);
   const openConversation = (conversation: PrivateConversation) =>
     void run(async () => {
@@ -899,23 +897,6 @@ function MessagesPanel({ conversations, initialPartnerId, language, userId, user
       setReply('');
       await refresh();
     });
-  const record = async () => {
-    if (recorderState.isRecording) {
-      await recorder.stop();
-      if (recorder.uri)
-        send({
-          uri: recorder.uri,
-          type: 'audio',
-          durationMs: recorderState.durationMillis,
-        });
-      return;
-    }
-    const permission = await requestRecordingPermissionsAsync();
-    if (!permission.granted) return Alert.alert('Descubriendo CR', tr(language, 'Permití el micrófono para grabar un audio.', 'Allow microphone access to record audio.'));
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record();
-  };
   if (active)
     return (
       <View>
@@ -946,13 +927,11 @@ function MessagesPanel({ conversations, initialPartnerId, language, userId, user
         </ScrollView>
         <View className="mt-3 flex-row items-end gap-2">
           <ChatAvatar url={userAvatarUrl} name={tr(language, 'Vos', 'You')} />
-          <Pressable accessibilityLabel={tr(language, 'Enviar imagen', 'Send image')} className="rounded-full bg-ui-primary-soft p-3 dark:bg-ui-dark-primary-soft" disabled={busy || recorderState.isRecording} onPress={chooseImage}>
+          <Pressable accessibilityLabel={tr(language, 'Enviar imagen', 'Send image')} className="rounded-full bg-ui-primary-soft p-3 dark:bg-ui-dark-primary-soft" disabled={busy} onPress={chooseImage}>
             <MaterialCommunityIcons name="image-plus" size={22} color="#0B6B4F" />
           </Pressable>
-          <TextInput className="min-h-12 flex-1 rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text" editable={!busy && !recorderState.isRecording} onChangeText={setReply} placeholder={recorderState.isRecording ? tr(language, 'Grabando audio…', 'Recording audio…') : tr(language, 'Escribí una respuesta… 😀', 'Write a reply… 😀')} placeholderTextColor="#8f9bb2" value={reply} multiline />
-          <Pressable accessibilityLabel={recorderState.isRecording ? tr(language, 'Enviar audio', 'Send audio') : tr(language, 'Grabar audio', 'Record audio')} className={recorderState.isRecording ? 'rounded-full bg-red-500 p-3' : 'rounded-full bg-ui-primary p-3'} disabled={busy} onPress={() => void record()}>
-            <MaterialCommunityIcons name={recorderState.isRecording ? 'stop' : 'microphone'} size={22} color="white" />
-          </Pressable>
+          <TextInput className="min-h-12 flex-1 rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text" editable={!busy} onChangeText={setReply} placeholder={tr(language, 'Escribí una respuesta… 😀', 'Write a reply… 😀')} placeholderTextColor="#8f9bb2" value={reply} multiline />
+          <AudioRecorderButton busy={busy} language={language} onRecorded={send} />
           {reply.trim() ? (
             <Pressable accessibilityLabel={tr(language, 'Enviar mensaje', 'Send message')} className="rounded-full bg-ui-primary p-3" disabled={busy} onPress={() => send()}>
               <MaterialCommunityIcons name="send" size={21} color="white" />

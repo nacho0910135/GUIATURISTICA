@@ -15,10 +15,10 @@ Mapbox.setAccessToken(MAPBOX_TOKEN);
 const PROVINCE_MAP_STYLE = JSON.stringify({
   version: 8,
   sources: {},
-  layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#F8F6F0' } }],
+  layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#FFFDF8' } }],
 });
 
-const provinceColors = ['#2A7B4C', '#1E5B75', '#4A9874', '#326F8B', '#82B99C', '#568BA4', '#1E6038'];
+const provinceColors = ['#B8DCC5', '#B8DDEA', '#F0C9B5', '#D4C9E8', '#E8D9A8', '#AFCFD0', '#C7DDB7'];
 const provinceShape: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
   features: provinces.map((province) => ({
@@ -75,7 +75,7 @@ export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, onLo
   const weatherAnnotations = useMemo(() => selectionMode ? null : provinces.map((province, index) => {
     const current = weather[index].data;
     return (
-      <Mapbox.MarkerView allowOverlap allowOverlapWithPuck id={`province-${province.code}`} key={province.code} coordinate={[province.center.longitude, province.center.latitude]}>
+      <Mapbox.MarkerView id={`province-${province.code}`} key={province.code} coordinate={[province.center.longitude, province.center.latitude]}>
         <Pressable accessibilityLabel={`Abrir ${province.name}`} accessibilityRole="button" onPress={() => openProvince(province.name)} style={styles.weatherMarker}>
           <Text allowFontScaling={false} style={[styles.weatherIcon, { fontSize: wide ? 28 : 21 }]}>{weatherSymbol(current?.icon)}</Text>
           <Text allowFontScaling={false} numberOfLines={2} style={[styles.weatherLabel, { fontSize: wide ? 15 : 12, lineHeight: wide ? 19 : 16 }]}>
@@ -93,8 +93,8 @@ export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, onLo
         {!selectionMode ? (
           <Mapbox.ShapeSource id="provinces" shape={provinceShape} onPress={handleProvincePress}>
             <Mapbox.FillLayer id="province-fills" style={{ fillColor: ['get', 'color'], fillOpacity: 1 }} />
-            <Mapbox.LineLayer id="province-halo" style={{ lineColor: '#F8F6F0', lineOpacity: 0.8, lineWidth: 6 }} />
-            <Mapbox.LineLayer id="province-lines" style={{ lineColor: '#1E5B75', lineWidth: 3 }} />
+            <Mapbox.LineLayer id="province-halo" style={{ lineColor: '#FFFDF8', lineOpacity: 0.9, lineWidth: 6 }} />
+            <Mapbox.LineLayer id="province-lines" style={{ lineColor: '#527B78', lineWidth: 2 }} />
           </Mapbox.ShapeSource>
         ) : null}
         {selectedLocation ? (
@@ -113,6 +113,6 @@ const styles = StyleSheet.create({
   expandedMap: { flex: 1, position: 'relative' },
   selectedMarker: { backgroundColor: '#F26A44', borderColor: '#FFFFFF', borderRadius: 10, borderWidth: 3, height: 20, width: 20 },
   weatherIcon: { color: '#F26A44', fontWeight: '700', textAlign: 'center', textShadowColor: '#F8F6F0', textShadowRadius: 3 },
-  weatherLabel: { color: '#F8F6F0', fontWeight: '700', textAlign: 'center', textShadowColor: '#1E5B75', textShadowRadius: 3 },
-  weatherMarker: { alignItems: 'center', backgroundColor: '#1E5B75ee', borderColor: '#F8F6F0cc', borderRadius: 14, borderWidth: 1, minWidth: 86, paddingHorizontal: 7, paddingVertical: 5 },
+  weatherLabel: { color: '#294B49', fontWeight: '700', textAlign: 'center' },
+  weatherMarker: { alignItems: 'center', backgroundColor: '#FFFDF8F2', borderColor: '#7FA5A1', borderRadius: 14, borderWidth: 1, minWidth: 78, paddingHorizontal: 6, paddingVertical: 4 },
 });

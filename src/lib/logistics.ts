@@ -33,6 +33,7 @@ export type TripPlanInput = {
   longitude: number;
   availableHours: number;
   maxBudget: number;
+  travelers: number;
   vehicle: TripVehicle;
   categories: PlannerPreference[];
   language: 'es' | 'en';
@@ -48,9 +49,12 @@ export type TripStop = {
 };
 export type TripPlan = {
   startsAt: string;
+  endsAt: string;
   stops: TripStop[];
   totalTravelMinutes: number;
+  returnTravelMinutes: number;
   totalVisitMinutes: number;
+  mealCostCrc: number;
   estimatedTotalCrc: number;
 };
 export type DayPlan = {
@@ -238,7 +242,8 @@ export async function recommendDestinations(input: { latitude: number; longitude
 export async function buildTripPlan(input: TripPlanInput): Promise<TripPlan | null> {
   const hasVehicle = input.vehicle !== 'bus';
   const candidates = await getTripPlannerCandidates({ ...input, hasVehicle });
-  return assembleTripPlan(input, candidates);
+  const matrixCandidates = candidates.slice(0, 24);
+  return assembleTripPlan(input, matrixCandidates, await getTravelMatrixMinutes([input, ...matrixCandidates], input.vehicle));
 }
 
 export function buildOfflineTripPlan(input: TripPlanInput, destinations: Destination[]): TripPlan | null {
@@ -252,41 +257,96 @@ export function buildOfflineTripPlan(input: TripPlanInput, destinations: Destina
   return assembleTripPlan(input, candidates);
 }
 
-function assembleTripPlan(input: TripPlanInput, candidates: Destination[]): TripPlan | null {
+function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matrix?: number[][]): TripPlan | null {
   const hasVehicle = input.vehicle !== 'bus';
   const plannerInput = { ...input, category: input.categories, hours: input.availableHours, children: false, seniors: false, reducedMobility: false, hasVehicle };
-  const startsAt = new Date(Date.now() + 45 * 60 * 1000);
+  const startsAt = tripStart(input.availableHours);
   let current = { latitude: input.latitude, longitude: input.longitude };
   let remainingMinutes = input.availableHours * 60;
-  let remainingBudget = input.maxBudget;
+  const mealCostCrc = mealBudgetPerPerson(input.availableHours) * input.travelers;
+  let remainingBudget = input.maxBudget - mealCostCrc;
   const stops: TripStop[] = [];
   const speedKph = input.vehicle === 'bus' ? 28 : input.vehicle === '4x4' ? 42 : 48;
   const routeScore = (destination: Destination) => scoreDestination(destination, plannerInput) - distanceKm(current, destination) * 4;
+  const matrixCandidates = candidates.slice(0, 24);
+  let currentMatrixIndex = 0;
 
-  while (stops.length < 4) {
+  while (stops.length < 4 && remainingBudget >= 0) {
     const destination = candidates
-      .filter((item) => item.price_national_crc <= remainingBudget && !stops.some((stop) => stop.destination.id === item.id))
+      .filter((item) => item.price_national_crc * input.travelers <= remainingBudget && !stops.some((stop) => stop.destination.id === item.id))
       .sort((a, b) => routeScore(b) - routeScore(a))[0];
     if (!destination) break;
-    const travelMinutes = Math.max(10, Math.round(distanceKm(current, destination) / speedKph * 60));
-    const returnMinutes = Math.max(10, Math.round(distanceKm(destination, { latitude: input.latitude, longitude: input.longitude }) / speedKph * 60));
+    const destinationMatrixIndex = matrixCandidates.findIndex((item) => item.id === destination.id) + 1;
+    const travelMinutes = matrix?.[currentMatrixIndex]?.[destinationMatrixIndex] ?? estimatedTravelMinutes(current, destination, speedKph);
+    const returnMinutes = matrix?.[destinationMatrixIndex]?.[0] ?? estimatedTravelMinutes(destination, input, speedKph);
     if (remainingMinutes < travelMinutes + returnMinutes + 60) break;
-    const visitMinutes = Math.min(180, Math.max(60, remainingMinutes - travelMinutes - returnMinutes - 30));
+    let visitMinutes = Math.min(180, Math.max(60, remainingMinutes - travelMinutes - returnMinutes - 30));
     const arrivalAt = new Date(startsAt.getTime() + (input.availableHours * 60 - remainingMinutes + travelMinutes) * 60 * 1000);
+    if (isNatureDestination(destination)) {
+      const safeDeparture = new Date(arrivalAt); safeDeparture.setHours(16, 0, 0, 0);
+      visitMinutes = Math.min(visitMinutes, Math.floor((safeDeparture.getTime() - arrivalAt.getTime()) / 60000));
+      if (visitMinutes < 60) { candidates = candidates.filter((item) => item.id !== destination.id); continue; }
+    }
     const departureAt = new Date(arrivalAt.getTime() + visitMinutes * 60 * 1000);
-    stops.push({ destination, order: stops.length + 1, travelMinutes, visitMinutes, arrivalAt: arrivalAt.toISOString(), departureAt: departureAt.toISOString(), estimatedCostCrc: destination.price_national_crc });
+    const estimatedCostCrc = destination.price_national_crc * input.travelers;
+    stops.push({ destination, order: stops.length + 1, travelMinutes, visitMinutes, arrivalAt: arrivalAt.toISOString(), departureAt: departureAt.toISOString(), estimatedCostCrc });
     remainingMinutes -= travelMinutes + visitMinutes;
-    remainingBudget -= destination.price_national_crc;
+    remainingBudget -= estimatedCostCrc;
     current = destination;
+    currentMatrixIndex = destinationMatrixIndex;
   }
   if (!stops.length) return null;
+  const lastStop = stops[stops.length - 1];
+  const returnTravelMinutes = matrix?.[currentMatrixIndex]?.[0] ?? estimatedTravelMinutes(lastStop.destination, input, speedKph);
+  const endsAt = new Date(new Date(lastStop.departureAt).getTime() + returnTravelMinutes * 60000);
   return {
     startsAt: startsAt.toISOString(),
+    endsAt: endsAt.toISOString(),
     stops,
-    totalTravelMinutes: stops.reduce((total, stop) => total + stop.travelMinutes, 0),
+    totalTravelMinutes: stops.reduce((total, stop) => total + stop.travelMinutes, 0) + returnTravelMinutes,
+    returnTravelMinutes,
     totalVisitMinutes: stops.reduce((total, stop) => total + stop.visitMinutes, 0),
-    estimatedTotalCrc: stops.reduce((total, stop) => total + stop.estimatedCostCrc, 0),
+    mealCostCrc,
+    estimatedTotalCrc: mealCostCrc + stops.reduce((total, stop) => total + stop.estimatedCostCrc, 0),
   };
+}
+
+function tripStart(availableHours: number) {
+  const start = new Date();
+  if (availableHours >= 6) start.setHours(8, 0, 0, 0);
+  else start.setTime(start.getTime() + 45 * 60000);
+  if (start.getTime() < Date.now()) start.setDate(start.getDate() + 1);
+  return start;
+}
+
+function mealBudgetPerPerson(availableHours: number) {
+  if (availableHours <= 4) return 3500;
+  if (availableHours <= 7) return 10500;
+  return 20500;
+}
+
+function isNatureDestination(destination: Destination) {
+  return /catarata|cascada|sender|bosque|parque|reserva|refugio|mirador|volc[aá]n|cerro|natur/i.test(`${destination.name} ${destination.category}`);
+}
+
+function estimatedTravelMinutes(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }, speedKph: number) {
+  return Math.max(15, Math.round(distanceKm(from, to) * 1.3 / speedKph * 60));
+}
+
+async function getTravelMatrixMinutes(points: { latitude: number; longitude: number }[], vehicle: TripVehicle) {
+  const speedKph = vehicle === 'bus' ? 28 : vehicle === '4x4' ? 42 : 48;
+  const fallback = points.map((from) => points.map((to) => from === to ? 0 : estimatedTravelMinutes(from, to, speedKph)));
+  const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
+  if (!token || points.length < 2) return fallback;
+  const profile = 'driving';
+  const coordinates = points.map((point) => `${point.longitude},${point.latitude}`).join(';');
+  try {
+    const response = await fetch(`https://api.mapbox.com/directions-matrix/v1/mapbox/${profile}/${coordinates}?access_token=${encodeURIComponent(token)}&annotations=duration`);
+    if (!response.ok) return fallback;
+    const body = await response.json() as { code?: string; durations?: (number | null)[][] };
+    if (body.code !== 'Ok' || !body.durations) return fallback;
+    return body.durations.map((row, from) => row.map((seconds, to) => seconds === null ? fallback[from][to] : Math.max(1, Math.round(seconds / 60))));
+  } catch { return fallback; }
 }
 
 export async function getDestinationsForOffline(province: string) {

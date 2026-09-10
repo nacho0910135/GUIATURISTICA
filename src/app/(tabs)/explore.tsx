@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsFocused, useScrollToTop } from 'expo-router/react-navigation';
 import { distanceKm, straightLineDistanceLabel } from '@/lib/location-quality';
 import * as ImagePicker from 'expo-image-picker';
+import * as Linking from 'expo-linking';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
@@ -17,6 +18,7 @@ import { AnimatedShine, MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
+import { getPreciseCurrentLocation } from '@/lib/current-location';
 import { getLiveRoadAlerts, type RoadTrafficAlert } from '@/lib/logistics';
 import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
@@ -193,7 +195,7 @@ export default function ExploreScreen() {
             <LinearGradient colors={['rgba(255,255,255,0.20)', 'rgba(7,84,63,0.10)']} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
             <AnimatedShine travel={210} />
             <MaterialCommunityIcons name="paw" size={19} color="#07543F" />
-            <Text className="ml-1.5 text-xs font-black text-[#07543F] dark:text-[#8DE0B6]">{language === 'es' ? 'Fauna' : 'Wildlife'}</Text>
+            <Text className="ml-1.5 text-xs font-black text-[#07543F] dark:text-[#8DE0B6]">{language === 'es' ? 'Fauna CR' : 'CR Wildlife'}</Text>
           </MotionPressable>
         </View>
 {nearbyEnabled && !userLocation ? <Text accessibilityRole={locationError ? 'alert' : 'text'} className="mt-3 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{locating ? (language === 'es' ? 'Obteniendo ubicación precisa…' : 'Getting precise location…') : (language === 'es' ? 'Activá la ubicación precisa y tocá Destinos Turísticos Cercanos para reintentar.' : 'Enable precise location and tap Nearby Tourist Destinations to retry.')}</Text> : null}
@@ -479,7 +481,20 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
     longitude: number;
   }>();
   const [manualPickerOpen, setManualPickerOpen] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [sending, setSending] = useState(false);
+  const selectCurrentLocation = async () => {
+    try {
+      setLocating(true);
+      const current = await getPreciseCurrentLocation(language);
+      setManualLocation({ latitude: current.latitude, longitude: current.longitude });
+      void haptic('success');
+    } catch (reason) {
+      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo obtener la ubicación.' : 'Could not get your location.');
+    } finally {
+      setLocating(false);
+    }
+  };
   const pickPhotos = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -551,7 +566,9 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
               <Text className="mb-2 font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Ubicación del sitio' : 'Place location'}</Text>
               <View className="rounded-control border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
                   <Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{manualLocation ? `${manualLocation.latitude.toFixed(5)}, ${manualLocation.longitude.toFixed(5)}` : language === 'es' ? 'Abrí el mapa para buscar y elegir el punto exacto.' : 'Open the map to search and choose the exact point.'}</Text>
+                  <Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control bg-ui-primary px-4 disabled:opacity-50 dark:bg-ui-dark-primary" disabled={locating} onPress={() => void selectCurrentLocation()}><MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" /><Text className="ml-2 font-black text-white">{locating ? (language === 'es' ? 'Obteniendo ubicación…' : 'Getting location…') : (language === 'es' ? 'Usar ubicación actual' : 'Use current location')}</Text></Pressable>
                   <Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 dark:bg-ui-dark-secondary" onPress={() => setManualPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? (manualLocation ? 'Cambiar ubicación en el mapa' : 'Ubicar en el mapa') : (manualLocation ? 'Change map location' : 'Pick on map')}</Text></Pressable>
+                  {manualLocation ? <Pressable accessibilityRole="link" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-ui-primary px-4 dark:border-ui-dark-primary" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${manualLocation.latitude},${manualLocation.longitude}`)}><MaterialCommunityIcons name="map-marker-radius" size={21} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Previsualizar ubicación' : 'Preview location'}</Text><MaterialCommunityIcons name="open-in-new" size={18} color="#0B6B4F" /></Pressable> : null}
                   <LocationPickerModal initialLocation={manualLocation} language={language} onClose={() => setManualPickerOpen(false)} onConfirm={setManualLocation} open={manualPickerOpen} title={language === 'es' ? 'Ubicación del sitio' : 'Place location'} />
               </View>
             </View>

@@ -27,6 +27,7 @@ import type { MapCoordinate } from "@/components/explore/map-canvas";
 import { LocationPickerModal } from "@/components/location-picker-modal";
 import { ThemedAlert as Alert } from "@/components/themed-alert";
 import { getAppOptions, type AppOption } from "@/lib/app-options";
+import { getPreciseCurrentLocation } from "@/lib/current-location";
 import { useGooglePlayCampaignBilling } from "@/hooks/use-google-play-campaign-billing";
 import {
   BannerCapacityError,
@@ -1363,6 +1364,18 @@ function BusinessLocationEditor({
   onChange: (location: MapCoordinate | undefined) => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const selectCurrentLocation = async () => {
+    try {
+      setLocating(true);
+      const current = await getPreciseCurrentLocation(language);
+      onChange({ latitude: current.latitude, longitude: current.longitude });
+    } catch (reason) {
+      Alert.alert("Descubriendo CR", reason instanceof Error ? reason.message : language === "es" ? "No se pudo obtener la ubicación." : "Could not get your location.");
+    } finally {
+      setLocating(false);
+    }
+  };
   return (
     <View className="mt-6 border-t border-ui-border pt-5 dark:border-ui-dark-border">
       <Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">
@@ -1373,7 +1386,8 @@ function BusinessLocationEditor({
           ? "Ubicá en el mapa el punto exacto donde está el negocio."
           : "Place the exact business location on the map."}
       </Text>
-      <Pressable accessibilityRole="button" className="mt-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 dark:bg-ui-dark-secondary" onPress={() => setPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? (location ? 'Cambiar ubicación en el mapa' : 'Ubicar en el mapa') : (location ? 'Change map location' : 'Pick on map')}</Text></Pressable>
+      <Pressable accessibilityRole="button" className="mt-4 min-h-12 flex-row items-center justify-center rounded-control bg-ui-primary px-4 disabled:opacity-50 dark:bg-ui-dark-primary" disabled={locating} onPress={() => void selectCurrentLocation()}><MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" /><Text className="ml-2 font-black text-white">{locating ? (language === 'es' ? 'Obteniendo ubicación…' : 'Getting location…') : (language === 'es' ? 'Usar ubicación actual' : 'Use current location')}</Text></Pressable>
+      <Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 dark:bg-ui-dark-secondary" onPress={() => setPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{language === 'es' ? (location ? 'Cambiar ubicación en el mapa' : 'Ubicar en el mapa') : (location ? 'Change map location' : 'Pick on map')}</Text></Pressable>
       <LocationPickerModal initialLocation={location} language={language} onClose={() => setPickerOpen(false)} onConfirm={(coordinate) => onChange(coordinate)} open={pickerOpen} title={language === 'es' ? 'Ubicación del comercio' : 'Business location'} />
       <Text className="mt-2 text-center text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
         {location
@@ -1382,6 +1396,7 @@ function BusinessLocationEditor({
             ? "Abrí el mapa para elegir la ubicación."
             : "Open the map to choose the location."}
       </Text>
+      {location ? <Pressable accessibilityRole="link" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-ui-primary px-4 dark:border-ui-dark-primary" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`)}><MaterialCommunityIcons name="map-marker-radius" size={21} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Previsualizar ubicación' : 'Preview location'}</Text><MaterialCommunityIcons name="open-in-new" size={18} color="#0B6B4F" /></Pressable> : null}
     </View>
   );
 }

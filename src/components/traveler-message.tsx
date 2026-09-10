@@ -9,9 +9,17 @@ function ChatAvatar({ url, name }: { url: string | null; name: string }) {
   return url ? <Image cachePolicy="none" source={{ uri: url }} style={{ borderRadius: 22, height: 44, width: 44 }} /> : <View className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary"><Text className="font-black text-white">{name.slice(0, 1).toUpperCase()}</Text></View>;
 }
 
-function AudioMessage({ url, mine, language }: { url: string; mine: boolean; language: 'es' | 'en' }) {
+const wave = [8, 12, 18, 25, 14, 31, 22, 16, 28, 34, 19, 12, 23, 30, 17, 10, 21, 27, 15, 8];
+
+function audioTime(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+}
+
+function AudioMessage({ url, mine, language, durationMs }: { url: string; mine: boolean; language: 'es' | 'en'; durationMs: number | null }) {
   const player = useAudioPlayer({ uri: url });
   const status = useAudioPlayerStatus(player);
+  const duration = status.duration || (durationMs ?? 0) / 1000;
+  const progress = duration ? status.currentTime / duration : 0;
   const togglePlayback = async () => {
     if (status.playing) {
       player.pause();
@@ -21,9 +29,12 @@ function AudioMessage({ url, mine, language }: { url: string; mine: boolean; lan
     player.play();
   };
   return (
-    <Pressable accessibilityLabel={status.playing ? (language === 'es' ? 'Pausar audio' : 'Pause audio') : (language === 'es' ? 'Reproducir audio' : 'Play audio')} accessibilityRole="button" className="mt-1 min-h-11 flex-row items-center" onPress={() => void togglePlayback()}>
-      <MaterialCommunityIcons name={status.playing ? 'pause-circle' : 'play-circle'} size={32} color={mine ? 'white' : '#0B6B4F'} />
-      <Text className={mine ? 'ml-1 text-white' : 'ml-1 text-ui-primary dark:text-ui-dark-primary'}>{status.duration ? `${Math.ceil(status.duration)} s` : (language === 'es' ? 'Audio' : 'Audio')}</Text>
+    <Pressable accessibilityLabel={status.playing ? (language === 'es' ? 'Pausar audio' : 'Pause audio') : (language === 'es' ? 'Reproducir audio' : 'Play audio')} accessibilityRole="button" className="mt-1 min-h-14 min-w-56 flex-row items-center" onPress={() => void togglePlayback()}>
+      <MaterialCommunityIcons name={status.playing ? 'pause' : 'play'} size={34} color={mine ? 'white' : '#0B6B4F'} />
+      <View className="ml-3 flex-1">
+        <View className="h-9 flex-row items-center gap-1">{wave.map((height, index) => <View key={index} className={mine ? 'w-1 rounded-full bg-white' : 'w-1 rounded-full bg-ui-primary'} style={{ height, opacity: index / wave.length <= progress ? 1 : 0.35 }} />)}</View>
+        <Text className={mine ? 'mt-1 text-xs text-white/80' : 'mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted'}>{audioTime(status.currentTime || duration)}</Text>
+      </View>
     </Pressable>
   );
 }
@@ -36,7 +47,7 @@ export function TravelerMessage({ message: item, mine, language, avatarUrl, send
       {!mine ? <View className="mr-2 self-end"><ChatAvatar url={avatarUrl} name={senderName} /></View> : null}
       <View className={mine ? 'rounded-2xl rounded-br-sm bg-ui-primary px-4 py-3' : 'rounded-2xl rounded-bl-sm bg-ui-surface px-4 py-3 dark:bg-ui-dark-surface'} style={{ maxWidth: '85%' }}>
         {item.media_type === 'image' && item.media_url ? <Image source={{ uri: item.media_url }} contentFit="cover" style={{ borderRadius: 12, height: 210, width: 240 }} /> : null}
-        {item.media_type === 'audio' && item.media_url ? <AudioMessage language={language} url={item.media_url} mine={mine} /> : null}
+        {item.media_type === 'audio' && item.media_url ? <AudioMessage durationMs={item.media_duration_ms} language={language} url={item.media_url} mine={mine} /> : null}
         {!mediaOnly ? <Text className={mine ? 'mt-1 text-white' : 'mt-1 text-ui-text dark:text-ui-dark-text'}>{item.body}</Text> : null}
         {item.media_type === 'image' && onReact ? <View className="mt-2 flex-row items-center gap-2"><Pressable accessibilityLabel={language === 'es' ? 'Reaccionar a la foto' : 'React to photo'} onPress={() => onReact('❤️')}><Text className="text-lg">❤️</Text></Pressable>{reactions.map((emoji) => <Pressable className="rounded-full bg-black/10 px-2 py-1" key={emoji} onPress={() => onReact(emoji)}><Text>{emoji} {item.reactions.filter((reaction) => reaction.emoji === emoji).length}</Text></Pressable>)}</View> : null}
         <Text className={mine ? 'mt-1 text-right text-[10px] text-white/70' : 'mt-1 text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted'}>{new Date(item.created_at).toLocaleString(language === 'es' ? 'es-CR' : 'en-US')}</Text>

@@ -182,10 +182,15 @@ watchCallback(fix(8, Date.now() + 4900, 11));
 assert.equal(render().userLocation, beforeCleanup, 'Unmount invalidates pending callbacks');
 
 // Every explicit current-location action uses the same validated acquisition.
-for (const path of ['src/app/(tabs)/friends.tsx']) {
+for (const path of ['src/app/(tabs)/friends.tsx', 'src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx']) {
   const source = readFileSync(path, 'utf8');
   assert.ok(source.includes('getPreciseCurrentLocation(language)'), path);
   assert.ok(!/Location\.(getCurrentPositionAsync|getLastKnownPositionAsync)/.test(source), path);
+}
+for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx']) {
+  const source = readFileSync(path, 'utf8');
+  assert.ok(source.includes('Previsualizar ubicación'), `${path}: location preview`);
+  assert.ok(source.includes('https://www.google.com/maps/search/?api=1&query='), `${path}: forum map action`);
 }
 const exploreSource = readFileSync('src/app/(tabs)/explore.tsx', 'utf8');
 assert.ok(exploreSource.includes('await refreshUserLocation()'), 'Explore refreshes the provider-owned session location');

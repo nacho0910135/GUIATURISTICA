@@ -1,7 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -9,7 +8,7 @@ import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
-import { PressableCard } from '@/components/ui/card';
+import { GlassSurface, PressableCard } from '@/components/ui/card';
 import { billingOffers, getMySubscriptions, hasActiveBusinessPlan, hasActivePersonalPlan, openSubscriptionCheckout, openSubscriptionManagement, type BillingOfferId } from '@/lib/billing';
 import { useGooglePlayBilling } from '../hooks/use-google-play-billing';
 import { useApp } from '@/providers/app-provider';
@@ -119,25 +118,24 @@ function PlanCard({ active, adminAccess = false, busy, language, offerId, onPres
   const disabled = busy || active || storeLoading || !storeAvailable;
   const kind = offer.business ? 'business' : offer.featured ? 'annual' : 'monthly';
   const art = kind === 'business' ? require('../../assets/images/subscriptions/jaguar-business.png') : kind === 'annual' ? require('../../assets/images/subscriptions/capuchin-annual.png') : require('../../assets/images/subscriptions/sloth-monthly.png');
-  const gradient: readonly [string, string, string] = kind === 'annual'
-    ? [colors.primarySoft, colors.surface, tokens.colors.sand[50]]
-    : kind === 'business'
-      ? [tokens.colors.sand[100], colors.surface, colors.primarySoft]
-      : [colors.surface, colors.primarySoft, colors.surface];
+  const borderColor = kind === 'monthly'
+    ? tokens.colors.neutral[mode === 'dark' ? 400 : 300]
+    : tokens.colors.commerceGold[mode === 'dark' ? 'darkInk' : 'ink'];
   const actionLabel = adminAccess ? (language === 'es' ? 'Acceso gratuito para pruebas' : 'Free testing access') : active ? (language === 'es' ? 'Plan activo' : 'Plan active') : !storeAvailable ? (language === 'es' ? 'No disponible en Google Play' : 'Not available on Google Play') : Platform.OS === 'android' ? (language === 'es' ? 'Suscribirme con Google Play' : 'Subscribe with Google Play') : (language === 'es' ? 'Continuar a Checkout' : 'Continue to Checkout');
 
-  return <PressableCard accessibilityLabel={`${offer.title[language === 'es' ? 0 : 1]}. ${actionLabel}`} className={offer.featured ? 'flex-1 overflow-hidden border-2 border-ui-primary disabled:opacity-50 dark:border-ui-dark-primary' : 'flex-1 overflow-hidden disabled:opacity-50'} disabled={disabled} onPress={onPress} padding="none" style={{ minHeight: kind === 'business' ? 360 : 250 }} variant="raised">
-    <LinearGradient colors={gradient} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} style={StyleSheet.absoluteFill} />
-    <MaterialCommunityIcons name="leaf" size={150} color={colors.primary} style={styles.backgroundLeaf} />
+  return <PressableCard accessibilityLabel={`${offer.title[language === 'es' ? 0 : 1]}. ${actionLabel}`} className="flex-1 overflow-hidden disabled:opacity-50" disabled={disabled} onPress={onPress} padding="none" style={{ borderColor, borderWidth: kind === 'monthly' ? 2 : 3, minHeight: kind === 'business' ? 410 : 250 }} variant="raised">
+    <Image contentFit="cover" contentPosition={kind === 'monthly' ? 'left' : kind === 'annual' ? 'right' : 'center'} source={require('../../assets/images/subscriptions/rainforest-card.png')} style={[StyleSheet.absoluteFill, styles.jungle]} />
     <PlanAnimal kind={kind} source={art} />
-    <View className={kind === 'business' ? 'flex-1 justify-between p-5 pt-40' : kind === 'annual' ? 'flex-1 justify-between p-5 pr-28' : 'flex-1 justify-between p-5 pl-28'}>
+    <View className={kind === 'business' ? 'flex-1 justify-between p-5 pt-56' : 'flex-1 justify-between p-5'}>
       <View>
         {offer.featured ? <Text className="mb-3 self-start rounded-full bg-ui-primary px-3 py-1 text-xs font-black text-white dark:text-ui-dark-on-primary">{language === 'es' ? 'MEJOR VALOR' : 'BEST VALUE'}</Text> : null}
+        <GlassSurface className={kind === 'annual' ? 'mr-24 rounded-2xl p-3' : kind === 'monthly' ? 'ml-24 rounded-2xl p-3' : 'rounded-2xl p-4'}>
         <View className="flex-row items-start">
           <View className="h-11 w-11 items-center justify-center rounded-2xl bg-ui-glass dark:bg-ui-dark-glass"><MaterialCommunityIcons name={offer.icon} size={24} color={colors.primary} /></View>
           <View className="ml-3 min-w-0 flex-1"><Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{offer.title[language === 'es' ? 0 : 1]}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{offer.detail[language === 'es' ? 0 : 1]}</Text><Text className="mt-3 text-xl font-black text-ui-primary dark:text-ui-dark-primary">{storePrice ?? offer.price[language === 'es' ? 0 : 1]}</Text></View>
           {active ? <Text className="rounded-full bg-ui-primary-soft px-2.5 py-1 text-xs font-black text-ui-primary dark:bg-ui-dark-primary-soft dark:text-ui-dark-primary">{adminAccess ? 'ADMIN' : (language === 'es' ? 'ACTIVO' : 'ACTIVE')}</Text> : null}
         </View>
+        </GlassSurface>
       </View>
       <View className="mt-4 min-h-12 items-center justify-center rounded-2xl bg-ui-primary px-4 dark:bg-ui-dark-primary">{busy || storeLoading ? <FrogLoader color={mode === 'dark' ? colors.onPrimary : 'white'} /> : <Text className="text-center font-black text-white dark:text-ui-dark-background">{actionLabel}</Text>}</View>
     </View>
@@ -173,7 +171,7 @@ function PlanAnimal({ kind, source }: { kind: AnimalKind; source: React.Componen
 const styles = StyleSheet.create({
   animal: { position: 'absolute', zIndex: 2 },
   annualAnimal: { height: 168, right: -12, top: 18, width: 145 },
-  backgroundLeaf: { bottom: -55, opacity: 0.06, position: 'absolute', right: -35, transform: [{ rotate: '-18deg' }] },
-  businessAnimal: { height: 180, right: -8, top: -4, width: 270 },
+  businessAnimal: { height: 220, right: -8, top: 4, width: 330 },
+  jungle: { opacity: 0.88 },
   monthlyAnimal: { height: 190, left: -12, top: 8, width: 145 },
 });

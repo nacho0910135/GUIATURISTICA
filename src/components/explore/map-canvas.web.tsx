@@ -14,9 +14,10 @@ const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN ?? '';
 const PROVINCE_MAP_STYLE = {
   version: 8 as const,
   sources: {},
-  layers: [{ id: 'background', type: 'background' as const, paint: { 'background-color': '#F8F6F0' } }],
+  layers: [{ id: 'background', type: 'background' as const, paint: { 'background-color': '#FFFDF8' } }],
 };
-const provinceColors = ['match', ['get', 'code'], '1', '#2A7B4C', '2', '#1E5B75', '3', '#4A9874', '4', '#326F8B', '5', '#82B99C', '6', '#568BA4', '7', '#1E6038', '#2A7B4C'] as const;
+const provinceColors = ['match', ['get', 'code'], '1', '#B8DCC5', '2', '#B8DDEA', '3', '#F0C9B5', '4', '#D4C9E8', '5', '#E8D9A8', '6', '#AFCFD0', '7', '#C7DDB7', '#B8DCC5'] as const;
+const markerOffsets: Record<string, [number, number]> = { '1': [-30, 28], '3': [34, 26], '4': [24, -24] };
 const provinceShape: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
   features: provinces.map((province) => ({ type: 'Feature', id: province.code, properties: { code: province.code, name: province.name }, geometry: { type: 'MultiPolygon', coordinates: province.polygons.map((ring) => [ring]) } })),
@@ -70,17 +71,17 @@ export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportC
       }
       map.addSource('provinces', { type: 'geojson', data: provinceShape });
       map.addLayer({ id: 'province-fills', type: 'fill', source: 'provinces', paint: { 'fill-color': [...provinceColors] as mapboxgl.Expression, 'fill-opacity': 1 } });
-      map.addLayer({ id: 'province-halo', type: 'line', source: 'provinces', paint: { 'line-color': '#F8F6F0', 'line-opacity': 0.8, 'line-width': 6 } });
-      map.addLayer({ id: 'province-lines', type: 'line', source: 'provinces', paint: { 'line-color': '#1E5B75', 'line-opacity': 1, 'line-width': 3 } });
+      map.addLayer({ id: 'province-halo', type: 'line', source: 'provinces', paint: { 'line-color': '#FFFDF8', 'line-opacity': 0.9, 'line-width': 6 } });
+      map.addLayer({ id: 'province-lines', type: 'line', source: 'provinces', paint: { 'line-color': '#527B78', 'line-opacity': 1, 'line-width': 2 } });
       provinces.forEach((province) => {
         const element = document.createElement('button');
         element.type = 'button';
         element.setAttribute('aria-label', `Abrir ${province.name}`);
         element.dataset.weatherProvince = province.code;
         Object.assign(element.style, {
-          alignItems: 'center', background: 'rgba(30, 91, 117, 0.94)', border: '1px solid rgba(248, 246, 240, 0.8)',
-          borderRadius: '14px', color: '#F8F6F0', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-          fontFamily: 'inherit', minWidth: wide ? '96px' : '78px', padding: wide ? '6px 9px' : '4px 6px', textAlign: 'center',
+          alignItems: 'center', background: 'rgba(255, 253, 248, 0.95)', border: '1px solid #7FA5A1',
+          borderRadius: '14px', color: '#294B49', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+          fontFamily: 'inherit', minWidth: wide ? '90px' : '74px', padding: wide ? '6px 8px' : '4px 5px', textAlign: 'center',
         });
         const icon = document.createElement('span');
         Object.assign(icon.style, { color: '#F26A44', fontSize: wide ? '28px' : '21px', fontWeight: '700', lineHeight: '1' });
@@ -93,7 +94,7 @@ export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportC
           event.stopPropagation();
           router.push({ pathname: '/(aux)/province', params: { province: province.name } });
         });
-        const marker = new mapboxgl.Marker({ anchor: 'center', element })
+        const marker = new mapboxgl.Marker({ anchor: 'center', element, offset: markerOffsets[province.code] })
           .setLngLat([province.center.longitude, province.center.latitude])
           .addTo(map);
         weatherMarkersRef.current.set(province.code, { icon, label, marker });

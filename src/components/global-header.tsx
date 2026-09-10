@@ -11,6 +11,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconButton } from '@/components/ui/button';
+import { AnimatedShine } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { getMyAccessStatus, getMySubscriptions, openSubscriptionCheckout } from '@/lib/billing';
@@ -263,11 +264,12 @@ export function GlobalHeader() {
                   accessibilityLabel={isSpanish ? item.labelEs : item.label}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  className={selected ? 'h-9 min-w-12 items-center justify-center rounded-[10px] bg-ui-primary px-3 shadow-card focus-visible:ring-2 focus-visible:ring-ui-focus dark:bg-ui-dark-primary dark:focus-visible:ring-ui-dark-focus' : 'h-9 min-w-12 items-center justify-center rounded-[10px] px-3 focus-visible:ring-2 focus-visible:ring-ui-focus active:bg-ui-surface dark:focus-visible:ring-ui-dark-focus dark:active:bg-ui-dark-surface'}
+                  className={selected ? 'relative h-9 min-w-12 items-center justify-center overflow-hidden rounded-[10px] bg-ui-primary px-3 shadow-card focus-visible:ring-2 focus-visible:ring-ui-focus dark:bg-ui-dark-primary dark:focus-visible:ring-ui-dark-focus' : 'h-9 min-w-12 items-center justify-center rounded-[10px] px-3 focus-visible:ring-2 focus-visible:ring-ui-focus active:bg-ui-surface dark:focus-visible:ring-ui-dark-focus dark:active:bg-ui-dark-surface'}
                   key={item.id}
                   onPress={() => setVisitorType(item.id)}
                   style={selected ? { elevation: 5, shadowColor: colors.primary, shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.3, shadowRadius: 5 } : undefined}
                 >
+                  {selected ? <AnimatedShine travel={92} /> : null}
                   <Text className={selected ? 'font-semibold text-xs text-white dark:text-ui-dark-background' : 'font-semibold text-xs text-ui-text-muted dark:text-ui-dark-text-muted'}>{item.label}</Text>
                 </Pressable>
               );

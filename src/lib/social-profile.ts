@@ -235,18 +235,24 @@ export async function sendTravelerMessage(senderId: string, recipientId: string,
   if (!auth.user || auth.user.id !== senderId) throw new Error('Debés iniciar sesión para enviar mensajes.');
   let mediaPath: string | null = null;
   if (attachment) {
-    const extension = attachment.type === 'image' ? 'jpg' : 'm4a';
-    const path = `${senderId}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`;
     let bytes: ArrayBuffer;
+    let contentType: string;
     if (attachment.type === 'image') {
       const context = ImageManipulator.manipulate(attachment.uri);
       context.resize({ width: Math.min(attachment.width || 1600, 1600) });
       const rendered = await context.renderAsync();
       const file = await rendered.saveAsync({ compress: 0.82, format: SaveFormat.JPEG });
       bytes = await fetch(file.uri).then((response) => response.arrayBuffer());
-    } else bytes = await fetch(attachment.uri).then((response) => response.arrayBuffer());
+      contentType = 'image/jpeg';
+    } else {
+      const response = await fetch(attachment.uri);
+      contentType = response.headers.get('content-type') || (attachment.uri.endsWith('.webm') ? 'audio/webm' : 'audio/mp4');
+      bytes = await response.arrayBuffer();
+    }
+    const extension = attachment.type === 'image' ? 'jpg' : contentType.includes('webm') ? 'webm' : 'm4a';
+    const path = `${senderId}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`;
     if (bytes.byteLength > 10 * 1024 * 1024) throw new Error('El adjunto supera el límite de 10 MB.');
-    const { error: uploadError } = await supabase.storage.from('chat-media').upload(path, bytes, { contentType: attachment.type === 'image' ? 'image/jpeg' : 'audio/mp4', cacheControl: '3600', upsert: false });
+    const { error: uploadError } = await supabase.storage.from('chat-media').upload(path, bytes, { contentType, cacheControl: '3600', upsert: false });
     if (uploadError) throw uploadError;
     mediaPath = path;
   }

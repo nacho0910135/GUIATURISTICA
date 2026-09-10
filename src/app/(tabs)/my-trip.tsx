@@ -18,6 +18,7 @@ export default function MyTripScreen() {
   const [time, setTime] = useState('8');
   const [timeUnit, setTimeUnit] = useState<'hours' | 'days'>('hours');
   const [budget, setBudget] = useState('25000');
+  const [travelers, setTravelers] = useState('1');
   const [budgetCurrency, setBudgetCurrency] = useState<'CRC' | 'USD'>('CRC');
   const [vehicle, setVehicle] = useState<TripVehicle>('sedan');
   const [stylesSelected, setStylesSelected] = useState<PlannerPreference[]>([]);
@@ -35,13 +36,14 @@ export default function MyTripScreen() {
   const createPlan = async () => {
     const availableHours = Number(time) * (timeUnit === 'days' ? 8 : 1);
     const maxBudget = Number(budget) * (budgetCurrency === 'USD' ? exchangeRate : 1);
-    if (!Number.isFinite(availableHours) || availableHours < 2 || !Number.isFinite(maxBudget) || maxBudget <= 0) return setMessage(isSpanish ? 'Ingresá al menos 2 horas y un presupuesto válido.' : 'Enter at least 2 hours and a valid budget.');
-    const input = { latitude: userLocation?.latitude ?? 9.9326, longitude: userLocation?.longitude ?? -84.0805, availableHours, maxBudget, vehicle, categories: stylesSelected, language };
+    const travelerCount = Number(travelers);
+    if (!Number.isFinite(availableHours) || availableHours < 2 || !Number.isFinite(maxBudget) || maxBudget <= 0 || !Number.isInteger(travelerCount) || travelerCount < 1 || travelerCount > 30) return setMessage(isSpanish ? 'Ingresá al menos 2 horas, un presupuesto válido y entre 1 y 30 personas.' : 'Enter at least 2 hours, a valid budget, and 1 to 30 travelers.');
+    const input = { latitude: userLocation?.latitude ?? 9.9326, longitude: userLocation?.longitude ?? -84.0805, availableHours, maxBudget, travelers: travelerCount, vehicle, categories: stylesSelected, language };
     setBusy(true); setMessage(null);
     try {
       const nextPlan = await buildTripPlan(input);
       setPlan(nextPlan);
-      setMessage(nextPlan ? (userLocation ? (isSpanish ? 'Ruta lista para hoy.' : 'Today’s route is ready.') : (isSpanish ? 'Ruta estimada desde San José; activá ubicación para ajustarla.' : 'Route estimated from San José; enable location to refine it.')) : (isSpanish ? 'No encontré paradas que entren en ese tiempo y presupuesto.' : 'No stops fit that time and budget.'));
+      setMessage(nextPlan ? (userLocation ? (isSpanish ? 'Ruta lista con traslados calculados por carretera.' : 'Route ready with road travel times.') : (isSpanish ? 'Ruta estimada desde San José; activá ubicación para ajustarla.' : 'Route estimated from San José; enable location to refine it.')) : (isSpanish ? 'No encontré paradas que entren en ese tiempo y presupuesto, incluyendo comidas.' : 'No stops fit that time and budget, including meals.'));
     } catch {
       const pack = await getOfflineTripPack(zone);
       const nextPlan = pack ? buildOfflineTripPlan(input, pack.destinations) : null;
@@ -71,7 +73,7 @@ export default function MyTripScreen() {
     <View className="gap-5 px-5 pt-5">
       <AppCard className="p-5">
         <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Diseñá el día' : 'Shape your day'}</Text>
-        <Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Completá cuatro decisiones rápidas. Nosotros ordenamos el resto.' : 'Make four quick choices. We will organize the rest.'}</Text>
+        <Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Completá cinco decisiones rápidas. Nosotros ordenamos el resto.' : 'Make five quick choices. We will organize the rest.'}</Text>
 
         <PlannerSection icon="clock-outline" label={isSpanish ? '01 · Tiempo disponible' : '01 · Available time'}>
           <View className="flex-row gap-2"><TextInput accessibilityLabel={isSpanish ? 'Tiempo disponible' : 'Available time'} className="min-h-12 flex-1 rounded-control bg-ui-muted px-4 text-base text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="decimal-pad" onChangeText={setTime} value={time} /><Choice active={timeUnit === 'hours'} label={isSpanish ? 'Horas' : 'Hours'} onPress={() => setTimeUnit('hours')} /><Choice active={timeUnit === 'days'} label={isSpanish ? 'Días' : 'Days'} onPress={() => setTimeUnit('days')} /></View>
@@ -80,13 +82,19 @@ export default function MyTripScreen() {
 
         <PlannerSection icon="wallet-outline" label={isSpanish ? '02 · Presupuesto' : '02 · Budget'}>
           <View className="flex-row gap-2"><TextInput accessibilityLabel={isSpanish ? 'Presupuesto' : 'Budget'} className="min-h-12 flex-1 rounded-control bg-ui-muted px-4 text-base text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="decimal-pad" onChangeText={setBudget} value={budget} /><Choice active={budgetCurrency === 'CRC'} label="CRC" onPress={() => setBudgetCurrency('CRC')} /><Choice active={budgetCurrency === 'USD'} label="USD" onPress={() => setBudgetCurrency('USD')} /></View>
+          <Text className="mt-2 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'El presupuesto es para todo el grupo e incluye entradas y comidas estimadas.' : 'The budget covers the whole group, including admission and estimated meals.'}</Text>
         </PlannerSection>
 
-        <PlannerSection icon="car-outline" label={isSpanish ? '03 · Forma de viajar' : '03 · Way to travel'}>
+        <PlannerSection icon="account-group-outline" label={isSpanish ? '03 · Cantidad de personas' : '03 · Number of travelers'}>
+          <TextInput accessibilityLabel={isSpanish ? 'Cantidad de personas' : 'Number of travelers'} className="min-h-12 rounded-control bg-ui-muted px-4 text-base text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="number-pad" maxLength={2} onChangeText={setTravelers} value={travelers} />
+          <Text className="mt-2 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Calculamos por persona: almuerzo ₡7.000, café con acompañamiento ₡3.500 y cena ₡10.000. Aunque los destinos sean gratuitos, reservamos este monto para comer en sodas o restaurantes.' : 'Per person we estimate: lunch ₡7,000, coffee and a snack ₡3,500, and dinner ₡10,000. Even when destinations are free, we reserve this amount for local meals.'}</Text>
+        </PlannerSection>
+
+        <PlannerSection icon="car-outline" label={isSpanish ? '04 · Forma de viajar' : '04 · Way to travel'}>
           <View className="flex-row flex-wrap gap-2">{TRIP_VEHICLES.map((item) => <Choice active={vehicle === item.id} key={item.id} label={isSpanish ? item.es : item.en} onPress={() => setVehicle(item.id)} />)}</View>
         </PlannerSection>
 
-        <PlannerSection icon="compass-outline" label={isSpanish ? '04 · Estilo del recorrido' : '04 · Travel style'}>
+        <PlannerSection icon="compass-outline" label={isSpanish ? '05 · Estilo del recorrido' : '05 · Travel style'}>
           <View className="mb-3 flex-row items-center justify-between"><Text className="flex-1 pr-3 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Elegí todas las experiencias que querás. Combinamos las coincidencias.' : 'Choose every experience you want. We combine the matches.'}</Text><View className="rounded-full bg-ui-primary-soft px-3 py-1.5 dark:bg-ui-dark-primary-soft"><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{stylesSelected.length} {isSpanish ? 'elegidas' : 'selected'}</Text></View></View>
           {plannerOptions.isPending ? <Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Cargando estilos…' : 'Loading styles…'}</Text> : plannerOptions.isError ? <Pressable accessibilityRole="button" className="min-h-11 justify-center rounded-control bg-ui-primary-soft px-4 dark:bg-ui-dark-primary-soft" onPress={() => void plannerOptions.refetch()}><Text className="font-bold text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'No se cargaron. Reintentar' : 'Could not load. Retry'}</Text></Pressable> : <View className="flex-row flex-wrap gap-2"><Choice active={!stylesSelected.length} key="Todo" label={isSpanish ? 'Cualquier estilo' : 'Any style'} onPress={() => setStylesSelected([])} />{categories.map((item) => <Choice active={stylesSelected.includes(item.label_es)} key={item.id} label={isSpanish ? item.label_es : item.label_en} onPress={() => setStylesSelected((current) => current.includes(item.label_es) ? current.filter((selected) => selected !== item.label_es) : [...current, item.label_es])} />)}</View>}
         </PlannerSection>
@@ -98,7 +106,8 @@ export default function MyTripScreen() {
 
       {plan ? <AppCard className="p-5">
         <View className="flex-row items-start justify-between"><View className="flex-1 pr-4"><Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Ruta recomendada' : 'Recommended route'}</Text><Text className="mt-1 text-2xl font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Tu día, en orden' : 'Your day, in order'}</Text></View><View className="h-11 w-11 items-center justify-center rounded-2xl bg-caribbean-50 dark:bg-caribbean-900"><MaterialCommunityIcons color="#0077A8" name="format-list-numbered" size={25} /></View></View>
-        <View className="mt-5 flex-row overflow-hidden rounded-2xl bg-ui-muted dark:bg-ui-dark-muted"><PlanMetric label={isSpanish ? 'Paradas' : 'Stops'} value={String(plan.stops.length)} /><PlanMetric label={isSpanish ? 'Inversión' : 'Budget'} value={formatCrc(plan.estimatedTotalCrc)} /><PlanMetric label={isSpanish ? 'Preferencias' : 'Preferences'} value={stylesSelected.length ? String(stylesSelected.length) : (isSpanish ? 'Todas' : 'All')} /></View>
+        <View className="mt-5 flex-row overflow-hidden rounded-2xl bg-ui-muted dark:bg-ui-dark-muted"><PlanMetric label={isSpanish ? 'Paradas' : 'Stops'} value={String(plan.stops.length)} /><PlanMetric label={isSpanish ? 'Inversión' : 'Budget'} value={formatCrc(plan.estimatedTotalCrc)} /><PlanMetric label={isSpanish ? 'Finaliza' : 'Ends'} value={new Date(plan.endsAt).toLocaleTimeString(isSpanish ? 'es-CR' : 'en-US', { hour: '2-digit', minute: '2-digit' })} /></View>
+        <View className="mt-4 rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-bold text-ui-text dark:text-ui-dark-text">{isSpanish ? `Comidas estimadas para ${travelers} persona(s): ${formatCrc(plan.mealCostCrc)}. Traslados totales, incluido el regreso: ${plan.totalTravelMinutes} min.` : `Estimated meals for ${travelers} traveler(s): ${formatCrc(plan.mealCostCrc)}. Total travel, including return: ${plan.totalTravelMinutes} min.`}</Text></View>
         <View className="mt-6">{plan.stops.map((stop, index) => <View className={index === plan.stops.length - 1 ? 'relative ml-4 pl-7 pb-1' : 'relative ml-4 border-l-2 border-caribbean-200 pb-6 pl-7 dark:border-caribbean-800'} key={stop.destination.id}><View className="absolute -left-[17px] top-0 h-8 w-8 items-center justify-center rounded-full border-4 border-ui-surface bg-caribbean-500 dark:border-ui-dark-surface"><Text className="text-xs font-black text-white">{stop.order}</Text></View><Text className="text-xs font-black uppercase tracking-wide text-ui-primary dark:text-ui-dark-primary">{new Date(stop.arrivalAt).toLocaleTimeString(isSpanish ? 'es-CR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</Text><Text className="mt-1 text-base font-black text-ui-text dark:text-ui-dark-text">{stop.destination.name}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{stop.travelMinutes} min {isSpanish ? 'de traslado' : 'travel'} · {Math.round(stop.visitMinutes / 60 * 10) / 10} h {isSpanish ? 'en el destino' : 'at the destination'}</Text><Pressable accessibilityRole="button" className="mt-2 min-h-11 flex-row items-center self-start" onPress={() => void openNavigation(stop.destination.latitude, stop.destination.longitude)}><MaterialCommunityIcons name="navigation-variant-outline" size={18} color="#0077A8" /><Text className="ml-2 font-black text-caribbean-700 dark:text-caribbean-100">{isSpanish ? 'Abrir navegación' : 'Open navigation'}</Text></Pressable></View>)}</View>
       </AppCard> : null}
 
