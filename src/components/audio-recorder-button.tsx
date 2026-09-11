@@ -11,7 +11,6 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
   const recordingRef = useRef(false);
   const startedThisPress = useRef(false);
   const held = useRef(false);
-  const startedAt = useRef(0);
   const text = (es: string, en: string) => language === 'es' ? es : en;
 
   const start = async () => {
@@ -24,7 +23,6 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
       recorder.record();
       recordingRef.current = true;
       startedThisPress.current = true;
-      startedAt.current = Date.now();
       setRecording(true);
     } catch (reason) {
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : text('No se pudo iniciar la grabación.', 'Could not start recording.'));
@@ -35,8 +33,8 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
     if (!recordingRef.current) return;
     recordingRef.current = false;
     setRecording(false);
-    const durationMs = Date.now() - startedAt.current;
     try {
+      const durationMs = recorder.getStatus().durationMillis;
       await recorder.stop();
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
       if (recorder.uri) await onRecorded({ uri: recorder.uri, type: 'audio', durationMs });

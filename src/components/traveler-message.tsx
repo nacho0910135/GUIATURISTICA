@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Image } from 'expo-image';
+import { useRef } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import type { PrivateMessage } from '@/lib/social-profile';
@@ -16,7 +17,9 @@ function audioTime(seconds: number) {
 }
 
 function AudioMessage({ url, mine, language, durationMs }: { url: string; mine: boolean; language: 'es' | 'en'; durationMs: number | null }) {
-  const player = useAudioPlayer({ uri: url }, { downloadFirst: true, preferredForwardBufferDuration: 15 });
+  const stableUrl = useRef(url).current;
+  const player = useAudioPlayer(stableUrl, { downloadFirst: true, preferredForwardBufferDuration: 15 });
+  player.loop = false;
   const status = useAudioPlayerStatus(player);
   const duration = status.duration || (durationMs ?? 0) / 1000;
   const progress = duration ? status.currentTime / duration : 0;
