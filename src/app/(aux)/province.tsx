@@ -99,7 +99,7 @@ export default function ProvinceCatalogScreen() {
   const categoryOption = useMemo(() => categoryOptions.data?.find((option) => option.id === categoryId) ?? null, [categoryId, categoryOptions.data]);
   const categorySubcategories = useMemo(() => categoryOptions.data?.filter((option) => option.parent_id === categoryId) ?? [], [categoryId, categoryOptions.data]);
   const categoryName = categoryOption ? (language === 'es' ? categoryOption.label_es : categoryOption.label_en) : rawCategory;
-  const isBeach = !categoryId && (rawCategory === 'Playa' || rawCategory === 'Playas');
+  const isBeach = /playa|beach|surf/i.test(`${rawCategory ?? ''} ${categoryOption?.label_es ?? ''} ${categoryOption?.label_en ?? ''} ${categoryOption?.allowed_targets?.join(' ') ?? ''}`);
   const leaveCatalog = useCallback(() => {
     if (router.canGoBack()) router.back();
     else router.replace('/(tabs)/explore');
@@ -209,7 +209,7 @@ export default function ProvinceCatalogScreen() {
 }
 
 function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, userLocation, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; userLocation?: { latitude: number; longitude: number }; visitorType: 'tico' | 'foreigner' }) {
-  const marine = useQuery({ queryKey: ['marine-weather', item.latitude, item.longitude], queryFn: () => getMarineConditions(item), enabled: autoplay && isBeachPlace(item), staleTime: MARINE_WEATHER_STALE_TIME });
+  const marine = useQuery({ queryKey: ['marine-weather', item.latitude, item.longitude], queryFn: () => getMarineConditions(item), enabled: isBeachPlace(item), staleTime: MARINE_WEATHER_STALE_TIME });
   const price = visitorType === 'tico'
     ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
     : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
@@ -236,7 +236,7 @@ function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress
         >
           <Text className="text-lg font-black leading-5 text-white" numberOfLines={2}>{item.name}</Text>
           <Text className="mt-0.5 text-xs leading-4 text-white/75" numberOfLines={1}>{destinationDescription(item, language)}</Text>
-          {marine.data ? <MarinePreview conditions={marine.data} language={language} /> : null}
+          {marine.data ? <MarinePreview conditions={marine.data} language={language} /> : isBeachPlace(item) ? <MarinePreviewStatus failed={marine.isError} language={language} /> : null}
           <View className="mt-2 flex-row gap-1.5">
             {decisionFacts.map((fact) => <DestinationFact accessibilityLabel={fact.action === 'reservation' ? (reservationUrl ? (language === 'es' ? `Reservar ${item.name}` : `Book ${item.name}`) : (language === 'es' ? `Ver cómo reservar ${item.name}` : `See how to book ${item.name}`)) : undefined} icon={fact.icon} key={`${fact.icon}-${fact.label}`} label={fact.label} onPress={fact.action === 'reservation' ? (reservationUrl ? () => void Linking.openURL(reservationUrl) : onPress) : undefined} urgent={fact.urgent} />)}
           </View>
@@ -448,13 +448,17 @@ function MarinePreview({ conditions, language }: { conditions: MarineConditions;
   return <View className="mt-2 flex-row gap-2"><View className="flex-row items-center rounded-lg bg-black/45 px-2 py-1"><MaterialCommunityIcons name="waves" size={13} color="white" /><Text className="ml-1 text-xs font-black text-white">{conditions.waveHeight?.toFixed(1) ?? '—'} m</Text></View><View className="flex-row items-center rounded-lg bg-black/45 px-2 py-1"><MaterialCommunityIcons name="thermometer-water" size={13} color="white" /><Text className="ml-1 text-xs font-black text-white">{conditions.waterTemperature?.toFixed(1) ?? '—'} °C</Text></View>{conditions.dangerous ? <View accessibilityRole="alert" className="rounded-lg bg-coral-600 px-2 py-1"><Text className="text-xs font-black text-white">{language === 'es' ? 'OLEAJE PELIGROSO' : 'DANGEROUS SURF'}</Text></View> : null}</View>;
 }
 
+function MarinePreviewStatus({ failed, language }: { failed: boolean; language: 'es' | 'en' }) {
+  return <View className="mt-2 self-start rounded-lg bg-black/45 px-2 py-1"><Text className="text-xs font-black text-white">{failed ? (language === 'es' ? 'Oleaje no disponible' : 'Surf unavailable') : (language === 'es' ? 'Cargando oleaje…' : 'Loading surf…')}</Text></View>;
+}
+
 function MarineWeatherPanel({ conditions, language }: { conditions: MarineConditions; language: 'es' | 'en' }) {
   const direction = (value: number | null) => value == null ? '—' : `${Math.round(value)}°`;
   const wave = (height: number | null, heading: number | null, period: number | null) => `${height?.toFixed(1) ?? '—'} m · ${direction(heading)} · ${period?.toFixed(0) ?? '—'} s`;
   return <View className="rounded-3xl border border-caribbean-200 bg-caribbean-50 p-5 dark:border-caribbean-800 dark:bg-caribbean-900/30">
     <View className="flex-row items-center"><MaterialCommunityIcons name="waves" size={28} color="#0077A8" /><Text className="ml-3 flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Condiciones marinas actuales' : 'Current marine conditions'}</Text></View>
     {conditions.dangerous ? <View accessibilityRole="alert" className="mt-3 flex-row rounded-2xl bg-coral-600 p-3"><MaterialCommunityIcons name="alert" size={20} color="white" /><Text className="ml-2 flex-1 font-black text-white">{language === 'es' ? 'Oleaje potencialmente peligroso. Evitá ingresar al mar y seguí las indicaciones locales.' : 'Potentially dangerous surf. Stay out of the water and follow local guidance.'}</Text></View> : null}
-    <InfoRow icon="waves" label={language === 'es' ? 'Ola significativa' : 'Significant wave'} value={`${conditions.waveHeight?.toFixed(1) ?? '—'} m`} />
+    <InfoRow icon="waves" label={language === 'es' ? 'Ola total' : 'Total wave'} value={wave(conditions.waveHeight, conditions.waveDirection, conditions.wavePeriod)} />
     <InfoRow icon="weather-windy" label={language === 'es' ? 'Oleaje por viento' : 'Wind waves'} value={wave(conditions.windWaveHeight, conditions.windWaveDirection, conditions.windWavePeriod)} />
     <InfoRow icon="wave" label={language === 'es' ? 'Marejada principal' : 'Primary swell'} value={wave(conditions.swellHeight, conditions.swellDirection, conditions.swellPeriod)} />
     {conditions.secondarySwellHeight != null ? <InfoRow icon="wave" label={language === 'es' ? 'Marejada secundaria' : 'Secondary swell'} value={wave(conditions.secondarySwellHeight, conditions.secondarySwellDirection, conditions.secondarySwellPeriod)} /> : null}
