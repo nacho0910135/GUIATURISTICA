@@ -9,10 +9,12 @@ import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { ThemedNotice } from '@/components/themed-notice';
 import { addFaunaComment, getFaunaPhotoComments, getFaunaPhotoLikeIds, getFaunaPhotos, getFaunaSpecies, getVulnerabilityLabel, toggleFaunaPhotoLike, type FaunaComment, type FaunaPhoto, type FaunaSpecies, uploadFaunaPhoto } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
+import { useBackToExplore } from '@/hooks/use-back-to-explore';
 
 import { FrogLoader } from '@/components/frog-loader';
 export default function SpeciesScreen() {
   const router = useRouter();
+  const backToExplore = useBackToExplore();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -199,7 +201,7 @@ export default function SpeciesScreen() {
 
       <ThemedNotice button={language === 'es' ? 'Entendido' : 'Got it'} message={language === 'es' ? `Tu foto de ${name} ya está disponible para la comunidad.` : `Your ${name} photo is now available to the community.`} onClose={() => setPhotoPublished(false)} title={language === 'es' ? '¡Foto compartida!' : 'Photo shared!'} visible={photoPublished} />
 
-      <Modal animationType="fade" onRequestClose={() => setSelectedPhotoIndex(undefined)} statusBarTranslucent visible={selectedPhotoIndex !== undefined}>
+      <Modal animationType="fade" onRequestClose={() => { setSelectedPhotoIndex(undefined); backToExplore(); }} statusBarTranslucent visible={selectedPhotoIndex !== undefined}>
         <View className="flex-1 bg-black">
           <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{photos.map((photo, index) => <View className="flex-1 items-center justify-center" key={photo.id} style={{ width }}><Image accessibilityLabel={language === 'es' ? `Foto ${index + 1} de ${name}` : `Photo ${index + 1} of ${name}`} contentFit="contain" source={{ uri: photo.image_url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
           <Pressable accessibilityLabel={language === 'es' ? 'Cerrar foto' : 'Close photo'} accessibilityRole="button" className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/70" onPress={() => setSelectedPhotoIndex(undefined)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>

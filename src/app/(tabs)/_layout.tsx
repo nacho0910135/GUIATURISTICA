@@ -1,8 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
-import { Redirect, Tabs, useFocusEffect, usePathname, useRouter } from 'expo-router';
-import { useCallback } from 'react';
-import { BackHandler, Platform, Text, View, type ColorValue } from 'react-native';
+import { Redirect, Tabs } from 'expo-router';
+import { Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
@@ -38,23 +37,13 @@ export default function TabsLayout() {
   const { isAdmin, language, refreshUserLocation, session, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
-  const pathname = usePathname();
-  const router = useRouter();
   const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session) });
-  useFocusEffect(useCallback(() => {
-    if (Platform.OS !== 'android') return undefined;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (pathname !== '/explore') router.replace('/(tabs)/explore');
-      return true;
-    });
-    return () => subscription.remove();
-  }, [pathname, router]));
   if (!isAdmin && session && !access.isLoading && access.data?.hasAccess !== true) return <Redirect href="/subscriptions" />;
   return (
     <Tabs
       backBehavior="initialRoute"
       initialRouteName="explore"
-      screenListeners={{ tabPress: () => { void haptic('error'); void refreshUserLocation(); } }}
+      screenListeners={{ tabPress: () => { void haptic('selection'); void refreshUserLocation(); } }}
       screenOptions={{
         header: () => <GlobalHeader />,
         tabBarActiveTintColor: colors.primary,

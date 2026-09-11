@@ -5,9 +5,9 @@ import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { distanceKm, straightLineDistanceLabel } from '@/lib/location-quality';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { BackHandler, FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
+import { FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
 
 import { InformationReportModal } from '@/components/information-report-modal';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
@@ -17,6 +17,7 @@ import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerifi
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
+import { useBackToExplore } from '@/hooks/use-back-to-explore';
 
 import { FrogLoader } from '@/components/frog-loader';
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
@@ -130,13 +131,6 @@ export default function ProvinceCatalogScreen() {
     enabled: !categoryId || Boolean(categoryOption),
     staleTime: 60 * 1000,
   });
-  useFocusEffect(useCallback(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      leaveCatalog();
-      return true;
-    });
-    return () => subscription.remove();
-  }, [leaveCatalog]));
   useEffect(() => {
     if (!destinationId || !places.data) return;
     const match = places.data.find((place) => place.id === destinationId);
@@ -310,6 +304,7 @@ const styles = StyleSheet.create({
 });
 
 function DestinationModal({ language, onClose, onLike, place }: { language: 'es' | 'en'; onClose: () => void; onLike: (place: MapPlace) => Promise<void>; place?: MapPlace }) {
+  const backToExplore = useBackToExplore();
   const { formatPrice, requireAuth, session, visitorType } = useApp();
   const { colors } = useAppTheme();
   const queryClient = useQueryClient();
@@ -389,7 +384,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
 
   return (
     <>
-      <Modal animationType="fade" onRequestClose={onClose} transparent visible>
+      <Modal animationType="fade" onRequestClose={() => { onClose(); backToExplore(); }} transparent visible>
       <View className="flex-1 items-center justify-center bg-black/75 p-3 md:p-8">
         <View className="max-h-full w-full max-w-5xl overflow-hidden rounded-[30px] bg-ui-surface dark:bg-ui-dark-surface">
           <ScrollView contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
@@ -433,7 +428,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
         </View>
       </View>
       </Modal>
-      <Modal animationType="fade" onRequestClose={() => setSelectedPhotoIndex(null)} statusBarTranslucent transparent visible={selectedPhotoIndex !== null}>
+      <Modal animationType="fade" onRequestClose={() => { setSelectedPhotoIndex(null); backToExplore(); }} statusBarTranslucent transparent visible={selectedPhotoIndex !== null}>
         <View className="flex-1 bg-black">
           <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{communityPhotos.map((photo, index) => <View className="flex-1 items-center justify-center" key={photo.id} style={{ width }}><Image accessibilityLabel={`Fotografía ${index + 1} de ${place.name}`} contentFit="contain" source={{ uri: photo.image_url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
           <Pressable accessibilityLabel={language === 'es' ? 'Cerrar fotografías' : 'Close photos'} accessibilityRole="button" className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/65" onPress={() => setSelectedPhotoIndex(null)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>

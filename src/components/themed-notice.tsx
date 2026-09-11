@@ -1,9 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Modal, Pressable, Text, View } from 'react-native';
 
+import { useBackToExplore } from '@/hooks/use-back-to-explore';
+
 export function ThemedNotice({ button = 'Entendido', message, onClose, title, visible }: { button?: string; message: string; onClose: () => void; title: string; visible: boolean }) {
+  const backToExplore = useBackToExplore();
   return (
-    <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
+    <Modal animationType="fade" onRequestClose={() => { onClose(); backToExplore(); }} transparent visible={visible}>
       <View accessibilityViewIsModal className="flex-1 items-center justify-center bg-black/60 px-6">
         <View className="w-full max-w-sm items-center rounded-modal border border-ui-border bg-ui-surface p-6 shadow-lg dark:border-ui-dark-border dark:bg-ui-dark-surface">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft">

@@ -1,6 +1,6 @@
 import '@/global.css';
 
-import { Stack, type ErrorBoundaryProps } from 'expo-router';
+import { Stack, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
 import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
@@ -14,12 +14,13 @@ import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { BackHandler, Platform, Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from 'nativewind';
 
 import { AnimatedSplash } from '@/components/animated-splash';
 import { ThemedAlertProvider } from '@/components/themed-alert';
+import { useBackToExplore } from '@/hooks/use-back-to-explore';
 import { AppProvider } from '@/providers/app-provider';
 import { queryClient } from '@/lib/query-client';
 import { isExploreStartupReady, subscribeToExploreStartupReady } from '@/lib/startup-gate';
@@ -33,6 +34,8 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
+  const pathname = usePathname();
+  const backToExplore = useBackToExplore();
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
   const [exploreReady, setExploreReady] = useState(isExploreStartupReady);
   const [startupDeadline, setStartupDeadline] = useState(false);
@@ -54,6 +57,17 @@ export default function RootLayout() {
     const timer = setTimeout(() => setStartupDeadline(true), 8000);
     return () => clearTimeout(timer);
   }, []);
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    let subscription: ReturnType<typeof BackHandler.addEventListener> | undefined;
+    const timer = setTimeout(() => {
+      subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (pathname !== '/explore') backToExplore();
+        return true;
+      });
+    }, 0);
+    return () => { clearTimeout(timer); subscription?.remove(); };
+  }, [backToExplore, pathname]);
 
   if (!fontsLoaded && !fontError && !startupDeadline) return null;
 

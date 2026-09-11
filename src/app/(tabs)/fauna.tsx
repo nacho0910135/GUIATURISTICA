@@ -4,13 +4,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { ThemedNotice } from '@/components/themed-notice';
 import { addFaunaSpecies, getFaunaHome, getVulnerabilityLabel, markFaunaSeen, removeFaunaSighting, type FaunaSanctuary } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
+import { useBackToExplore } from '@/hooks/use-back-to-explore';
 
 import { FrogLoader } from '@/components/frog-loader';
 type FaunaHome = Awaited<ReturnType<typeof getFaunaHome>>;
@@ -86,15 +87,6 @@ export default function FaunaScreen() {
   }, [userId]);
 
   useFocusEffect(useCallback(() => { if (!home) void load(); }, [home, load]));
-  useFocusEffect(useCallback(() => {
-    if (Platform.OS !== 'android' || from !== 'explore') return undefined;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      leaveFauna();
-      return true;
-    });
-    return () => subscription.remove();
-  }, [from, leaveFauna]));
-
   const markSeen = useCallback(async (speciesId: string) => {
     if (markingId) return;
     if (!requireAuth(language === 'es' ? 'marcar este animal como avistado' : 'mark this animal as seen')) return;
@@ -283,7 +275,9 @@ export default function FaunaScreen() {
   );
 }
 
-function FaunaProposalModal({ language, onClose, onPublished, open, userId }: { language: 'es' | 'en'; onClose: () => void; onPublished: (name: string) => void; open: boolean; userId?: string }) {
+function FaunaProposalModal({ language, onClose: close, onPublished, open, userId }: { language: 'es' | 'en'; onClose: () => void; onPublished: (name: string) => void; open: boolean; userId?: string }) {
+  const backToExplore = useBackToExplore();
+  const onClose = () => { close(); backToExplore(); };
   const [commonName, setCommonName] = useState('');
   const [scientificName, setScientificName] = useState('');
   const [category, setCategory] = useState('');

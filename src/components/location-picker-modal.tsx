@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapCanvas, type MapCoordinate } from '@/components/explore/map-canvas';
 import { FrogLoader } from '@/components/frog-loader';
+import { useBackToExplore } from '@/hooks/use-back-to-explore';
 import { reverseLocationName, searchLocations, type LocationSearchResult } from '@/lib/location-search';
 
 const COSTA_RICA_CENTER = { latitude: 9.7489, longitude: -83.7534 };
@@ -24,6 +25,7 @@ export function LocationPickerModal({
   open: boolean;
   title?: string;
 }) {
+  const backToExplore = useBackToExplore();
   const centerRef = useRef<MapCoordinate>(initialLocation ?? COSTA_RICA_CENTER);
   const [focusLocation, setFocusLocation] = useState<MapCoordinate | undefined>(initialLocation);
   const [query, setQuery] = useState('');
@@ -75,7 +77,7 @@ export function LocationPickerModal({
   };
 
   return (
-    <Modal animationType="slide" navigationBarTranslucent onRequestClose={onClose} statusBarTranslucent visible={open}>
+    <Modal animationType="slide" navigationBarTranslucent onRequestClose={() => { onClose(); backToExplore(); }} statusBarTranslucent visible={open}>
       <SafeAreaView className="flex-1 bg-ui-background dark:bg-ui-dark-background" edges={['top', 'bottom']}>
         <View className="z-20 flex-row items-center gap-3 border-b border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface">
           <Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="h-12 w-12 items-center justify-center rounded-full bg-ui-muted dark:bg-ui-dark-muted" onPress={onClose}>

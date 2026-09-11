@@ -47,6 +47,11 @@ if ($IncrementVersion) {
     [IO.File]::WriteAllText($appJsonPath, $appJsonText, [Text.UTF8Encoding]::new($false))
 }
 
+$manifestPath = Join-Path $project "android\app\src\main\AndroidManifest.xml"
+$manifestText = Get-Content -LiteralPath $manifestPath -Raw
+$manifestText = [regex]::Replace($manifestText, 'android:enableOnBackInvokedCallback="(?:true|false)"', 'android:enableOnBackInvokedCallback="false"', 1)
+[IO.File]::WriteAllText($manifestPath, $manifestText, [Text.UTF8Encoding]::new($false))
+
 $gradlePath = Join-Path $project "android\app\build.gradle"
 $gradleText = Get-Content -LiteralPath $gradlePath -Raw
 $gradleText = [regex]::Replace($gradleText, 'versionCode\s+\d+', "versionCode $versionCode", 1)

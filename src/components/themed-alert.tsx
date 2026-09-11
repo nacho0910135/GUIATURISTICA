@@ -2,6 +2,7 @@ import { type PropsWithChildren, useCallback, useEffect, useState } from 'react'
 import { Modal, Text, View } from 'react-native';
 
 import { Button as AlertAction } from '@/components/ui/button';
+import { useBackToExplore } from '@/hooks/use-back-to-explore';
 
 type ThemedAlertButton = {
   onPress?: () => void | Promise<void>;
@@ -24,6 +25,7 @@ export const ThemedAlert = {
 };
 
 export function ThemedAlertProvider({ children }: PropsWithChildren) {
+  const backToExplore = useBackToExplore();
   const [alert, setAlert] = useState<ThemedAlertState>();
   const dismiss = useCallback((button?: ThemedAlertButton) => {
     setAlert(undefined);
@@ -40,7 +42,7 @@ export function ThemedAlertProvider({ children }: PropsWithChildren) {
   return (
     <>
       {children}
-      <Modal animationType="fade" onRequestClose={() => dismiss()} statusBarTranslucent transparent visible={Boolean(alert)}>
+      <Modal animationType="fade" onRequestClose={() => { dismiss(); backToExplore(); }} statusBarTranslucent transparent visible={Boolean(alert)}>
         <View accessibilityViewIsModal className="flex-1 items-center justify-center bg-black/60 px-6">
           <View className="w-full max-w-sm rounded-modal border border-ui-border bg-ui-surface p-6 shadow-lg dark:border-ui-dark-border dark:bg-ui-dark-surface">
             <Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{alert?.title}</Text>
