@@ -258,6 +258,13 @@ export default function ProfileScreen() {
       </View>
     );
 
+  if (!displayProfile && !error)
+    return (
+      <View className="flex-1 bg-ui-background dark:bg-ui-dark-background">
+        <FrogLoader branded accessibilityLabel={tr(language, 'Cargando perfil', 'Loading profile')} size="large" />
+      </View>
+    );
+
   return (
     <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
       <View className="mx-auto w-full max-w-5xl rounded-[24px] border border-ui-border bg-ui-surface p-4 dark:border-ui-dark-border dark:bg-ui-dark-surface">

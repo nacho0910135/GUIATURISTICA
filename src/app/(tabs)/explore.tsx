@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsFocused, useScrollToTop } from 'expo-router/react-navigation';
-import { distanceKm, straightLineDistanceLabel } from '@/lib/location-quality';
+import { roadRouteLabel } from '@/lib/location-quality';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,6 +25,7 @@ import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type Exp
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
 import { markExploreStartupReady } from '@/lib/startup-gate';
+import { getRoadRoutes, type RoadRoute } from '@/lib/road-routing';
 import { useApp } from '@/providers/app-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
@@ -113,16 +114,25 @@ export default function ExploreScreen() {
     category.id,
     (places.data ?? []).reduce((count, place) => count + Number(matchesOption(place, category)), 0),
   ])), [places.data, rootCategories]);
-  const visiblePlaces = useMemo(() => {
+  const matchedPlaces = useMemo(() => {
     const term = normalizeSearchText(search);
     if (!term && !coordinates) return [];
-    const matches = (places.data ?? []).flatMap((place) => {
+    return (places.data ?? []).flatMap((place) => {
       const score = term ? nameSearchScore(place.name, term) : 0;
-      return score === null ? [] : [{ place, score, distance: coordinates ? distanceKm(coordinates, place) : 0 }];
+      return score === null ? [] : [{ place, score }];
     });
-    if (coordinates) return matches.sort((a, b) => a.distance - b.distance || a.score - b.score).map(({ place }) => place);
-    return matches.sort((a, b) => a.score - b.score || a.place.name.localeCompare(b.place.name, language === 'es' ? 'es' : 'en')).map(({ place }) => place);
-  }, [coordinates, language, places.data, search]);
+  }, [coordinates, places.data, search]);
+  const roadRoutes = useQuery({
+    queryKey: ['road-distances', userLocation?.latitude, userLocation?.longitude, matchedPlaces.map(({ place }) => place.id).join(',')],
+    queryFn: () => getRoadRoutes(userLocation!, matchedPlaces.map(({ place }) => place)),
+    enabled: Boolean(userLocation && matchedPlaces.length),
+    staleTime: 10 * 60 * 1000,
+  });
+  const visiblePlaces = useMemo(() => [...matchedPlaces]
+    .sort((a, b) => coordinates
+      ? (roadRoutes.data?.get(a.place.id)?.distanceKm ?? Infinity) - (roadRoutes.data?.get(b.place.id)?.distanceKm ?? Infinity) || a.score - b.score
+      : a.score - b.score || a.place.name.localeCompare(b.place.name, language === 'es' ? 'es' : 'en'))
+    .map(({ place }) => place), [coordinates, language, matchedPlaces, roadRoutes.data]);
   const hasSearch = Boolean(search.trim());
 
   const discover = async () => {
@@ -162,7 +172,7 @@ export default function ExploreScreen() {
               resetExplore();
               router.push({ pathname: '/(aux)/province', params: { category: place.category, destinationId: place.id, direct: '1', ...(place.community ? { community: '1' } : {}) } });
             }}
-            origin={userLocation ?? undefined}
+            route={roadRoutes.data?.get(place.id) ?? null}
             ownContribution={place.contributor_id === session?.user.id}
             place={place}
           />
@@ -399,7 +409,7 @@ function DestinationPreviewCarousel({ active, large, place }: { active: boolean;
   return <Image accessibilityLabel={place.name} cachePolicy="memory-disk" contentFit="cover" onError={() => setFailed(true)} placeholder={destinationPlaceholder} placeholderContentFit="cover" priority={active ? 'high' : 'normal'} source={source} style={large ? { height: 180, width: '100%' } : { borderRadius: 16, flexShrink: 0, height: 52, width: 52 }} transition={160} />;
 }
 
-function PlaceResult({ active, followed, formatPrice, language, large, onFollow, onPress, origin, ownContribution, place }: { active: boolean; followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; large: boolean; onFollow: () => void; onPress: () => void; origin?: { latitude: number; longitude: number }; ownContribution: boolean; place: ExplorePlace }) {
+function PlaceResult({ active, followed, formatPrice, language, large, onFollow, onPress, ownContribution, place, route }: { active: boolean; followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; large: boolean; onFollow: () => void; onPress: () => void; ownContribution: boolean; place: ExplorePlace; route: RoadRoute | null }) {
   const marine = useQuery({ queryKey: ['marine-weather', place.latitude, place.longitude], queryFn: () => getMarineConditions(place), enabled: active && isBeachPlace(place), staleTime: MARINE_WEATHER_STALE_TIME });
   const documentedAuthorities = place.verification_evidence_url && place.verification_checked_at ? place.validated_by : [];
   const description = language === 'es' ? place.description : place.description_en;
@@ -419,7 +429,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
           {marine.data ? <View className="mt-2 flex-row gap-3"><Text className="text-xs font-black text-caribbean-700 dark:text-caribbean-100">🌊 {marine.data.waveHeight?.toFixed(1) ?? '—'} m</Text><Text className="text-xs font-black text-caribbean-700 dark:text-caribbean-100">🌡 {marine.data.waterTemperature?.toFixed(1) ?? '—'} °C</Text></View> : null}
           <View className="mt-1 flex-row items-center justify-between">
             <Text className="text-sm font-black text-ui-primary dark:text-ui-dark-primary">{place.price_national_crc == null ? (language === 'es' ? 'Consultar precio' : 'Check price') : formatPrice(place.price_national_crc)}</Text>
-            {origin ? <Text className="ml-2 flex-1 text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{straightLineDistanceLabel(distanceKm(origin, place), language)}</Text> : <MaterialCommunityIcons name="arrow-right" size={21} color="#0077A8" />}
+            {route ? <Text className="ml-2 flex-1 text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{roadRouteLabel(route, language)}</Text> : <MaterialCommunityIcons name="arrow-right" size={21} color="#0077A8" />}
           </View>
           {place.community && place.contributor_name && !ownContribution ? <Pressable className="mt-3 self-start rounded-full bg-ui-primary-soft px-3 py-2 shadow-card dark:bg-ui-dark-primary-soft" style={{ elevation: 5, shadowColor: '#073F31', shadowOffset: { height: 3, width: 0 }, shadowOpacity: 0.2, shadowRadius: 5 }} onPress={(event) => { event.stopPropagation(); onFollow(); }}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary">{followed ? (language === 'es' ? 'Siguiendo' : 'Following') : language === 'es' ? `Seguir a ${place.contributor_name}` : `Follow ${place.contributor_name}`}</Text></Pressable> : null}
         </View>
@@ -465,7 +475,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
         </Text>
         {marine.data ? <Text className="mt-1 text-xs font-black text-caribbean-700 dark:text-caribbean-100">🌊 {marine.data.waveHeight?.toFixed(1) ?? '—'} m · 🌡 {marine.data.waterTemperature?.toFixed(1) ?? '—'} °C</Text> : null}
       </View>
-      {origin ? <Text className="ml-2 max-w-28 flex-shrink text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{straightLineDistanceLabel(distanceKm(origin, place), language)}</Text> : <MaterialCommunityIcons name="chevron-right" size={23} color="#0077A8" />}
+      {route ? <Text className="ml-2 max-w-36 flex-shrink text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{roadRouteLabel(route, language)}</Text> : <MaterialCommunityIcons name="chevron-right" size={23} color="#0077A8" />}
     </Pressable>
   );
 }

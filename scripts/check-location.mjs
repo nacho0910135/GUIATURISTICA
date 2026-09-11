@@ -28,9 +28,9 @@ for (const bad of [fix(null), fix(1000), fix(5000), fix(NaN), fix(-1), fix(10, D
 assert.equal(quality.hasPrecisePermission({ granted: true, android: { accuracy: 'coarse' } }), false);
 assert.equal(quality.hasPrecisePermission({ granted: true, ios: { accuracy: 'reduced' } }), false);
 assert.equal(Math.round(quality.distanceKm({ latitude: 0, longitude: 0 }, { latitude: 0, longitude: 1 })), 111);
-assert.equal(quality.straightLineDistanceLabel(34, 'es'), '≈ 34.0 km en línea recta');
-assert.equal(quality.straightLineDistanceLabel(0.25, 'en'), '≈ 250 m straight-line');
-assert.equal(quality.straightLineDistanceLabel(null, 'es'), 'Distancia no disponible');
+assert.equal(quality.roadDistanceLabel(34, 'es'), '34.0 km por carretera');
+assert.equal(quality.roadDistanceLabel(0.25, 'en'), '250 m by road');
+assert.equal(quality.roadDistanceLabel(null, 'es'), 'Distancia no disponible');
 
 let permission = { granted: true, canAskAgain: true, android: { accuracy: 'fine' } };
 let position = fix();
@@ -76,7 +76,7 @@ let openedUrl;
 const navigation = load('src/lib/logistics.ts', {
   'expo-linking': { openURL: async (url) => { openedUrl = url; } },
   'react-native': { Platform: { OS: 'android' } },
-  '@/lib/query-storage': {}, '@/lib/supabase': {},
+  '@/lib/query-storage': {}, '@/lib/supabase': {}, '@/lib/road-routing': {},
 });
 await navigation.openNavigation(9.93, -84.08);
 assert.equal(new URL(openedUrl).searchParams.get('ll'), '9.93,-84.08', 'Waze uses the destination in latitude,longitude order');
@@ -201,7 +201,32 @@ assert.match(exploreSource, /if \(!isFocused\) resetExplore\(\)/, 'Explore clear
 assert.match(exploreSource, /onPress=\{\(\) => \{\s*resetExplore\(\);\s*router\.push\(\{ pathname: '\/\(aux\)\/province'/, 'Opening a nearby destination clears the list first');
 for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx', 'src/app/(aux)/province.tsx']) {
   const source = readFileSync(path, 'utf8');
-  assert.ok(source.includes('straightLineDistanceLabel'), `${path}: straight-line distance label`);
-  assert.ok(!source.includes('useRoadDistances'), `${path}: no route-service dependency`);
+  assert.ok(source.includes('roadRouteLabel'), `${path}: road distance and duration label`);
 }
-console.log('Location checks passed: precision, freshness, permissions, shared movement, revocation, cleanup, distance labels and all three capture flows.');
+const routingSource = readFileSync('src/lib/road-routing.ts', 'utf8');
+assert.ok(routingSource.includes('/directions/v5/mapbox/driving/'), 'Mapbox Directions is the road-distance source');
+assert.ok(routingSource.includes('route.distance! / 1000'), 'Mapbox meters become kilometers');
+let directionsUrl;
+const routeCache = new Map();
+const asyncStorage = { setItem: async (key, value) => routeCache.set(key, value), getItem: async (key) => routeCache.get(key) ?? null };
+const routing = load('src/lib/road-routing.ts', { '@react-native-async-storage/async-storage': asyncStorage }, {
+  process: { env: { EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: 'public-test-token' } },
+  fetch: async (url) => {
+    directionsUrl = url;
+    return { ok: true, json: async () => ({ code: 'Ok', routes: [{ distance: 58000, duration: 3600 }] }) };
+  },
+});
+const roadRoute = await routing.getRoadRoute({ latitude: 9.93, longitude: -84.08 }, { latitude: 10.63, longitude: -85.44 });
+assert.equal(roadRoute.distanceKm, 58);
+assert.equal(roadRoute.durationMinutes, 60);
+assert.equal(roadRoute.cached, false);
+assert.match(directionsUrl, /-84\.08000,9\.93000;-85\.44000,10\.63000/);
+const offlineRouting = load('src/lib/road-routing.ts', { '@react-native-async-storage/async-storage': asyncStorage }, {
+  process: { env: { EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: 'public-test-token' } },
+  fetch: async () => { throw new Error('offline'); },
+});
+const cachedRoute = await offlineRouting.getRoadRoute({ latitude: 9.93, longitude: -84.08 }, { latitude: 10.63, longitude: -85.44 });
+assert.equal(cachedRoute.distanceKm, 58);
+assert.equal(cachedRoute.cached, true);
+assert.match(quality.roadRouteLabel(cachedRoute, 'es'), /58\.0 km por carretera · 60 min · Última consulta/);
+console.log('Location checks passed: precision, freshness, permissions, shared movement, revocation, cleanup, Mapbox road-distance labels and all three capture flows.');

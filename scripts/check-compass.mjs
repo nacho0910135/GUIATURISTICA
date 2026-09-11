@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import ts from 'typescript';
+import vm from 'node:vm';
+
+const module = { exports: {} };
+vm.runInNewContext(ts.transpileModule(readFileSync('src/lib/compass.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports: module.exports });
+const { normalizeHeading, smoothHeading, usableHeading } = module.exports;
+assert.equal(normalizeHeading(-90), 270);
+assert.equal(normalizeHeading(720), 0);
+assert.equal(smoothHeading(null, 359), 359);
+assert.equal(smoothHeading(359, 1), 359.4);
+assert.equal(smoothHeading(1, 359), 0.6);
+assert.equal(smoothHeading(719, 1), 719.4);
+assert.equal(smoothHeading(40, NaN), 40);
+assert.equal(smoothHeading(null, Infinity), null);
+for (const angle of [0, 90, 180, 270]) assert.equal(smoothHeading(angle, angle), angle);
+assert.equal(usableHeading({ trueHeading: -1, accuracy: 3 }), false);
+assert.equal(usableHeading({ trueHeading: NaN, accuracy: 3 }), false);
+assert.equal(usableHeading({ trueHeading: 45, accuracy: 0 }), false);
+assert.equal(usableHeading({ trueHeading: 45, accuracy: 2 }), true);
+const header = readFileSync('src/components/global-header.tsx', 'utf8');
+assert(header.indexOf("'Compra USD'") < header.indexOf("router.push('/compass')"));
+assert(header.indexOf("router.push('/compass')") < header.indexOf('visitorOptions.map'));
+console.log('Compass: wraparound, smoothing, heading validity and button placement passed.');

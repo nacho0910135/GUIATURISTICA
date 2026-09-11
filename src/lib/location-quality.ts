@@ -14,13 +14,18 @@ export function distanceKm(from: Coordinates, to: Coordinates) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function straightLineDistanceLabel(distance: number | null, language: 'es' | 'en', nearby = true) {
+export function roadDistanceLabel(distance: number | null, language: 'es' | 'en') {
   if (distance == null || !Number.isFinite(distance) || distance < 0) {
     return language === 'es' ? 'Distancia no disponible' : 'Distance unavailable';
   }
   const value = distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`;
-  const origin = nearby ? '' : (language === 'es' ? ' del centro regional' : ' from region center');
-  return language === 'es' ? `≈ ${value} en línea recta${origin}` : `≈ ${value} straight-line${origin}`;
+  return language === 'es' ? `${value} por carretera` : `${value} by road`;
+}
+
+export function roadRouteLabel(route: { distanceKm: number; durationMinutes: number; cached: boolean } | null, language: 'es' | 'en') {
+  if (!route) return language === 'es' ? 'Distancia no disponible' : 'Distance unavailable';
+  const duration = Math.max(1, Math.round(route.durationMinutes));
+  return `${roadDistanceLabel(route.distanceKm, language)} · ${duration} min${route.cached ? (language === 'es' ? ' · Última consulta' : ' · Last query') : ''}`;
 }
 
 export function isUsablePosition(position: {

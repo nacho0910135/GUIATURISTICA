@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { getAppOptions } from '@/lib/app-options';
 import { getOfflineCommerceServices } from '@/lib/offline-trip-pack';
+import { getRoadRoutes } from '@/lib/road-routing';
 
 export type AssistanceCategoryId = string;
 
@@ -68,6 +69,8 @@ export type CommerceService = {
   latitude: number | null;
   longitude: number | null;
   distance_km: number | null;
+  route_duration_minutes: number | null;
+  route_cached: boolean;
   owner_id: string | null;
   is_sponsored: boolean;
   claim_status: 'unclaimed' | 'pending' | 'claimed';
@@ -106,7 +109,7 @@ export type CinemaMovie = {
 };
 export type ClaimableBusiness = Pick<CommerceService, 'id' | 'title' | 'is_claimed' | 'owner_id' | 'claim_status'>;
 
-type ServiceRow = Omit<CommerceService, 'phone' | 'latitude' | 'longitude' | 'distance_km' | 'photos' | 'payment_methods' | 'languages' | 'certifications'> & {
+type ServiceRow = Omit<CommerceService, 'phone' | 'latitude' | 'longitude' | 'distance_km' | 'route_duration_minutes' | 'route_cached' | 'photos' | 'payment_methods' | 'languages' | 'certifications'> & {
   phone_whatsapp: string | null;
   photos: string[] | null;
   payment_methods: string[] | null;
@@ -145,7 +148,7 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
     rows.push(...cached.filter((service) => !subcategory || service.subcategories?.includes(subcategory)));
   }
 
-  const services = rows
+  const services: CommerceService[] = rows
     .flatMap((service) => {
       const [longitude, latitude] = service.location?.coordinates ?? [];
       const hasLocation = typeof latitude === 'number' && typeof longitude === 'number';
@@ -161,11 +164,20 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
         certifications: service.certifications ?? [],
         latitude: hasLocation ? latitude : null,
         longitude: hasLocation ? longitude : null,
-        distance_km: hasLocation ? distanceKm(origin, { latitude, longitude }) : null,
+        distance_km: null,
+        route_duration_minutes: null,
+        route_cached: false,
         avg_rating: Number(service.avg_rating ?? 0),
         total_reviews: Number(service.total_reviews ?? 0),
       }];
     });
+  const roadRoutes = await getRoadRoutes(origin, services.flatMap((service) => service.latitude == null || service.longitude == null ? [] : [{ id: service.id, latitude: service.latitude, longitude: service.longitude }]));
+  for (const service of services) {
+    const route = roadRoutes.get(service.id);
+    service.distance_km = route?.distanceKm ?? null;
+    service.route_duration_minutes = route?.durationMinutes ?? null;
+    service.route_cached = route?.cached ?? false;
+  }
   const byRelevance = (a: CommerceService, b: CommerceService) => commerceDistanceSortValue(a.distance_km) - commerceDistanceSortValue(b.distance_km) || b.avg_rating - a.avg_rating || b.total_reviews - a.total_reviews || a.title.localeCompare(b.title);
   const now = new Date().toISOString();
   const { data: campaigns, error: campaignError } = services.length ? await supabase.from('commerce_ad_campaigns').select('service_id').eq('campaign_type', 'featured').eq('status', 'active').lte('starts_at', now).gt('ends_at', now) : { data: [], error: null };
@@ -267,11 +279,19 @@ export async function getAssistanceDirectory(categoryId: AssistanceCategoryId, o
     .in('main_category', category.allowed_targets)
     .limit(1000);
   if (error) throw error;
-  return ((data ?? []) as ServiceRow[]).flatMap((service) => {
+  const services = ((data ?? []) as ServiceRow[]).flatMap((service) => {
     const [longitude, latitude] = service.location?.coordinates ?? [];
     if (typeof latitude !== 'number' || typeof longitude !== 'number') return [];
-    return [{ ...service, phone: service.phone_whatsapp, whatsapp: service.whatsapp ?? service.phone_whatsapp, photos: service.photos ?? [], payment_methods: service.payment_methods ?? [], languages: service.languages ?? [], certifications: service.certifications ?? [], latitude, longitude, distance_km: distanceKm(origin, { latitude, longitude }), avg_rating: 0, total_reviews: 0 }];
-  }).sort((a, b) => a.distance_km - b.distance_km || a.title.localeCompare(b.title));
+    return [{ ...service, phone: service.phone_whatsapp, whatsapp: service.whatsapp ?? service.phone_whatsapp, photos: service.photos ?? [], payment_methods: service.payment_methods ?? [], languages: service.languages ?? [], certifications: service.certifications ?? [], latitude, longitude, distance_km: null, route_duration_minutes: null, route_cached: false, avg_rating: 0, total_reviews: 0 }];
+  }) as CommerceService[];
+  const routes = await getRoadRoutes(origin, services as (CommerceService & { latitude: number; longitude: number })[]);
+  for (const service of services) {
+    const route = routes.get(service.id);
+    service.distance_km = route?.distanceKm ?? null;
+    service.route_duration_minutes = route?.durationMinutes ?? null;
+    service.route_cached = route?.cached ?? false;
+  }
+  return services.sort((a, b) => commerceDistanceSortValue(a.distance_km) - commerceDistanceSortValue(b.distance_km) || a.title.localeCompare(b.title));
 }
 
 export async function recordBusinessEvent(serviceId: string, eventType: BusinessEventType, attribution: Record<string, unknown> = {}) {

@@ -9,9 +9,12 @@ const profile = read('src/app/(tabs)/profile.tsx');
 const travelerProfile = read('src/app/(aux)/traveler-profile.tsx');
 const messages = read('src/lib/social-profile.ts');
 
-assert.match(recorder, /onPressIn=.*start/);
-assert.match(recorder, /onPressOut=.*stopAndSend/);
-assert.match(recorder, /onPress=.*stopAndSend/s);
+assert.match(recorder, /onPressIn=.*start/s);
+assert.match(recorder, /onPressOut=.*finish/s);
+assert.match(recorder, /onTouchMove/);
+assert.match(recorder, /CANCEL_DISTANCE/);
+assert.match(recorder, /finish\(true\)/);
+assert.match(recorder, /formatDuration\(elapsedMs\)/);
 assert.match(recorder, /recorder\.getStatus\(\)\.durationMillis/);
 assert.match(messages, /contentType\.includes\('webm'\) \? 'webm' : 'm4a'/);
 assert.match(player, /downloadFirst: true/);

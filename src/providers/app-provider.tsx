@@ -24,6 +24,7 @@ type AppContextValue = {
   currency: Currency;
   visitorType: VisitorType;
   exchangeRate: number;
+  exchangeRateReady: boolean;
   avatarUrl: string | null;
   session: Session | null;
   authReady: boolean;
@@ -62,6 +63,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const language: Language = visitorType === 'tico' ? 'es' : 'en';
   const currency: Currency = visitorType === 'tico' ? 'CRC' : 'USD';
   const [exchangeRate, setExchangeRate] = useState(FALLBACK_USD_CRC);
+  const [exchangeRateReady, setExchangeRateReady] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userSession, setUserSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -344,7 +346,10 @@ export function AppProvider({ children }: PropsWithChildren) {
       .then(({ data }) => {
         const row = data as { rate_buy?: number } | null;
         const nextRate = Number(row?.rate_buy);
-        if (Number.isFinite(nextRate) && nextRate > 0) setExchangeRate(nextRate);
+        if (Number.isFinite(nextRate) && nextRate > 0) {
+          setExchangeRate(nextRate);
+          setExchangeRateReady(true);
+        }
       });
   }, []);
 
@@ -369,9 +374,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [userSession]);
 
   const value = useMemo<AppContextValue>(() => ({
-    language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, isDark: mode === 'dark', t,
+    language, currency, visitorType, exchangeRate, exchangeRateReady, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, isDark: mode === 'dark', t,
     setVisitorType, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut,
-  }), [language, currency, visitorType, exchangeRate, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
+  }), [language, currency, visitorType, exchangeRate, exchangeRateReady, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

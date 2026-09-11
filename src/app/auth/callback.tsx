@@ -41,12 +41,7 @@ export default function OAuthCallback() {
         </>
       ) : (
         <>
-          <FrogLoader color="#087443" size="large" />
-          <Text className="mt-4 text-center font-semibold text-ui-text dark:text-ui-dark-text">
-            {language === 'es'
-              ? 'Terminando el acceso con Google…'
-              : 'Finishing Google sign-in…'}
-          </Text>
+          <FrogLoader branded size="large" />
         </>
       )}
     </View>

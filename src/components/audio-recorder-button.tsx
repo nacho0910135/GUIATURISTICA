@@ -1,17 +1,42 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
-import { useRef, useState } from 'react';
-import { Pressable } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, Text, View } from 'react-native';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
+
+const CANCEL_DISTANCE = 112;
+
+function formatDuration(milliseconds: number) {
+  const seconds = Math.floor(milliseconds / 1000);
+  return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
+}
 
 export function AudioRecorderButton({ busy, language, onRecorded }: { busy: boolean; language: 'es' | 'en'; onRecorded: (audio: { uri: string; type: 'audio'; durationMs: number }) => void | Promise<void> }) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [recording, setRecording] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState(0);
   const recordingRef = useRef(false);
-  const startedThisPress = useRef(false);
-  const held = useRef(false);
+  const pressedRef = useRef(false);
+  const cancelRef = useRef(false);
+  const startXRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const translateX = useRef(new Animated.Value(0)).current;
   const text = (es: string, en: string) => language === 'es' ? es : en;
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  const reset = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    recordingRef.current = false;
+    cancelRef.current = false;
+    setRecording(false);
+    setCancelling(false);
+    setElapsedMs(0);
+    translateX.setValue(0);
+  };
 
   const start = async () => {
     if (busy || recordingRef.current) return;
@@ -22,41 +47,65 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
       await recorder.prepareToRecordAsync();
       recorder.record();
       recordingRef.current = true;
-      startedThisPress.current = true;
       setRecording(true);
+      timerRef.current = setInterval(() => setElapsedMs((value) => value + 250), 250);
+      if (!pressedRef.current) await finish(cancelRef.current);
     } catch (reason) {
+      reset();
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : text('No se pudo iniciar la grabación.', 'Could not start recording.'));
     }
   };
 
-  const stopAndSend = async () => {
+  const finish = async (cancel = cancelRef.current) => {
     if (!recordingRef.current) return;
-    recordingRef.current = false;
-    setRecording(false);
+    const durationMs = recorder.getStatus().durationMillis;
     try {
-      const durationMs = recorder.getStatus().durationMillis;
       await recorder.stop();
       await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
-      if (recorder.uri) await onRecorded({ uri: recorder.uri, type: 'audio', durationMs });
+      const uri = recorder.uri;
+      reset();
+      if (!cancel && uri) await onRecorded({ uri, type: 'audio', durationMs });
     } catch (reason) {
-      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : text('No se pudo enviar el audio.', 'Could not send the audio.'));
+      reset();
+      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : text('No se pudo finalizar el audio.', 'Could not finish the recording.'));
     }
   };
 
-  return <Pressable
-    accessibilityHint={text('Tocá para iniciar o detener. También podés mantener presionado para grabar.', 'Tap to start or stop. You can also hold to record.')}
-    accessibilityLabel={recording ? text('Detener y enviar audio', 'Stop and send audio') : text('Grabar audio', 'Record audio')}
-    accessibilityRole="button"
-    className={recording ? 'min-h-12 min-w-12 items-center justify-center rounded-full bg-red-500' : 'min-h-12 min-w-12 items-center justify-center rounded-full bg-ui-primary'}
-    delayLongPress={350}
-    disabled={busy}
-    onLongPress={() => { if (startedThisPress.current) held.current = true; }}
-    onPress={() => {
-      if (held.current) { held.current = false; startedThisPress.current = false; return; }
-      if (startedThisPress.current) { startedThisPress.current = false; return; }
-      void stopAndSend();
-    }}
-    onPressIn={() => { startedThisPress.current = false; held.current = false; void start(); }}
-    onPressOut={() => { if (held.current) void stopAndSend(); }}
-  ><MaterialCommunityIcons name={recording ? 'stop' : 'microphone'} size={24} color="white" /></Pressable>;
+  const toggleAccessibleRecording = () => {
+    if (recordingRef.current) return void finish(false);
+    pressedRef.current = true;
+    void start().finally(() => { pressedRef.current = false; });
+  };
+
+  return <View className={recording ? 'absolute inset-x-0 bottom-0 z-10 h-12 flex-row items-center rounded-2xl bg-ui-surface px-2 dark:bg-ui-dark-surface' : 'h-12 w-12'}>
+    {recording ? <>
+      <Animated.View className={cancelling ? 'h-11 w-11 items-center justify-center rounded-full bg-ui-danger' : 'h-11 min-w-16 flex-row items-center justify-center'} style={{ transform: [{ scale: cancelling ? 1.18 : 1 }] }}>
+        {cancelling ? <MaterialCommunityIcons name="delete" size={24} color="white" /> : <><View className="mr-2 h-2 w-2 rounded-full bg-ui-danger" /><Text className="font-semibold tabular-nums text-ui-text dark:text-ui-dark-text">{formatDuration(elapsedMs)}</Text></>}
+      </Animated.View>
+      <Text className={cancelling ? 'flex-1 text-center text-sm font-semibold text-ui-danger' : 'flex-1 text-center text-sm text-ui-text-muted dark:text-ui-dark-text-muted'}>{cancelling ? text('Soltá para borrar', 'Release to delete') : text('Deslizá para cancelar', 'Slide to cancel')}</Text>
+    </> : null}
+    <Animated.View style={recording ? { transform: [{ translateX }, { scale: 1.18 }] } : undefined}>
+      <Pressable
+        accessibilityActions={[{ name: 'activate', label: recording ? text('Enviar audio', 'Send recording') : text('Grabar audio', 'Record audio') }, { name: 'escape', label: text('Cancelar audio', 'Cancel recording') }]}
+        accessibilityHint={text('Mantené presionado para grabar y soltá para enviar. Deslizá a la izquierda para borrar.', 'Hold to record and release to send. Slide left to delete.')}
+        accessibilityLabel={recording ? text('Grabando audio', 'Recording audio') : text('Grabar audio', 'Record audio')}
+        accessibilityRole="button"
+        className={recording ? 'h-12 w-12 items-center justify-center rounded-full bg-ui-danger' : 'h-12 w-12 items-center justify-center rounded-full bg-ui-primary'}
+        disabled={busy}
+        onAccessibilityAction={({ nativeEvent }) => nativeEvent.actionName === 'escape' ? void finish(true) : toggleAccessibleRecording()}
+        onPressIn={({ nativeEvent }) => { pressedRef.current = true; cancelRef.current = false; startXRef.current = nativeEvent.pageX; void start(); }}
+        onPressOut={() => { pressedRef.current = false; void finish(); }}
+        onTouchMove={({ nativeEvent }) => {
+          if (!recordingRef.current) return;
+          const distance = Math.min(0, Math.max(-CANCEL_DISTANCE, nativeEvent.pageX - startXRef.current));
+          const shouldCancel = distance <= -CANCEL_DISTANCE;
+          translateX.setValue(distance);
+          if (shouldCancel !== cancelRef.current) {
+            cancelRef.current = shouldCancel;
+            setCancelling(shouldCancel);
+          }
+        }}
+      ><MaterialCommunityIcons name="microphone" size={24} color="white" /></Pressable>
+    </Animated.View>
+  </View>;
 }

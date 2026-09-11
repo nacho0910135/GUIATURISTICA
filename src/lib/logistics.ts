@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 import { offlineStorage } from '@/lib/query-storage';
 import { supabase } from '@/lib/supabase';
+import { getRoadDistances, getRoadRoute } from '@/lib/road-routing';
 
 export const WEATHER_STALE_TIME = 30 * 60 * 1000;
 
@@ -269,14 +270,19 @@ function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matri
   let remainingBudget = input.maxBudget - mealCostCrc;
   const stops: TripStop[] = [];
   const speedKph = input.vehicle === 'bus' ? 28 : input.vehicle === '4x4' ? 42 : 48;
-  const routeScore = (destination: Destination) => scoreDestination(destination, plannerInput) - distanceKm(current, destination) * 4;
   const matrixCandidates = candidates.slice(0, 24);
   let currentMatrixIndex = 0;
 
   while (stops.length < 4 && remainingBudget >= 0) {
     const destination = candidates
       .filter((item) => item.price_national_crc * input.travelers <= remainingBudget && !stops.some((stop) => stop.destination.id === item.id))
-      .sort((a, b) => routeScore(b) - routeScore(a))[0];
+      .sort((a, b) => {
+        const aIndex = matrixCandidates.findIndex((item) => item.id === a.id) + 1;
+        const bIndex = matrixCandidates.findIndex((item) => item.id === b.id) + 1;
+        const aTravel = matrix?.[currentMatrixIndex]?.[aIndex] ?? estimatedTravelMinutes(current, a, speedKph);
+        const bTravel = matrix?.[currentMatrixIndex]?.[bIndex] ?? estimatedTravelMinutes(current, b, speedKph);
+        return scoreDestination(b, plannerInput) - bTravel / 3 - (scoreDestination(a, plannerInput) - aTravel / 3);
+      })[0];
     if (!destination) break;
     const destinationMatrixIndex = matrixCandidates.findIndex((item) => item.id === destination.id) + 1;
     const travelMinutes = matrix?.[currentMatrixIndex]?.[destinationMatrixIndex] ?? estimatedTravelMinutes(current, destination, speedKph);
@@ -370,8 +376,9 @@ async function getPlannerCandidates(input: { latitude: number; longitude: number
   if (!rows.length) return [];
   const { data: details, error: detailsError } = await supabase.from('destinations').select(destinationFields).in('id', rows.map((item) => item.id));
   if (detailsError) throw detailsError;
-  const distanceById = new Map(rows.map((item) => [item.id, item.dist_meters]));
-  return (details ?? []).map(normalizeDestination).map((item) => ({ ...item, dist_meters: distanceById.get(item.id) ?? 0 }))
+  const destinations = (details ?? []).map(normalizeDestination);
+  const distances = await getRoadDistances(input, destinations);
+  return destinations.map((item) => ({ ...item, dist_meters: (distances.get(item.id) ?? Infinity) * 1000 }))
     .filter((item) => item.price_national_crc <= input.maxBudget)
     .filter((item) => !input.reducedMobility || /fácil|facil/i.test(item.difficulty ?? ''))
     .sort((a, b) => scoreDestination(b, input) - scoreDestination(a, input));
@@ -386,10 +393,10 @@ async function getTripPlannerCandidates(input: TripPlanInput & { hasVehicle: boo
   if (!rows.length) return [];
   const { data: details, error: detailsError } = await supabase.from('destinations').select(destinationFields).in('id', rows.map((item) => item.id));
   if (detailsError) throw detailsError;
-  const distanceById = new Map(rows.map((item) => [item.id, item.dist_meters]));
-  return (details ?? [])
-    .map(normalizeDestination)
-    .map((item) => ({ ...item, dist_meters: distanceById.get(item.id) ?? 0 }))
+  const destinations = (details ?? []).map(normalizeDestination);
+  const distances = await getRoadDistances(input, destinations);
+  return destinations
+    .map((item) => ({ ...item, dist_meters: (distances.get(item.id) ?? Infinity) * 1000 }))
     .filter((item) => item.price_national_crc <= input.maxBudget)
     .filter((item) => !input.categories.length || countPreferenceMatches(item, input.categories) > 0)
     .sort((a, b) => scoreDestination(b, { category: input.categories, children: false, seniors: false, reducedMobility: false, hasVehicle: input.hasVehicle }) - scoreDestination(a, { category: input.categories, children: false, seniors: false, reducedMobility: false, hasVehicle: input.hasVehicle }));
@@ -438,23 +445,18 @@ async function getNearbyFoodService(destination: Destination): Promise<DayPlan['
     const coordinates = (service.location as { coordinates?: [number, number] } | null)?.coordinates;
     if (!coordinates) return [];
     const [longitude, latitude] = coordinates;
-    return [{ id: service.id, title: service.title, phone: service.phone_whatsapp, latitude, longitude, verifiedAt: service.business_verified_at, distanceKm: distanceKm(destination, { latitude, longitude }) }];
-  }).sort((a, b) => a.distanceKm - b.distanceKm);
+    return [{ id: service.id, title: service.title, phone: service.phone_whatsapp, latitude, longitude, verifiedAt: service.business_verified_at, distanceKm: Infinity }];
+  });
+  const distances = await getRoadDistances(destination, services);
+  for (const service of services) service.distanceKm = distances.get(service.id) ?? Infinity;
+  services.sort((a, b) => a.distanceKm - b.distanceKm);
   return services[0] ?? null;
 }
 
 async function getTravelMinutes(origin: { latitude: number; longitude: number; hasVehicle: boolean }, destination: Destination) {
   const fallback = Math.max(10, Math.round((destination.dist_meters ?? 0) / 1000 / (origin.hasVehicle ? 45 : 18) * 60));
-  const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
-  if (!token) return fallback;
-  const profile = origin.hasVehicle ? 'driving-traffic' : 'walking';
-  const coordinates = `${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}`;
-  try {
-    const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinates}?access_token=${encodeURIComponent(token)}&overview=false`);
-    if (!response.ok) return fallback;
-    const body = await response.json() as { code?: string; routes?: { duration?: number }[] };
-    return body.code === 'Ok' && body.routes?.[0]?.duration ? Math.max(1, Math.round(body.routes[0].duration / 60)) : fallback;
-  } catch { return fallback; }
+  const route = await getRoadRoute(origin, destination);
+  return route ? Math.max(1, Math.round(route.durationMinutes)) : fallback;
 }
 
 function distanceKm(from: { latitude: number; longitude: number }, to: { latitude: number; longitude: number }) {

@@ -3,14 +3,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps, ReactNode } from 'react';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { AppCard, PrimaryButton } from '@/components/ui';
-import { buildOfflineTripPlan, buildTripPlan, openNavigation, TRIP_VEHICLES, type PlannerPreference, type TripPlan, type TripVehicle } from '@/lib/logistics';
+import { buildTripPlan, openNavigation, TRIP_VEHICLES, type PlannerPreference, type TripPlan, type TripVehicle } from '@/lib/logistics';
 import { getPlannerOptions } from '@/lib/app-options';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
-import { getOfflineTripPack } from '../../lib/offline-trip-pack';
 import { useApp } from '@/providers/app-provider';
 
 export default function MyTripScreen() {
@@ -30,7 +29,6 @@ export default function MyTripScreen() {
   const isSpanish = language === 'es';
   const plannerOptions = useQuery({ queryKey: ['planner-options'], queryFn: getPlannerOptions, staleTime: 60 * 60 * 1000 });
   const categories = plannerOptions.data?.categories ?? [];
-  const provinces = useMemo(() => plannerOptions.data?.provinces ?? [], [plannerOptions.data?.provinces]);
   const formatCrc = (amount: number) => budgetCurrency === 'USD' ? `$${(amount / exchangeRate).toFixed(2)}` : `₡${Math.round(amount).toLocaleString('es-CR')}`;
 
   const createPlan = async () => {
@@ -51,12 +49,8 @@ export default function MyTripScreen() {
         setMessage(error instanceof Error ? error.message : (isSpanish ? 'Necesito tu ubicación actual para crear una ruta realista.' : 'I need your current location to create a realistic route.'));
         return;
       }
-      const input = { latitude: userLocation.latitude, longitude: userLocation.longitude, availableHours, maxBudget, travelers: travelerCount, vehicle, categories: stylesSelected, language };
-      const packs = await Promise.all(provinces.map((province) => getOfflineTripPack(province)));
-      const destinations = packs.flatMap((pack) => pack?.destinations ?? []);
-      const nextPlan = buildOfflineTripPlan(input, destinations);
-      setPlan(nextPlan);
-      setMessage(nextPlan ? (isSpanish ? 'Sin conexión: ruta creada desde tu ubicación con datos guardados y tiempos estimados.' : 'Offline: route created from your location using saved data and estimated times.') : (isSpanish ? 'Sin conexión y todavía no hay datos guardados suficientes para esta ruta.' : 'Offline, and there is not enough saved data for this route yet.'));
+      setPlan(null);
+      setMessage(isSpanish ? 'No se puede calcular el itinerario sin Mapbox Directions. Revisá la conexión e intentá de nuevo.' : 'The itinerary cannot be calculated without Mapbox Directions. Check your connection and try again.');
     } finally { setBusy(false); }
   };
 

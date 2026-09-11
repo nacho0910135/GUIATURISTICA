@@ -67,7 +67,7 @@ export default function PrivateMessagesScreen() {
   return <SafeAreaView className="flex-1 bg-ui-background dark:bg-ui-dark-background">
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
       <View className="min-h-16 flex-row items-center border-b border-ui-border bg-ui-surface px-3 dark:border-ui-dark-border dark:bg-ui-dark-surface">
-        <Pressable accessibilityLabel={active ? text('Volver a conversaciones', 'Back to conversations') : text('Cerrar mensajes', 'Close messages')} className="h-11 w-11 items-center justify-center rounded-full" onPress={() => active ? setActivePartnerId(undefined) : router.back()}>
+        <Pressable accessibilityLabel={partnerId ? text('Cerrar chat', 'Close chat') : active ? text('Volver a conversaciones', 'Back to conversations') : text('Cerrar mensajes', 'Close messages')} className="h-11 w-11 items-center justify-center rounded-full" onPress={() => partnerId ? router.back() : active ? setActivePartnerId(undefined) : router.back()}>
           <MaterialCommunityIcons name="arrow-left" size={25} color="#0B6B4F" />
         </Pressable>
         {active ? <><ChatAvatar url={active.partner_avatar_url} name={active.partner_name} /><Text className="ml-3 flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text" numberOfLines={1}>{active.partner_name}</Text></> : <><View className="h-10 w-10 items-center justify-center rounded-full bg-ui-primary"><MaterialCommunityIcons name="message-text-outline" size={22} color="white" /></View><Text className="ml-3 text-xl font-black text-ui-text dark:text-ui-dark-text">{text('Mensajes privados', 'Private messages')}</Text></>}

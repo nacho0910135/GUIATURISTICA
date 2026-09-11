@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRightLeft, CircleUserRound, Moon, Sun } from 'lucide-react-native';
+import { ArrowRightLeft, CircleUserRound, Compass, Moon, Sun } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -31,7 +31,7 @@ let lastPresentedSocialNotificationId: string | null = null;
 
 export function GlobalHeader() {
   const isFocused = useIsFocused();
-  const { avatarUrl, exchangeRate, language, session, setVisitorType, visitorType } = useApp();
+  const { avatarUrl, exchangeRate, exchangeRateReady, language, session, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -41,6 +41,7 @@ export function GlobalHeader() {
   const [entrance] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
   const [glow] = useState(() => new Animated.Value(reduceMotion ? 0.28 : 0.16));
   const [openingCheckout, setOpeningCheckout] = useState(false);
+  const [dismissedRideId, setDismissedRideId] = useState<string>();
   const [visibleSocialNotificationId, setVisibleSocialNotificationId] = useState<string>();
   const formattedRate = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(exchangeRate);
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
@@ -188,7 +189,7 @@ export function GlobalHeader() {
   };
   const openUnreadConversation = async () => {
     if (!unreadConversation || !session) return;
-    router.push({ pathname: '/(tabs)/profile', params: { section: 'messages', partnerId: unreadConversation.partner_id } });
+    router.push({ pathname: '/(aux)/private-messages', params: { partnerId: unreadConversation.partner_id, partnerName: unreadConversation.partner_name, partnerAvatarUrl: unreadConversation.partner_avatar_url ?? '' } });
     const unread = unreadConversation.messages.filter((item) => item.recipient_id === session.user.id && !item.read_status);
     try {
       await Promise.all(unread.map((item) => markMessageRead(item.id)));
@@ -209,8 +210,15 @@ export function GlobalHeader() {
   };
   const dismissCancelledRide = async () => {
     if (!cancelledRide.data) return;
-    await markNotificationRead(cancelledRide.data.id);
-    await cancelledRide.refetch();
+    const notificationId = cancelledRide.data.id;
+    setDismissedRideId(notificationId);
+    try {
+      await markNotificationRead(notificationId);
+      await cancelledRide.refetch();
+    } catch (reason) {
+      setDismissedRideId(undefined);
+      Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : (isSpanish ? 'No se pudo cerrar la notificación.' : 'The notification could not be dismissed.'));
+    }
   };
 
   return (
@@ -245,16 +253,18 @@ export function GlobalHeader() {
           </View>
         </View>
 
-        <View className="mt-2 flex-row items-center justify-between gap-2 md:mt-0 md:justify-end">
-          <View
+        <View className="mt-2 flex-row flex-wrap items-center justify-between gap-2 md:mt-0 md:justify-end">
+          {exchangeRateReady ? <View
             accessibilityLabel={isSpanish ? `Un dólar equivale a ${formattedRate} colones` : `One dollar equals ${formattedRate} colones`}
             className="h-10 flex-row items-center rounded-control border border-ui-border bg-ui-surface/80 px-3 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface/80"
             style={{ elevation: 6, shadowColor: colors.secondary, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 6 }}
           >
             <ArrowRightLeft color={colors.secondary} size={15} strokeWidth={2} />
-            <Text className="ml-2 font-medium text-[11px] text-ui-text-muted dark:text-ui-dark-text-muted">USD</Text>
+            <Text className="ml-2 font-medium text-[11px] text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Compra USD' : 'USD buy'}</Text>
             <Text className="ml-1.5 font-bold text-xs text-ui-text dark:text-ui-dark-text">₡{formattedRate}</Text>
-          </View>
+          </View> : null}
+
+          <IconButton accessibilityLabel={isSpanish ? 'Abrir brújula y mapa' : 'Open compass and map'} icon={<Compass color={colors.secondary} size={22} />} onPress={() => router.push('/compass')} />
 
           <View className="flex-row rounded-control border border-ui-border bg-ui-muted p-0.5 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-muted" style={{ elevation: 6, shadowColor: colors.primary, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 6 }}>
             {visitorOptions.map((item) => {
@@ -281,7 +291,7 @@ export function GlobalHeader() {
             <ProfileButton avatarUrl={avatarUrl} desktopOffset label={isSpanish ? 'Abrir perfil y planes Pro' : 'Open profile and Pro plans'} onPress={() => router.push('/(tabs)/profile')} />
           </View>
         </View>
-        {cancelledRide.data ? <View accessibilityRole="alert" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-red-300 bg-red-50 px-3 py-2 shadow-card dark:border-red-800 dark:bg-red-950"><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-danger"><MaterialCommunityIcons name="calendar-remove-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-danger dark:text-ui-dark-danger">{isSpanish ? 'Rodada cancelada' : 'Ride cancelled'}</Text><Text className="text-[10px] font-bold text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{cancelledRide.data.title}</Text></View><Pressable accessibilityLabel={isSpanish ? 'Cerrar aviso de rodada cancelada' : 'Dismiss cancelled ride notice'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full active:bg-red-100 dark:active:bg-red-900" onPress={() => void dismissCancelledRide()}><MaterialCommunityIcons name="close" size={22} color={colors.danger} /></Pressable></View> : null}
+        {cancelledRide.data && cancelledRide.data.id !== dismissedRideId ? <View accessibilityRole="alert" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-red-300 bg-red-50 px-3 py-2 shadow-card dark:border-red-800 dark:bg-red-950"><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-danger"><MaterialCommunityIcons name="calendar-remove-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-danger dark:text-ui-dark-danger">{isSpanish ? 'Rodada cancelada' : 'Ride cancelled'}</Text><Text className="text-[10px] font-bold text-ui-text dark:text-ui-dark-text" numberOfLines={2}>{cancelledRide.data.title}</Text></View><Pressable accessibilityLabel={isSpanish ? 'Cerrar aviso de rodada cancelada' : 'Dismiss cancelled ride notice'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full active:bg-red-100 dark:active:bg-red-900" onPress={() => void dismissCancelledRide()}><MaterialCommunityIcons name="close" size={22} color={colors.danger} /></Pressable></View> : null}
         {showTrialBanner && access.data ? <Pressable accessibilityLabel={isSpanish ? 'Continuar descubriendo por dos dólares mensuales' : 'Keep discovering for two dollars per month'} accessibilityRole="button" className={access.data.showTrialWarning || !access.data.hasAccess ? 'mt-2 flex-row items-center rounded-2xl border border-amber-300 bg-amber-50 px-3 py-1.5 shadow-card' : 'mt-2 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-1.5 shadow-card dark:bg-ui-dark-primary-soft'} disabled={openingCheckout} onPress={() => void startMonthlyCheckout()} style={{ elevation: 7, shadowColor: access.data.showTrialWarning || !access.data.hasAccess ? '#B96708' : colors.primary, shadowOffset: { height: 5, width: 0 }, shadowOpacity: 0.22, shadowRadius: 8 }}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name="compass-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className={access.data.showTrialWarning || !access.data.hasAccess ? 'text-[11px] font-black text-amber-900' : 'text-[11px] font-black text-ui-primary dark:text-ui-dark-primary'}>{access.data.hasAccess ? (isSpanish ? `${access.data.trialDaysRemaining} ${access.data.trialDaysRemaining === 1 ? 'día gratis restante' : 'días gratis restantes'} de prueba gratuita` : `${access.data.trialDaysRemaining} free-trial ${access.data.trialDaysRemaining === 1 ? 'day' : 'days'} left`) : (isSpanish ? 'Tu prueba gratuita terminó' : 'Your free trial has ended')}</Text><Text className={access.data.showTrialWarning || !access.data.hasAccess ? 'text-[10px] leading-3 font-bold text-amber-800' : 'text-[10px] leading-3 font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{isSpanish ? 'Podés seguir descubriendo sitios por US$2 mensuales' : 'Keep discovering places for US$2 per month'}</Text></View>{openingCheckout ? <FrogLoader color="#0B6B4F" size="small" /> : <MaterialCommunityIcons name="arrow-right" size={19} color="#0B6B4F" />}</Pressable> : null}
         {unreadConversation && !isInChat ? <Pressable accessibilityLabel={isSpanish ? `Abrir nuevo mensaje de ${unreadConversation.partner_name}` : `Open new message from ${unreadConversation.partner_name}`} accessibilityRole="button" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-ui-secondary/30 bg-ui-surface px-3 py-2 shadow-card dark:border-ui-dark-secondary/40 dark:bg-ui-dark-surface" onPress={() => void openUnreadConversation()}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-secondary"><MaterialCommunityIcons name="message-text-outline" size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Recibiste un nuevo mensaje de:' : 'You received a new message from:'}</Text><Text className="text-[10px] font-bold text-ui-secondary dark:text-ui-dark-secondary">{unreadConversation.partner_name}</Text></View><MaterialCommunityIcons name="arrow-right" size={19} color={colors.secondary} /></Pressable> : null}
         {socialActivity.data && visibleSocialNotificationId === socialActivity.data.id ? <Pressable accessibilityLabel={isSpanish ? `Abrir actividad nueva de ${socialActorName}` : `Open new activity from ${socialActorName}`} accessibilityRole="button" className="mt-2 min-h-12 flex-row items-center rounded-2xl border border-ui-primary/25 bg-ui-primary-soft px-3 py-2 shadow-card dark:bg-ui-dark-primary-soft" onPress={openSocialNotification}><View className="h-8 w-8 items-center justify-center rounded-xl bg-ui-primary dark:bg-ui-dark-primary"><MaterialCommunityIcons name={socialCopy.icon} size={18} color="white" /></View><View className="ml-3 flex-1"><Text className="text-[11px] font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? socialCopy.es : socialCopy.en}</Text><Text className="text-[10px] font-bold text-ui-primary dark:text-ui-dark-primary">{socialActorName}</Text></View><MaterialCommunityIcons name="arrow-right" size={19} color={colors.primary} /></Pressable> : null}

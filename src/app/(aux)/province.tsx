@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { distanceKm, straightLineDistanceLabel } from '@/lib/location-quality';
+import { roadRouteLabel } from '@/lib/location-quality';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
@@ -19,6 +19,7 @@ import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 import { useBackToExplore } from '@/hooks/use-back-to-explore';
+import { getRoadRoutes, type RoadRoute } from '@/lib/road-routing';
 
 import { FrogLoader } from '@/components/frog-loader';
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
@@ -138,9 +139,15 @@ export default function ProvinceCatalogScreen() {
     if (match) setSelected(match);
   }, [destinationId, places.data]);
   useEffect(() => { setActiveSubcategoryId(undefined); }, [categoryId]);
+  const roadRoutes = useQuery({
+    queryKey: ['road-distances', userLocation?.latitude, userLocation?.longitude, (places.data ?? []).map(({ id }) => id).join(',')],
+    queryFn: () => getRoadRoutes(userLocation!, places.data ?? []),
+    enabled: Boolean(userLocation && places.data?.length),
+    staleTime: 10 * 60 * 1000,
+  });
   const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => userLocation
-    ? distanceKm(userLocation, a) - distanceKm(userLocation, b)
-    : 0), [places.data, userLocation]);
+    ? (roadRoutes.data?.get(a.id)?.distanceKm ?? Infinity) - (roadRoutes.data?.get(b.id)?.distanceKm ?? Infinity)
+    : 0), [places.data, roadRoutes.data, userLocation]);
   const visibleCategorySubcategories = useMemo(
     () => categorySubcategories.filter((subcategory) => sortedPlaces.some((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, subcategory.allowed_targets ?? []))),
     [categorySubcategories, sortedPlaces],
@@ -200,20 +207,20 @@ export default function ProvinceCatalogScreen() {
         onEndReached={visiblePlaces.length < displayedPlaces.length ? loadNextPlaces : undefined}
         onEndReachedThreshold={0.35}
         onViewableItemsChanged={onViewableItemsChanged.current}
-        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} userLocation={userLocation} visitorType={visitorType} />}
+        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} route={roadRoutes.data?.get(item.id) ?? null} visitorType={visitorType} />}
         viewabilityConfig={viewabilityConfig.current}
       />
-      <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} />
+      <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} route={selected ? roadRoutes.data?.get(selected.id) ?? null : null} />
     </View>
   );
 }
 
-function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, userLocation, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; userLocation?: { latitude: number; longitude: number }; visitorType: 'tico' | 'foreigner' }) {
+function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, route, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; route: RoadRoute | null; visitorType: 'tico' | 'foreigner' }) {
   const marine = useQuery({ queryKey: ['marine-weather', item.latitude, item.longitude], queryFn: () => getMarineConditions(item), enabled: isBeachPlace(item), staleTime: MARINE_WEATHER_STALE_TIME });
   const price = visitorType === 'tico'
     ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
     : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
-  const decisionFacts = destinationDecisionFacts(item, language, price, userLocation);
+  const decisionFacts = destinationDecisionFacts(item, language, price, route);
   const reservationUrl = destinationReservationUrl(item);
 
   return (
@@ -255,7 +262,7 @@ function destinationReservationUrl(item: MapPlace) {
   return null;
 }
 
-function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, userLocation?: { latitude: number; longitude: number }) {
+function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, route: RoadRoute | null) {
   const facts: DestinationFactItem[] = [];
   if (item.has_high_tides_risk) facts.push({ icon: 'waves-arrow-up', label: language === 'es' ? 'Revisar mareas' : 'Check tides', urgent: true });
   if (item.visit_info?.reserva_requerida || item.requires_online_ticket || item.requires_sinac_booking) facts.push({ action: 'reservation', icon: 'calendar-check-outline', label: destinationReservationUrl(item) ? (language === 'es' ? 'Reservar ahora ↗' : 'Book now ↗') : (language === 'es' ? 'Ver cómo reservar ›' : 'How to book ›'), urgent: true });
@@ -265,7 +272,7 @@ function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: 
   const duration = item.visit_info?.duracion_estimada?.replace(/\s*\(.*/, '').trim();
   if (duration) facts.push({ icon: 'clock-outline', label: duration });
   facts.push({ icon: 'ticket-confirmation-outline', label: price });
-  facts.push({ icon: 'map-marker-distance', label: userLocation ? straightLineDistanceLabel(distanceKm(userLocation, item), language) : (language === 'es' ? 'Ubicación precisa no disponible' : 'Precise location unavailable') });
+  facts.push({ icon: 'map-marker-distance', label: roadRouteLabel(route, language) });
   return facts.slice(0, 4);
 }
 
@@ -306,7 +313,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function DestinationModal({ language, onClose, onLike, place }: { language: 'es' | 'en'; onClose: () => void; onLike: (place: MapPlace) => Promise<void>; place?: MapPlace }) {
+function DestinationModal({ language, onClose, onLike, place, route }: { language: 'es' | 'en'; onClose: () => void; onLike: (place: MapPlace) => Promise<void>; place?: MapPlace; route: RoadRoute | null }) {
   const backToExplore = useBackToExplore();
   const { formatPrice, requireAuth, session, visitorType } = useApp();
   const { colors } = useAppTheme();
@@ -400,7 +407,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
                 <Pressable className="h-12 w-12 items-center justify-center rounded-full bg-black/55" onPress={() => void Share.share({ message: `${place.name}${place.source_url ? `\n${place.source_url}` : ''}` })}><MaterialCommunityIcons name="share-variant-outline" size={23} color="white" /></Pressable>
                 <Pressable accessibilityLabel="Cerrar" accessibilityRole="button" className="h-12 w-12 items-center justify-center rounded-full bg-black/55" onPress={onClose}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
               </View>
-              <View className="absolute bottom-0 left-0 right-0 bg-black/45 px-5 pb-4 pt-8"><View className="flex-row flex-wrap items-center gap-1.5"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-2.5 py-1.5"><Text className="text-xs font-black text-white">{categoryLabel(place.category, language)}</Text></View><View className="rounded-lg bg-[#ffac16] px-2.5 py-1.5"><Text className="text-xs font-black text-white">★ {place.average_rating.toFixed(1)} · {place.reviews_count ? `${place.reviews_count} ${language === 'es' ? 'opiniones' : 'reviews'}` : (language === 'es' ? 'calificación inicial' : 'starting rating')}</Text></View>{place.is_community_submission ? communityLocationVerified ? <View className="rounded-lg bg-ui-primary px-2.5 py-1.5"><Text className="text-xs font-black text-white">{language === 'es' ? 'UBICACIÓN VERIFICADA' : 'LOCATION VERIFIED'}</Text></View> : null : <ValidationBadge authorities={place.validated_by} checkedAt={place.verification_checked_at} evidenceUrl={place.verification_evidence_url} language={language} />}</View><Text className="mt-2 text-2xl font-black leading-7 text-white md:text-3xl md:leading-9">{place.name}</Text></View>
+              <View className="absolute bottom-0 left-0 right-0 bg-black/45 px-5 pb-4 pt-8"><View className="flex-row flex-wrap items-center gap-1.5"><View className="rounded-lg bg-ui-primary dark:bg-ui-dark-primary px-2.5 py-1.5"><Text className="text-xs font-black text-white">{categoryLabel(place.category, language)}</Text></View><View className="rounded-lg bg-[#ffac16] px-2.5 py-1.5"><Text className="text-xs font-black text-white">★ {place.average_rating.toFixed(1)} · {place.reviews_count ? `${place.reviews_count} ${language === 'es' ? 'opiniones' : 'reviews'}` : (language === 'es' ? 'calificación inicial' : 'starting rating')}</Text></View>{route ? <View className="rounded-lg bg-black/60 px-2.5 py-1.5"><Text className="text-xs font-black text-white">{roadRouteLabel(route, language)}</Text></View> : null}{place.is_community_submission ? communityLocationVerified ? <View className="rounded-lg bg-ui-primary px-2.5 py-1.5"><Text className="text-xs font-black text-white">{language === 'es' ? 'UBICACIÓN VERIFICADA' : 'LOCATION VERIFIED'}</Text></View> : null : <ValidationBadge authorities={place.validated_by} checkedAt={place.verification_checked_at} evidenceUrl={place.verification_evidence_url} language={language} />}</View><Text className="mt-2 text-2xl font-black leading-7 text-white md:text-3xl md:leading-9">{place.name}</Text></View>
             </View>
             {usesVerifiedCover(place) && place.image_source_url ? <Pressable className="self-end px-5 pt-3" onPress={() => void Linking.openURL(place.image_source_url!)}><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Foto' : 'Photo'}: {place.image_attribution || 'Wikimedia Commons'} · {place.image_license || (language === 'es' ? 'Ver licencia' : 'View license')}</Text></Pressable> : null}
             <View className="pt-5"><View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <FrogLoader color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>{communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((photo, index) => <View key={photo.id}><Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable><Pressable className="mt-1 flex-row self-start items-center rounded-full bg-ui-muted px-2 py-1 dark:bg-ui-dark-muted" onPress={() => void likePhoto(photo)}><MaterialCommunityIcons name={photo.liked ? 'heart' : 'heart-outline'} size={16} color={photo.liked ? '#ff557d' : '#0B6B4F'} /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{photo.likes_count}</Text></Pressable></View>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}</View>

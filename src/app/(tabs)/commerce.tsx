@@ -1,4 +1,4 @@
-import { straightLineDistanceLabel } from "@/lib/location-quality";
+import { roadRouteLabel } from "@/lib/location-quality";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Picker } from "@react-native-picker/picker";
 import { useScrollToTop } from "expo-router/react-navigation";
@@ -158,7 +158,7 @@ const useCommerceTaxonomy = () => {
       Promise.all([categories.refetch(), subcategories.refetch()]),
   };
 };
-const distanceLabel = straightLineDistanceLabel;
+const distanceLabel = (service: CommerceService, language: 'es' | 'en') => roadRouteLabel(service.distance_km == null || service.route_duration_minutes == null ? null : { distanceKm: service.distance_km, durationMinutes: service.route_duration_minutes, cached: service.route_cached }, language);
 
 function TrustBadge({
   service,
@@ -506,7 +506,7 @@ function ServiceCard({
           className="mt-1 text-xs font-bold text-ui-primary dark:text-ui-dark-primary"
           numberOfLines={3}
         >
-          {distanceLabel(service.distance_km, language, nearby)} ·{" "}
+          {distanceLabel(service, language)} ·{" "}
           {service.price_range ?? "₡"}
         </Text>
         <View className="mt-1 flex-row items-center">
@@ -680,7 +680,7 @@ function BusinessDetailModal({
                     color="#087443"
                   />
                   <Text className="ml-1 font-black text-ui-primary dark:text-ui-dark-primary">
-                    {distanceLabel(service.distance_km, language, nearby)}
+                    {distanceLabel(service, language)}
                   </Text>
                 </View>
                 <View className="flex-row items-center">

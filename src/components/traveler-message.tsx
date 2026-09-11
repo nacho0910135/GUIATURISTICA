@@ -32,11 +32,11 @@ function AudioMessage({ url, mine, language, durationMs }: { url: string; mine: 
     player.play();
   };
   return (
-    <Pressable accessibilityLabel={status.playing ? (language === 'es' ? 'Pausar audio' : 'Pause audio') : (language === 'es' ? 'Reproducir audio' : 'Play audio')} accessibilityRole="button" className="mt-1 min-h-14 min-w-56 flex-row items-center" onPress={() => void togglePlayback()}>
-      <MaterialCommunityIcons name={status.playing ? 'pause' : 'play'} size={34} color={mine ? 'white' : '#0B6B4F'} />
-      <View className="ml-3 flex-1">
-        <View className="h-9 flex-row items-center gap-1">{wave.map((height, index) => <View key={index} className={mine ? 'w-1 rounded-full bg-white' : 'w-1 rounded-full bg-ui-primary'} style={{ height, opacity: index / wave.length <= progress ? 1 : 0.35 }} />)}</View>
-        <Text className={mine ? 'mt-1 text-xs text-white/80' : 'mt-1 text-xs text-ui-text-muted dark:text-ui-dark-text-muted'}>{audioTime(status.currentTime || duration)}</Text>
+    <Pressable accessibilityLabel={status.playing ? (language === 'es' ? 'Pausar audio' : 'Pause audio') : (language === 'es' ? 'Reproducir audio' : 'Play audio')} accessibilityRole="button" className="min-h-11 min-w-48 flex-row items-center" onPress={() => void togglePlayback()}>
+      <MaterialCommunityIcons name={status.playing ? 'pause-circle' : 'play-circle'} size={30} color={mine ? 'white' : '#0B6B4F'} />
+      <View className="ml-2 flex-1">
+        <View className="h-7 flex-row items-center gap-0.5">{wave.map((height, index) => <View key={index} className={mine ? 'w-0.5 rounded-full bg-white' : 'w-0.5 rounded-full bg-ui-primary'} style={{ height: Math.max(4, height * 0.7), opacity: index / wave.length <= progress ? 1 : 0.35 }} />)}</View>
+        <Text className={mine ? 'text-[10px] text-white/80' : 'text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted'}>{audioTime(status.currentTime || duration)}</Text>
       </View>
     </Pressable>
   );
