@@ -18,11 +18,11 @@ import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerifi
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
-import { useBackToExplore } from '@/hooks/use-back-to-explore';
 import { getRoadRoutes, type RoadRoute } from '@/lib/road-routing';
 
 import { FrogLoader } from '@/components/frog-loader';
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
+const weatherIcons = { '01': 'weather-sunny', '02': 'weather-partly-cloudy', '03': 'weather-cloudy', '04': 'weather-cloudy', '09': 'weather-pouring', '10': 'weather-rainy', '11': 'weather-lightning-rainy', '13': 'weather-snowy', '50': 'weather-fog' } as const;
 
 function DestinationCarousel({ autoplay = true, height, place }: { autoplay?: boolean; height: number; place: MapPlace }) {
   const isFocused = useIsFocused();
@@ -212,7 +212,8 @@ export default function ProvinceCatalogScreen() {
 }
 
 function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, route, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; route: RoadRoute | null; visitorType: 'tico' | 'foreigner' }) {
-  const marine = useQuery({ queryKey: ['marine-weather', item.latitude, item.longitude], queryFn: () => getMarineConditions(item), enabled: isBeachPlace(item), staleTime: MARINE_WEATHER_STALE_TIME });
+  const weather = useQuery({ queryKey: ['weather', 'destination', item.id, language], queryFn: () => getWeather(item, language), enabled: autoplay, staleTime: WEATHER_STALE_TIME });
+  const weatherIcon = weather.data ? weatherIcons[weather.data.icon.slice(0, 2) as keyof typeof weatherIcons] ?? 'weather-cloudy' : null;
   const price = visitorType === 'tico'
     ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
     : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
@@ -239,7 +240,7 @@ function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress
         >
           <Text className="text-lg font-black leading-5 text-white" numberOfLines={2}>{item.name}</Text>
           <Text className="mt-0.5 text-xs leading-4 text-white/75" numberOfLines={1}>{destinationDescription(item, language)}</Text>
-          {marine.data ? <MarinePreview conditions={marine.data} language={language} /> : isBeachPlace(item) ? <MarinePreviewStatus failed={marine.isError} language={language} /> : null}
+          {weather.data && weatherIcon ? <View className="mt-2 flex-row items-center self-start rounded-lg bg-black/45 px-2 py-1"><MaterialCommunityIcons accessibilityElementsHidden name={weatherIcon} size={15} color="white" /><Text className="ml-1 text-xs font-black capitalize text-white">{weather.data.temperature}°{weather.data.temperatureUnit} · {weather.data.description}</Text></View> : null}
           <View className="mt-2 flex-row gap-1.5">
             {decisionFacts.map((fact) => <DestinationFact accessibilityLabel={fact.action === 'reservation' ? (reservationUrl ? (language === 'es' ? `Reservar ${item.name}` : `Book ${item.name}`) : (language === 'es' ? `Ver cómo reservar ${item.name}` : `See how to book ${item.name}`)) : undefined} icon={fact.icon} key={`${fact.icon}-${fact.label}`} label={fact.label} onPress={fact.action === 'reservation' ? (reservationUrl ? () => void Linking.openURL(reservationUrl) : onPress) : undefined} urgent={fact.urgent} />)}
           </View>
@@ -311,7 +312,6 @@ const styles = StyleSheet.create({
 
 function DestinationModal({ language, onClose, onLike, place, route }: { language: 'es' | 'en'; onClose: () => void; onLike: (place: MapPlace) => Promise<void>; place?: MapPlace; route: RoadRoute | null }) {
   const router = useRouter();
-  const backToExplore = useBackToExplore();
   const { formatPrice, requireAuth, session, visitorType } = useApp();
   const { colors } = useAppTheme();
   const queryClient = useQueryClient();
@@ -398,7 +398,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
 
   return (
     <>
-      <Modal animationType="fade" onRequestClose={() => { onClose(); backToExplore(); }} transparent visible>
+      <Modal animationType="fade" onRequestClose={onClose} transparent visible>
       <View className="flex-1 items-center justify-center bg-black/75 p-3 md:p-8">
         <View className="max-h-full w-full max-w-5xl overflow-hidden rounded-[30px] bg-ui-surface dark:bg-ui-dark-surface">
           <ScrollView contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
@@ -415,7 +415,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
             {usesVerifiedCover(place) && place.image_source_url ? <Pressable className="self-end px-5 pt-3" onPress={() => void Linking.openURL(place.image_source_url!)}><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Foto' : 'Photo'}: {place.image_attribution || 'Wikimedia Commons'} · {place.image_license || (language === 'es' ? 'Ver licencia' : 'View license')}</Text></Pressable> : null}
             <View className="pt-5">
               <View className="flex-row items-center justify-between px-5"><Text className="flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Fotografías subidas por nuestros usuarios' : 'Photos uploaded by our users'}</Text><Pressable accessibilityLabel={language === 'es' ? 'Subir fotografía' : 'Upload photo'} className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={uploadingPhoto} onPress={() => void addPhoto()}>{uploadingPhoto ? <FrogLoader color="white" size="small" /> : <MaterialCommunityIcons name="plus" size={25} color="white" />}</Pressable></View>
-              {communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((photo, index) => <View className="w-[150px]" key={photo.id}><Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable><View className="mt-1 flex-row items-center"><Pressable accessibilityRole="link" className="min-h-11 flex-1 justify-center" onPress={() => openPhotographer(photo)}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary" numberOfLines={1}>{photo.photographer?.username || photo.photographer?.full_name || (language === 'es' ? 'Viajero' : 'Traveler')}</Text><Text className="text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ver perfil' : 'View profile'}</Text></Pressable><Pressable accessibilityLabel={photo.liked ? (language === 'es' ? 'Quitar me gusta' : 'Unlike') : (language === 'es' ? 'Dar me gusta' : 'Like')} className="min-h-11 flex-row items-center rounded-full bg-ui-muted px-2 dark:bg-ui-dark-muted" onPress={() => void likePhoto(photo)}><MaterialCommunityIcons name={photo.liked ? 'heart' : 'heart-outline'} size={16} color={photo.liked ? '#ff557d' : '#0B6B4F'} /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{photo.likes_count}</Text></Pressable></View></View>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}
+              {communityPhotos.length ? <ScrollView horizontal className="mt-3" contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }} showsHorizontalScrollIndicator={false}>{communityPhotos.map((photo, index) => <View className="w-[150px]" key={photo.id}><Pressable accessibilityLabel={language === 'es' ? `Abrir fotografía ${index + 1} de ${place.name}` : `Open photo ${index + 1} of ${place.name}`} onPress={() => setSelectedPhotoIndex(index)}><Image contentFit="cover" source={{ uri: photo.image_url }} style={{ borderRadius: 16, height: 110, width: 150 }} transition={180} /></Pressable><View className="mt-1 flex-row items-center">{photo.photographer?.avatar_url ? <Image accessible={false} cachePolicy="none" contentFit="cover" source={{ uri: photo.photographer.avatar_url }} style={{ borderRadius: 18, height: 36, marginRight: 8, width: 36 }} /> : <View className="mr-2 h-9 w-9 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary"><Text className="font-black text-white">{(photo.photographer?.username || photo.photographer?.full_name || (language === 'es' ? 'Viajero' : 'Traveler')).slice(0, 1).toUpperCase()}</Text></View>}<Pressable accessibilityRole="link" className="min-h-11 flex-1 justify-center" onPress={() => openPhotographer(photo)}><Text className="text-xs font-black text-ui-primary dark:text-ui-dark-primary" numberOfLines={1}>{photo.photographer?.username || photo.photographer?.full_name || (language === 'es' ? 'Viajero' : 'Traveler')}</Text><Text className="text-[10px] text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ver perfil' : 'View profile'}</Text></Pressable><Pressable accessibilityLabel={photo.liked ? (language === 'es' ? 'Quitar me gusta' : 'Unlike') : (language === 'es' ? 'Dar me gusta' : 'Like')} className="min-h-11 flex-row items-center rounded-full bg-ui-muted px-2 dark:bg-ui-dark-muted" onPress={() => void likePhoto(photo)}><MaterialCommunityIcons name={photo.liked ? 'heart' : 'heart-outline'} size={16} color={photo.liked ? '#ff557d' : '#0B6B4F'} /><Text className="ml-1 text-xs font-black text-ui-text dark:text-ui-dark-text">{photo.likes_count}</Text></Pressable></View></View>)}</ScrollView> : <Pressable className="mt-3 flex-row items-center justify-between px-5" onPress={() => void addPhoto()}><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Sé el primero en compartir una fotografía' : 'Be the first to share a photo'}</Text><MaterialCommunityIcons name="plus-circle-outline" size={25} color="#00c98d" /></Pressable>}
             </View>
             <View className="gap-6 p-5 md:p-8">
               <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={difficultyLabel(place.difficulty, language)} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
@@ -446,7 +446,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
         </View>
       </View>
       </Modal>
-      <Modal animationType="fade" onRequestClose={() => { setSelectedPhotoIndex(null); backToExplore(); }} statusBarTranslucent transparent visible={selectedPhotoIndex !== null}>
+      <Modal animationType="fade" onRequestClose={() => setSelectedPhotoIndex(null)} statusBarTranslucent transparent visible={selectedPhotoIndex !== null}>
         <View className="flex-1 bg-black">
           <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{communityPhotos.map((photo, index) => <View className="flex-1 items-center justify-center" key={photo.id} style={{ width }}><Image accessibilityLabel={`Fotografía ${index + 1} de ${place.name}`} contentFit="contain" source={{ uri: photo.image_url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
           {communityPhotos[selectedPhotoIndex ?? -1]?.photographer ? <Pressable accessibilityRole="link" className="absolute bottom-10 left-5 flex-row items-center rounded-full bg-black/70 px-4 py-3" onPress={() => openPhotographer(communityPhotos[selectedPhotoIndex!])}><MaterialCommunityIcons name="account-circle" size={24} color="white" /><Text className="ml-2 font-black text-white">{communityPhotos[selectedPhotoIndex!].photographer!.username || communityPhotos[selectedPhotoIndex!].photographer!.full_name || (language === 'es' ? 'Viajero' : 'Traveler')} · {language === 'es' ? 'Ver perfil' : 'View profile'}</Text></Pressable> : null}
@@ -456,14 +456,6 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
       <InformationReportModal open={reportOpen} targetType="destination" targetId={place.id} targetLabel={place.name} language={language} onClose={() => setReportOpen(false)} />
     </>
   );
-}
-
-function MarinePreview({ conditions, language }: { conditions: MarineConditions; language: 'es' | 'en' }) {
-  return <View className="mt-2 flex-row gap-2"><View className="flex-row items-center rounded-lg bg-black/45 px-2 py-1"><MaterialCommunityIcons name="waves" size={13} color="white" /><Text className="ml-1 text-xs font-black text-white">{language === 'es' ? 'Altura de olas' : 'Wave height'}: {conditions.waveHeight?.toFixed(1) ?? '—'} m</Text></View><View className="flex-row items-center rounded-lg bg-black/45 px-2 py-1"><MaterialCommunityIcons name="thermometer-water" size={13} color="white" /><Text className="ml-1 text-xs font-black text-white">{conditions.waterTemperature?.toFixed(1) ?? '—'} °C</Text></View>{conditions.dangerous ? <View accessibilityRole="alert" className="rounded-lg bg-coral-600 px-2 py-1"><Text className="text-xs font-black text-white">{language === 'es' ? 'OLEAJE PELIGROSO' : 'DANGEROUS SURF'}</Text></View> : null}</View>;
-}
-
-function MarinePreviewStatus({ failed, language }: { failed: boolean; language: 'es' | 'en' }) {
-  return <View className="mt-2 self-start rounded-lg bg-black/45 px-2 py-1"><Text className="text-xs font-black text-white">{failed ? (language === 'es' ? 'Oleaje no disponible' : 'Surf unavailable') : (language === 'es' ? 'Cargando oleaje…' : 'Loading surf…')}</Text></View>;
 }
 
 function MarineWeatherPanel({ conditions, language }: { conditions: MarineConditions; language: 'es' | 'en' }) {

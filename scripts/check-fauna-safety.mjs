@@ -28,7 +28,9 @@ const faunaScreen = read('src/app/(aux)/species.tsx');
 const destinationScreen = read('src/app/(aux)/province.tsx');
 const places = read('src/lib/places.ts');
 assert.match(faunaScreen, /photographer\.username \|\| photo\.photographer\.full_name/);
+assert.match(faunaScreen, /photographer\?\.avatar_url[\s\S]*uri: photographer\.avatar_url/);
 assert.match(destinationScreen, /openPhotographer\(photo\)/);
+assert.match(destinationScreen, /photo\.photographer\?\.avatar_url[\s\S]*uri: photo\.photographer\.avatar_url/);
 assert.match(destinationScreen, /pathname: '\/\(aux\)\/traveler-profile'/);
 assert.match(places, /photographer:users!destination_user_photos_user_id_fkey/);
 

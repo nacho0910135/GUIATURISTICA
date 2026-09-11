@@ -29,7 +29,6 @@ import { ThemedAlert as Alert } from "@/components/themed-alert";
 import { getAppOptions, type AppOption } from "@/lib/app-options";
 import { getPreciseCurrentLocation } from "@/lib/current-location";
 import { useGooglePlayCampaignBilling } from "@/hooks/use-google-play-campaign-billing";
-import { useBackToExplore } from "@/hooks/use-back-to-explore";
 import {
   BannerCapacityError,
   campaignOffers,
@@ -554,7 +553,6 @@ function BusinessDetailModal({
   subcategoryOptions: AppOption[];
 }) {
   const { language, requireAuth } = useApp();
-  const backToExplore = useBackToExplore();
   const {
     qr,
     qr_code,
@@ -663,7 +661,7 @@ function BusinessDetailModal({
     });
   };
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={() => { onClose(); backToExplore(); }}>
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/40">
         <View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
           <View className="mb-5 h-1 w-10 self-center rounded-full bg-ui-border dark:bg-ui-dark-border" />
@@ -1961,7 +1959,6 @@ export default function CommerceScreen() {
   const scrollRef = useRef<FlatList<CommerceService>>(null);
   useScrollToTop(scrollRef);
   const router = useRouter();
-  const backToExplore = useBackToExplore();
   const [category, setCategory] = useState<CommerceCategoryId>("cinemas");
   const [subcategory, setSubcategory] = useState<string>();
   const [reporting, setReporting] = useState<CommerceService | null>(null);
@@ -2974,7 +2971,7 @@ export default function CommerceScreen() {
         visible={businessPlanRequiredOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => { setBusinessPlanRequiredOpen(false); backToExplore(); }}
+        onRequestClose={() => setBusinessPlanRequiredOpen(false)}
       >
         <View className="flex-1 items-center justify-center bg-black/45 px-5">
           <View className="w-full max-w-md rounded-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
@@ -3025,7 +3022,7 @@ export default function CommerceScreen() {
         visible={dashboardOpen}
         transparent
         animationType="slide"
-        onRequestClose={() => { setDashboardOpen(false); backToExplore(); }}
+        onRequestClose={() => setDashboardOpen(false)}
       >
         <View className="flex-1 justify-end bg-black/40">
           <View className="max-h-[92%] w-full max-w-3xl self-center rounded-t-3xl bg-ui-background p-5 dark:bg-ui-dark-background">
@@ -3498,7 +3495,7 @@ export default function CommerceScreen() {
         visible={registerOpen}
         transparent
         animationType="slide"
-        onRequestClose={() => { setRegisterOpen(false); backToExplore(); }}
+        onRequestClose={() => setRegisterOpen(false)}
       >
         <View className="flex-1 justify-end bg-black/40">
           <View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">
@@ -3649,7 +3646,7 @@ export default function CommerceScreen() {
         visible={Boolean(editing)}
         transparent
         animationType="slide"
-        onRequestClose={() => { setEditing(null); backToExplore(); }}
+        onRequestClose={() => setEditing(null)}
       >
         <View className="flex-1 justify-end bg-black/40">
           <View className="max-h-[92%] rounded-t-3xl bg-ui-surface p-6 dark:bg-ui-dark-surface">

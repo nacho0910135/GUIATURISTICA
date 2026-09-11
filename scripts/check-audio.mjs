@@ -14,6 +14,8 @@ assert.match(recorder, /onPressOut=.*finish/s);
 assert.match(recorder, /onTouchMove=\{move\}/);
 assert.match(recorder, /setRecording\(true\).*requestRecordingPermissionsAsync/s);
 assert.match(recorder, /CANCEL_DISTANCE/);
+assert.match(recorder, /pressRetentionOffset=\{CANCEL_DISTANCE \* 2\}/);
+assert.match(recorder, /cancelling \? 1\.45 : 1/);
 assert.match(recorder, /finish\(true\)/);
 assert.match(recorder, /name="delete"/);
 assert.match(recorder, /formatDuration\(elapsedMs\)/);

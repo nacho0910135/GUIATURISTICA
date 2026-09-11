@@ -11,7 +11,6 @@ import { ThemedNotice } from '@/components/themed-notice';
 import { addFaunaSpecies, getFaunaHome, getVulnerabilityLabel, markFaunaSeen, removeFaunaSighting, type FaunaSanctuary } from '@/lib/fauna';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
-import { useBackToExplore } from '@/hooks/use-back-to-explore';
 
 import { FrogLoader } from '@/components/frog-loader';
 type FaunaHome = Awaited<ReturnType<typeof getFaunaHome>>;
@@ -276,8 +275,7 @@ export default function FaunaScreen() {
 }
 
 function FaunaProposalModal({ language, onClose: close, onPublished, open, userId }: { language: 'es' | 'en'; onClose: () => void; onPublished: (name: string) => void; open: boolean; userId?: string }) {
-  const backToExplore = useBackToExplore();
-  const onClose = () => { close(); backToExplore(); };
+  const onClose = close;
   const [commonName, setCommonName] = useState('');
   const [scientificName, setScientificName] = useState('');
   const [category, setCategory] = useState('');

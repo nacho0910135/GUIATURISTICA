@@ -10,7 +10,6 @@ import { getAppOptions } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
 import { submitInformationReport, type ReportTargetType, type ReportType } from '@/lib/reports';
 import { useApp } from '@/providers/app-provider';
-import { useBackToExplore } from '@/hooks/use-back-to-explore';
 
 export function InformationReportModal({ open, targetType, targetId, targetKey, targetLabel, language, onClose, onSubmitted }: {
   open: boolean;
@@ -23,7 +22,6 @@ export function InformationReportModal({ open, targetType, targetId, targetKey, 
   onSubmitted?: () => void;
 }) {
   const { requireAuth } = useApp();
-  const backToExplore = useBackToExplore();
   const sheet = useRef<BottomSheet>(null);
   const [reportType, setReportType] = useState<ReportType>('');
   const [details, setDetails] = useState('');
@@ -60,7 +58,7 @@ export function InformationReportModal({ open, targetType, targetId, targetKey, 
   };
 
   return (
-    <Modal animationType="fade" onRequestClose={() => { resetAndClose(); backToExplore(); }} transparent visible={open}>
+    <Modal animationType="fade" onRequestClose={resetAndClose} transparent visible={open}>
       <View className="flex-1">
         <BottomSheet
           backdropComponent={(props) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} opacity={0.42} pressBehavior="close" />}

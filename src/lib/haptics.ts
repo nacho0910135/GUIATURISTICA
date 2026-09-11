@@ -8,10 +8,6 @@ export async function haptic(intent: HapticIntent) {
   if (Platform.OS === 'web') return;
 
   try {
-    if (Platform.OS === 'android' && intent === 'error') {
-      await Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Reject);
-      return;
-    }
     if (intent === 'selection') {
       await Haptics.selectionAsync();
       return;

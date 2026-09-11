@@ -8,7 +8,8 @@ assert.equal(sets[0].length, sets[1].length);
 assert.doesNotMatch(screen, /return \(\) => playlist\.pause\(\)/);
 assert.match(screen, /bg-white\/60/);
 assert.match(screen, /bg-black\/55 px-4 py-5/);
-assert.match(haptics, /AndroidHaptics\.Reject/);
+assert.match(haptics, /NotificationFeedbackType\.Error/);
+assert.doesNotMatch(haptics, /AndroidHaptics\.Reject/);
 for (const questions of sets) {
   assert.ok(questions.length >= 10);
   for (const item of questions) {

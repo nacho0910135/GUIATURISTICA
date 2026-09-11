@@ -5,7 +5,7 @@ import { Animated, Pressable, Text, View, type GestureResponderEvent } from 'rea
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 
-const CANCEL_DISTANCE = 112;
+const CANCEL_DISTANCE = 88;
 
 function formatDuration(milliseconds: number) {
   const seconds = Math.floor(milliseconds / 1000);
@@ -97,7 +97,7 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
 
   return <View className={recording ? 'absolute inset-x-0 bottom-0 z-10 h-12 flex-row items-center rounded-2xl bg-ui-surface px-2 dark:bg-ui-dark-surface' : 'h-12 w-12'}>
     {recording ? <>
-      <Animated.View className={cancelling ? 'h-11 w-11 items-center justify-center rounded-full bg-ui-danger' : 'h-11 w-11 items-center justify-center rounded-full bg-ui-primary-soft'} style={{ transform: [{ scale: cancelling ? 1.18 : 1 }] }}>
+      <Animated.View className={cancelling ? 'h-11 w-11 items-center justify-center rounded-full bg-ui-danger' : 'h-11 w-11 items-center justify-center rounded-full bg-ui-primary-soft'} style={{ transform: [{ scale: cancelling ? 1.45 : 1 }] }}>
         <MaterialCommunityIcons name="delete" size={24} color={cancelling ? 'white' : '#D64545'} />
       </Animated.View>
       <View className="flex-1 items-center"><Text className={cancelling ? 'text-sm font-semibold text-ui-danger' : 'text-sm text-ui-text-muted dark:text-ui-dark-text-muted'}>{cancelling ? text('Soltá para borrar', 'Release to delete') : text('Deslizá para borrar', 'Slide to delete')}</Text><Text className="text-xs font-semibold tabular-nums text-ui-text dark:text-ui-dark-text">{formatDuration(elapsedMs)}</Text></View>
@@ -110,6 +110,7 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
         accessibilityRole="button"
         className={recording ? 'h-12 w-12 items-center justify-center rounded-full bg-ui-danger' : 'h-12 w-12 items-center justify-center rounded-full bg-ui-primary'}
         disabled={busy}
+        pressRetentionOffset={CANCEL_DISTANCE * 2}
         onAccessibilityAction={({ nativeEvent }) => nativeEvent.actionName === 'escape' ? void finish(true) : toggleAccessibleRecording()}
         onPressIn={({ nativeEvent }) => { pressedRef.current = true; cancelRef.current = false; startXRef.current = nativeEvent.pageX; void start(); }}
         onPressOut={() => { pressedRef.current = false; void finish(); }}
