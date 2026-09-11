@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flex: 1,
     justifyContent: 'center',
+    transform: [{ translateY: -48 }],
     width: '100%',
   },
   country: {

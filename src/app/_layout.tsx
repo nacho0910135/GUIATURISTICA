@@ -35,9 +35,8 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
   const [exploreReady, setExploreReady] = useState(isExploreStartupReady);
-  const [startupDeadline, setStartupDeadline] = useState(false);
   const finishSplash = useCallback(() => setShowSplash(false), []);
-  const [fontsLoaded, fontError] = useFonts({
+  useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
@@ -46,15 +45,10 @@ export default function RootLayout() {
     PatrickHand_400Regular,
   });
   const onReady = useCallback(() => {
-    if (fontsLoaded || fontError) void SplashScreen.hideAsync().catch(() => undefined);
-  }, [fontError, fontsLoaded]);
+    void SplashScreen.hideAsync().catch(() => undefined);
+  }, []);
 
   useEffect(() => subscribeToExploreStartupReady(() => setExploreReady(true)), []);
-  useEffect(() => {
-    const timer = setTimeout(() => setStartupDeadline(true), 8000);
-    return () => clearTimeout(timer);
-  }, []);
-  if (!fontsLoaded && !fontError && !startupDeadline) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -84,7 +78,7 @@ export default function RootLayout() {
                     <Stack.Screen name="(aux)/auth-modal" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
                   </Stack>
                 </View>
-                {showSplash ? <AnimatedSplash appReady={exploreReady || startupDeadline} onFinish={finishSplash} /> : null}
+                {showSplash ? <AnimatedSplash appReady={exploreReady} onFinish={finishSplash} /> : null}
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
               </ThemedAlertProvider>
           </AppProvider>

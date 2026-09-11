@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 let startupSoundPlayed = false;
+const INTRO_DURATION_MS = 3000;
 
 export function AnimatedSplash({ appReady, onFinish }: { appReady: boolean; onFinish: () => void }) {
   const player = useAudioPlayer(require('@/assets/audio/startup-transition.mp3'));
   const [showAnimation, setShowAnimation] = useState(true);
   const [animationFinished, setAnimationFinished] = useState(false);
-  const [deadlineReached, setDeadlineReached] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web' && !startupSoundPlayed) {
@@ -19,22 +19,15 @@ export function AnimatedSplash({ appReady, onFinish }: { appReady: boolean; onFi
     const animationTimer = setTimeout(() => {
       setShowAnimation(false);
       setAnimationFinished(true);
-    }, 2000);
+    }, INTRO_DURATION_MS);
     return () => {
       clearTimeout(animationTimer);
     };
   }, [player]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDeadlineReached(true), 8000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!animationFinished || (!appReady && !deadlineReached)) return;
-    const finishTimer = setTimeout(onFinish, 300);
-    return () => clearTimeout(finishTimer);
-  }, [animationFinished, appReady, deadlineReached, onFinish]);
+    if (animationFinished && appReady) onFinish();
+  }, [animationFinished, appReady, onFinish]);
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>
@@ -59,8 +52,6 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   frame: {
-    borderColor: '#000000',
-    borderWidth: 8,
     width: '77%',
   },
   image: {
