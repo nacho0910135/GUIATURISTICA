@@ -4,7 +4,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase';
 
 export type ValidationAuthority = 'ICT' | 'SINAC';
-export type CommunityPhoto = { id: string; image_url: string; user_id: string; created_at: string; likes_count: number; liked: boolean };
+export type CommunityPhoto = { id: string; image_url: string; user_id: string; created_at: string; likes_count: number; liked: boolean; photographer: { id: string; username: string | null; full_name: string | null; avatar_url: string | null } | null };
 export type DestinationFreshnessCheck = 'open' | 'price' | 'cards';
 export type DestinationFreshness = Record<DestinationFreshnessCheck, { confirmed: number; notConfirmed: number }>;
 export type MyDestinationFreshness = Partial<Record<DestinationFreshnessCheck, boolean>>;
@@ -445,7 +445,7 @@ async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPl
 async function getPlaces(filter: 'province' | 'category' | 'id' | 'all', value: string, userId?: string): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
-    .select('id,name,province,region,category,description,description_en,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,requires_online_ticket,online_ticket_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_visit_info(tipo_acceso,estado_camino,duracion_estimada,mejor_temporada,recomendaciones_seguridad,enlace_web,reserva_requerida,booking_contact,booking_price,booking_notes,horario_atencion,estacionamiento,servicios_sanitarios,restaurante_o_soda,acceso_para_discapacitados,se_permite_mascotas,camping_permitido,codigo_local,relevancia_cultural),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at)')
+    .select('id,name,province,region,category,description,description_en,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,requires_online_ticket,online_ticket_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_visit_info(tipo_acceso,estado_camino,duracion_estimada,mejor_temporada,recomendaciones_seguridad,enlace_web,reserva_requerida,booking_contact,booking_price,booking_notes,horario_atencion,estacionamiento,servicios_sanitarios,restaurante_o_soda,acceso_para_discapacitados,se_permite_mascotas,camping_permitido,codigo_local,relevancia_cultural),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at,photographer:users!destination_user_photos_user_id_fkey(id,username,full_name,avatar_url))')
     .eq('status', 'Activo');
   if (filter === 'province') query = query.eq('province', value);
   else if (filter === 'id') query = query.eq('id', value);
@@ -475,7 +475,7 @@ async function getPlaces(filter: 'province' | 'category' | 'id' | 'all', value: 
     const rules = Array.isArray(place.normativas_destinos) ? place.normativas_destinos[0] : place.normativas_destinos;
     const hasOfficialSchedule = Boolean(place.verification_evidence_url && place.verification_checked_at && ((place.validated_by ?? []) as ValidationAuthority[]).length);
     const ratings = (reviews.data ?? []).filter((row) => row.target_id === place.id).map((row) => Number(row.rating));
-    const communityPhotos = (place.destination_user_photos ?? []).map((photo) => ({ ...photo, likes_count: (photoLikes.data ?? []).filter((like) => like.photo_id === photo.id).length, liked: likedPhotoIds.has(photo.id) })).sort((a, b) => b.likes_count - a.likes_count || a.created_at.localeCompare(b.created_at));
+    const communityPhotos = (place.destination_user_photos ?? []).map((photo) => ({ ...photo, photographer: Array.isArray(photo.photographer) ? photo.photographer[0] ?? null : photo.photographer, likes_count: (photoLikes.data ?? []).filter((like) => like.photo_id === photo.id).length, liked: likedPhotoIds.has(photo.id) })).sort((a, b) => b.likes_count - a.likes_count || a.created_at.localeCompare(b.created_at));
     return {
       ...place,
       visit_info: (Array.isArray(place.destination_visit_info) ? place.destination_visit_info[0] : place.destination_visit_info) ?? null,
@@ -615,12 +615,12 @@ export async function addDestinationPhoto(destinationId: string, userId: string,
   const upload = await supabase.storage.from('destination-user-photos').upload(path, bytes, { contentType: 'image/jpeg', cacheControl: '3600', upsert: false });
   if (upload.error) throw upload.error;
   const imageUrl = supabase.storage.from('destination-user-photos').getPublicUrl(path).data.publicUrl;
-  const { data, error } = await supabase.from('destination_user_photos').insert({ destination_id: destinationId, user_id: userId, image_url: imageUrl }).select('id,image_url,user_id,created_at').single();
+  const { data, error } = await supabase.from('destination_user_photos').insert({ destination_id: destinationId, user_id: userId, image_url: imageUrl }).select('id,image_url,user_id,created_at,photographer:users!destination_user_photos_user_id_fkey(id,username,full_name,avatar_url)').single();
   if (error) {
     await supabase.storage.from('destination-user-photos').remove([path]);
     throw error;
   }
-  return { ...data, likes_count: 0, liked: false } as CommunityPhoto;
+  return { ...data, photographer: Array.isArray(data.photographer) ? data.photographer[0] ?? null : data.photographer, likes_count: 0, liked: false } as CommunityPhoto;
 }
 
 export async function toggleDestinationPhotoLike(photoId: string, userId: string, liked: boolean) {

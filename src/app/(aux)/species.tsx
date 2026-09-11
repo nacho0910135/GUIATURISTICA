@@ -40,7 +40,7 @@ export default function SpeciesScreen() {
     ]).then(([nextSpecies, nextPhotos]) => {
       if (!active) return;
       setSpecies(nextSpecies);
-      setPhotos(nextPhotos);
+      setPhotos(nextPhotos.map((photo) => ({ ...photo, photographer: photo.photographer ? { ...photo.photographer, full_name: photo.photographer.username || photo.photographer.full_name } : null })));
     }).catch((reason) => {
       if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar la especie.');
     });
@@ -108,7 +108,7 @@ export default function SpeciesScreen() {
         : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 1, exif: false });
       if (result.canceled || !result.assets[0]) return;
       await uploadFaunaPhoto(species.id, session.user.id, result.assets[0]);
-      setPhotos(await getFaunaPhotos(species.id));
+      setPhotos((await getFaunaPhotos(species.id)).map((photo) => ({ ...photo, photographer: photo.photographer ? { ...photo.photographer, full_name: photo.photographer.username || photo.photographer.full_name } : null })));
       setPhotoPublished(true);
     } catch (reason) {
       Alert.alert('Fauna CR', reason instanceof Error ? reason.message : 'No se pudo subir la foto.');
@@ -204,6 +204,7 @@ export default function SpeciesScreen() {
       <Modal animationType="fade" onRequestClose={() => { setSelectedPhotoIndex(undefined); backToExplore(); }} statusBarTranslucent visible={selectedPhotoIndex !== undefined}>
         <View className="flex-1 bg-black">
           <ScrollView contentOffset={{ x: (selectedPhotoIndex ?? 0) * width, y: 0 }} horizontal key={selectedPhotoIndex} pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>{photos.map((photo, index) => <View className="flex-1 items-center justify-center" key={photo.id} style={{ width }}><Image accessibilityLabel={language === 'es' ? `Foto ${index + 1} de ${name}` : `Photo ${index + 1} of ${name}`} contentFit="contain" source={{ uri: photo.image_url }} style={{ height: '100%', width: '100%' }} /></View>)}</ScrollView>
+          {photos[selectedPhotoIndex ?? -1]?.photographer ? <Pressable accessibilityRole="link" className="absolute bottom-10 left-5 flex-row items-center rounded-full bg-black/70 px-4 py-3" onPress={() => { const photographer = photos[selectedPhotoIndex!].photographer!; setSelectedPhotoIndex(undefined); router.push({ pathname: '/(aux)/traveler-profile', params: { id: photographer.id } }); }}><MaterialCommunityIcons name="account-circle" size={24} color="white" /><Text className="ml-2 font-black text-white">{photos[selectedPhotoIndex!].photographer!.full_name || (language === 'es' ? 'Viajero' : 'Traveler')} · {language === 'es' ? 'Ver perfil' : 'View profile'}</Text></Pressable> : null}
           <Pressable accessibilityLabel={language === 'es' ? 'Cerrar foto' : 'Close photo'} accessibilityRole="button" className="absolute right-5 top-12 h-12 w-12 items-center justify-center rounded-full bg-black/70" onPress={() => setSelectedPhotoIndex(undefined)}><MaterialCommunityIcons name="close" size={28} color="white" /></Pressable>
         </View>
       </Modal>

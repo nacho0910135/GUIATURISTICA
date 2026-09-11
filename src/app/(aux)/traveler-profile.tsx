@@ -17,15 +17,18 @@ export default function TravelerProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { language, requireAuth, session } = useApp();
   const [data, setData] = useState<PublicProfile>();
+  const [loadError, setLoadError] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
   const [blockBusy, setBlockBusy] = useState(false);
   const viewerId = session?.user.id;
   const load = useCallback(async () => {
     if (!id) return;
-    const profile = await getPublicTravelerProfile(id, viewerId);
-    setData(profile);
+    setLoadError(false);
+    try { setData(await getPublicTravelerProfile(id, viewerId)); }
+    catch { setLoadError(true); }
   }, [id, viewerId]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  if (loadError) return <View className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text accessibilityRole="alert" className="text-center font-bold text-ui-danger dark:text-ui-dark-danger">{language === 'es' ? 'No se pudo cargar este perfil.' : 'This profile could not be loaded.'}</Text><Pressable accessibilityRole="button" className="mt-4 min-h-11 justify-center rounded-control bg-ui-primary px-5 dark:bg-ui-dark-primary" onPress={() => void load()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View>;
   if (!data?.profile) return <View className="flex-1 items-center justify-center bg-ui-background dark:bg-ui-dark-background"><FrogLoader color="#13bd83" /></View>;
   const text = (es: string, en: string) => language === 'es' ? es : en;
   const name = data.profile.username || data.profile.full_name || text('Viajero', 'Traveler');

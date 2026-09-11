@@ -43,12 +43,12 @@ export default function TriviaScreen() {
 
   return (
     <ImageBackground contentFit="cover" source={BACKGROUNDS[index % BACKGROUNDS.length]} style={{ flex: 1 }} transition={500}>
-      <View className="absolute inset-0 bg-black/35" />
+      <View className="absolute inset-0 bg-black/30" />
       <ScrollView className="flex-1" contentContainerStyle={{ alignItems: 'center', padding: 20, paddingBottom: 44 }}>
         <View className="w-full max-w-2xl">
-          <View className="flex-row items-center rounded-[26px] border border-white/70 bg-white/60 p-4 shadow-xl dark:border-white/15 dark:bg-ui-dark-surface/60">
-            <Pressable accessibilityLabel={text('Volver', 'Back')} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted dark:bg-ui-dark-muted" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={23} color={colors.text} /></Pressable>
-            <View className="ml-3 flex-1"><Text className="text-2xl font-black text-ui-text dark:text-ui-dark-text">Trivia CR</Text><Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{text('Turismo, flora, fauna, cultura y música nacional', 'Tourism, flora, wildlife, culture and national music')}</Text></View>
+          <View className="flex-row items-center rounded-[26px] border border-white/30 bg-black/45 p-4 shadow-xl">
+            <Pressable accessibilityLabel={text('Volver', 'Back')} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-black/40" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={23} color="white" /></Pressable>
+            <View className="ml-3 flex-1"><Text className="text-2xl font-black text-white">Trivia CR</Text><Text className="text-sm text-white/75">{text('Turismo, flora, fauna, cultura y música nacional', 'Tourism, flora, wildlife, culture and national music')}</Text></View>
             <MaterialCommunityIcons accessibilityLabel={text('Música de fondo activa', 'Background music playing')} name="music-note" size={22} color={colors.primary} />
           </View>
 
@@ -60,16 +60,16 @@ export default function TriviaScreen() {
               <Pressable accessibilityRole="button" className="mt-6 min-h-12 w-full items-center justify-center rounded-control bg-ui-primary dark:bg-ui-dark-primary" onPress={restart}><Text className="font-black text-white">{text('Jugar de nuevo', 'Play again')}</Text></Pressable>
             </View>
           ) : (
-            <View className="mt-6 rounded-[30px] border border-white/70 bg-white/60 p-5 shadow-2xl dark:border-white/15 dark:bg-ui-dark-surface/60">
-              <View className="flex-row items-center justify-between"><Text className="text-xs font-black uppercase tracking-wider text-ui-primary dark:text-ui-dark-primary">{question.category}</Text><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{index + 1} / {questions.length}</Text></View>
-              <View className="mt-3 h-2 overflow-hidden rounded-full bg-ui-muted dark:bg-ui-dark-muted"><View className="h-full rounded-full bg-ui-primary dark:bg-ui-dark-primary" style={{ width: `${((index + 1) / questions.length) * 100}%` }} /></View>
-              <Text className="mt-7 text-2xl font-black leading-8 text-ui-text dark:text-ui-dark-text">{question.question}</Text>
+            <View className="mt-6 px-1 py-2">
+              <View className="flex-row items-center justify-between"><Text className="text-xs font-black uppercase tracking-wider text-white">{question.category}</Text><Text className="text-sm font-bold text-white/75">{index + 1} / {questions.length}</Text></View>
+              <View className="mt-3 h-2 overflow-hidden rounded-full bg-white/30"><View className="h-full rounded-full bg-ui-dark-primary" style={{ width: `${((index + 1) / questions.length) * 100}%` }} /></View>
+              <Text className="mt-7 text-2xl font-black leading-8 text-white">{question.question}</Text>
               <View className="mt-6 gap-3">{question.options.map((option, optionIndex) => {
                 const answered = selected !== undefined, correct = optionIndex === question.answer, chosen = optionIndex === selected;
-                const style = answered && correct ? 'border-ui-success bg-ui-primary-soft/60 dark:border-ui-dark-success dark:bg-ui-dark-primary-soft/60' : chosen ? 'border-ui-danger bg-coral-50/60 dark:border-ui-dark-danger dark:bg-ui-dark-surface/60' : 'border-ui-border bg-white/60 shadow-md dark:border-ui-dark-border dark:bg-ui-dark-surface/60';
-                return <Pressable accessibilityRole="button" accessibilityState={{ disabled: answered, selected: chosen }} className={`min-h-14 flex-row items-center rounded-2xl border-2 px-4 py-3 ${style}`} disabled={answered} key={option} onPress={() => choose(optionIndex)}><Text className="mr-3 font-black text-ui-primary dark:text-ui-dark-primary">{String.fromCharCode(65 + optionIndex)}</Text><Text className="flex-1 font-bold text-ui-text dark:text-ui-dark-text">{option}</Text>{answered && correct ? <MaterialCommunityIcons name="check-circle" size={22} color={colors.success} /> : chosen ? <MaterialCommunityIcons name="close-circle" size={22} color={colors.danger} /> : null}</Pressable>;
+                const style = answered && correct ? 'border-ui-dark-success bg-ui-dark-primary-soft/85' : chosen ? 'border-ui-dark-danger bg-ui-dark-surface/85' : 'border-white/35 bg-black/55';
+                return <Pressable accessibilityRole="button" accessibilityState={{ disabled: answered, selected: chosen }} className={`min-h-14 flex-row items-center rounded-2xl border px-4 py-3 ${style}`} disabled={answered} key={option} onPress={() => choose(optionIndex)}><Text className="mr-3 font-black text-ui-dark-primary">{String.fromCharCode(65 + optionIndex)}</Text><Text className="flex-1 font-bold text-white">{option}</Text>{answered && correct ? <MaterialCommunityIcons name="check-circle" size={22} color={colors.success} /> : chosen ? <MaterialCommunityIcons name="close-circle" size={22} color={colors.danger} /> : null}</Pressable>;
               })}</View>
-              {selected !== undefined ? <View className="mt-5 rounded-control bg-ui-muted p-4 dark:bg-ui-dark-muted"><Text accessibilityLiveRegion="polite" className="font-black text-ui-text dark:text-ui-dark-text">{selected === question.answer ? text('¡Correcto!', 'Correct!') : text('Respuesta correcta:', 'Correct answer:')}</Text><Text className="mt-1 leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{question.fact}</Text></View> : null}
+              {selected !== undefined ? <View className="mt-5 rounded-control border border-white/25 bg-black/60 p-4"><Text accessibilityLiveRegion="polite" className="font-black text-white">{selected === question.answer ? text('¡Correcto!', 'Correct!') : text('Respuesta correcta:', 'Correct answer:')}</Text><Text className="mt-1 leading-5 text-white/75">{question.fact}</Text></View> : null}
               {selected !== undefined ? <Pressable accessibilityRole="button" className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary dark:bg-ui-dark-primary" onPress={next}><Text className="font-black text-white">{index + 1 === questions.length ? text('Ver resultado', 'See results') : text('Siguiente pregunta', 'Next question')}</Text></Pressable> : null}
             </View>
           )}
