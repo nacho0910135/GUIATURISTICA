@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRightLeft, CircleUserRound, Compass, Moon, Sun } from 'lucide-react-native';
+import { ArrowRightLeft, CircleUserRound, Moon, Sun } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -264,7 +264,12 @@ export function GlobalHeader() {
             <Text className="ml-1.5 font-bold text-xs text-ui-text dark:text-ui-dark-text">₡{formattedRate}</Text>
           </View> : null}
 
-          <IconButton accessibilityLabel={isSpanish ? 'Abrir brújula y mapa' : 'Open compass and map'} icon={<Compass color={colors.secondary} size={22} />} onPress={() => router.push('/compass')} />
+          <IconButton
+            accessibilityLabel={isSpanish ? 'Abrir brújula y mapa' : 'Open compass and map'}
+            className="overflow-hidden"
+            icon={<View className="relative h-full w-full items-center justify-center overflow-hidden rounded-full"><AnimatedShine travel={76} /><Image contentFit="contain" source={require('@/assets/iconos propios/brujula.png')} style={{ height: 34, width: 34 }} /></View>}
+            onPress={() => router.push('/compass')}
+          />
 
           <View className="flex-row rounded-control border border-ui-border bg-ui-muted p-0.5 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-muted" style={{ elevation: 6, shadowColor: colors.primary, shadowOffset: { height: 4, width: 0 }, shadowOpacity: 0.2, shadowRadius: 6 }}>
             {visitorOptions.map((item) => {
