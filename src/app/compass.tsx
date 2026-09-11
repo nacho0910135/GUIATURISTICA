@@ -13,7 +13,7 @@ import { normalizeHeading } from '@/lib/compass';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
-const SAN_JOSE = { latitude: 9.9333, longitude: -84.0833 };
+const COSTA_RICA = { latitude: 9.7489, longitude: -83.7534 };
 const ignorePick = () => {};
 
 export default function CompassScreen() {
@@ -26,7 +26,7 @@ export default function CompassScreen() {
   const es = language === 'es';
   const [retry, setRetry] = useState(0);
   const { degrees, rotation, position, locationStatus, sensorStatus } = useCompass(retry);
-  const [center, setCenter] = useState<MapCoordinate>(SAN_JOSE);
+  const [center, setCenter] = useState<MapCoordinate>(COSTA_RICA);
   const [centered, setCentered] = useState(false);
   const retrySensors = () => setRetry((value) => value + 1);
   const openSettings = () => { void Linking.openSettings().catch(retrySensors); };
@@ -71,9 +71,9 @@ export default function CompassScreen() {
     <ScrollView onLayout={(event) => setPanelHeight(event.nativeEvent.layout.height)} style={{ position: 'absolute', left: Math.max(16, (width - 520) / 2), right: Math.max(16, (width - 520) / 2), bottom: insets.bottom + 36, maxHeight: '38%', backgroundColor: colors.surface, borderRadius: 20 }} contentContainerStyle={{ padding: 16, gap: 8 }}>
       <Text className="font-display text-xl" style={{ color: colors.text }}>{es ? 'Brújula' : 'Compass'} · {degrees === null ? '—' : `${Math.round(normalizeHeading(degrees)) % 360}°`}</Text>
       <Text style={{ color: colors.text }}>{sensorCopy}</Text>
-      <Text style={{ color: colors.textMuted }}>{locationCopy}{!centered ? (es ? ' · Vista inicial: San José' : ' · Initial view: San José') : ''}</Text>
+      <Text style={{ color: colors.textMuted }}>{locationCopy}</Text>
       <Button onPress={recenter} emphasis="outline" label={es ? 'Centrar en mi ubicación' : 'Center on my location'} icon={<LocateFixed color={colors.primary} size={18} />} disabled={!position} />
-      {sensorStatus !== 'ready' || !position ? <Button onPress={retrySensors} emphasis="ghost" label={es ? 'Reintentar' : 'Retry'} /> : null}
+      {['unavailable', 'denied'].includes(sensorStatus) || ['error', 'denied', 'imprecise'].includes(locationStatus) ? <Button onPress={retrySensors} emphasis="ghost" label={es ? 'Reintentar' : 'Retry'} /> : null}
       {locationStatus === 'denied' || sensorStatus === 'denied' ? <Button onPress={openSettings} emphasis="ghost" label={es ? 'Abrir ajustes' : 'Open settings'} /> : null}
     </ScrollView>
   </View>;

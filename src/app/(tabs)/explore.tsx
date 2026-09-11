@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsFocused, useScrollToTop } from 'expo-router/react-navigation';
-import { roadRouteLabel } from '@/lib/location-quality';
+import { distanceKm, roadRouteLabel } from '@/lib/location-quality';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,8 +19,8 @@ import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
-import { getLiveRoadAlerts, type RoadTrafficAlert } from '@/lib/logistics';
-import { getMarineConditions, getMarineConditionsMany, isBeachPlace, MARINE_WEATHER_STALE_TIME, OPEN_METEO_MARINE_URL } from '@/lib/marine-weather';
+import { getLiveRoadAlerts, getWeather, WEATHER_STALE_TIME, type RoadTrafficAlert } from '@/lib/logistics';
+import { getMarineConditionsMany, isBeachPlace, MARINE_WEATHER_STALE_TIME, OPEN_METEO_MARINE_URL } from '@/lib/marine-weather';
 import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
@@ -34,6 +34,7 @@ const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
 
 const volcanoColor = '#5F9EA0';
 const categoryColors = ['#2A7B4C', '#1E5B75', volcanoColor, '#B58A5A', '#7D9E8A', '#6F8FB3'];
+const weatherIcons = { '01': 'weather-sunny', '02': 'weather-partly-cloudy', '03': 'weather-cloudy', '04': 'weather-cloudy', '09': 'weather-pouring', '10': 'weather-rainy', '11': 'weather-lightning-rainy', '13': 'weather-snowy', '50': 'weather-fog' } as const;
 
 export default function ExploreScreen() {
   const { formatPrice, language, requireAuth, session, userLocation, refreshUserLocation, locating, locationError } = useApp();
@@ -122,17 +123,25 @@ export default function ExploreScreen() {
       return score === null ? [] : [{ place, score }];
     });
   }, [coordinates, places.data, search]);
+  const routingOrigin = useMemo(() => userLocation ? {
+    latitude: Number(userLocation.latitude.toFixed(3)),
+    longitude: Number(userLocation.longitude.toFixed(3)),
+  } : null, [userLocation]);
+  // ponytail: 24 road candidates keep nearby results responsive; raise only if field data shows missed nearby destinations.
+  const routingCandidates = useMemo(() => routingOrigin && coordinates
+    ? [...matchedPlaces].sort((a, b) => distanceKm(routingOrigin, a.place) - distanceKm(routingOrigin, b.place)).slice(0, 24)
+    : matchedPlaces.slice(0, 24), [coordinates, matchedPlaces, routingOrigin]);
   const roadRoutes = useQuery({
-    queryKey: ['road-distances', userLocation?.latitude, userLocation?.longitude, matchedPlaces.map(({ place }) => place.id).join(',')],
-    queryFn: () => getRoadRoutes(userLocation!, matchedPlaces.map(({ place }) => place)),
-    enabled: Boolean(userLocation && matchedPlaces.length),
+    queryKey: ['mapbox-road-routes-v3', routingOrigin?.latitude, routingOrigin?.longitude, routingCandidates.map(({ place }) => place.id).join(',')],
+    queryFn: () => getRoadRoutes(routingOrigin!, routingCandidates.map(({ place }) => place)),
+    enabled: Boolean(routingOrigin && routingCandidates.length),
     staleTime: 10 * 60 * 1000,
   });
-  const visiblePlaces = useMemo(() => [...matchedPlaces]
+  const visiblePlaces = useMemo(() => [...routingCandidates]
     .sort((a, b) => coordinates
       ? (roadRoutes.data?.get(a.place.id)?.distanceKm ?? Infinity) - (roadRoutes.data?.get(b.place.id)?.distanceKm ?? Infinity) || a.score - b.score
       : a.score - b.score || a.place.name.localeCompare(b.place.name, language === 'es' ? 'es' : 'en'))
-    .map(({ place }) => place), [coordinates, language, matchedPlaces, roadRoutes.data]);
+    .map(({ place }) => place), [coordinates, language, roadRoutes.data, routingCandidates]);
   const hasSearch = Boolean(search.trim());
 
   const discover = async () => {
@@ -410,7 +419,8 @@ function DestinationPreviewCarousel({ active, large, place }: { active: boolean;
 }
 
 function PlaceResult({ active, followed, formatPrice, language, large, onFollow, onPress, ownContribution, place, route }: { active: boolean; followed: boolean; formatPrice: (value: number) => string; language: 'es' | 'en'; large: boolean; onFollow: () => void; onPress: () => void; ownContribution: boolean; place: ExplorePlace; route: RoadRoute | null }) {
-  const marine = useQuery({ queryKey: ['marine-weather', place.latitude, place.longitude], queryFn: () => getMarineConditions(place), enabled: active && isBeachPlace(place), staleTime: MARINE_WEATHER_STALE_TIME });
+  const weather = useQuery({ queryKey: ['weather', 'destination', place.id, language], queryFn: () => getWeather(place, language), enabled: active, staleTime: WEATHER_STALE_TIME });
+  const weatherIcon = weather.data ? weatherIcons[weather.data.icon.slice(0, 2) as keyof typeof weatherIcons] ?? 'weather-cloudy' : null;
   const documentedAuthorities = place.verification_evidence_url && place.verification_checked_at ? place.validated_by : [];
   const description = language === 'es' ? place.description : place.description_en;
   if (large) {
@@ -426,7 +436,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
           </View>
           <Text className="mt-2 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={2}>{description ?? (language === 'es' ? 'Descubrí este destino y planificá tu visita.' : 'Discover this destination and plan your visit.')}</Text>
           <Text className="mt-3 text-sm font-bold text-ui-text dark:text-ui-dark-text">{place.province} · {place.category}</Text>
-          {marine.data ? <View className="mt-2 flex-row gap-3"><Text className="text-xs font-black text-caribbean-700 dark:text-caribbean-100">🌊 {marine.data.waveHeight?.toFixed(1) ?? '—'} m</Text><Text className="text-xs font-black text-caribbean-700 dark:text-caribbean-100">🌡 {marine.data.waterTemperature?.toFixed(1) ?? '—'} °C</Text></View> : null}
+          {weather.data && weatherIcon ? <View className="mt-2 flex-row items-center"><MaterialCommunityIcons accessibilityElementsHidden name={weatherIcon} size={20} color="#0077A8" /><Text className="ml-1 text-xs font-black capitalize text-caribbean-700 dark:text-caribbean-100">{weather.data.temperature}°{weather.data.temperatureUnit} · {weather.data.description}</Text></View> : null}
           <View className="mt-1 flex-row items-center justify-between">
             <Text className="text-sm font-black text-ui-primary dark:text-ui-dark-primary">{place.price_national_crc == null ? (language === 'es' ? 'Consultar precio' : 'Check price') : formatPrice(place.price_national_crc)}</Text>
             {route ? <Text className="ml-2 flex-1 text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{roadRouteLabel(route, language)}</Text> : <MaterialCommunityIcons name="arrow-right" size={21} color="#0077A8" />}
@@ -473,7 +483,7 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
         <Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>
           {place.province} · {place.category} · {place.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check price') : formatPrice(place.price_national_crc)}
         </Text>
-        {marine.data ? <Text className="mt-1 text-xs font-black text-caribbean-700 dark:text-caribbean-100">🌊 {marine.data.waveHeight?.toFixed(1) ?? '—'} m · 🌡 {marine.data.waterTemperature?.toFixed(1) ?? '—'} °C</Text> : null}
+        {weather.data && weatherIcon ? <View className="mt-1 flex-row items-center"><MaterialCommunityIcons accessibilityElementsHidden name={weatherIcon} size={18} color="#0077A8" /><Text className="ml-1 flex-shrink text-xs font-black capitalize text-caribbean-700 dark:text-caribbean-100" numberOfLines={1}>{weather.data.temperature}°{weather.data.temperatureUnit} · {weather.data.description}</Text></View> : null}
       </View>
       {route ? <Text className="ml-2 max-w-36 flex-shrink text-right text-xs font-black text-ui-secondary dark:text-ui-dark-secondary">{roadRouteLabel(route, language)}</Text> : <MaterialCommunityIcons name="chevron-right" size={23} color="#0077A8" />}
     </Pressable>

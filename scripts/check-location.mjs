@@ -199,6 +199,9 @@ assert.ok(exploreSource.includes('await refreshUserLocation()'), 'Explore refres
 assert.ok(readFileSync('src/app/(tabs)/commerce.tsx', 'utf8').includes('refreshUserLocation'), 'Commerce refreshes the provider-owned session location');
 assert.match(exploreSource, /if \(!isFocused\) resetExplore\(\)/, 'Explore clears temporary nearby results on blur');
 assert.match(exploreSource, /onPress=\{\(\) => \{\s*resetExplore\(\);\s*router\.push\(\{ pathname: '\/\(aux\)\/province'/, 'Opening a nearby destination clears the list first');
+assert.ok(exploreSource.includes("'mapbox-road-routes-v3'"), 'Nearby destinations cannot reuse the old straight-distance query cache');
+assert.ok(exploreSource.includes('userLocation.latitude.toFixed(3)'), 'Small GPS movements do not restart every Directions request');
+assert.match(exploreSource, /routingCandidates[\s\S]*slice\(0, 24\)/, 'Nearby route requests resolve in a bounded batch');
 for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx', 'src/app/(aux)/province.tsx']) {
   const source = readFileSync(path, 'utf8');
   assert.ok(source.includes('roadRouteLabel'), `${path}: road distance and duration label`);
@@ -210,6 +213,7 @@ let directionsUrl;
 const routeCache = new Map();
 const asyncStorage = { setItem: async (key, value) => routeCache.set(key, value), getItem: async (key) => routeCache.get(key) ?? null };
 const routing = load('src/lib/road-routing.ts', { '@react-native-async-storage/async-storage': asyncStorage }, {
+  AbortController,
   process: { env: { EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: 'public-test-token' } },
   fetch: async (url) => {
     directionsUrl = url;
@@ -222,6 +226,7 @@ assert.equal(roadRoute.durationMinutes, 60);
 assert.equal(roadRoute.cached, false);
 assert.match(directionsUrl, /-84\.08000,9\.93000;-85\.44000,10\.63000/);
 const offlineRouting = load('src/lib/road-routing.ts', { '@react-native-async-storage/async-storage': asyncStorage }, {
+  AbortController,
   process: { env: { EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: 'public-test-token' } },
   fetch: async () => { throw new Error('offline'); },
 });

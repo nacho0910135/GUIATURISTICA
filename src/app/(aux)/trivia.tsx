@@ -63,7 +63,9 @@ export default function TriviaScreen() {
             <View className="mt-6 px-1 py-2">
               <View className="flex-row items-center justify-between"><Text className="text-xs font-black uppercase tracking-wider text-white">{question.category}</Text><Text className="text-sm font-bold text-white/75">{index + 1} / {questions.length}</Text></View>
               <View className="mt-3 h-2 overflow-hidden rounded-full bg-white/30"><View className="h-full rounded-full bg-ui-dark-primary" style={{ width: `${((index + 1) / questions.length) * 100}%` }} /></View>
-              <Text className="mt-7 text-2xl font-black leading-8 text-white">{question.question}</Text>
+              <View className="mt-6 rounded-2xl border border-white/30 bg-black/55 px-4 py-5">
+                <Text className="text-2xl font-black leading-8 text-white">{question.question}</Text>
+              </View>
               <View className="mt-6 gap-3">{question.options.map((option, optionIndex) => {
                 const answered = selected !== undefined, correct = optionIndex === question.answer, chosen = optionIndex === selected;
                 const style = answered && correct ? 'border-ui-dark-success bg-ui-dark-primary-soft/85' : chosen ? 'border-ui-dark-danger bg-ui-dark-surface/85' : 'border-white/35 bg-black/55';

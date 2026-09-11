@@ -10,7 +10,8 @@ export function smoothHeading(previous: number | null, next: number, alpha = 0.2
   return previous + alpha * delta;
 }
 
-export function usableHeading(heading: { trueHeading: number; accuracy: number }) {
-  return Number.isFinite(heading.trueHeading) && heading.trueHeading >= 0 && heading.trueHeading < 360
-    && heading.accuracy >= 2;
+export function headingDegrees(heading: { trueHeading: number; magHeading: number }) {
+  if (Number.isFinite(heading.trueHeading) && heading.trueHeading >= 0 && heading.trueHeading < 360) return heading.trueHeading;
+  if (Number.isFinite(heading.magHeading) && heading.magHeading >= 0 && heading.magHeading < 360) return heading.magHeading;
+  return null;
 }

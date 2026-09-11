@@ -19,8 +19,11 @@ export function getRoadRoute(from: RoadPoint, to: RoadPoint, geometry = false) {
   const storageKey = `road-route:${key}`;
   const request = (async () => {
     const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     if (token) try {
-      const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${key.split(';').slice(0, 2).join(';')}?access_token=${encodeURIComponent(token)}&overview=${geometry ? 'simplified' : 'false'}&geometries=geojson`);
+      const controller = new AbortController();
+      timeout = setTimeout(() => controller.abort(), 12_000);
+      const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${key.split(';').slice(0, 2).join(';')}?access_token=${encodeURIComponent(token)}&overview=${geometry ? 'simplified' : 'false'}&geometries=geojson`, { signal: controller.signal });
       if (response.ok) {
         const body = await response.json() as { code?: string; routes?: { distance?: number; duration?: number; geometry?: RoadRoute['geometry'] }[] };
         const route = body.code === 'Ok' ? body.routes?.[0] : undefined;
@@ -31,6 +34,7 @@ export function getRoadRoute(from: RoadPoint, to: RoadPoint, geometry = false) {
         }
       }
     } catch { /* fall through to the last valid route */ }
+    finally { clearTimeout(timeout); }
     try {
       const stored = await AsyncStorage.getItem(storageKey);
       if (!stored) return null;

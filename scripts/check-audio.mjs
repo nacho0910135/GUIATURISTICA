@@ -9,10 +9,10 @@ const profile = read('src/app/(tabs)/profile.tsx');
 const travelerProfile = read('src/app/(aux)/traveler-profile.tsx');
 const messages = read('src/lib/social-profile.ts');
 
-assert.match(recorder, /onResponderGrant=.*start/s);
-assert.match(recorder, /onResponderRelease=.*finish/s);
-assert.match(recorder, /onResponderTerminationRequest=\{\(\) => false\}/);
-assert.match(recorder, /onResponderMove=\{move\}/);
+assert.match(recorder, /onPressIn=.*start/s);
+assert.match(recorder, /onPressOut=.*finish/s);
+assert.match(recorder, /onTouchMove=\{move\}/);
+assert.match(recorder, /setRecording\(true\).*requestRecordingPermissionsAsync/s);
 assert.match(recorder, /CANCEL_DISTANCE/);
 assert.match(recorder, /finish\(true\)/);
 assert.match(recorder, /name="delete"/);

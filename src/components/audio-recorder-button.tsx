@@ -17,6 +17,7 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
   const [recording, setRecording] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const startingRef = useRef(false);
   const recordingRef = useRef(false);
   const pressedRef = useRef(false);
   const cancelRef = useRef(false);
@@ -39,20 +40,26 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
   };
 
   const start = async () => {
-    if (busy || recordingRef.current) return;
+    if (busy || startingRef.current || recordingRef.current) return;
+    startingRef.current = true;
+    setRecording(true);
     try {
       const permission = await requestRecordingPermissionsAsync();
-      if (!permission.granted) return Alert.alert('Descubriendo CR', text('Permití el micrófono para grabar un audio.', 'Allow microphone access to record audio.'));
+      if (!permission.granted) {
+        reset();
+        return Alert.alert('Descubriendo CR', text('Permití el micrófono para grabar un audio.', 'Allow microphone access to record audio.'));
+      }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
       recordingRef.current = true;
-      setRecording(true);
       timerRef.current = setInterval(() => setElapsedMs((value) => value + 250), 250);
       if (!pressedRef.current) await finish(cancelRef.current);
     } catch (reason) {
       reset();
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : text('No se pudo iniciar la grabación.', 'Could not start recording.'));
+    } finally {
+      startingRef.current = false;
     }
   };
 
@@ -104,13 +111,9 @@ export function AudioRecorderButton({ busy, language, onRecorded }: { busy: bool
         className={recording ? 'h-12 w-12 items-center justify-center rounded-full bg-ui-danger' : 'h-12 w-12 items-center justify-center rounded-full bg-ui-primary'}
         disabled={busy}
         onAccessibilityAction={({ nativeEvent }) => nativeEvent.actionName === 'escape' ? void finish(true) : toggleAccessibleRecording()}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={({ nativeEvent }) => { pressedRef.current = true; cancelRef.current = false; startXRef.current = nativeEvent.pageX; void start(); }}
-        onResponderMove={move}
-        onResponderRelease={() => { pressedRef.current = false; void finish(); }}
-        onResponderTerminate={() => { pressedRef.current = false; void finish(true); }}
-        onResponderTerminationRequest={() => false}
-        onStartShouldSetResponder={() => !busy}
+        onPressIn={({ nativeEvent }) => { pressedRef.current = true; cancelRef.current = false; startXRef.current = nativeEvent.pageX; void start(); }}
+        onPressOut={() => { pressedRef.current = false; void finish(); }}
+        onTouchMove={move}
       ><MaterialCommunityIcons name="microphone" size={24} color="white" /></Pressable>
     </Animated.View>
   </View>;

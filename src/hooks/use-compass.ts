@@ -5,8 +5,8 @@ import { AppState, Platform } from 'react-native';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { smoothHeading, usableHeading } from '@/lib/compass';
-import { isUsablePosition } from '@/lib/location-quality';
+import { headingDegrees, smoothHeading } from '@/lib/compass';
+import { isUsablePosition, LOCATION_MAX_ACCURACY_METERS, LOCATION_MAX_AGE_MS } from '@/lib/location-quality';
 
 export function useCompass(retry: number) {
   const focused = useIsFocused();
@@ -32,14 +32,16 @@ export function useCompass(retry: number) {
     let fix: Location.LocationObject | null = null;
     setSensorStatus(Platform.OS === 'web' ? 'unavailable' : 'waiting');
     setLocationStatus('waiting');
-    setDegrees(null);
-    setPosition(null);
 
     async function start() {
       try {
         const permission = await Location.requestForegroundPermissionsAsync();
         if (disposed) return;
         if (!permission.granted) { setLocationStatus('denied'); return; }
+        const cached = await Location.getLastKnownPositionAsync({ maxAge: LOCATION_MAX_AGE_MS, requiredAccuracy: LOCATION_MAX_ACCURACY_METERS });
+        if (!disposed && cached && !cached.mocked && isUsablePosition(cached)) {
+          fix = cached; setPosition(cached); setLocationStatus('ready');
+        }
         keep(await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, distanceInterval: 5, timeInterval: 1000 }, (value) => {
           if (disposed) return;
           fix = value;
@@ -66,11 +68,12 @@ export function useCompass(retry: number) {
           if (disposed) return;
           const strength = Math.hypot(x, y, z);
           magneticAt = Date.now();
-          if (!Number.isFinite(strength) || strength < 10 || strength > 100 || !latest || !usableHeading(latest)) {
+          const heading = latest && headingDegrees(latest);
+          if (!Number.isFinite(strength) || strength < 10 || strength > 100 || heading === null) {
             setSensorStatus('calibrate'); setDegrees(null); return;
           }
           const firstReading = filtered === null;
-          filtered = smoothHeading(filtered, latest.trueHeading);
+          filtered = smoothHeading(filtered, heading);
           if (filtered === null) return;
           rotation.value = firstReading ? filtered : withTiming(filtered, { duration: 100 });
           setDegrees(filtered);
