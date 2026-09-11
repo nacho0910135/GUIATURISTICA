@@ -28,6 +28,7 @@ import { markExploreStartupReady } from '@/lib/startup-gate';
 import { getRoadRoutes, type RoadRoute } from '@/lib/road-routing';
 import { useApp } from '@/providers/app-provider';
 
+import { useScreenActive } from '@/hooks/use-screen-active';
 import { FrogLoader } from '@/components/frog-loader';
 const fallbackDestinationThumbnail = require('../../../assets/images/startup-rainforest.gif');
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
@@ -42,6 +43,7 @@ export default function ExploreScreen() {
   useScrollToTop(scrollRef);
   const router = useRouter();
   const isFocused = useIsFocused();
+  const isActive = useScreenActive();
   const { reset: resetToken } = useLocalSearchParams<{ reset?: string }>();
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
@@ -66,6 +68,7 @@ export default function ExploreScreen() {
   const roadAlerts = useQuery({
     queryKey: ['mapbox-road-alerts', language],
     queryFn: () => getLiveRoadAlerts(language),
+    enabled: isActive,
     refetchInterval: 8 * 60 * 1000,
     staleTime: 8 * 60 * 1000,
   });
@@ -81,7 +84,7 @@ export default function ExploreScreen() {
       const conditions = await getMarineConditionsMany(beaches);
       return beaches.flatMap((beach, index) => conditions[index]?.dangerous ? [{ ...beach, conditions: conditions[index] }] : []);
     },
-    enabled: beaches.length > 0,
+    enabled: isActive && beaches.length > 0,
     staleTime: MARINE_WEATHER_STALE_TIME,
   });
   useEffect(() => {
@@ -134,7 +137,7 @@ export default function ExploreScreen() {
   const roadRoutes = useQuery({
     queryKey: ['mapbox-road-routes-v3', routingOrigin?.latitude, routingOrigin?.longitude, routingCandidates.map(({ place }) => place.id).join(',')],
     queryFn: () => getRoadRoutes(routingOrigin!, routingCandidates.map(({ place }) => place)),
-    enabled: Boolean(routingOrigin && routingCandidates.length),
+    enabled: isActive && Boolean(routingOrigin && routingCandidates.length),
     staleTime: 10 * 60 * 1000,
   });
   const visiblePlaces = useMemo(() => [...routingCandidates]
@@ -161,7 +164,7 @@ export default function ExploreScreen() {
       ) : (
         visiblePlaces.slice(0, hasSearch ? 5 : 20).map((place) => (
           <PlaceResult
-            active={isFocused}
+            active={isActive}
             followed={Boolean(place.contributor_id && followed.data?.has(place.contributor_id))}
             formatPrice={formatPrice}
             key={`${place.community ? 'community' : 'official'}-${place.id}`}

@@ -1,4 +1,4 @@
-import { useIsFocused } from 'expo-router/react-navigation';
+import { useScreenActive } from '@/hooks/use-screen-active';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
@@ -15,7 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 export function AnimatedShine({ travel = 320 }: { travel?: number }) {
-  const isFocused = useIsFocused();
+  const isFocused = useScreenActive();
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(0);
 

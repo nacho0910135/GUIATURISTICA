@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useIsFocused } from 'expo-router/react-navigation';
+import { useScreenActive } from '@/hooks/use-screen-active';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
@@ -47,7 +47,7 @@ function SanctuaryImage({ active, sanctuary }: { active: boolean; sanctuary: Fau
 
 export default function FaunaScreen() {
   const router = useRouter();
-  const isFocused = useIsFocused();
+  const isFocused = useScreenActive();
   const { from } = useLocalSearchParams<{ from?: string }>();
   const { width } = useWindowDimensions();
   const { language, requireAuth, session } = useApp();

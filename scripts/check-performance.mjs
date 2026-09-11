@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { QueryClient, QueryObserver } from '@tanstack/react-query';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const compile = (source) => ts.transpileModule(source, {
@@ -31,19 +32,19 @@ vm.runInNewContext(compile(read('src/hooks/use-traveler-messages-sync.ts')), {
   exports,
   require(name) {
     if (name === 'react') return { useRef: (current) => ({ current }), useEffect: (callback) => { effect = callback; } };
-    if (name === 'expo-router/react-navigation') return { useIsFocused: () => focused };
+    if (name === '@/hooks/use-screen-active') return { useScreenActive: () => focused && appState.currentState === 'active' };
     if (name === 'react-native') return { AppState: appState };
     if (name === '@/lib/supabase') return { supabase: {
       channel() {
-        const channel = { callbacks: [], on(_event, _filter, callback) { this.callbacks.push(callback); return this; }, subscribe() { return this; } };
+        const channel = { callbacks: [], on(_event, _filter, callback) { this.callbacks.push(callback); return this; }, subscribe(callback) { this.status = callback; return this; } };
         channels.push(channel);
         return channel;
       },
-      removeChannel() { removed++; },
+      removeChannel() { removed++; return Promise.resolve(); },
     } };
     throw new Error(`Unexpected import: ${name}`);
   },
-  setInterval(callback, delay) { assert.equal(delay, 2500); intervalCount++; intervalCallback = callback; return 1; },
+  setInterval(callback, delay) { assert.equal(delay, 30000); intervalCount++; intervalCallback = callback; return 1; },
   clearInterval() { intervalCount--; },
 });
 const mount = (userId) => {
@@ -86,18 +87,28 @@ assert.equal(listenerCount, 0);
 const source = read('src/app/(tabs)/explore.tsx');
 const ast = ts.createSourceFile('explore.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 let searchExpression;
+const expressions = {};
 const helpers = [];
 function visit(node) {
+  if (ts.isVariableDeclaration(node) && ['matchedPlaces', 'routingCandidates'].includes(node.name.getText(ast))) expressions[node.name.getText(ast)] = node.initializer.getText(ast);
   if (ts.isVariableDeclaration(node) && node.name.getText(ast) === 'visiblePlaces') searchExpression = node.initializer.getText(ast);
   if (ts.isFunctionDeclaration(node) && ['normalizeSearchText', 'nameSearchScore', 'distanceKm'].includes(node.name?.text)) helpers.push(node.getText(ast));
   ts.forEachChild(node, visit);
 }
 visit(ast);
+const locationAst = ts.createSourceFile('location-quality.ts', read('src/lib/location-quality.ts'), ts.ScriptTarget.Latest, true);
+for (const node of locationAst.statements) {
+  if (ts.isFunctionDeclaration(node) && node.name?.text === 'distanceKm') helpers.push(node.getText(locationAst).replace('export ', ''));
+}
 assert.ok(searchExpression);
 const context = vm.createContext({ useMemo: (calculate) => calculate() });
 vm.runInContext(compile(`${helpers.join('\n')}
 function findPlaces(data, search, coordinates, language) {
   const places = { data };
+  const routingOrigin = coordinates;
+  const matchedPlaces = ${expressions.matchedPlaces};
+  const routingCandidates = ${expressions.routingCandidates};
+  const roadRoutes = { data: new Map(data.map(place => [place.id, { distanceKm: coordinates ? distanceKm(coordinates, place) : 0 }])) };
   return ${searchExpression};
 }`), context);
 const data = ['Playa Doña Ana', 'Playa Hermosa', 'Doña Ana', 'Volcán Arenal', 'Playa Doña Ana Norte'].map((name, i) => ({
@@ -119,4 +130,57 @@ for (const language of ['es', 'en']) {
   }
 }
 assert.deepEqual(data.map((place) => place.id), [0, 1, 2, 3, 4], 'Search must not mutate the cached list');
-console.log('Performance regressions checked: focus/background sync cleanup and 72 search/order cases.');
+// Realtime reconnection catches up without waiting for the backup timer.
+cleanup = mount('traveler');
+const beforeReconnect = refreshed;
+channels.at(-1).status('SUBSCRIBED');
+assert.equal(refreshed, beforeReconnect + 1);
+cleanup();
+appState.currentState = 'background';
+assert.equal(mount('traveler'), undefined, 'Background mount must not open a channel');
+appState.currentState = 'active';
+
+// Exercise the actual screen visibility hook, including listener disposal.
+const activeExports = {};
+let dispose;
+vm.runInNewContext(compile(read('src/hooks/use-screen-active.ts')), {
+  exports: activeExports,
+  require(name) {
+    if (name === 'expo-router/react-navigation') return { useIsFocused: () => focused };
+    if (name === 'react-native') return { AppState: appState };
+    if (name === 'react') return { useSyncExternalStore(subscribe, snapshot) { dispose = subscribe(() => {}); return snapshot(); } };
+    throw new Error(name);
+  },
+});
+for (const foreground of ['active', 'background', 'inactive']) {
+  for (const focus of [true, false]) {
+    appState.currentState = foreground;
+    focused = focus;
+    assert.equal(activeExports.useScreenActive(), foreground === 'active' && focus);
+    dispose();
+  }
+}
+assert.equal(listenerCount, 0);
+
+// Real Query observers: concurrent consumers share a request, fresh data survives
+// navigation, account changes never display the previous user's private data.
+const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+let requests = 0;
+let resolveRequest;
+const options = {
+  queryKey: ['private-conversations', 'alice'], staleTime: 30000, placeholderData: undefined,
+  queryFn: () => { requests++; return new Promise(resolve => { resolveRequest = resolve; }); },
+};
+const header = new QueryObserver(client, options);
+const profile = new QueryObserver(client, options);
+const offHeader = header.subscribe(() => {});
+const offProfile = profile.subscribe(() => {});
+assert.equal(requests, 1);
+resolveRequest(['alice-message']);
+await client.getQueryCache().find({ queryKey: options.queryKey }).promise;
+await client.fetchQuery(options);
+assert.equal(requests, 1, 'Fresh navigation must reuse data');
+profile.setOptions({ ...options, queryKey: ['private-conversations', 'bob'], enabled: false });
+assert.equal(profile.getCurrentResult().data, undefined);
+offHeader(); offProfile(); client.clear();
+console.log('Performance checks passed: background cleanup, Realtime reconnect, shared cache, account isolation and search ordering.');

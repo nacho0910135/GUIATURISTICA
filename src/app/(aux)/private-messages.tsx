@@ -9,12 +9,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AudioRecorderButton } from '@/components/audio-recorder-button';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
+import { useScreenActive } from '@/hooks/use-screen-active';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { getPrivateConversations, markMessageRead, sendTravelerMessage, toggleTravelerMessageReaction } from '@/lib/social-profile';
 import { useApp } from '@/providers/app-provider';
 
 export default function PrivateMessagesScreen() {
   const router = useRouter();
+  const isActive = useScreenActive();
   const { partnerId, partnerName, partnerAvatarUrl } = useLocalSearchParams<{ partnerId?: string; partnerName?: string; partnerAvatarUrl?: string }>();
   const { avatarUrl, language, session } = useApp();
   const userId = session?.user.id ?? '';
@@ -26,13 +28,15 @@ export default function PrivateMessagesScreen() {
   const conversations = useQuery({
     queryKey: ['private-conversations', userId],
     queryFn: () => getPrivateConversations(userId),
-    enabled: Boolean(userId),
+    enabled: Boolean(userId) && isActive,
+    placeholderData: undefined,
+    staleTime: 30000,
   });
   const refetchConversations = conversations.refetch;
   const active = conversations.data?.find((conversation) => conversation.partner_id === activePartnerId) ?? (activePartnerId && partnerName ? { partner_id: activePartnerId, partner_name: partnerName, partner_avatar_url: partnerAvatarUrl || null, messages: [], unread_count: 0 } : undefined);
   const unreadMessageIds = active?.messages.filter((item) => item.recipient_id === userId && !item.read_status).map((item) => item.id).join(',') ?? '';
 
-  useTravelerMessagesSync(userId || undefined, () => { void conversations.refetch(); });
+  useTravelerMessagesSync(userId || undefined, () => { void conversations.refetch({ cancelRefetch: false }); });
   useEffect(() => { if (partnerId) setActivePartnerId(partnerId); }, [partnerId]);
   useEffect(() => {
     if (!unreadMessageIds) return;

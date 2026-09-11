@@ -4,8 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { MotionPressable, MotionReveal, Skeleton } from '@/components/motion';
@@ -19,8 +19,8 @@ import { submitInformationReport } from '@/lib/reports';
 import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, setTravelerReplyReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
+import { useScreenActive } from '@/hooks/use-screen-active';
 import { FrogLoader } from '@/components/frog-loader';
-type Wall = Awaited<ReturnType<typeof getTravelerWall>>;
 
 const displayName = (post: TravelerPost) => post.user?.username || post.user?.full_name || `Viajero ${post.user_id.slice(0, 5)}`;
 const AdminBadge = () => <View className="ml-2 flex-row items-center rounded-full bg-ui-primary px-2 py-1 dark:bg-ui-dark-primary"><MaterialCommunityIcons name="shield-crown" size={11} color="white" /><Text className="ml-1 text-[9px] font-black text-white">ADMIN</Text></View>;
@@ -129,7 +129,7 @@ export default function FriendsScreen() {
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
   const userId = session?.user.id;
-  const [wall, setWall] = useState<Wall>();
+  const isActive = useScreenActive();
   const [body, setBody] = useState('');
   const [assets, setAssets] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [location, setLocation] = useState<{ latitude: number; longitude: number }>();
@@ -141,7 +141,6 @@ export default function FriendsScreen() {
   const [parentReplyId, setParentReplyId] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [followBusyId, setFollowBusyId] = useState<string>();
-  const [error, setError] = useState<string>();
   const [publishError, setPublishError] = useState<string>();
   const [reactionPickerPostId, setReactionPickerPostId] = useState<string>();
   const [reactionPickerReplyId, setReactionPickerReplyId] = useState<string>();
@@ -152,20 +151,26 @@ export default function FriendsScreen() {
   const longPressedPostId = useRef<string | undefined>(undefined);
   const topicOptions = useQuery({ queryKey: ['app-options', 'traveler_topic'], queryFn: () => getAppOptions('traveler_topic'), staleTime: Infinity });
   const reactionOptions = useQuery({ queryKey: ['app-options', 'traveler_reaction'], queryFn: () => getAppOptions('traveler_reaction'), staleTime: Infinity });
-  const explorePlaces = useQuery({ queryKey: ['explore-places', 'v3'], queryFn: getExplorePlaces, staleTime: 5 * 60 * 1000 });
+  const wallQuery = useQuery({
+    queryKey: ['traveler-wall', userId, topic],
+    queryFn: () => getTravelerWall(userId, topic),
+    enabled: isActive,
+    placeholderData: undefined,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
+  });
+  const wall = wallQuery.data;
+  const error = wallQuery.error instanceof Error ? wallQuery.error.message : undefined;
+  const explorePlaces = useQuery({ queryKey: ['explore-places', 'v3'], queryFn: getExplorePlaces, staleTime: 5 * 60 * 1000, enabled: isActive && (placeSearchOpen || Boolean(wall?.posts.some((post) => post.recommended_destination_id))) });
   const topics = topicOptions.data ?? [];
   const reactions = reactionOptions.data ?? [];
   const normalizedPlaceSearch = placeSearch.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const matchingPlaces = normalizedPlaceSearch
+  const matchingPlaces = useMemo(() => normalizedPlaceSearch
     ? (explorePlaces.data ?? []).filter((place) => place.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(normalizedPlaceSearch)).slice(0, 6)
-    : [];
+    : [], [explorePlaces.data, normalizedPlaceSearch]);
 
-  const load = useCallback(async () => {
-    try { setError(undefined); setWall(await getTravelerWall(userId, topic)); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo cargar Comunidad Viajera.'); }
-  }, [topic, userId]);
-
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  const refetchWall = wallQuery.refetch;
+  const load = useCallback(async () => { await refetchWall(); }, [refetchWall]);
 
   useEffect(() => {
     if (!wall || !params.postId) return;
@@ -306,7 +311,6 @@ export default function FriendsScreen() {
               key={item.id}
               onPress={() => {
                 void haptic('selection');
-                setWall(undefined);
                 setTopic(item.id);
               }}
               style={topic === item.id ? communityDepth : communityControlDepth}

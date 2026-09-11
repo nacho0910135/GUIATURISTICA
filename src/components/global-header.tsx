@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useIsFocused } from 'expo-router/react-navigation';
+import { useScreenActive } from '@/hooks/use-screen-active';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRightLeft, CircleUserRound, Moon, Sun } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
@@ -30,7 +30,7 @@ type SocialNotificationType = typeof SOCIAL_NOTIFICATION_TYPES[number];
 let lastPresentedSocialNotificationId: string | null = null;
 
 export function GlobalHeader() {
-  const isFocused = useIsFocused();
+  const isFocused = useScreenActive();
   const { avatarUrl, exchangeRate, exchangeRateReady, language, session, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
@@ -44,9 +44,9 @@ export function GlobalHeader() {
   const [dismissedRideId, setDismissedRideId] = useState<string>();
   const [visibleSocialNotificationId, setVisibleSocialNotificationId] = useState<string>();
   const formattedRate = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 2 }).format(exchangeRate);
-  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) });
-  const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session) });
-  const messages = useQuery({ queryKey: ['header-private-conversations', session?.user.id], queryFn: () => getPrivateConversations(session!.user.id), enabled: Boolean(session) && isFocused, staleTime: 0 });
+  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: Boolean(session) && isFocused, staleTime: 60000 });
+  const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session) && isFocused, staleTime: 60000 });
+  const messages = useQuery({ queryKey: ['private-conversations', session?.user.id], queryFn: () => getPrivateConversations(session!.user.id), enabled: Boolean(session) && isFocused, placeholderData: undefined, staleTime: 30000 });
   const socialActivity = useQuery({
     queryKey: ['header-unread-social-activity', session?.user.id],
     queryFn: async () => {
@@ -61,7 +61,7 @@ export function GlobalHeader() {
       return { ...data, postId: data.type === 'like' || data.type === 'comment' ? data.target_id : undefined };
     },
     enabled: Boolean(session) && isFocused,
-    staleTime: 0,
+    staleTime: 30000,
   });
   const cancelledRide = useQuery({
     queryKey: ['header-cancelled-ride', session?.user.id],
@@ -73,13 +73,13 @@ export function GlobalHeader() {
       return { ...notification, title: ride?.title ?? (language === 'es' ? 'Rodada programada' : 'Scheduled ride') };
     },
     enabled: Boolean(session) && isFocused,
-    staleTime: 0,
+    staleTime: 30000,
   });
   const refetchSocialActivityRef = useRef(socialActivity.refetch);
   refetchSocialActivityRef.current = socialActivity.refetch;
   const refetchCancelledRideRef = useRef(cancelledRide.refetch);
   refetchCancelledRideRef.current = cancelledRide.refetch;
-  useTravelerMessagesSync(session?.user.id, () => { void messages.refetch(); });
+  useTravelerMessagesSync(session?.user.id, () => { void messages.refetch({ cancelRefetch: false }); });
   const showTrialBanner = Boolean(access.data && !access.isPending && !access.isFetching && !access.data.hasPersonalPlan);
   const unreadConversation = messages.data?.filter((item) => item.unread_count > 0).sort((a, b) => (b.messages.at(-1)?.created_at ?? '').localeCompare(a.messages.at(-1)?.created_at ?? ''))[0];
   const isInChat = pathname.includes('traveler-profile') || (pathname.includes('profile') && routeParams.section === 'messages');
@@ -96,8 +96,8 @@ export function GlobalHeader() {
     if (!session?.user.id || !isFocused) return;
     const refresh = () => {
       if (AppState.currentState === 'active') {
-        void refetchSocialActivityRef.current();
-        void refetchCancelledRideRef.current();
+        void refetchSocialActivityRef.current({ cancelRefetch: false });
+        void refetchCancelledRideRef.current({ cancelRefetch: false });
       }
     };
     const channel = supabase
@@ -105,17 +105,15 @@ export function GlobalHeader() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'notifications',
           filter: `recipient_id=eq.${session.user.id}`,
         },
-        (payload) => {
-          if (SOCIAL_NOTIFICATION_TYPES.includes(payload.new.type as SocialNotificationType)) refresh();
-        },
+        refresh,
       )
-      .subscribe();
-    const interval = setInterval(refresh, 2500);
+      .subscribe((status) => { if (status === 'SUBSCRIBED') refresh(); });
+    const interval = setInterval(refresh, 30000);
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active') refresh();
     });

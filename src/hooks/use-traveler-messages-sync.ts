@@ -1,13 +1,13 @@
-import { useIsFocused } from 'expo-router/react-navigation';
+import { useScreenActive } from '@/hooks/use-screen-active';
 import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 
-const CHAT_REFRESH_INTERVAL_MS = 2500;
+const CHAT_REFRESH_INTERVAL_MS = 30000;
 
 export function useTravelerMessagesSync(userId: string | undefined, onChange: () => void) {
-  const isFocused = useIsFocused();
+  const isFocused = useScreenActive();
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -20,7 +20,7 @@ export function useTravelerMessagesSync(userId: string | undefined, onChange: ()
       .channel(`traveler-messages:${userId}:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'traveler_messages', filter: `recipient_id=eq.${userId}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'traveler_messages', filter: `sender_id=eq.${userId}` }, refresh)
-      .subscribe();
+      .subscribe((status) => { if (status === 'SUBSCRIBED') refresh(); });
     const interval = setInterval(() => {
       if (AppState.currentState === 'active') refresh();
     }, CHAT_REFRESH_INTERVAL_MS);

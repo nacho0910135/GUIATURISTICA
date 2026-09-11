@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
@@ -10,6 +10,7 @@ import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { AudioRecorderButton } from '@/components/audio-recorder-button';
 import { MotionPressable } from '@/components/motion';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
+import { useScreenActive } from '@/hooks/use-screen-active';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { reviewCommercialClaim } from '@/lib/commerce';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
@@ -29,16 +30,13 @@ export default function ProfileScreen() {
   const params = useLocalSearchParams<{ section?: string; partnerId?: string }>();
   const { avatarUrl, isAdmin, isAuthenticated, language, session, setAvatarUrl, signIn, signOut } = useApp();
   const [section, setSection] = useState<Section>();
-  const [data, setData] = useState<Dashboard>();
-  const [error, setError] = useState<string>();
+  const isActive = useScreenActive();
   const [busy, setBusy] = useState(false);
   const [bio, setBio] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [username, setUsername] = useState('');
   const [avatar, setAvatar] = useState<ImagePicker.ImagePickerAsset>();
   const [editingProfile, setEditingProfile] = useState(false);
-  const editingProfileRef = useRef(editingProfile);
-  editingProfileRef.current = editingProfile;
   const [suggestion, setSuggestion] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -56,14 +54,16 @@ export default function ProfileScreen() {
       if (profileError) throw profileError;
       return profile;
     },
-    enabled: Boolean(userId),
+    enabled: Boolean(userId) && isActive,
+    placeholderData: undefined,
     staleTime: 5 * 60 * 1000,
   });
   const conversations = useQuery({
     queryKey: ['private-conversations', userId],
     queryFn: () => getPrivateConversations(userId),
-    enabled: Boolean(userId),
-    staleTime: 60 * 1000,
+    enabled: Boolean(userId) && isActive,
+    placeholderData: undefined,
+    staleTime: 30000,
   });
   useEffect(() => {
     const requestedSection = params.section;
@@ -71,59 +71,51 @@ export default function ProfileScreen() {
     setSection(validSection ? requestedSection : undefined);
   }, [params.section]);
   useTravelerMessagesSync(userId || undefined, () => {
-    void queryClient.invalidateQueries({ queryKey: ['private-conversations', userId] });
+    void queryClient.invalidateQueries({ queryKey: ['private-conversations', userId] }, { cancelRefetch: false });
   });
   const adminDashboard = useQuery({
     queryKey: ['admin-dashboard', userId],
     queryFn: getAdminDashboard,
-    enabled: Boolean(userId) && isAdmin && section === 'login',
+    enabled: Boolean(userId) && isActive && isAdmin && section === 'login',
     staleTime: 60 * 1000,
   });
 
+  const dashboard = useQuery({
+    queryKey: ['social-profile', userId],
+    queryFn: () => getSocialProfile(userId),
+    enabled: Boolean(userId) && isActive,
+    placeholderData: undefined,
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
+    refetchInterval: isActive ? 30000 : false,
+  });
+  const data = dashboard.data;
+  const error = dashboard.error ? message(dashboard.error) : undefined;
+  const refetchDashboard = dashboard.refetch;
   const load = useCallback(async () => {
-    if (!userId) return;
-    try {
-      setError(undefined);
-      const next = await getSocialProfile(userId);
-      setData(next);
-      if (!editingProfileRef.current) {
-        setUsername(next.profile?.username || '');
-        setBio(next.profile?.bio || '');
-        setContactEmail(next.profile?.contact_email || '');
-      }
-      if (next.profile?.avatar_url) setAvatarUrl(next.profile.avatar_url);
-    } catch (reason) {
-      setError(message(reason));
-    }
-  }, [setAvatarUrl, userId]);
-  useEffect(() => { setData(undefined); setError(undefined); }, [userId]);
+    if (userId) await refetchDashboard();
+  }, [refetchDashboard, userId]);
   useEffect(() => {
-    if (!profileSummary.data || editingProfile) return;
-    setUsername(profileSummary.data.username || '');
-    setBio(profileSummary.data.bio || '');
-    setContactEmail(profileSummary.data.contact_email || '');
-  }, [editingProfile, profileSummary.data]);
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-      if (userId) void queryClient.invalidateQueries({ queryKey: ['private-conversations', userId] });
-      const interval = userId ? setInterval(() => { void load(); }, 2500) : undefined;
-      return () => { if (interval) clearInterval(interval); };
-    }, [load, queryClient, userId]),
-  );
+    const profile = data?.profile ?? profileSummary.data;
+    if (!profile || editingProfile) return;
+    setUsername(profile.username || '');
+    setBio(profile.bio || '');
+    setContactEmail(profile.contact_email || '');
+    if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
+  }, [data?.profile, editingProfile, profileSummary.data, setAvatarUrl]);
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !isActive) return;
     const channel = supabase
       // React can remount this effect before removeChannel finishes. A unique
       // topic prevents Supabase from reusing an already-subscribed channel and
       // rejecting the next postgres_changes listener.
       .channel(`profile-activity:${userId}:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` }, () => {
-        void load();
+        void refetchDashboard({ cancelRefetch: false });
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [load, userId]);
+  }, [isActive, refetchDashboard, userId]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -358,7 +350,7 @@ export default function ProfileScreen() {
                 onPress={() =>
                   void run(async () => {
                     await markAllNotificationsRead();
-                    setData((current) => current ? { ...current, notifications: current.notifications.map((item) => ({ ...item, read_status: true })) } : current);
+                    queryClient.setQueryData<Dashboard>(['social-profile', userId], (current) => current ? { ...current, notifications: current.notifications.map((item) => ({ ...item, read_status: true })) } : current);
                     await load();
                   })
                 }
