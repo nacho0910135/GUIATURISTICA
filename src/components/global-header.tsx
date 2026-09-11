@@ -267,7 +267,7 @@ export function GlobalHeader() {
           <IconButton
             accessibilityLabel={isSpanish ? 'Abrir brújula y mapa' : 'Open compass and map'}
             className="overflow-hidden"
-            icon={<View className="relative h-full w-full items-center justify-center overflow-hidden rounded-full"><AnimatedShine travel={76} /><Image contentFit="contain" source={require('@/assets/iconos propios/brujula.png')} style={{ height: 34, width: 34 }} /></View>}
+            icon={<View className="relative h-full w-full items-center justify-center overflow-hidden rounded-full"><Image contentFit="contain" source={require('@/assets/iconos propios/brujula.png')} style={{ height: 52, transform: [{ translateY: -5 }], width: 52 }} /><AnimatedShine travel={76} /></View>}
             onPress={() => router.push('/compass')}
           />
 
