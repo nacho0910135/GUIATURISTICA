@@ -139,7 +139,7 @@ export function useGooglePlayCampaignBilling({
         type: "subs",
       }),
       getAvailablePurchases(),
-    ]).finally(() => {
+    ]).catch((reason) => onErrorRef.current(reason instanceof Error ? reason.message : 'Google Play no está disponible.')).finally(() => {
       if (active) setProductsLoaded(true);
     });
     return () => {

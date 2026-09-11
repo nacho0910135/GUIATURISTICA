@@ -95,6 +95,8 @@
     "check:trust": "node scripts/check-trust-metadata.mjs",
     "check:location": "node scripts/check-location.mjs",
     "check:audio": "node scripts/check-audio.mjs",
+    "check:marine": "node scripts/check-marine-weather.mjs",
+    "check:resilience": "node scripts/check-api-resilience.mjs",
     "check:map": "node scripts/check-map-geojson.mjs",
     "check:performance": "node scripts/check-performance.mjs",
     "check:navigation": "node scripts/check-android-navigation.mjs",

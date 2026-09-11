@@ -121,7 +121,7 @@ export function GlobalHeader() {
     return () => {
       clearInterval(interval);
       appState.remove();
-      void supabase.removeChannel(channel);
+      void supabase.removeChannel(channel).catch(() => undefined);
     };
   }, [isFocused, session?.user.id]);
 
@@ -205,7 +205,7 @@ export function GlobalHeader() {
     } else {
       router.push({ pathname: '/(tabs)/profile', params: { section: 'notifications' } });
     }
-    void markNotificationRead(socialActivity.data.id).then(() => socialActivity.refetch());
+    void markNotificationRead(socialActivity.data.id).then(() => socialActivity.refetch()).catch(() => undefined);
   };
   const dismissCancelledRide = async () => {
     if (!cancelledRide.data) return;

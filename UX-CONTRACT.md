@@ -116,6 +116,8 @@
 ## Async and resilience
 
 - Mutaciones financieras, permisos, borrado y acciones externas son pesimistas.
+- En Android/iOS, la app actualiza silenciosamente cada 24 horas los paquetes offline de todas las provincias al iniciar; conserva el último paquete válido si la actualización falla y no expone una descarga manual.
+- El planificador exige una ubicación precisa y fresca como origen. Con conexión usa la matriz vial disponible; sin ella identifica explícitamente los tiempos como estimaciones, incluye cada traslado y reserva el regreso dentro del tiempo disponible.
 - Toda mutación bloquea duplicados y no anuncia éxito antes de confirmación del servidor.
 - Refresh conserva contenido utilizable; respuestas viejas no pueden reemplazar estado nuevo.
 - Offline conserva lectura cacheada cuando es seguro; escrituras sólo se encolan con contrato explícito de conflicto.

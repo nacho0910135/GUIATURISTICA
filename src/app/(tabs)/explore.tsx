@@ -20,6 +20,7 @@ import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { haptic } from '@/lib/haptics';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
 import { getLiveRoadAlerts, type RoadTrafficAlert } from '@/lib/logistics';
+import { getMarineConditionsMany, isBeachPlace, MARINE_WEATHER_STALE_TIME, OPEN_METEO_MARINE_URL } from '@/lib/marine-weather';
 import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
@@ -70,6 +71,16 @@ export default function ExploreScreen() {
     queryKey: ['followed-travelers', session?.user.id],
     queryFn: () => getFollowedTravelerIds(session?.user.id),
     staleTime: 60 * 1000,
+  });
+  const beaches = useMemo(() => (places.data ?? []).filter(isBeachPlace), [places.data]);
+  const marineAlerts = useQuery({
+    queryKey: ['marine-alerts', beaches.map(({ id }) => id).join(',')],
+    queryFn: async () => {
+      const conditions = await getMarineConditionsMany(beaches);
+      return beaches.flatMap((beach, index) => conditions[index]?.dangerous ? [{ ...beach, conditions: conditions[index] }] : []);
+    },
+    enabled: beaches.length > 0,
+    staleTime: MARINE_WEATHER_STALE_TIME,
   });
   useEffect(() => {
     if (!places.isPending && !destinationCategories.isPending) markExploreStartupReady();
@@ -289,6 +300,7 @@ export default function ExploreScreen() {
           <Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Presioná una provincia para acceder a los destinos.' : 'Tap a province to see its destinations.'}</Text>
         </View>
         {isFocused ? <MapCanvas /> : null}
+        {marineAlerts.data?.length ? <View accessibilityRole="alert" className="mx-5 mt-4 rounded-card border border-coral-500/50 bg-red-50 p-4 dark:bg-red-950"><View className="flex-row items-center"><MaterialCommunityIcons name="waves-arrow-up" size={24} color="#B42318" /><Text className="ml-2 flex-1 text-base font-black text-coral-600">{language === 'es' ? 'Alertas por oleaje peligroso' : 'Dangerous surf alerts'}</Text></View>{marineAlerts.data.map(({ conditions, id, name }) => <View className="mt-3" key={id}><Text className="font-black text-ui-text dark:text-ui-dark-text">{name}</Text><Text className="text-xs text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ola significativa' : 'Significant wave'}: {conditions.waveHeight?.toFixed(1) ?? '—'} m · {language === 'es' ? 'marejada' : 'swell'}: {conditions.swellHeight?.toFixed(1) ?? '—'} m / {conditions.swellPeriod?.toFixed(0) ?? '—'} s</Text></View>)}<Pressable accessibilityRole="link" className="mt-2 min-h-11 justify-center self-start" onPress={() => void Linking.openURL(OPEN_METEO_MARINE_URL)}><Text className="text-xs font-black text-coral-600">{language === 'es' ? 'Datos: Open-Meteo · DWD (CC BY 4.0)' : 'Data: Open-Meteo · DWD (CC BY 4.0)'}</Text></Pressable></View> : null}
         <View className="mx-5 mt-4 rounded-card border border-[#ffac16]/40 bg-ui-surface p-4 dark:bg-ui-dark-surface">
           <View className="flex-row items-center"><MaterialCommunityIcons name="alert-outline" size={24} color="#d97706" /><View className="ml-2.5 flex-1"><Text className="text-base font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Alertas viales actuales' : 'Current road alerts'}</Text><Text className="text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">Mapbox Traffic · {roadAlerts.data ? new Date(roadAlerts.data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (language === 'es' ? 'actualizando…' : 'updating…')}</Text></View></View>
           {roadAlerts.isPending ? <FrogLoader className="my-4" color="#d97706" /> : null}

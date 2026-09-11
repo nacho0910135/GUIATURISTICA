@@ -1,18 +1,20 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps, ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { AppCard, PrimaryButton } from '@/components/ui';
 import { buildOfflineTripPlan, buildTripPlan, openNavigation, TRIP_VEHICLES, type PlannerPreference, type TripPlan, type TripVehicle } from '@/lib/logistics';
 import { getPlannerOptions } from '@/lib/app-options';
-import { getOfflineTripPack, syncOfflineTripPack } from '../../lib/offline-trip-pack';
+import { getPreciseCurrentLocation } from '@/lib/current-location';
+import { getOfflineTripPack } from '../../lib/offline-trip-pack';
 import { useApp } from '@/providers/app-provider';
 
 export default function MyTripScreen() {
-  const { exchangeRate, language, userLocation } = useApp();
+  const { exchangeRate, isDark, language, userLocation } = useApp();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
   const [time, setTime] = useState('8');
@@ -22,7 +24,6 @@ export default function MyTripScreen() {
   const [budgetCurrency, setBudgetCurrency] = useState<'CRC' | 'USD'>('CRC');
   const [vehicle, setVehicle] = useState<TripVehicle>('sedan');
   const [stylesSelected, setStylesSelected] = useState<PlannerPreference[]>([]);
-  const [zone, setZone] = useState('');
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,7 +31,6 @@ export default function MyTripScreen() {
   const plannerOptions = useQuery({ queryKey: ['planner-options'], queryFn: getPlannerOptions, staleTime: 60 * 60 * 1000 });
   const categories = plannerOptions.data?.categories ?? [];
   const provinces = useMemo(() => plannerOptions.data?.provinces ?? [], [plannerOptions.data?.provinces]);
-  useEffect(() => { if (!zone && provinces[0]) setZone(provinces[0]); }, [provinces, zone]);
   const formatCrc = (amount: number) => budgetCurrency === 'USD' ? `$${(amount / exchangeRate).toFixed(2)}` : `₡${Math.round(amount).toLocaleString('es-CR')}`;
 
   const createPlan = async () => {
@@ -38,37 +38,36 @@ export default function MyTripScreen() {
     const maxBudget = Number(budget) * (budgetCurrency === 'USD' ? exchangeRate : 1);
     const travelerCount = Number(travelers);
     if (!Number.isFinite(availableHours) || availableHours < 2 || !Number.isFinite(maxBudget) || maxBudget <= 0 || !Number.isInteger(travelerCount) || travelerCount < 1 || travelerCount > 30) return setMessage(isSpanish ? 'Ingresá al menos 2 horas, un presupuesto válido y entre 1 y 30 personas.' : 'Enter at least 2 hours, a valid budget, and 1 to 30 travelers.');
-    const input = { latitude: userLocation?.latitude ?? 9.9326, longitude: userLocation?.longitude ?? -84.0805, availableHours, maxBudget, travelers: travelerCount, vehicle, categories: stylesSelected, language };
     setBusy(true); setMessage(null);
     try {
+      const origin = await getPreciseCurrentLocation(language);
+      const input = { latitude: origin.latitude, longitude: origin.longitude, availableHours, maxBudget, travelers: travelerCount, vehicle, categories: stylesSelected, language };
       const nextPlan = await buildTripPlan(input);
       setPlan(nextPlan);
-      setMessage(nextPlan ? (userLocation ? (isSpanish ? 'Ruta lista con traslados calculados por carretera.' : 'Route ready with road travel times.') : (isSpanish ? 'Ruta estimada desde San José; activá ubicación para ajustarla.' : 'Route estimated from San José; enable location to refine it.')) : (isSpanish ? 'No encontré paradas que entren en ese tiempo y presupuesto, incluyendo comidas.' : 'No stops fit that time and budget, including meals.'));
-    } catch {
-      const pack = await getOfflineTripPack(zone);
-      const nextPlan = pack ? buildOfflineTripPlan(input, pack.destinations) : null;
+      setMessage(nextPlan ? (nextPlan.travelTimeSource === 'live-road' ? (isSpanish ? 'Ruta calculada desde tu ubicación actual con tiempos por carretera.' : 'Route calculated from your current location with road travel times.') : (isSpanish ? 'Ruta calculada desde tu ubicación actual con tiempos de traslado estimados.' : 'Route calculated from your current location with estimated travel times.')) : (isSpanish ? 'No encontré paradas que entren en ese tiempo y presupuesto, incluyendo comidas y regreso.' : 'No stops fit that time and budget, including meals and the return trip.'));
+    } catch (error) {
+      if (!userLocation) {
+        setPlan(null);
+        setMessage(error instanceof Error ? error.message : (isSpanish ? 'Necesito tu ubicación actual para crear una ruta realista.' : 'I need your current location to create a realistic route.'));
+        return;
+      }
+      const input = { latitude: userLocation.latitude, longitude: userLocation.longitude, availableHours, maxBudget, travelers: travelerCount, vehicle, categories: stylesSelected, language };
+      const packs = await Promise.all(provinces.map((province) => getOfflineTripPack(province)));
+      const destinations = packs.flatMap((pack) => pack?.destinations ?? []);
+      const nextPlan = buildOfflineTripPlan(input, destinations);
       setPlan(nextPlan);
-      setMessage(nextPlan ? (isSpanish ? `Ruta creada con el paquete offline de ${zone}.` : `Route created from the ${zone} offline package.`) : (isSpanish ? 'No hay un paquete offline útil para esta ruta. Conectate y descargá la zona.' : 'There is no usable offline package for this route. Connect and download the zone.'));
+      setMessage(nextPlan ? (isSpanish ? 'Sin conexión: ruta creada desde tu ubicación con datos guardados y tiempos estimados.' : 'Offline: route created from your location using saved data and estimated times.') : (isSpanish ? 'Sin conexión y todavía no hay datos guardados suficientes para esta ruta.' : 'Offline, and there is not enough saved data for this route yet.'));
     } finally { setBusy(false); }
   };
 
-  const download = async () => {
-    setBusy(true); setMessage(null);
-    try {
-      const pack = await syncOfflineTripPack(zone);
-      setMessage(isSpanish ? `${zone} disponible sin conexión: ${pack.destinations.length} destinos, ${pack.commerces.length} comercios y ${pack.buses.length} rutas.` : `${zone} is available offline: ${pack.destinations.length} destinations, ${pack.commerces.length} businesses, and ${pack.buses.length} routes.`);
-    } catch (error) { setMessage(error instanceof Error && error.message === 'NATIVE_ONLY' ? (isSpanish ? 'Las descargas offline se habilitan en la app iOS o Android.' : 'Offline downloads are available in the iOS or Android app.') : (isSpanish ? 'No se pudo descargar el paquete.' : 'The package could not be downloaded.')); }
-    finally { setBusy(false); }
-  };
-
   return <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ paddingBottom: 56 }} showsVerticalScrollIndicator={false}>
-    <View className="border-b border-ui-border bg-ui-surface px-5 py-2 dark:border-ui-dark-border dark:bg-ui-dark-surface">
+    <LinearGradient colors={isDark ? ['#102D24', '#102936'] : ['#E7F7EF', '#E5F3F8']} className="px-5 pb-5 pt-4">
       <Text className="text-xs font-black uppercase tracking-[2px] text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Planificador inteligente' : 'Smart planner'}</Text>
       <View className="mt-1 flex-row items-center">
-        <View className="h-10 w-10 items-center justify-center rounded-2xl bg-caribbean-50 dark:bg-caribbean-900"><MaterialCommunityIcons name="map-marker-path" size={23} color="#0077A8" /></View>
-        <View className="ml-3 flex-1"><Text className="text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Mi viaje' : 'My trip'}</Text><Text className="mt-0.5 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{isSpanish ? 'De una idea a una ruta clara, parada por parada.' : 'From an idea to a clear, stop-by-stop route.'}</Text></View>
+        <View className="h-10 w-10 items-center justify-center rounded-2xl bg-white/60 dark:bg-white/10"><MaterialCommunityIcons name="map-marker-path" size={23} color="#0077A8" /></View>
+        <View className="ml-3 flex-1"><Text className="text-2xl font-extrabold tracking-tight text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Mi viaje' : 'My trip'}</Text><Text className="mt-0.5 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={1}>{isSpanish ? 'Una ruta posible desde donde estás, con ida, visitas y regreso.' : 'A practical route from where you are, including travel, visits, and return.'}</Text></View>
       </View>
-    </View>
+    </LinearGradient>
 
     <View className="gap-5 px-5 pt-5">
       <AppCard className="p-5">
@@ -87,7 +86,7 @@ export default function MyTripScreen() {
 
         <PlannerSection icon="account-group-outline" label={isSpanish ? '03 · Cantidad de personas' : '03 · Number of travelers'}>
           <TextInput accessibilityLabel={isSpanish ? 'Cantidad de personas' : 'Number of travelers'} className="min-h-12 rounded-control bg-ui-muted px-4 text-base text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="number-pad" maxLength={2} onChangeText={setTravelers} value={travelers} />
-          <Text className="mt-2 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Calculamos por persona: almuerzo ₡7.000, café con acompañamiento ₡3.500 y cena ₡10.000. Aunque los destinos sean gratuitos, reservamos este monto para comer en sodas o restaurantes.' : 'Per person we estimate: lunch ₡7,000, coffee and a snack ₡3,500, and dinner ₡10,000. Even when destinations are free, we reserve this amount for local meals.'}</Text>
+          <Text className="mt-2 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Aproximaciones por persona: almuerzo ₡7.000, café con acompañamiento ₡3.500 y cena ₡10.000. Los precios reales pueden variar según la zona y el establecimiento.' : 'Approximate amounts per person: lunch ₡7,000, coffee and a snack ₡3,500, and dinner ₡10,000. Actual prices vary by area and venue.'}</Text>
         </PlannerSection>
 
         <PlannerSection icon="car-outline" label={isSpanish ? '04 · Forma de viajar' : '04 · Way to travel'}>
@@ -107,11 +106,10 @@ export default function MyTripScreen() {
       {plan ? <AppCard className="p-5">
         <View className="flex-row items-start justify-between"><View className="flex-1 pr-4"><Text className="text-xs font-black uppercase tracking-[1.5px] text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Ruta recomendada' : 'Recommended route'}</Text><Text className="mt-1 text-2xl font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Tu día, en orden' : 'Your day, in order'}</Text></View><View className="h-11 w-11 items-center justify-center rounded-2xl bg-caribbean-50 dark:bg-caribbean-900"><MaterialCommunityIcons color="#0077A8" name="format-list-numbered" size={25} /></View></View>
         <View className="mt-5 flex-row overflow-hidden rounded-2xl bg-ui-muted dark:bg-ui-dark-muted"><PlanMetric label={isSpanish ? 'Paradas' : 'Stops'} value={String(plan.stops.length)} /><PlanMetric label={isSpanish ? 'Inversión' : 'Budget'} value={formatCrc(plan.estimatedTotalCrc)} /><PlanMetric label={isSpanish ? 'Finaliza' : 'Ends'} value={new Date(plan.endsAt).toLocaleTimeString(isSpanish ? 'es-CR' : 'en-US', { hour: '2-digit', minute: '2-digit' })} /></View>
-        <View className="mt-4 rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-bold text-ui-text dark:text-ui-dark-text">{isSpanish ? `Comidas estimadas para ${travelers} persona(s): ${formatCrc(plan.mealCostCrc)}. Traslados totales, incluido el regreso: ${plan.totalTravelMinutes} min.` : `Estimated meals for ${travelers} traveler(s): ${formatCrc(plan.mealCostCrc)}. Total travel, including return: ${plan.totalTravelMinutes} min.`}</Text></View>
+        <View className="mt-4 rounded-control bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-bold text-ui-text dark:text-ui-dark-text">{isSpanish ? `Comidas aproximadas para ${travelers} persona(s): ${formatCrc(plan.mealCostCrc)}; pueden variar según la zona. Traslados totales, incluido el regreso: ${plan.totalTravelMinutes} min (${plan.travelTimeSource === 'live-road' ? 'ruta por carretera' : 'estimación offline'}).` : `Approximate meals for ${travelers} traveler(s): ${formatCrc(plan.mealCostCrc)}; prices vary by area. Total travel, including return: ${plan.totalTravelMinutes} min (${plan.travelTimeSource === 'live-road' ? 'road routing' : 'offline estimate'}).`}</Text></View>
         <View className="mt-6">{plan.stops.map((stop, index) => <View className={index === plan.stops.length - 1 ? 'relative ml-4 pl-7 pb-1' : 'relative ml-4 border-l-2 border-caribbean-200 pb-6 pl-7 dark:border-caribbean-800'} key={stop.destination.id}><View className="absolute -left-[17px] top-0 h-8 w-8 items-center justify-center rounded-full border-4 border-ui-surface bg-caribbean-500 dark:border-ui-dark-surface"><Text className="text-xs font-black text-white">{stop.order}</Text></View><Text className="text-xs font-black uppercase tracking-wide text-ui-primary dark:text-ui-dark-primary">{new Date(stop.arrivalAt).toLocaleTimeString(isSpanish ? 'es-CR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</Text><Text className="mt-1 text-base font-black text-ui-text dark:text-ui-dark-text">{stop.destination.name}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{stop.travelMinutes} min {isSpanish ? 'de traslado' : 'travel'} · {Math.round(stop.visitMinutes / 60 * 10) / 10} h {isSpanish ? 'en el destino' : 'at the destination'}</Text><Pressable accessibilityRole="button" className="mt-2 min-h-11 flex-row items-center self-start" onPress={() => void openNavigation(stop.destination.latitude, stop.destination.longitude)}><MaterialCommunityIcons name="navigation-variant-outline" size={18} color="#0077A8" /><Text className="ml-2 font-black text-caribbean-700 dark:text-caribbean-100">{isSpanish ? 'Abrir navegación' : 'Open navigation'}</Text></Pressable></View>)}</View>
       </AppCard> : null}
 
-      <AppCard className="p-5"><View className="flex-row items-start"><View className="h-11 w-11 items-center justify-center rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft"><MaterialCommunityIcons name="download-circle-outline" size={25} color="#087443" /></View><View className="ml-3 flex-1"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{isSpanish ? 'Prepará la zona sin conexión' : 'Prepare the area offline'}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Destinos, transporte, emergencias y comercios, aunque perdás señal.' : 'Destinations, transport, emergencies, and businesses even without signal.'}</Text></View></View>{plannerOptions.isError ? <Pressable accessibilityRole="button" className="mt-4 min-h-11 justify-center rounded-control bg-ui-primary-soft px-4 dark:bg-ui-dark-primary-soft" onPress={() => void plannerOptions.refetch()}><Text className="font-bold text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Reintentar cargar zonas' : 'Retry loading areas'}</Text></Pressable> : <ScrollView horizontal className="mt-4" contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>{provinces.map((province) => <Choice active={zone === province} key={province} label={province} onPress={() => setZone(province)} />)}</ScrollView>}<PrimaryButton className="mt-4" disabled={busy || !zone} onPress={() => void download()}>{isSpanish ? `Descargar ${zone || 'zona'}` : `Download ${zone || 'area'}`}</PrimaryButton></AppCard>
     </View>
   </ScrollView>;
 }

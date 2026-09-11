@@ -56,6 +56,7 @@ export type TripPlan = {
   totalVisitMinutes: number;
   mealCostCrc: number;
   estimatedTotalCrc: number;
+  travelTimeSource: 'live-road' | 'estimated';
 };
 export type DayPlan = {
   destination: Destination;
@@ -243,7 +244,8 @@ export async function buildTripPlan(input: TripPlanInput): Promise<TripPlan | nu
   const hasVehicle = input.vehicle !== 'bus';
   const candidates = await getTripPlannerCandidates({ ...input, hasVehicle });
   const matrixCandidates = candidates.slice(0, 24);
-  return assembleTripPlan(input, matrixCandidates, await getTravelMatrixMinutes([input, ...matrixCandidates], input.vehicle));
+  const travel = await getTravelMatrixMinutes([input, ...matrixCandidates], input.vehicle);
+  return assembleTripPlan(input, matrixCandidates, travel.minutes, travel.source);
 }
 
 export function buildOfflineTripPlan(input: TripPlanInput, destinations: Destination[]): TripPlan | null {
@@ -257,7 +259,7 @@ export function buildOfflineTripPlan(input: TripPlanInput, destinations: Destina
   return assembleTripPlan(input, candidates);
 }
 
-function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matrix?: number[][]): TripPlan | null {
+function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matrix?: number[][], travelTimeSource: TripPlan['travelTimeSource'] = 'estimated'): TripPlan | null {
   const hasVehicle = input.vehicle !== 'bus';
   const plannerInput = { ...input, category: input.categories, hours: input.availableHours, children: false, seniors: false, reducedMobility: false, hasVehicle };
   const startsAt = tripStart(input.availableHours);
@@ -279,7 +281,10 @@ function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matri
     const destinationMatrixIndex = matrixCandidates.findIndex((item) => item.id === destination.id) + 1;
     const travelMinutes = matrix?.[currentMatrixIndex]?.[destinationMatrixIndex] ?? estimatedTravelMinutes(current, destination, speedKph);
     const returnMinutes = matrix?.[destinationMatrixIndex]?.[0] ?? estimatedTravelMinutes(destination, input, speedKph);
-    if (remainingMinutes < travelMinutes + returnMinutes + 60) break;
+    if (remainingMinutes < travelMinutes + returnMinutes + 60) {
+      candidates = candidates.filter((item) => item.id !== destination.id);
+      continue;
+    }
     let visitMinutes = Math.min(180, Math.max(60, remainingMinutes - travelMinutes - returnMinutes - 30));
     const arrivalAt = new Date(startsAt.getTime() + (input.availableHours * 60 - remainingMinutes + travelMinutes) * 60 * 1000);
     if (isNatureDestination(destination)) {
@@ -308,6 +313,7 @@ function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matri
     totalVisitMinutes: stops.reduce((total, stop) => total + stop.visitMinutes, 0),
     mealCostCrc,
     estimatedTotalCrc: mealCostCrc + stops.reduce((total, stop) => total + stop.estimatedCostCrc, 0),
+    travelTimeSource,
   };
 }
 
@@ -337,16 +343,16 @@ async function getTravelMatrixMinutes(points: { latitude: number; longitude: num
   const speedKph = vehicle === 'bus' ? 28 : vehicle === '4x4' ? 42 : 48;
   const fallback = points.map((from) => points.map((to) => from === to ? 0 : estimatedTravelMinutes(from, to, speedKph)));
   const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
-  if (!token || points.length < 2) return fallback;
+  if (!token || points.length < 2) return { minutes: fallback, source: 'estimated' as const };
   const profile = 'driving';
   const coordinates = points.map((point) => `${point.longitude},${point.latitude}`).join(';');
   try {
     const response = await fetch(`https://api.mapbox.com/directions-matrix/v1/mapbox/${profile}/${coordinates}?access_token=${encodeURIComponent(token)}&annotations=duration`);
-    if (!response.ok) return fallback;
+    if (!response.ok) return { minutes: fallback, source: 'estimated' as const };
     const body = await response.json() as { code?: string; durations?: (number | null)[][] };
-    if (body.code !== 'Ok' || !body.durations) return fallback;
-    return body.durations.map((row, from) => row.map((seconds, to) => seconds === null ? fallback[from][to] : Math.max(1, Math.round(seconds / 60))));
-  } catch { return fallback; }
+    if (body.code !== 'Ok' || !body.durations) return { minutes: fallback, source: 'estimated' as const };
+    return { minutes: body.durations.map((row, from) => row.map((seconds, to) => seconds === null ? fallback[from][to] : Math.max(1, Math.round(seconds / 60)))), source: 'live-road' as const };
+  } catch { return { minutes: fallback, source: 'estimated' as const }; }
 }
 
 export async function getDestinationsForOffline(province: string) {

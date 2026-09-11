@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 
 import { getWeather, WEATHER_STALE_TIME } from '@/lib/logistics';
-import { provinces } from '@/lib/provinces';
+import { provinceMarkerCoordinates, provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN ?? '';
@@ -17,7 +17,6 @@ const PROVINCE_MAP_STYLE = {
   layers: [{ id: 'background', type: 'background' as const, paint: { 'background-color': '#FFFDF8' } }],
 };
 const provinceColors = ['match', ['get', 'code'], '1', '#B8DCC5', '2', '#B8DDEA', '3', '#F0C9B5', '4', '#D4C9E8', '5', '#E8D9A8', '6', '#AFCFD0', '7', '#C7DDB7', '#B8DCC5'] as const;
-const markerOffsets: Record<string, [number, number]> = { '1': [-30, 28], '3': [34, 26], '4': [24, -24] };
 const provinceShape: GeoJSON.FeatureCollection = {
   type: 'FeatureCollection',
   features: provinces.map((province) => ({ type: 'Feature', id: province.code, properties: { code: province.code, name: province.name }, geometry: { type: 'MultiPolygon', coordinates: province.polygons.map((ring) => [ring]) } })),
@@ -94,8 +93,8 @@ export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportC
           event.stopPropagation();
           router.push({ pathname: '/(aux)/province', params: { province: province.name } });
         });
-        const marker = new mapboxgl.Marker({ anchor: 'center', element, offset: markerOffsets[province.code] })
-          .setLngLat([province.center.longitude, province.center.latitude])
+        const marker = new mapboxgl.Marker({ anchor: 'center', element })
+          .setLngLat(provinceMarkerCoordinates[province.code])
           .addTo(map);
         weatherMarkersRef.current.set(province.code, { icon, label, marker });
       });

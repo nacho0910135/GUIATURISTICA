@@ -5,10 +5,7 @@ import 'react-native-url-polyfill/auto';
 
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY.');
-}
+export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 const isWeb = Platform.OS === 'web';
 const isWebServer = isWeb && typeof window === 'undefined';
@@ -19,9 +16,13 @@ const secureStorage = {
   }),
   removeItem: (key: string) => SecureStore.deleteItemAsync(key),
 };
-const storage = isWeb ? (isWebServer ? undefined : window.localStorage) : secureStorage;
+const storage = isWeb ? (() => {
+  if (isWebServer) return undefined;
+  try { return window.localStorage; } catch { return undefined; }
+})() : secureStorage;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Keep the catalogue shell usable when deployment configuration is missing.
+export const supabase = createClient(SUPABASE_URL ?? 'https://offline.invalid', SUPABASE_ANON_KEY ?? 'offline-anon-key', {
   auth: {
     ...(storage ? { storage } : {}),
     autoRefreshToken: true,

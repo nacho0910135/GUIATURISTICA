@@ -9,6 +9,8 @@ import { AppState, Platform } from 'react-native';
 import { hasPrecisePermission, isUsablePosition, LOCATION_MAX_AGE_MS } from '@/lib/location-quality';
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
+import { getPlannerOptions } from '@/lib/app-options';
+import { ensureOfflineTripPacks } from '@/lib/offline-trip-pack';
 import { useAppTheme } from '@/theme/theme-provider';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -161,7 +163,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const timer = setInterval(() => {
       if (Date.now() - lastLocationTimestamp.current > LOCATION_MAX_AGE_MS) {
         setUserLocation(null);
-        if (AppState.currentState === 'active') void refreshUserLocation();
+        if (AppState.currentState === 'active') void refreshUserLocation().catch(() => undefined);
       }
     }, 15000);
     return () => {
@@ -216,7 +218,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       .catch((error) => console.warn('No se pudo restaurar la sesión.', error))
       .finally(() => { if (mounted) setAuthReady(true); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (mounted) void syncSession(nextSession);
+      if (mounted) void syncSession(nextSession).catch((error) => console.warn('No se pudo sincronizar la sesión.', error));
     });
     return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, [syncSession]);
@@ -228,7 +230,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       void createSessionFromUrl(url).catch((error) => console.warn('No se pudo completar Google OAuth.', error));
     };
     const subscription = Linking.addEventListener('url', ({ url }) => handleCallback(url));
-    void Linking.getInitialURL().then((url) => { if (url) handleCallback(url); });
+    void Linking.getInitialURL().then((url) => { if (url) handleCallback(url); }).catch(() => undefined);
     return () => subscription.remove();
   }, [createSessionFromUrl]);
 
@@ -324,6 +326,12 @@ export function AppProvider({ children }: PropsWithChildren) {
     setUserSession(null);
     setIsAdmin(false);
     setAvatarUrl(null);
+  }, []);
+
+  useEffect(() => {
+    void getPlannerOptions()
+      .then(({ provinces }) => ensureOfflineTripPacks(provinces))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {

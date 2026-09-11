@@ -13,6 +13,7 @@ import { InformationReportModal } from '@/components/information-report-modal';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions } from '@/lib/app-options';
 import { ferryRoutes, getFerryRoutes, getWeather, openNavigation, type FerryRoute, WEATHER_STALE_TIME } from '@/lib/logistics';
+import { getMarineConditions, isBeachPlace, MARINE_WEATHER_STALE_TIME, OPEN_METEO_MARINE_URL, type MarineConditions } from '@/lib/marine-weather';
 import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerification, getDestinationFreshness, getDestinationReviews, getMyCommunitySuggestionVerification, getMyDestinationFreshness, getPlaceById, getPlacesForCategory, getPlacesForProvince, getPlacesForTargets, matchesSearchTargets, setCommunitySuggestionVerification, setDestinationFreshnessVote, type CommunityPhoto, type CommunitySuggestionAccessDifficulty, type CommunitySuggestionVerification, type DestinationFreshnessCheck, type MapPlace, type MyCommunitySuggestionVerification, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
@@ -35,7 +36,7 @@ function DestinationCarousel({ autoplay = true, height, place }: { autoplay?: bo
   useEffect(() => {
     if (!autoplay || !isFocused || availablePhotos.length < 2) return undefined;
     const nextIndex = (photoIndex + 1) % availablePhotos.length;
-    void Image.prefetch(availablePhotos[nextIndex], 'memory-disk');
+    void Image.prefetch(availablePhotos[nextIndex], 'memory-disk').catch(() => undefined);
     const timeout = setTimeout(() => setPhotoIndex(nextIndex), 2000);
     return () => clearTimeout(timeout);
   }, [autoplay, availablePhotos, isFocused, photoIndex]);
@@ -72,9 +73,9 @@ function tourismRegion(place: MapPlace) {
 
 const CATALOG_BATCH_SIZE = 5;
 const DESTINATION_CARD_HEIGHT = 346;
-const DESTINATION_INFO_HEIGHT = 140;
+const DESTINATION_INFO_HEIGHT = 170;
 const DESTINATION_INFO_BOTTOM_PADDING = 31;
-const DESTINATION_FLOATING_LABEL_BOTTOM = 108;
+const DESTINATION_FLOATING_LABEL_BOTTOM = 138;
 
 export default function ProvinceCatalogScreen() {
   const { category: rawCategory, categoryId, community: communityParam, destinationId, direct: directParam, province: rawProvince } = useLocalSearchParams<{ category?: string; categoryId?: string; community?: string; destinationId?: string; direct?: string; province?: string }>();
@@ -208,6 +209,7 @@ export default function ProvinceCatalogScreen() {
 }
 
 function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, userLocation, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; userLocation?: { latitude: number; longitude: number }; visitorType: 'tico' | 'foreigner' }) {
+  const marine = useQuery({ queryKey: ['marine-weather', item.latitude, item.longitude], queryFn: () => getMarineConditions(item), enabled: autoplay && isBeachPlace(item), staleTime: MARINE_WEATHER_STALE_TIME });
   const price = visitorType === 'tico'
     ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
     : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
@@ -234,6 +236,7 @@ function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress
         >
           <Text className="text-lg font-black leading-5 text-white" numberOfLines={2}>{item.name}</Text>
           <Text className="mt-0.5 text-xs leading-4 text-white/75" numberOfLines={1}>{destinationDescription(item, language)}</Text>
+          {marine.data ? <MarinePreview conditions={marine.data} language={language} /> : null}
           <View className="mt-2 flex-row gap-1.5">
             {decisionFacts.map((fact) => <DestinationFact accessibilityLabel={fact.action === 'reservation' ? (reservationUrl ? (language === 'es' ? `Reservar ${item.name}` : `Book ${item.name}`) : (language === 'es' ? `Ver cómo reservar ${item.name}` : `See how to book ${item.name}`)) : undefined} icon={fact.icon} key={`${fact.icon}-${fact.label}`} label={fact.label} onPress={fact.action === 'reservation' ? (reservationUrl ? () => void Linking.openURL(reservationUrl) : onPress) : undefined} urgent={fact.urgent} />)}
           </View>
@@ -324,6 +327,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
   const communityVerification = useQuery({ queryKey: ['community-suggestion-verification', place?.id], queryFn: () => getCommunitySuggestionVerification(place!.id), enabled: Boolean(place?.is_community_submission) });
   const myCommunityVerification = useQuery({ queryKey: ['my-community-suggestion-verification', place?.id, session?.user.id], queryFn: () => getMyCommunitySuggestionVerification(place!.id, session!.user.id), enabled: Boolean(place?.is_community_submission && session && place.community_contributor_id !== session.user.id) });
   const weather = useQuery({ queryKey: ['weather', 'destination', place?.id, language], queryFn: () => getWeather(place!, language), enabled: Boolean(place), staleTime: WEATHER_STALE_TIME });
+  const marine = useQuery({ queryKey: ['marine-weather', place?.latitude, place?.longitude], queryFn: () => getMarineConditions(place!), enabled: Boolean(place && isBeachPlace(place)), staleTime: MARINE_WEATHER_STALE_TIME });
   if (!place) return null;
   const communityLocationVerified = Boolean(place.community_verified_at) || (communityVerification.data?.location_correct.confirmed ?? 0) >= 3;
   const ferries = ferryAccess ? (ferryQuery.data ?? ferryRoutes).filter((route) => ferryAccess.routeIds.includes(route.id)) : [];
@@ -403,6 +407,7 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
             <View className="gap-6 p-5 md:p-8">
               <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={difficultyLabel(place.difficulty, language)} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
+              {marine.data ? <MarineWeatherPanel conditions={marine.data} language={language} /> : marine.isError ? <Text accessibilityRole="alert" className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No se pudieron cargar las condiciones marinas.' : 'Marine conditions could not be loaded.'}</Text> : null}
               <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{destinationDescription(place, language)}</Text></View>
               <DestinationVisitInfoPanel language={language} place={place} />
               <VisitQuickFacts closedDay={place.closed_day} language={language} price={visitPrice} schedule={place.schedule} onNavigate={() => void openNavigation(place.latitude, place.longitude)} />
@@ -437,6 +442,29 @@ function DestinationModal({ language, onClose, onLike, place }: { language: 'es'
       <InformationReportModal open={reportOpen} targetType="destination" targetId={place.id} targetLabel={place.name} language={language} onClose={() => setReportOpen(false)} />
     </>
   );
+}
+
+function MarinePreview({ conditions, language }: { conditions: MarineConditions; language: 'es' | 'en' }) {
+  return <View className="mt-2 flex-row gap-2"><View className="flex-row items-center rounded-lg bg-black/45 px-2 py-1"><MaterialCommunityIcons name="waves" size={13} color="white" /><Text className="ml-1 text-xs font-black text-white">{conditions.waveHeight?.toFixed(1) ?? '—'} m</Text></View><View className="flex-row items-center rounded-lg bg-black/45 px-2 py-1"><MaterialCommunityIcons name="thermometer-water" size={13} color="white" /><Text className="ml-1 text-xs font-black text-white">{conditions.waterTemperature?.toFixed(1) ?? '—'} °C</Text></View>{conditions.dangerous ? <View accessibilityRole="alert" className="rounded-lg bg-coral-600 px-2 py-1"><Text className="text-xs font-black text-white">{language === 'es' ? 'OLEAJE PELIGROSO' : 'DANGEROUS SURF'}</Text></View> : null}</View>;
+}
+
+function MarineWeatherPanel({ conditions, language }: { conditions: MarineConditions; language: 'es' | 'en' }) {
+  const direction = (value: number | null) => value == null ? '—' : `${Math.round(value)}°`;
+  const wave = (height: number | null, heading: number | null, period: number | null) => `${height?.toFixed(1) ?? '—'} m · ${direction(heading)} · ${period?.toFixed(0) ?? '—'} s`;
+  return <View className="rounded-3xl border border-caribbean-200 bg-caribbean-50 p-5 dark:border-caribbean-800 dark:bg-caribbean-900/30">
+    <View className="flex-row items-center"><MaterialCommunityIcons name="waves" size={28} color="#0077A8" /><Text className="ml-3 flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Condiciones marinas actuales' : 'Current marine conditions'}</Text></View>
+    {conditions.dangerous ? <View accessibilityRole="alert" className="mt-3 flex-row rounded-2xl bg-coral-600 p-3"><MaterialCommunityIcons name="alert" size={20} color="white" /><Text className="ml-2 flex-1 font-black text-white">{language === 'es' ? 'Oleaje potencialmente peligroso. Evitá ingresar al mar y seguí las indicaciones locales.' : 'Potentially dangerous surf. Stay out of the water and follow local guidance.'}</Text></View> : null}
+    <InfoRow icon="waves" label={language === 'es' ? 'Ola significativa' : 'Significant wave'} value={`${conditions.waveHeight?.toFixed(1) ?? '—'} m`} />
+    <InfoRow icon="weather-windy" label={language === 'es' ? 'Oleaje por viento' : 'Wind waves'} value={wave(conditions.windWaveHeight, conditions.windWaveDirection, conditions.windWavePeriod)} />
+    <InfoRow icon="wave" label={language === 'es' ? 'Marejada principal' : 'Primary swell'} value={wave(conditions.swellHeight, conditions.swellDirection, conditions.swellPeriod)} />
+    {conditions.secondarySwellHeight != null ? <InfoRow icon="wave" label={language === 'es' ? 'Marejada secundaria' : 'Secondary swell'} value={wave(conditions.secondarySwellHeight, conditions.secondarySwellDirection, conditions.secondarySwellPeriod)} /> : null}
+    {conditions.tertiarySwellHeight != null ? <InfoRow icon="wave" label={language === 'es' ? 'Marejada terciaria' : 'Tertiary swell'} value={wave(conditions.tertiarySwellHeight, conditions.tertiarySwellDirection, conditions.tertiarySwellPeriod)} /> : null}
+    <InfoRow icon="thermometer-water" label={language === 'es' ? 'Temperatura del agua' : 'Water temperature'} value={`${conditions.waterTemperature?.toFixed(1) ?? '—'} °C`} />
+    <InfoRow icon="current-ac" label={language === 'es' ? 'Corriente oceánica' : 'Ocean current'} value={`${conditions.currentVelocity?.toFixed(1) ?? '—'} km/h · ${direction(conditions.currentDirection)}`} />
+    <InfoRow icon="arrow-expand-vertical" label={language === 'es' ? 'Nivel del mar incl. mareas' : 'Sea level incl. tides'} value={`${conditions.seaLevel?.toFixed(2) ?? '—'} m`} />
+    <Text className="mt-4 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Pronóstico de modelo. Mareas y corrientes tienen resolución aproximada de 8 km; no sustituye tablas locales ni sirve para navegación costera.' : 'Model forecast. Tides and currents have about 8 km resolution; it does not replace local tide tables or support coastal navigation.'}</Text>
+    <Pressable accessibilityRole="link" className="min-h-11 justify-center self-start" onPress={() => void Linking.openURL(OPEN_METEO_MARINE_URL)}><Text className="font-black text-caribbean-700 dark:text-caribbean-100">{language === 'es' ? 'Datos: Open-Meteo · DWD (CC BY 4.0)' : 'Data: Open-Meteo · DWD (CC BY 4.0)'}</Text></Pressable>
+  </View>;
 }
 
 function DestinationVisitInfoPanel({ language, place }: { language: 'es' | 'en'; place: MapPlace }) {

@@ -39,7 +39,7 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
   const setMode = useCallback((nextMode: ThemeMode) => {
     setModeState(nextMode);
     applyColorScheme(nextMode);
-    void AsyncStorage.setItem(THEME_STORAGE_KEY, nextMode);
+    void AsyncStorage.setItem(THEME_STORAGE_KEY, nextMode).catch(() => undefined);
   }, [applyColorScheme]);
 
   const toggleMode = useCallback(() => {

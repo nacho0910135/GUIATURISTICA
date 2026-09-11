@@ -16,7 +16,7 @@ function audioTime(seconds: number) {
 }
 
 function AudioMessage({ url, mine, language, durationMs }: { url: string; mine: boolean; language: 'es' | 'en'; durationMs: number | null }) {
-  const player = useAudioPlayer({ uri: url });
+  const player = useAudioPlayer({ uri: url }, { downloadFirst: true, preferredForwardBufferDuration: 15 });
   const status = useAudioPlayerStatus(player);
   const duration = status.duration || (durationMs ?? 0) / 1000;
   const progress = duration ? status.currentTime / duration : 0;

@@ -26,7 +26,7 @@ import { queryClient } from '@/lib/query-client';
 import { isExploreStartupReady, subscribeToExploreStartupReady } from '@/lib/startup-gate';
 import { AppThemeProvider } from '@/theme/theme-provider';
 
-void SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
   return <View className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text accessibilityRole="alert" className="text-center text-xl font-black text-ui-text dark:text-ui-dark-text">Algo salió mal</Text><Text className="mt-2 text-center text-ui-text-muted dark:text-ui-dark-text-muted">Podés volver a intentar sin cerrar la aplicación.</Text><Pressable accessibilityRole="button" className="mt-5 rounded-control bg-ui-primary px-6 py-4" onPress={() => void retry()}><Text className="font-black text-white">Reintentar</Text></Pressable></View>;
@@ -49,7 +49,7 @@ export default function RootLayout() {
     PatrickHand_400Regular,
   });
   const onReady = useCallback(() => {
-    if (fontsLoaded || fontError) void SplashScreen.hideAsync();
+    if (fontsLoaded || fontError) void SplashScreen.hideAsync().catch(() => undefined);
   }, [fontError, fontsLoaded]);
 
   useEffect(() => subscribeToExploreStartupReady(() => setExploreReady(true)), []);
@@ -95,6 +95,7 @@ export default function RootLayout() {
                     <Stack.Screen name="(aux)/species" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/province" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/traveler-profile" options={{ animation: 'slide_from_right' }} />
+                    <Stack.Screen name="(aux)/private-messages" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/auth-modal" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
                   </Stack>
                 </View>

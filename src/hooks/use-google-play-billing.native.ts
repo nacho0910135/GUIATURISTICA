@@ -82,7 +82,7 @@ export function useGooglePlayBilling({ onError, onVerified, userId }: Options) {
     void Promise.all([
       fetchProducts({ skus: subscriptionOffers.map((offerId) => googlePlayProductIds[offerId]), type: 'subs' }),
       getAvailablePurchases(),
-    ]).finally(() => { if (active) setProductsLoaded(true); });
+    ]).catch((reason) => onErrorRef.current(errorMessage(reason))).finally(() => { if (active) setProductsLoaded(true); });
     return () => { active = false; };
   }, [connected, fetchProducts, getAvailablePurchases]);
 

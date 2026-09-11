@@ -7,8 +7,11 @@ export const queryClient = new QueryClient({
     queries: {
       gcTime: 7 * DAY,
       networkMode: 'offlineFirst',
+      placeholderData: (previousData: unknown) => previousData,
       retry: 1,
       refetchOnWindowFocus: false,
+      throwOnError: false,
     },
+    mutations: { networkMode: 'offlineFirst', retry: 0, throwOnError: false },
   },
 });

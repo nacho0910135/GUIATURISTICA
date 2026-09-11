@@ -125,6 +125,8 @@ const provider = load('src/providers/app-provider.tsx', {
   'expo-web-browser': { maybeCompleteAuthSession() {} },
   'react-native': { Platform: { OS: 'web' }, AppState: appState },
   '@/lib/location-quality': quality, '@/lib/admin-push-notifications': {},
+  '@/lib/app-options': { getPlannerOptions: async () => ({ provinces: [] }) },
+  '@/lib/offline-trip-pack': { ensureOfflineTripPacks: async () => {} },
   '@/lib/i18n': { copy: { es: {}, en: {} } }, '@/lib/push-notifications': {},
   '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: null } }) } } },
   '@/theme/theme-provider': { useAppTheme: () => ({ mode: 'light' }) },

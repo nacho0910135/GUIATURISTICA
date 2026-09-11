@@ -31,7 +31,7 @@ export function useTravelerMessagesSync(userId: string | undefined, onChange: ()
     return () => {
       clearInterval(interval);
       appState.remove();
-      void supabase.removeChannel(channel);
+      void supabase.removeChannel(channel).catch(() => undefined);
     };
   }, [isFocused, userId]);
 }

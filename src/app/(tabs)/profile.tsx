@@ -37,6 +37,8 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState('');
   const [avatar, setAvatar] = useState<ImagePicker.ImagePickerAsset>();
   const [editingProfile, setEditingProfile] = useState(false);
+  const editingProfileRef = useRef(editingProfile);
+  editingProfileRef.current = editingProfile;
   const [suggestion, setSuggestion] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -68,7 +70,7 @@ export default function ProfileScreen() {
     const validSection = requestedSection === 'notifications' || requestedSection === 'community' || requestedSection === 'sightings' || requestedSection === 'saved' || requestedSection === 'messages' || requestedSection === 'suggestions' || requestedSection === 'login';
     setSection(validSection ? requestedSection : undefined);
   }, [params.section]);
-  useTravelerMessagesSync(section === 'messages' ? userId || undefined : undefined, () => {
+  useTravelerMessagesSync(userId || undefined, () => {
     void queryClient.invalidateQueries({ queryKey: ['private-conversations', userId] });
   });
   const adminDashboard = useQuery({
@@ -84,9 +86,11 @@ export default function ProfileScreen() {
       setError(undefined);
       const next = await getSocialProfile(userId);
       setData(next);
-      setUsername(next.profile?.username || '');
-      setBio(next.profile?.bio || '');
-      setContactEmail(next.profile?.contact_email || '');
+      if (!editingProfileRef.current) {
+        setUsername(next.profile?.username || '');
+        setBio(next.profile?.bio || '');
+        setContactEmail(next.profile?.contact_email || '');
+      }
       if (next.profile?.avatar_url) setAvatarUrl(next.profile.avatar_url);
     } catch (reason) {
       setError(message(reason));
@@ -209,7 +213,7 @@ export default function ProfileScreen() {
       key: 'messages',
       icon: 'message-outline',
       label: tr(language, 'Mensajes', 'Messages'),
-      count: conversations.data?.reduce((total, item) => total + item.unread_count, 0) ?? 0,
+      count: conversations.data?.reduce((total, item) => total + item.unread_count, 0) || undefined,
     },
     {
       key: 'suggestions',
@@ -223,6 +227,10 @@ export default function ProfileScreen() {
     }] : []),
   ];
   const toggleSection = (key: Section) => {
+    if (key === 'messages') {
+      router.push('/(aux)/private-messages' as never);
+      return;
+    }
     const next = section === key ? undefined : key;
     setSection(next);
     router.setParams({ section: next ?? '', partnerId: '' });
@@ -423,7 +431,6 @@ export default function ProfileScreen() {
             ))}
           </ListEmpty>
         ) : null}
-        {data && section === 'messages' ? conversations.isPending ? <FrogLoader color="#13bd83" /> : <MessagesPanel conversations={conversations.data ?? []} initialPartnerId={params.partnerId} language={language} userId={userId} userAvatarUrl={data.profile?.avatar_url ?? avatarUrl} busy={busy} refresh={async () => { await Promise.all([load(), conversations.refetch()]); }} run={run} /> : null}
         {section === 'suggestions' ? (
           <View>
             <Title>{tr(language, 'Sugerencias para el creador', 'Suggestions for the creator')}</Title>
@@ -855,7 +862,7 @@ function NotificationRow({ item, language, notificationType, busy, onRead, onOpe
   );
 }
 
-function MessagesPanel({ conversations, initialPartnerId, language, userId, userAvatarUrl, busy, refresh, run }: { conversations: PrivateConversation[]; initialPartnerId?: string; language: 'es' | 'en'; userId: string; userAvatarUrl: string | null; busy: boolean; refresh: () => Promise<void>; run: (action: () => Promise<void>) => Promise<void> }) {
+export function MessagesPanel({ conversations, initialPartnerId, language, userId, userAvatarUrl, busy, refresh, run }: { conversations: PrivateConversation[]; initialPartnerId?: string; language: 'es' | 'en'; userId: string; userAvatarUrl: string | null; busy: boolean; refresh: () => Promise<void>; run: (action: () => Promise<void>) => Promise<void> }) {
   const [activePartnerId, setActivePartnerId] = useState<string | undefined>(initialPartnerId);
   const [reply, setReply] = useState('');
   const messageListRef = useRef<ScrollView>(null);

@@ -1,20 +1,36 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useAudioPlaylist } from 'expo-audio';
+import { ImageBackground } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import questions from '@/data/trivia-cr.json';
+import questionsEn from '@/data/trivia-cr.en.json';
+import questionsEs from '@/data/trivia-cr.json';
 import { haptic } from '@/lib/haptics';
+import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
+
+const BACKGROUNDS = [
+  require('../../../assets/imagenes para fondo de trivia/costarica10.jpg'), require('../../../assets/imagenes para fondo de trivia/depositphotos_593056978-stock-photo-vertical-shot-beautiful-waterfall-trees.jpg'),
+  require('../../../assets/imagenes para fondo de trivia/images (1).jpeg'), require('../../../assets/imagenes para fondo de trivia/images (2).jpeg'), require('../../../assets/imagenes para fondo de trivia/images (3).jpeg'),
+  require('../../../assets/imagenes para fondo de trivia/images (4).jpeg'), require('../../../assets/imagenes para fondo de trivia/images (5).jpeg'), require('../../../assets/imagenes para fondo de trivia/images (6).jpeg'), require('../../../assets/imagenes para fondo de trivia/images (7).jpeg'),
+];
 
 export default function TriviaScreen() {
   const router = useRouter();
+  const { language } = useApp();
   const { colors } = useAppTheme();
+  const questions = language === 'es' ? questionsEs : questionsEn;
+  const text = (es: string, en: string) => language === 'es' ? es : en;
+  const playlist = useAudioPlaylist({ sources: [require('../../../assets/musica de fondo para trivia/Punto Guanacasteco.mp3'), require('../../../assets/musica de fondo para trivia/El Torito.mp3')], loop: 'all' });
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number>();
   const [score, setScore] = useState(0);
   const finished = index === questions.length;
   const question = questions[index];
+
+  useEffect(() => { playlist.volume = 0.18; playlist.play(); return () => playlist.pause(); }, [playlist]);
 
   const choose = (option: number) => {
     if (selected !== undefined) return;
@@ -22,55 +38,43 @@ export default function TriviaScreen() {
     if (option === question.answer) setScore((current) => current + 1);
     void haptic(option === question.answer ? 'success' : 'error');
   };
-
-  const next = () => {
-    setSelected(undefined);
-    setIndex((current) => current + 1);
-  };
-
-  const restart = () => {
-    setIndex(0);
-    setScore(0);
-    setSelected(undefined);
-  };
+  const next = () => { setSelected(undefined); setIndex((current) => current + 1); };
+  const restart = () => { setIndex(0); setScore(0); setSelected(undefined); };
 
   return (
-    <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', padding: 20, paddingBottom: 44 }}>
-      <View className="w-full max-w-2xl">
-        <View className="flex-row items-center">
-          <Pressable accessibilityLabel="Volver a Fauna CR" accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted dark:bg-ui-dark-muted" onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={23} color={colors.text} />
-          </Pressable>
-          <View className="ml-3 flex-1">
-            <Text className="text-2xl font-black text-ui-text dark:text-ui-dark-text">Trivia CR</Text>
-            <Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">Turismo, flora, fauna, cultura y música nacional</Text>
+    <ImageBackground contentFit="cover" source={BACKGROUNDS[index % BACKGROUNDS.length]} style={{ flex: 1 }} transition={500}>
+      <View className="absolute inset-0 bg-black/35" />
+      <ScrollView className="flex-1" contentContainerStyle={{ alignItems: 'center', padding: 20, paddingBottom: 44 }}>
+        <View className="w-full max-w-2xl">
+          <View className="flex-row items-center rounded-[26px] border border-white/70 bg-white/95 p-4 shadow-xl dark:border-white/15 dark:bg-ui-dark-surface/95">
+            <Pressable accessibilityLabel={text('Volver', 'Back')} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-ui-muted dark:bg-ui-dark-muted" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={23} color={colors.text} /></Pressable>
+            <View className="ml-3 flex-1"><Text className="text-2xl font-black text-ui-text dark:text-ui-dark-text">Trivia CR</Text><Text className="text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{text('Turismo, flora, fauna, cultura y música nacional', 'Tourism, flora, wildlife, culture and national music')}</Text></View>
+            <MaterialCommunityIcons accessibilityLabel={text('Música de fondo activa', 'Background music playing')} name="music-note" size={22} color={colors.primary} />
           </View>
-        </View>
 
-        {finished ? (
-          <View className="mt-8 items-center rounded-card border border-ui-border bg-ui-surface p-7 dark:border-ui-dark-border dark:bg-ui-dark-surface">
-            <Text className="text-5xl">🇨🇷</Text>
-            <Text accessibilityLiveRegion="polite" className="mt-4 text-center text-2xl font-black text-ui-text dark:text-ui-dark-text">Obtuviste {score} de {questions.length}</Text>
-            <Text className="mt-2 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{score >= 8 ? '¡Sos pura vida en conocimiento tico!' : score >= 5 ? '¡Vas muy bien! Costa Rica todavía guarda sorpresas.' : 'Cada respuesta es una nueva parada del recorrido.'}</Text>
-            <Pressable accessibilityRole="button" className="mt-6 min-h-12 w-full items-center justify-center rounded-control bg-ui-primary dark:bg-ui-dark-primary" onPress={restart}><Text className="font-black text-white">Jugar de nuevo</Text></Pressable>
-          </View>
-        ) : (
-          <View className="mt-8">
-            <View className="flex-row items-center justify-between"><Text className="text-xs font-black uppercase tracking-wider text-ui-primary dark:text-ui-dark-primary">{question.category}</Text><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{index + 1} / {questions.length}</Text></View>
-            <View className="mt-3 h-2 overflow-hidden rounded-full bg-ui-muted dark:bg-ui-dark-muted"><View className="h-full rounded-full bg-ui-primary dark:bg-ui-dark-primary" style={{ width: `${((index + 1) / questions.length) * 100}%` }} /></View>
-            <Text className="mt-7 text-2xl font-black leading-8 text-ui-text dark:text-ui-dark-text">{question.question}</Text>
-            <View className="mt-6 gap-3">{question.options.map((option, optionIndex) => {
-              const answered = selected !== undefined;
-              const correct = optionIndex === question.answer;
-              const chosen = optionIndex === selected;
-              const style = answered && correct ? 'border-ui-success bg-ui-primary-soft dark:border-ui-dark-success dark:bg-ui-dark-primary-soft' : chosen ? 'border-ui-danger bg-coral-50 dark:border-ui-dark-danger dark:bg-ui-dark-surface' : 'border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface';
-              return <Pressable accessibilityRole="button" accessibilityState={{ disabled: answered, selected: chosen }} className={`min-h-14 flex-row items-center rounded-control border-2 px-4 py-3 ${style}`} disabled={answered} key={option} onPress={() => choose(optionIndex)}><Text className="mr-3 font-black text-ui-primary dark:text-ui-dark-primary">{String.fromCharCode(65 + optionIndex)}</Text><Text className="flex-1 font-bold text-ui-text dark:text-ui-dark-text">{option}</Text>{answered && correct ? <MaterialCommunityIcons name="check-circle" size={22} color={colors.success} /> : chosen ? <MaterialCommunityIcons name="close-circle" size={22} color={colors.danger} /> : null}</Pressable>;
-            })}</View>
-            {selected !== undefined ? <View className="mt-5 rounded-control bg-ui-muted p-4 dark:bg-ui-dark-muted"><Text accessibilityLiveRegion="polite" className="font-black text-ui-text dark:text-ui-dark-text">{selected === question.answer ? '¡Correcto!' : 'Respuesta correcta:'}</Text><Text className="mt-1 leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{question.fact}</Text></View> : null}
-            {selected !== undefined ? <Pressable accessibilityRole="button" className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary dark:bg-ui-dark-primary" onPress={next}><Text className="font-black text-white">{index + 1 === questions.length ? 'Ver resultado' : 'Siguiente pregunta'}</Text></Pressable> : null}
-          </View>
-        )}
-      </View>
-    </ScrollView>
+          {finished ? (
+            <View className="mt-6 items-center rounded-[30px] border border-white/70 bg-white/95 p-7 shadow-2xl dark:border-white/15 dark:bg-ui-dark-surface/95">
+              <Text className="text-5xl">🇨🇷</Text>
+              <Text accessibilityLiveRegion="polite" className="mt-4 text-center text-2xl font-black text-ui-text dark:text-ui-dark-text">{text(`Obtuviste ${score} de ${questions.length}`, `You scored ${score} out of ${questions.length}`)}</Text>
+              <Text className="mt-2 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{score >= 24 ? text('¡Sos pura vida en conocimiento tico!', 'Your Costa Rican knowledge is pura vida!') : score >= 15 ? text('¡Vas muy bien! Costa Rica todavía guarda sorpresas.', 'Great job! Costa Rica still has a few surprises for you.') : text('Cada respuesta es una nueva parada del recorrido.', 'Every answer is another stop on the journey.')}</Text>
+              <Pressable accessibilityRole="button" className="mt-6 min-h-12 w-full items-center justify-center rounded-control bg-ui-primary dark:bg-ui-dark-primary" onPress={restart}><Text className="font-black text-white">{text('Jugar de nuevo', 'Play again')}</Text></Pressable>
+            </View>
+          ) : (
+            <View className="mt-6 rounded-[30px] border border-white/70 bg-white/95 p-5 shadow-2xl dark:border-white/15 dark:bg-ui-dark-surface/95">
+              <View className="flex-row items-center justify-between"><Text className="text-xs font-black uppercase tracking-wider text-ui-primary dark:text-ui-dark-primary">{question.category}</Text><Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{index + 1} / {questions.length}</Text></View>
+              <View className="mt-3 h-2 overflow-hidden rounded-full bg-ui-muted dark:bg-ui-dark-muted"><View className="h-full rounded-full bg-ui-primary dark:bg-ui-dark-primary" style={{ width: `${((index + 1) / questions.length) * 100}%` }} /></View>
+              <Text className="mt-7 text-2xl font-black leading-8 text-ui-text dark:text-ui-dark-text">{question.question}</Text>
+              <View className="mt-6 gap-3">{question.options.map((option, optionIndex) => {
+                const answered = selected !== undefined, correct = optionIndex === question.answer, chosen = optionIndex === selected;
+                const style = answered && correct ? 'border-ui-success bg-ui-primary-soft dark:border-ui-dark-success dark:bg-ui-dark-primary-soft' : chosen ? 'border-ui-danger bg-coral-50 dark:border-ui-dark-danger dark:bg-ui-dark-surface' : 'border-ui-border bg-white shadow-md dark:border-ui-dark-border dark:bg-ui-dark-surface';
+                return <Pressable accessibilityRole="button" accessibilityState={{ disabled: answered, selected: chosen }} className={`min-h-14 flex-row items-center rounded-2xl border-2 px-4 py-3 ${style}`} disabled={answered} key={option} onPress={() => choose(optionIndex)}><Text className="mr-3 font-black text-ui-primary dark:text-ui-dark-primary">{String.fromCharCode(65 + optionIndex)}</Text><Text className="flex-1 font-bold text-ui-text dark:text-ui-dark-text">{option}</Text>{answered && correct ? <MaterialCommunityIcons name="check-circle" size={22} color={colors.success} /> : chosen ? <MaterialCommunityIcons name="close-circle" size={22} color={colors.danger} /> : null}</Pressable>;
+              })}</View>
+              {selected !== undefined ? <View className="mt-5 rounded-control bg-ui-muted p-4 dark:bg-ui-dark-muted"><Text accessibilityLiveRegion="polite" className="font-black text-ui-text dark:text-ui-dark-text">{selected === question.answer ? text('¡Correcto!', 'Correct!') : text('Respuesta correcta:', 'Correct answer:')}</Text><Text className="mt-1 leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{question.fact}</Text></View> : null}
+              {selected !== undefined ? <Pressable accessibilityRole="button" className="mt-5 min-h-12 items-center justify-center rounded-control bg-ui-primary dark:bg-ui-dark-primary" onPress={next}><Text className="font-black text-white">{index + 1 === questions.length ? text('Ver resultado', 'See results') : text('Siguiente pregunta', 'Next question')}</Text></Pressable> : null}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </ImageBackground>
   );
 }

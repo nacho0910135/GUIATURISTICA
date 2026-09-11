@@ -46,6 +46,14 @@ export async function getOfflineTripPack(zone: string) {
   try { return row ? JSON.parse(row.data) as OfflineTripPack : null; } catch { return null; }
 }
 
+export async function ensureOfflineTripPacks(zones: string[], maxAgeMs = 24 * 60 * 60 * 1000) {
+  for (const zone of zones) {
+    const saved = await getOfflineTripPack(zone);
+    if (saved && Date.now() - new Date(saved.savedAt).getTime() < maxAgeMs) continue;
+    try { await syncOfflineTripPack(zone); } catch { /* Conservar el último paquete válido. */ }
+  }
+}
+
 export async function getOfflineCommerceServices(category: string) {
   const db = await getDatabase();
   const rows = await db.getAllAsync<{ data: string }>('SELECT data FROM offline_trip_packs');
