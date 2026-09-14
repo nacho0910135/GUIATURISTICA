@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [tabs, billing, screen, commerce, playCampaigns, playVerifier, checkout, webhook, migration, campaignMigration, bannerImageMigration, adminAccessMigration, campaignPricingMigration, serverAccessMigration, rtdn, portal, intents, businessGuard] = await Promise.all([
+const [tabs, billing, screen, commerce, playCampaigns, playVerifier, checkout, webhook, migration, campaignMigration, bannerImageMigration, adminAccessMigration, campaignPricingMigration, serverAccessMigration, rtdn, portal, intents, businessGuard, explore, siteLimits] = await Promise.all([
   readFile(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/lib/billing.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/app/subscriptions.tsx', import.meta.url), 'utf8'),
@@ -20,6 +20,8 @@ const [tabs, billing, screen, commerce, playCampaigns, playVerifier, checkout, w
   readFile(new URL('../supabase/functions/create-customer-portal/index.ts', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260910140000_google_play_purchase_intents.sql', import.meta.url), 'utf8'),
   readFile(new URL('../supabase/migrations/20260910150000_guard_paid_business_mutations.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../src/app/(tabs)/explore.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/migrations/20260914194723_limit_owner_food_nightlife_sites.sql', import.meta.url), 'utf8'),
 ]);
 
 for (const tab of ['explore', 'my-trip', 'commerce', 'friends']) assert.match(tabs, new RegExp(`name="${tab}"`));
@@ -108,6 +110,11 @@ assert.match(portal, /billing_portal\/sessions/);
 assert.match(intents, /save_google_play_purchase_intent/);
 assert.match(playCampaigns, /save_google_play_purchase_intent/);
 assert.match(businessGuard, /active_business_subscription_required/);
+assert.match(explore, /categories\.includes\('gastronomy'\).*categories\.includes\('nightlife'\)/);
+assert.match(explore, /openRegistration: '1'/);
+assert.match(siteLimits, /category_id in \('food','nightlife'\)/);
+assert.match(siteLimits, />= 2/);
+assert.match(siteLimits, /refresh_owner_commercial_visibility/);
 assert.match(screen, /openSubscriptionManagement/);
 assert.match(commerce, /Necesitás el plan para comercios/);
 assert.match(commerce, /activateAdminTestCampaign/);

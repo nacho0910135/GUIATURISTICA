@@ -5,6 +5,7 @@ import { getDestinationsForOffline, getFerryRoutes, emergencyContacts, type Dest
 import { supabase } from '@/lib/supabase';
 
 export type OfflineTripPack = {
+  version: 1;
   zone: string;
   savedAt: string;
   destinations: Destination[];
@@ -24,8 +25,8 @@ function getDatabase() {
 }
 
 export async function syncOfflineTripPack(zone: string): Promise<OfflineTripPack> {
-  const [destinations, touristBuses, cantonalBuses, ferries, regions] = await Promise.all([
-    getDestinationsForOffline(zone), getBusRoutes('', 'tourist'), getBusRoutes('', 'cantonal'), getFerryRoutes(),
+  const [destinations, global, regions] = await Promise.all([
+    getDestinationsForOffline(zone), getOfflineTripPack('__global__'),
     supabase.from('commerce_regions').select('id').eq('province', zone).eq('active', true),
   ]);
   if (regions.error) throw regions.error;
@@ -34,7 +35,7 @@ export async function syncOfflineTripPack(zone: string): Promise<OfflineTripPack
     ? await supabase.from('commercial_services').select('id,category,subcategories,region_id,is_claimed,source,main_category,subcategory,title,description,phone_whatsapp,whatsapp,external_url,menu_url,booking_url,cover_image_url,photos,price_range,opening_hours,parking,has_parking,payment_methods,accessibility,languages,experience_type,certifications,location,owner_id,is_sponsored,claim_status,business_verified_at,business_verification_evidence_url,business_updated_at,moderation_status').in('region_id', regionIds).eq('moderation_status', 'approved').limit(1000)
     : { data: [], error: null };
   if (commerces.error) throw commerces.error;
-  const pack: OfflineTripPack = { zone, savedAt: new Date().toISOString(), destinations, buses: [...touristBuses, ...cantonalBuses], ferries, contacts: emergencyContacts, commerces: commerces.data ?? [] };
+  const pack: OfflineTripPack = { version: 1, zone, savedAt: new Date().toISOString(), destinations, buses: global?.buses ?? [], ferries: global?.ferries ?? [], contacts: emergencyContacts, commerces: commerces.data ?? [] };
   const db = await getDatabase();
   await db.runAsync('INSERT INTO offline_trip_packs (zone, saved_at, data) VALUES (?, ?, ?) ON CONFLICT(zone) DO UPDATE SET saved_at = excluded.saved_at, data = excluded.data', zone, pack.savedAt, JSON.stringify(pack));
   return pack;
@@ -47,6 +48,15 @@ export async function getOfflineTripPack(zone: string) {
 }
 
 export async function ensureOfflineTripPacks(zones: string[], maxAgeMs = 24 * 60 * 60 * 1000) {
+  const global = await getOfflineTripPack('__global__');
+  if (!global || Date.now() - new Date(global.savedAt).getTime() >= maxAgeMs) {
+    try {
+      const [touristBuses, cantonalBuses, ferries] = await Promise.all([getBusRoutes('', 'tourist'), getBusRoutes('', 'cantonal'), getFerryRoutes()]);
+      const pack: OfflineTripPack = { version: 1, zone: '__global__', savedAt: new Date().toISOString(), destinations: [], buses: [...touristBuses, ...cantonalBuses], ferries, contacts: emergencyContacts, commerces: [] };
+      const db = await getDatabase();
+      await db.runAsync('INSERT INTO offline_trip_packs (zone, saved_at, data) VALUES (?, ?, ?) ON CONFLICT(zone) DO UPDATE SET saved_at = excluded.saved_at, data = excluded.data', pack.zone, pack.savedAt, JSON.stringify(pack));
+    } catch { /* Conservar el último paquete global válido. */ }
+  }
   for (const zone of zones) {
     const saved = await getOfflineTripPack(zone);
     if (saved && Date.now() - new Date(saved.savedAt).getTime() < maxAgeMs) continue;

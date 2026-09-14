@@ -34,7 +34,7 @@ const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }
 );
 
 export default function TabsLayout() {
-  const { isAdmin, language, refreshUserLocation, session, t } = useApp();
+  const { isAdmin, language, session, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
   const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session) });
@@ -43,7 +43,7 @@ export default function TabsLayout() {
     <Tabs
       backBehavior="initialRoute"
       initialRouteName="explore"
-      screenListeners={{ tabPress: () => { void haptic('selection'); void refreshUserLocation(); } }}
+      screenListeners={{ tabPress: () => { void haptic('selection'); } }}
       screenOptions={{
         header: () => <GlobalHeader />,
         tabBarActiveTintColor: colors.primary,

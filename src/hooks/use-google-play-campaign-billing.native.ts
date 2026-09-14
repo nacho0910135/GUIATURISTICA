@@ -58,11 +58,9 @@ export function useGooglePlayCampaignBilling({
       if (Platform.OS !== "android" || !userId) return;
       const purchaseToken = purchase.purchaseToken;
       const offerId = productToOffer.get(purchase.productId);
-      const metadata = metadataByProduct.current.get(purchase.productId);
       if (
         !purchaseToken ||
         !offerId ||
-        !metadata ||
         processingTokens.current.has(purchaseToken)
       )
         return;
@@ -71,7 +69,7 @@ export function useGooglePlayCampaignBilling({
         const { data, error } = await supabase.functions.invoke(
           "verify-google-play-purchase",
           {
-            body: { productId: purchase.productId, purchaseToken, ...metadata },
+            body: { productId: purchase.productId, purchaseToken },
           },
         );
         if (error) {

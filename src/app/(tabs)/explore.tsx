@@ -17,6 +17,7 @@ import { InformationReportModal } from '@/components/information-report-modal';
 import { AnimatedShine, MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
+import { getMySubscriptions, hasActiveBusinessPlan } from '@/lib/billing';
 import { haptic } from '@/lib/haptics';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
 import { getLiveRoadAlerts, getWeather, WEATHER_STALE_TIME, type RoadTrafficAlert } from '@/lib/logistics';
@@ -494,6 +495,8 @@ function PlaceResult({ active, followed, formatPrice, language, large, onFollow,
 }
 
 function ProposalModal({ language, onClose, onPublished, open, session }: { language: 'es' | 'en'; onClose: () => void; onPublished: () => void; open: boolean; session: ReturnType<typeof useApp>['session'] }) {
+  const router = useRouter();
+  const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: open && Boolean(session) });
   const categoryOptions = useQuery({
     queryKey: ['app-options', 'destination_category', 'v2'],
     queryFn: () => getAppOptions('destination_category'),
@@ -548,6 +551,22 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   const submit = async () => {
     if (!session || name.trim().length < 3 || description.trim().length < 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Agregá un nombre y una descripción de al menos 10 caracteres.' : 'Add a name and a description of at least 10 characters.');
     if (categories.length < 1 || categories.length > 3) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná entre una y tres categorías.' : 'Select between one and three categories.');
+    const commercialCategory = categories.includes('gastronomy') ? 'food' : categories.includes('nightlife') ? 'nightlife' : null;
+    if (commercialCategory) {
+      const goToRegistration = () => { onClose(); router.push({ pathname: '/(tabs)/commerce', params: { openRegistration: '1', registerCategory: commercialCategory } }); };
+      const currentSubscriptions = subscriptions.isLoading ? (await subscriptions.refetch()).data ?? [] : subscriptions.data ?? [];
+      if (hasActiveBusinessPlan(currentSubscriptions)) return goToRegistration();
+      return Alert.alert(
+        language === 'es' ? 'Suscripción de comercio requerida' : 'Business subscription required',
+        language === 'es'
+          ? 'Para agregar sitios en Experiencia gastronómica o Vida nocturna primero debés adquirir la suscripción Comercio o servicio.'
+          : 'To add places under Gastronomic experience or Nightlife, you must first purchase the Business or service subscription.',
+        [
+          { text: language === 'es' ? 'Ahora no' : 'Not now', style: 'cancel' },
+          { text: language === 'es' ? 'Ver suscripción' : 'View subscription', onPress: () => { onClose(); router.push({ pathname: '/subscriptions', params: { intent: 'business' } }); } },
+        ],
+      );
+    }
     if (photos.length < 1 || photos.length > 10) return Alert.alert('Descubriendo CR', language === 'es' ? 'Seleccioná entre 1 y 10 imágenes del sitio.' : 'Select between 1 and 10 place images.');
     if (!manualLocation) return Alert.alert('Descubriendo CR', language === 'es' ? 'Ubicá el sitio en el mapa antes de publicarlo.' : 'Place the site on the map before publishing it.');
     setSending(true);

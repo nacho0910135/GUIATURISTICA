@@ -48,7 +48,8 @@ Deno.serve(async (request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-  if (!supabaseUrl || !anonKey || !stripeKey)
+  const appUrl = Deno.env.get("APP_URL");
+  if (!supabaseUrl || !anonKey || !stripeKey || !appUrl)
     return json({ error: "billing_not_configured" }, 503);
 
   const authorization = request.headers.get("Authorization") ?? "";
@@ -75,7 +76,7 @@ Deno.serve(async (request) => {
     !offerId ||
     !offers[offerId] ||
     !returnUrl ||
-    !isAllowedReturnUrl(returnUrl)
+    !isAllowedReturnUrl(returnUrl, appUrl)
   )
     return json({ error: "invalid_checkout_request" }, 400);
   const offer = offers[offerId];
@@ -202,15 +203,12 @@ async function checkoutIdempotencyKey(...parts: (string | undefined)[]) {
   return `checkout_${Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
-function isAllowedReturnUrl(value: string) {
+function isAllowedReturnUrl(value: string, appUrl: string) {
   try {
     const url = new URL(value);
-    return (
-      url.protocol === "https:" ||
-      url.protocol === "http:" ||
-      url.protocol === "exp:" ||
-      url.protocol === "descubriendocr:"
-    );
+    const webOrigin = new URL(appUrl).origin;
+    return (url.protocol === "https:" && url.origin === webOrigin) ||
+      (url.protocol === "descubriendocr:" && ["/subscriptions", "/commerce"].includes(url.pathname));
   } catch {
     return false;
   }

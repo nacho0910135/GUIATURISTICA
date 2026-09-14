@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import * as Crypto from 'expo-crypto';
 
 import { getAdminCommercialClaims } from '@/lib/commerce';
 import { getInformationReportsForAdmin } from '@/lib/reports';
@@ -233,7 +234,6 @@ export async function deleteTravelerPost(postId: string) {
 export async function sendTravelerMessage(senderId: string, recipientId: string, body: string, attachment?: { uri: string; type: 'image' | 'audio'; durationMs?: number; width?: number }) {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user || auth.user.id !== senderId) throw new Error('Debés iniciar sesión para enviar mensajes.');
-  let mediaPath: string | null = null;
   if (attachment) {
     let bytes: ArrayBuffer;
     let contentType: string;
@@ -250,24 +250,36 @@ export async function sendTravelerMessage(senderId: string, recipientId: string,
       bytes = await response.arrayBuffer();
     }
     const extension = attachment.type === 'image' ? 'jpg' : contentType.includes('webm') ? 'webm' : 'm4a';
-    const path = `${senderId}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`;
+    const messageId = Crypto.randomUUID();
+    const path = `${senderId}/${messageId}.${extension}`;
     if (bytes.byteLength > 10 * 1024 * 1024) throw new Error('El adjunto supera el límite de 10 MB.');
+    const { error: messageError } = await supabase.from('traveler_messages').insert({
+      id: messageId,
+      sender_id: senderId,
+      recipient_id: recipientId,
+      body: body.trim() || (attachment.type === 'image' ? '📷 Foto' : '🎙️ Audio'),
+      media_path: path,
+      media_type: attachment.type,
+      media_duration_ms: attachment.durationMs ?? null,
+    });
+    if (messageError) throw messageError;
     const { error: uploadError } = await supabase.storage.from('chat-media').upload(path, bytes, { contentType, cacheControl: '3600', upsert: false });
-    if (uploadError) throw uploadError;
-    mediaPath = path;
+    if (uploadError) {
+      await supabase.storage.from('chat-media').remove([path]);
+      await supabase.rpc('discard_failed_traveler_message', { p_message_id: messageId });
+      throw uploadError;
+    }
+    return;
   }
   const { error } = await supabase.from('traveler_messages').insert({
     sender_id: senderId,
     recipient_id: recipientId,
-    body: body.trim() || (attachment?.type === 'image' ? '📷 Foto' : '🎙️ Audio'),
-    media_path: mediaPath,
-    media_type: attachment?.type ?? null,
-    media_duration_ms: attachment?.durationMs ?? null,
+    body: body.trim(),
+    media_path: null,
+    media_type: null,
+    media_duration_ms: null,
   });
-  if (error) {
-    if (mediaPath) await supabase.storage.from('chat-media').remove([mediaPath]);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 export async function toggleTravelerMessageReaction(messageId: string, emoji: string) {

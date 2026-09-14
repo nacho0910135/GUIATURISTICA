@@ -131,11 +131,11 @@ export async function getCommerceRegions() {
   return (data ?? []) as CommerceRegion[];
 }
 
-export async function getCommerceDirectory(categoryId: CommerceCategoryId, origin: Coordinates, subcategory?: string, region?: CommerceRegion): Promise<CommerceDirectory> {
+export async function getCommerceDirectory(categoryId: CommerceCategoryId, origin?: Coordinates, subcategory?: string, region?: CommerceRegion): Promise<CommerceDirectory> {
   const rows: ServiceRow[] = [];
   try {
     for (let from = 0; ; from += 1000) {
-      let request = supabase.from('vw_ranked_commercial_services').select(RANKED_SERVICE_FIELDS).eq('category', categoryId);
+      let request = supabase.from('vw_ranked_commercial_services').select(RANKED_SERVICE_FIELDS).eq('category', categoryId).not('location', 'is', null);
       if (subcategory) request = request.contains('subcategories', [subcategory]);
       const { data, error } = await request.range(from, from + 999);
       if (error) throw error;
@@ -152,7 +152,8 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
     .flatMap((service) => {
       const [longitude, latitude] = service.location?.coordinates ?? [];
       const hasLocation = typeof latitude === 'number' && typeof longitude === 'number';
-      if (region && (!hasLocation || distanceKm({ latitude: region.latitude, longitude: region.longitude }, { latitude, longitude }) > region.radius_km)) return [];
+      if (!hasLocation) return [];
+      if (region && distanceKm({ latitude: region.latitude, longitude: region.longitude }, { latitude, longitude }) > region.radius_km) return [];
       const photos = service.photos ?? [];
       return [{
         ...service,
@@ -171,7 +172,7 @@ export async function getCommerceDirectory(categoryId: CommerceCategoryId, origi
         total_reviews: Number(service.total_reviews ?? 0),
       }];
     });
-  const roadRoutes = await getRoadRoutes(origin, services.flatMap((service) => service.latitude == null || service.longitude == null ? [] : [{ id: service.id, latitude: service.latitude, longitude: service.longitude }]));
+  const roadRoutes = origin ? await getRoadRoutes(origin, services.flatMap((service) => service.latitude == null || service.longitude == null ? [] : [{ id: service.id, latitude: service.latitude, longitude: service.longitude }])) : new Map();
   for (const service of services) {
     const route = roadRoutes.get(service.id);
     service.distance_km = route?.distanceKm ?? null;
@@ -276,6 +277,7 @@ export async function getAssistanceDirectory(categoryId: AssistanceCategoryId, o
     .from('commercial_services')
     .select(SERVICE_FIELDS)
     .eq('category', 'emergency')
+    .not('location', 'is', null)
     .in('main_category', category.allowed_targets)
     .limit(1000);
   if (error) throw error;
@@ -295,7 +297,7 @@ export async function getAssistanceDirectory(categoryId: AssistanceCategoryId, o
 }
 
 export async function recordBusinessEvent(serviceId: string, eventType: BusinessEventType, attribution: Record<string, unknown> = {}) {
-  const { error } = await supabase.from('business_events').insert({ service_id: serviceId, event_type: eventType, attribution: normalizeBusinessAttribution(attribution) });
+  const { error } = await supabase.rpc('record_business_event', { p_service_id: serviceId, p_event_type: eventType, p_attribution: normalizeBusinessAttribution(attribution) });
   if (error) return;
 }
 

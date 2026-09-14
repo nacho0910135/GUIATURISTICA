@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { GlassSurface, PressableCard } from '@/components/ui/card';
-import { billingOffers, getMySubscriptions, hasActiveBusinessPlan, hasActivePersonalPlan, openSubscriptionCheckout, openSubscriptionManagement, type BillingOfferId } from '@/lib/billing';
+import { billingOffers, getMyAccessStatus, getMySubscriptions, hasActiveBusinessPlan, hasActivePersonalPlan, hasEntitledStatus, openSubscriptionCheckout, openSubscriptionManagement, type BillingOfferId } from '@/lib/billing';
 import { useGooglePlayBilling } from '../hooks/use-google-play-billing';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
@@ -27,6 +27,7 @@ export default function SubscriptionsScreen() {
   const [busyOffer, setBusyOffer] = useState<BillingOfferId>();
   const checkoutInProgress = useRef(false);
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: isAuthenticated });
+  const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: isAuthenticated });
   const refetchSubscriptions = subscriptions.refetch;
 
   const purchaseVerified = useCallback(async () => {
@@ -95,19 +96,27 @@ export default function SubscriptionsScreen() {
     }
   };
 
-  const active = (offerId: BillingOfferId) => subscriptions.data?.some((item) => item.offer_id === offerId && ['active', 'past_due', 'canceled'].includes(item.status) && (!item.current_period_end || new Date(item.current_period_end).getTime() > Date.now()) && (!billingOffers[offerId].business || !serviceId || item.service_id === serviceId));
+  const active = (offerId: BillingOfferId) => subscriptions.data?.some((item) => item.offer_id === offerId && hasEntitledStatus(item) && (!item.current_period_end || new Date(item.current_period_end).getTime() > Date.now()) && (!billingOffers[offerId].business || !serviceId || item.service_id === serviceId));
   const managedOfferId = (businessIntent ? businessOffers : universalOffers).find(active);
   const managedSubscription = subscriptions.data?.find((item) => item.offer_id === managedOfferId);
+  const trialHeadline = access.data?.hasPersonalPlan
+    ? (language === 'es' ? 'Tu plan Pro está activo' : 'Your Pro plan is active')
+    : access.data
+      ? access.data.trialDaysRemaining === 0
+        ? (language === 'es' ? 'Tu período gratuito terminó' : 'Your free trial has ended')
+        : (language === 'es' ? '15 días gratis con toda la app' : '15 free days with the complete app')
+      : (language === 'es' ? 'Consultá los planes disponibles' : 'See available plans');
   return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(bottom, 24), paddingHorizontal: 20, paddingTop: top + 20 }}>
     <View className="mx-auto w-full max-w-2xl flex-1">
       <View className="flex-row items-center"><Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-ui-muted active:opacity-70 dark:bg-ui-dark-muted" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={23} color="#087443" /></Pressable><View className="min-w-0 flex-1"><Text className="text-3xl font-black tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Planes Pro' : 'Pro plans'}</Text><Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{Platform.OS === 'android' ? (language === 'es' ? 'Pago seguro y validado con Google Play.' : 'Secure payment validated with Google Play.') : (language === 'es' ? 'Pago seguro en la web.' : 'Secure web payment.')}</Text></View></View>
-      {businessIntent ? <View accessibilityRole="alert" className="mt-5 rounded-2xl border border-ui-primary bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Plan para comercio o servicio seleccionado' : 'Business or service plan selected'}</Text><Text className="mt-1 text-sm leading-5 text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Emití y confirmá el pago. Después se habilitarán el registro y el Panel de propietarios.' : 'Complete and confirm payment. Registration and the Owner dashboard will then be unlocked.'}</Text></View> : <View className="mt-5 rounded-2xl bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? '15 días gratis con toda la app' : '15 free days with the complete app'}</Text><Text className="mt-1 text-sm leading-5 text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Después elegís el plan que mejor se adapte a tu viaje.' : 'Then choose the plan that best fits your trip.'}</Text></View>}
+      {businessIntent ? <View accessibilityRole="alert" className="mt-5 rounded-2xl border border-ui-primary bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Plan para comercio o servicio seleccionado' : 'Business or service plan selected'}</Text><Text className="mt-1 text-sm leading-5 text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Emití y confirmá el pago. Después se habilitarán el registro y el Panel de propietarios.' : 'Complete and confirm payment. Registration and the Owner dashboard will then be unlocked.'}</Text></View> : <View className="mt-5 rounded-2xl bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{trialHeadline}</Text><Text className="mt-1 text-sm leading-5 text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Elegí el plan que mejor se adapte a tu viaje.' : 'Choose the plan that best fits your trip.'}</Text></View>}
       <View className="mt-4 flex-1 gap-4">
         {businessIntent ? businessOffers.map((offerId) => <PlanCard active={isAdmin || Boolean(active(offerId))} adminAccess={isAdmin} busy={busyOffer === offerId} key={offerId} language={language} offerId={offerId} onPress={() => void startCheckout(offerId)} storeAvailable={Platform.OS !== 'android' || Boolean(playBilling.storePrices[offerId])} storeLoading={Platform.OS === 'android' && (!playBilling.connected || !playBilling.productsLoaded)} storePrice={playBilling.storePrices[offerId]} />) : null}
         {!businessIntent ? universalOffers.map((offerId) => <PlanCard active={isAdmin || Boolean(active(offerId)) || (Platform.OS !== 'android' && Boolean(managedSubscription))} adminAccess={isAdmin} busy={busyOffer === offerId} key={offerId} language={language} offerId={offerId} onPress={() => void startCheckout(offerId)} storeAvailable={Platform.OS !== 'android' || Boolean(playBilling.storePrices[offerId])} storeLoading={Platform.OS === 'android' && (!playBilling.connected || !playBilling.productsLoaded)} storePrice={playBilling.storePrices[offerId]} />) : null}
       </View>
       {managedSubscription ? <Pressable accessibilityRole="link" className="mt-4 items-center rounded-2xl border border-ui-primary py-3" onPress={() => void openSubscriptionManagement(managedSubscription).catch((error) => Alert.alert('Descubriendo CR', error instanceof Error ? error.message : 'No se pudo abrir la administración.'))}><Text className="font-black text-ui-primary">{language === 'es' ? 'Administrar o cancelar suscripción' : 'Manage or cancel subscription'}</Text></Pressable> : null}
       {subscriptions.isLoading ? <FrogLoader className="mt-5" color="#087443" /> : null}
+      {subscriptions.isError ? <View accessibilityRole="alert" className="mt-5 items-center rounded-2xl border border-ui-danger bg-red-50 p-4 dark:bg-red-950"><Text className="text-center font-bold text-ui-danger dark:text-ui-dark-danger">{language === 'es' ? 'No pudimos cargar tus suscripciones.' : 'We could not load your subscriptions.'}</Text><Pressable accessibilityRole="button" className="mt-3 rounded-control bg-ui-primary px-5 py-3" onPress={() => void subscriptions.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : null}
     </View>
   </ScrollView>;
 }

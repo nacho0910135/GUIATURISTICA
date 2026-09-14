@@ -9,6 +9,7 @@ module.exports = ({ config }) => {
     'expo-image',
     'expo-web-browser',
     'expo-status-bar',
+    'expo-notifications',
     '@react-native-community/datetimepicker',
     [
       '@rnmapbox/maps',

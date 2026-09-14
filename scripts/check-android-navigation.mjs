@@ -9,9 +9,9 @@ const [build, config, manifest, root, tabs] = await Promise.all([
   readFile(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8'),
 ]);
 
-assert.equal(config.expo.android.predictiveBackGestureEnabled, false);
-assert.match(manifest, /android:enableOnBackInvokedCallback="false"/);
-assert.match(build, /enableOnBackInvokedCallback=.*false/);
+assert.equal(config.expo.android.predictiveBackGestureEnabled, true);
+assert.match(manifest, /android:enableOnBackInvokedCallback="true"/);
+assert.match(build, /enableOnBackInvokedCallback=.*true/);
 assert.doesNotMatch(root, /BackHandler|hardwareBackPress|backToExplore/);
 assert.match(tabs, /tabPress:[\s\S]*haptic\('selection'\)/);
 assert.doesNotMatch(tabs, /tabPress:[\s\S]*haptic\('error'\)/);

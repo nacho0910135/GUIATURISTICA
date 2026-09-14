@@ -22,7 +22,7 @@ Según las funciones que decidás usar, podemos tratar:
 - Audio, cámara y fotografías únicamente cuando activás funciones como notas de voz, captura o carga de imágenes.
 - Preferencias de la app y de viaje, como idioma, modo de visitante, tema, destinos guardados y datos preparados para uso sin conexión.
 - Datos de compras y suscripciones: plan, estado, importe, moneda, vigencia e identificadores del proveedor. No almacenamos números completos de tarjetas.
-- Datos técnicos necesarios para seguridad y operación, como registros de errores, solicitudes de red, marcas de tiempo e identificadores internos.
+- Datos técnicos necesarios para seguridad y operación, como el token del dispositivo para entregar notificaciones, registros de errores, solicitudes de red, marcas de tiempo e identificadores internos.
 
 ## Cómo usamos los datos
 
@@ -49,11 +49,10 @@ El perfil, publicaciones, fotos, comentarios, reseñas y ubicaciones que decidá
 Compartimos únicamente los datos necesarios para operar una función con los siguientes proveedores:
 
 - **Supabase:** autenticación, base de datos, almacenamiento y funciones del servidor.
-- **Expo/EAS:** compilación de la aplicación.
+- **Expo/EAS:** compilación de la aplicación y entrega de notificaciones push.
 - **Google:** inicio de sesión con Google y distribución mediante Google Play.
 - **OpenStreetMap y Mapbox:** mapas y solicitudes cartográficas según la plataforma.
 - **OpenWeather:** información meteorológica asociada al área consultada.
-- **Stripe:** pagos web y estado de suscripciones cuando esa opción está disponible. Stripe procesa directamente los datos de pago.
 - Sitios de operadores, comercios o navegación que abrís voluntariamente desde enlaces externos.
 
 Estos proveedores pueden procesar datos en otros países y aplican sus propias políticas y medidas de seguridad.

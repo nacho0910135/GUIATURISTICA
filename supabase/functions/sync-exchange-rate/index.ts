@@ -1,10 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type" };
+const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type, x-cron-secret" };
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers: cors });
+  const expectedSecret = Deno.env.get("SYNC_EXCHANGE_RATE_SECRET");
+  const suppliedSecret = request.headers.get("x-cron-secret");
+  if (!expectedSecret || suppliedSecret !== expectedSecret)
+    return new Response("Unauthorized", { status: 401, headers: cors });
 
   try {
     const response = await fetch("https://api.hacienda.go.cr/indicadores/tc/dolar", { headers: { Accept: "application/json" } });

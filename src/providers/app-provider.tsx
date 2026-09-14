@@ -4,13 +4,14 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, Pressable, Text, View } from 'react-native';
 
 import { hasPrecisePermission, isUsablePosition, LOCATION_MAX_AGE_MS } from '@/lib/location-quality';
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { getPlannerOptions } from '@/lib/app-options';
 import { ensureOfflineTripPacks } from '@/lib/offline-trip-pack';
+import { observePushNotifications, registerPushNotifications, unregisterPushNotifications } from '@/lib/push-notifications';
 import { useAppTheme } from '@/theme/theme-provider';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -67,10 +68,12 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userSession, setUserSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [authRestoreError, setAuthRestoreError] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const locationRefreshInFlight = useRef(false);
   const locationWatcher = useRef<Location.LocationSubscription | null>(null);
   const locationWatcherActive = useRef(false);
+  const locationActivated = useRef(false);
   const locationGeneration = useRef(0);
   const oauthCallbackInFlight = useRef<Promise<boolean> | null>(null);
   const lastOAuthCallbackUrl = useRef<string | undefined>(undefined);
@@ -83,6 +86,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const refreshUserLocation = useCallback(async () => {
     if (locationRefreshInFlight.current) return;
+    locationActivated.current = true;
     locationRefreshInFlight.current = true;
     const generation = ++locationGeneration.current;
     const active = () => generation === locationGeneration.current;
@@ -104,6 +108,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     try {
       let permission = await Location.getForegroundPermissionsAsync();
       if (!active()) return;
+      if (!permission.granted) {
+        permission = await Location.requestForegroundPermissionsAsync();
+        if (!active()) return;
+      }
       if (!permission.granted) {
         lastLocationTimestamp.current = 0;
         locationWatcherActive.current = false;
@@ -165,7 +173,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const timer = setInterval(() => {
       if (Date.now() - lastLocationTimestamp.current > LOCATION_MAX_AGE_MS) {
         setUserLocation(null);
-        if (AppState.currentState === 'active') void refreshUserLocation().catch(() => undefined);
+        if (AppState.currentState === 'active' && locationActivated.current) void refreshUserLocation().catch(() => undefined);
       }
     }, 15000);
     return () => {
@@ -191,6 +199,14 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAvatarUrl(data?.avatar_url ?? (typeof metadataAvatar === 'string' ? metadataAvatar : null));
   }, []);
 
+  const restoreSession = useCallback(async () => {
+    setAuthRestoreError(false);
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    await syncSession(data.session);
+    setAuthReady(true);
+  }, [syncSession]);
+
   const createSessionFromUrl = useCallback((url: string) => {
     if (url === lastOAuthCallbackUrl.current && oauthCallbackInFlight.current) return oauthCallbackInFlight.current;
     lastOAuthCallbackUrl.current = url;
@@ -215,20 +231,30 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let mounted = true;
-    void supabase.auth.getSession()
-      .then(({ data, error }) => { if (error) throw error; if (mounted) return syncSession(data.session); })
-      .catch((error) => console.warn('No se pudo restaurar la sesión.', error))
-      .finally(() => { if (mounted) setAuthReady(true); });
+    void restoreSession().catch((error) => {
+      console.warn('No se pudo restaurar la sesión.', error);
+      if (mounted) setAuthRestoreError(true);
+    });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (mounted) void syncSession(nextSession).catch((error) => console.warn('No se pudo sincronizar la sesión.', error));
     });
     return () => { mounted = false; listener.subscription.unsubscribe(); };
-  }, [syncSession]);
+  }, [restoreSession, syncSession]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    return observePushNotifications();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !userSession) return;
+    void registerPushNotifications().catch((error) => console.warn('No se pudo registrar para notificaciones push.', error));
+  }, [userSession]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const handleCallback = (url: string) => {
-      if (!url.includes('auth/callback')) return;
+      if (!url.includes('auth/callback') && !url.includes('reset-password')) return;
       void createSessionFromUrl(url).catch((error) => console.warn('No se pudo completar Google OAuth.', error));
     };
     const subscription = Linking.addEventListener('url', ({ url }) => handleCallback(url));
@@ -249,42 +275,10 @@ export function AppProvider({ children }: PropsWithChildren) {
         return;
       }
       void supabase.auth.getSession().then(({ data, error }) => { if (error) throw error; return syncSession(data.session); }).catch((error) => console.warn('No se pudo actualizar la sesión.', error));
-      void refreshUserLocation().catch(() => undefined);
+      if (locationActivated.current) void refreshUserLocation().catch(() => undefined);
     });
     return () => subscription.remove();
   }, [refreshUserLocation, syncSession]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const requestStartupLocation = async () => {
-      // Calling the request API on every cold start is intentional: the OS only
-      // displays its dialog while the permission is undetermined, and otherwise
-      // returns the current status without bothering the user again.
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (cancelled) return;
-      if (!permission.granted) {
-        setLocationError('denied');
-        return;
-      }
-      if (!hasPrecisePermission(permission)) {
-        setLocationError('unavailable');
-        return;
-      }
-      const servicesEnabled = await Location.hasServicesEnabledAsync();
-      if (!servicesEnabled && Platform.OS === 'android') {
-        // Android's permission dialog cannot turn on the device location
-        // provider. This opens the native high-accuracy/GPS prompt instead.
-        await Location.enableNetworkProviderAsync();
-      }
-      if (!(await Location.hasServicesEnabledAsync())) {
-        setLocationError('unavailable');
-        return;
-      }
-      await refreshUserLocation();
-    };
-    void requestStartupLocation().catch(() => { if (!cancelled) setLocationError('unavailable'); });
-    return () => { cancelled = true; };
-  }, [refreshUserLocation]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -324,6 +318,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [createSessionFromUrl]);
 
   const signOut = useCallback(async () => {
+    await unregisterPushNotifications().catch(() => undefined);
     await supabase.auth.signOut();
     setUserSession(null);
     setIsAdmin(false);
@@ -378,7 +373,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setVisitorType, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut,
   }), [language, currency, visitorType, exchangeRate, exchangeRateReady, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={value}>{authReady ? children : <View className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text accessibilityRole="alert" className="text-center text-xl font-black text-ui-text dark:text-ui-dark-text">{authRestoreError ? (language === 'es' ? 'No pudimos restaurar tu sesión' : 'We could not restore your session') : (language === 'es' ? 'Restaurando tu sesión…' : 'Restoring your session…')}</Text>{authRestoreError ? <><Text className="mt-2 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Revisá tu conexión o continuá sin iniciar sesión.' : 'Check your connection or continue signed out.'}</Text><Pressable accessibilityRole="button" className="mt-5 rounded-control bg-ui-primary px-6 py-4" onPress={() => void restoreSession().catch(() => setAuthRestoreError(true))}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable><Pressable accessibilityRole="button" className="mt-3 px-6 py-3" onPress={() => { setUserSession(null); setAuthReady(true); }}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Continuar sin sesión' : 'Continue signed out'}</Text></Pressable></> : null}</View>}</AppContext.Provider>;
 }
 
 export function useApp() {

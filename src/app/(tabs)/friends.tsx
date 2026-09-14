@@ -205,6 +205,7 @@ export default function FriendsScreen() {
       void haptic('selection');
       return;
     }
+    if (!requireAuth(language === 'es' ? 'Compartir tu ubicación' : 'Share your location')) return;
     try {
       setBusy(true);
       const current = await getPreciseCurrentLocation(language);

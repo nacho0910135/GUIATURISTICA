@@ -119,7 +119,7 @@ const appState = {
 };
 const provider = load('src/providers/app-provider.tsx', {
   react,
-  'react/jsx-runtime': { jsx: (_, props) => props },
+  'react/jsx-runtime': { Fragment: 'Fragment', jsx: (_, props) => props, jsxs: (_, props) => props },
   'expo-auth-session': {}, 'expo-constants': {}, 'expo-linking': {},
   'expo-location': location, 'expo-router': {},
   'expo-web-browser': { maybeCompleteAuthSession() {} },

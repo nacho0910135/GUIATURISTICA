@@ -34,7 +34,6 @@ import {
   campaignOffers,
   getMySubscriptions,
   hasActiveBusinessPlan,
-  hasAvailableBusinessPlan,
   openGooglePlayCampaignManagement,
   openCampaignCheckout,
   type CampaignOfferId,
@@ -1952,15 +1951,15 @@ export default function CommerceScreen() {
     session,
     userLocation,
     isDark,
-    locating,
-    refreshUserLocation,
   } = useApp();
   const gold = appTheme.colors.commerceGold;
   const scrollRef = useRef<FlatList<CommerceService>>(null);
   useScrollToTop(scrollRef);
   const router = useRouter();
+  const { serviceId: requestedServiceId, openRegistration, registerCategory } = useGlobalSearchParams<{ serviceId?: string; openRegistration?: string; registerCategory?: string }>();
   const [category, setCategory] = useState<CommerceCategoryId>("cinemas");
   const [subcategory, setSubcategory] = useState<string>();
+  const [regionId, setRegionId] = useState('');
   const [reporting, setReporting] = useState<CommerceService | null>(null);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [businessPlanRequiredOpen, setBusinessPlanRequiredOpen] =
@@ -1988,6 +1987,7 @@ export default function CommerceScreen() {
   const [campaignBusy, setCampaignBusy] = useState<string>();
   const [bannerUrls, setBannerUrls] = useState<Record<string, string>>({});
   const [detail, setDetail] = useState<CommerceService | null>(null);
+  const handledRegistrationRequest = useRef<string | undefined>(undefined);
   const { categories, subcategories, taxonomyError, retryTaxonomy } =
     useCommerceTaxonomy();
   const categorySubcategories = subcategories.filter(
@@ -2007,8 +2007,9 @@ export default function CommerceScreen() {
     () => regionsQuery.data ?? [],
     [regionsQuery.data],
   );
-  const viewMode = "nearby";
-  const directoryOrigin = userLocation ?? undefined;
+  const selectedRegion = regions.find((region) => region.id === regionId);
+  const viewMode = userLocation ? "nearby" : selectedRegion ? "region" : "all";
+  const directoryOrigin = userLocation ?? (selectedRegion ? { latitude: selectedRegion.latitude, longitude: selectedRegion.longitude } : undefined);
   const directory = useQuery({
     queryKey: [
       "commerce-directory",
@@ -2017,10 +2018,11 @@ export default function CommerceScreen() {
       viewMode,
       directoryOrigin?.latitude,
       directoryOrigin?.longitude,
+      regionId,
     ],
     queryFn: () =>
-      getCommerceDirectory(category, directoryOrigin!, subcategory),
-    enabled: Boolean(category && directoryOrigin),
+      getCommerceDirectory(category, directoryOrigin, subcategory, selectedRegion),
+    enabled: Boolean(category),
     staleTime: 10 * 60 * 1000,
   });
   const cinemaMovies = useQuery({
@@ -2101,6 +2103,11 @@ export default function CommerceScreen() {
         commerceDistanceSortValue(b.distance_km) ||
       a.title.localeCompare(b.title),
   );
+  useEffect(() => {
+    if (!requestedServiceId || !catalog.length) return;
+    const requested = catalog.find((service) => service.id === requestedServiceId);
+    if (requested) setDetail(requested);
+  }, [catalog, requestedServiceId]);
   const catalogTitle = isCinemaCategory
     ? language === "es"
       ? "Cines cerca de vos"
@@ -2130,7 +2137,7 @@ export default function CommerceScreen() {
     const currentSubscriptions = subscriptions.isLoading
       ? ((await subscriptions.refetch()).data ?? [])
       : (subscriptions.data ?? []);
-    if (!isAdmin && !hasAvailableBusinessPlan(currentSubscriptions)) {
+    if (!isAdmin && !hasActiveBusinessPlan(currentSubscriptions)) {
       router.push({ pathname: "/subscriptions", params: { intent: "business" } });
       return;
     }
@@ -2140,6 +2147,19 @@ export default function CommerceScreen() {
     setRegisterError("");
     setRegisterOpen(true);
   };
+
+  useEffect(() => {
+    const request = `${openRegistration ?? ''}:${registerCategory ?? ''}`;
+    if (openRegistration !== '1' || handledRegistrationRequest.current === request) return;
+    handledRegistrationRequest.current = request;
+    const requestedCategory = registerCategory === 'nightlife' ? 'nightlife' : 'food';
+    setCategory(requestedCategory);
+    setRegisterForm(emptyProfileForm(requestedCategory));
+    setRegisterPhotos([]);
+    setRegistrationLocation(undefined);
+    setRegisterError('');
+    setRegisterOpen(true);
+  }, [openRegistration, registerCategory]);
 
   const openOwnerDashboard = async () => {
     if (
@@ -2351,6 +2371,8 @@ export default function CommerceScreen() {
             ? "Tu sesión venció. Volvé a iniciar sesión e intentá de nuevo."
             : message.includes("active_business_subscription_required")
               ? "Necesitás confirmar el pago del plan Comercio o servicio antes de registrar el negocio."
+            : message.includes("commercial_category_site_limit_reached")
+              ? `Ya alcanzaste el máximo de 2 sitios en ${registerForm.category === "food" ? "Experiencia gastronómica" : "Vida nocturna"}.`
             : message.includes("invalid commerce category")
               ? "Ese tipo ya no está disponible. Elegí otro."
               : "No pudimos enviar el comercio. Revisá tu conexión e intentá de nuevo."
@@ -2358,6 +2380,8 @@ export default function CommerceScreen() {
             ? "Your session expired. Sign in again and retry."
             : message.includes("active_business_subscription_required")
               ? "Confirm payment for the Business or service plan before registering the business."
+            : message.includes("commercial_category_site_limit_reached")
+              ? `You already reached the 2-place limit for ${registerForm.category === "food" ? "Gastronomic experience" : "Nightlife"}.`
             : message.includes("invalid commerce category")
               ? "That type is no longer available. Choose another."
               : "We could not send the business. Check your connection and retry.",
@@ -2734,6 +2758,14 @@ export default function CommerceScreen() {
           movies={cinemaMovies.data ?? []}
         />
       ) : null}
+      {!userLocation ? (
+        <View className="mx-5 mt-5 overflow-hidden rounded-control border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface">
+          <Picker accessibilityLabel={language === "es" ? "Filtrar por región" : "Filter by region"} selectedValue={regionId} onValueChange={setRegionId}>
+            <Picker.Item label={language === "es" ? "Todo Costa Rica" : "All Costa Rica"} value="" />
+            {regions.map((region) => <Picker.Item key={region.id} label={language === "es" ? region.name_es : region.name_en} value={region.id} />)}
+          </Picker>
+        </View>
+      ) : null}
       {categorySubcategories.length ? (
         <View className="mt-5">
           <Text className="px-5 text-xs font-black uppercase tracking-[1.5px] text-ui-text-muted dark:text-ui-dark-text-muted">
@@ -2855,41 +2887,7 @@ export default function CommerceScreen() {
           </>
         }
         ListEmptyComponent={
-          !directoryOrigin ? (
-            <View className="mx-5 min-h-40 items-center justify-center px-6 py-8">
-              {locating ? (
-                <FrogLoader size="large" color="#087443" />
-              ) : (
-                <MaterialCommunityIcons
-                  name="crosshairs-gps"
-                  size={32}
-                  color="#087443"
-                />
-              )}
-              <Text className="mt-4 text-center text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">
-                {locating
-                  ? language === "es"
-                    ? "Obteniendo tu ubicación precisa…"
-                    : "Getting your precise location…"
-                  : language === "es"
-                    ? "Activá la ubicación precisa para ver comercios cercanos."
-                    : "Enable precise location to see nearby businesses."}
-              </Text>
-              {!locating ? (
-                <Pressable
-                  accessibilityRole="button"
-                  className="mt-3 min-h-11 justify-center"
-                  onPress={() => void refreshUserLocation()}
-                >
-                  <Text className="font-black text-ui-primary">
-                    {language === "es"
-                      ? "Reintentar ubicación"
-                      : "Retry location"}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : directory.isLoading ? (
+          directory.isLoading ? (
             <View className="mx-5 min-h-52 items-center justify-center">
               <FrogLoader size="large" color="#087443" />
               <Text className="mt-4 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">

@@ -26,6 +26,20 @@ export async function getGoogleSubscription(purchaseToken: string) {
   return await response.json() as GoogleSubscription;
 }
 
+export async function acknowledgeGoogleSubscription(productId: string, purchaseToken: string) {
+  const rawAccount = Deno.env.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON");
+  if (!rawAccount) throw new Error("google_play_not_configured");
+  const account = JSON.parse(rawAccount) as ServiceAccount;
+  if (!account.client_email || !account.private_key) throw new Error("google_play_not_configured");
+  const accessToken = await getAccessToken(account);
+  const response = await fetch(`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PACKAGE_NAME}/purchases/subscriptions/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:acknowledge`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: "{}",
+  });
+  if (!response.ok && response.status !== 409) throw new Error("google_play_acknowledge_failed");
+}
+
 async function getAccessToken(account: ServiceAccount) {
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));

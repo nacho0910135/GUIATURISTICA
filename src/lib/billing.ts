@@ -29,8 +29,8 @@ export const billingOffers = {
     icon: "calendar-star",
     title: ["Anual", "Annual"],
     detail: [
-      "Ahorrás US$4 frente al plan mensual.",
-      "Save US$4 compared with monthly billing.",
+      "Ahorrás US$4; se renueva automáticamente cada año hasta que cancelés.",
+      "Save US$4; renews automatically every year until canceled.",
     ],
     price: ["US$20 / año", "US$20 / year"],
   },
@@ -136,6 +136,13 @@ export type AccessStatus = {
   showTrialWarning: boolean;
 };
 
+export function hasEntitledStatus(subscription: Subscription) {
+  return ["active", "past_due", "canceled"].includes(subscription.status) && !(
+    subscription.provider === "google_play" &&
+    ["SUBSCRIPTION_STATE_ON_HOLD", "SUBSCRIPTION_STATE_PAUSED"].includes(subscription.provider_status ?? "")
+  );
+}
+
 export function hasActivePersonalPlan(
   subscriptions: Subscription[],
   now = Date.now(),
@@ -143,7 +150,7 @@ export function hasActivePersonalPlan(
   return subscriptions.some(
     (item) =>
       item.plan === "no_ads" &&
-      ["active", "past_due", "canceled"].includes(item.status) &&
+      hasEntitledStatus(item) &&
       (!item.current_period_end ||
         new Date(item.current_period_end).getTime() > now),
   );
@@ -158,7 +165,7 @@ export function hasActiveBusinessPlan(
     (item) =>
       item.plan === "business" &&
       item.offer_id === "business_monthly" &&
-      ["active", "past_due", "canceled"].includes(item.status) &&
+      hasEntitledStatus(item) &&
       (!serviceId || item.service_id === serviceId) &&
       (!item.current_period_end ||
         new Date(item.current_period_end).getTime() > now),
@@ -174,7 +181,7 @@ export function hasAvailableBusinessPlan(
       item.plan === "business" &&
       item.offer_id === "business_monthly" &&
       item.service_id === null &&
-      ["active", "past_due", "canceled"].includes(item.status) &&
+      hasEntitledStatus(item) &&
       (!item.current_period_end ||
         new Date(item.current_period_end).getTime() > now),
   );

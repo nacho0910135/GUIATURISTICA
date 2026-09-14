@@ -18,6 +18,7 @@ import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdm
 import { reportTypeLabel, updateInformationReportStatus } from '@/lib/reports';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
+import { openNotification } from '@/lib/notification-route';
 import { useApp } from '@/providers/app-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
@@ -373,14 +374,8 @@ export default function ProfileScreen() {
                     })
                   }
                   onOpen={() => void run(async () => {
-                    if (!item.read_status) await markNotificationRead(item.id);
-                    if (item.type === 'comment_reply' || item.type === 'comment_reaction') {
-                      const { data: reply, error: replyError } = await supabase.from('traveler_replies').select('post_id').eq('id', item.target_id).single();
-                      if (replyError) throw replyError;
-                      router.push({ pathname: '/(tabs)/friends', params: { postId: reply.post_id, commentId: item.target_id } });
-                    } else if (item.type === 'comment' || item.type === 'like') {
-                      router.push({ pathname: '/(tabs)/friends', params: { postId: item.target_id } });
-                    }
+                    const opened = await openNotification({ actorId: item.actor_id, targetId: item.target_id, type: item.type });
+                    if (opened && !item.read_status) await markNotificationRead(item.id);
                   })}
                 />
               ))}

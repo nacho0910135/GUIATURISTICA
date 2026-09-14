@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { acknowledgeGoogleSubscription } from "../_shared/google-play.ts";
 
 const PACKAGE_NAME = "com.descubriendo.cr";
 const ANDROID_PUBLISHER_SCOPE =
@@ -106,18 +107,16 @@ Deno.serve(async (request) => {
   if (!offer || !purchaseToken || purchaseToken.length > 4096)
     return json({ error: "invalid_purchase" }, 400);
   let purchaseIntentId: string | undefined;
-  if (offer.kind === "campaign") {
-    const { data: intent } = await admin.from("google_play_purchase_intents")
-      .select("id,service_id,target_url,image_url")
-      .eq("user_id", user.id)
-      .eq("product_id", productId)
-      .is("consumed_at", null)
-      .maybeSingle();
-    purchaseIntentId = intent?.id;
-    serviceId ??= intent?.service_id;
-    targetUrl ??= intent?.target_url ?? undefined;
-    imageUrl ??= intent?.image_url ?? undefined;
-  }
+  const { data: intent } = await admin.from("google_play_purchase_intents")
+    .select("id,service_id,target_url,image_url")
+    .eq("user_id", user.id)
+    .eq("product_id", productId)
+    .is("consumed_at", null)
+    .maybeSingle();
+  purchaseIntentId = intent?.id;
+  serviceId ??= intent?.service_id ?? undefined;
+  targetUrl ??= intent?.target_url ?? undefined;
+  imageUrl ??= intent?.image_url ?? undefined;
   if (offer.kind === "plan" ? !offer.business && Boolean(serviceId) : !serviceId)
     return json({ error: "invalid_business_selection" }, 400);
   if (
@@ -178,22 +177,25 @@ Deno.serve(async (request) => {
   const expiresAt = lineItem?.expiryTime;
   const providerId = `google_play:${await sha256(purchaseToken)}`;
   if (!purchase.subscriptionState) return json({ error: "purchase_state_missing" }, 502);
-  if (!lineItem || !expiresAt || new Date(expiresAt).getTime() <= Date.now() || !entitledStates.has(purchase.subscriptionState)) {
-    await admin.from("subscriptions").update({
-      status: googleDatabaseStatus(purchase.subscriptionState),
-      provider_status: purchase.subscriptionState,
-      current_period_end: expiresAt ?? null,
-      updated_at: new Date().toISOString(),
-    }).eq("provider_subscription_id", providerId);
-    return json({ error: googleStateError(purchase.subscriptionState), providerStatus: purchase.subscriptionState }, 409);
-  }
-
   const expectedAccountId = await sha256(user.id);
   if (
     purchase.externalAccountIdentifiers?.obfuscatedExternalAccountId !==
     expectedAccountId
   )
     return json({ error: "purchase_account_mismatch" }, 403);
+  if (!lineItem || !expiresAt || new Date(expiresAt).getTime() <= Date.now() || !entitledStates.has(purchase.subscriptionState)) {
+    const { error: stateError } = await admin.from("subscriptions").update({
+      status: googleDatabaseStatus(purchase.subscriptionState),
+      provider_status: purchase.subscriptionState,
+      current_period_end: expiresAt ?? null,
+      updated_at: new Date().toISOString(),
+    }).eq("provider_subscription_id", providerId);
+    const { error: campaignStateError } = await admin.from("commerce_ad_campaigns")
+      .update({ status: "expired", ends_at: expiresAt ?? new Date().toISOString() })
+      .eq("provider_subscription_id", providerId);
+    if (stateError || campaignStateError) return json({ error: "purchase_state_write_failed" }, 500);
+    return json({ error: googleStateError(purchase.subscriptionState), providerStatus: purchase.subscriptionState }, 409);
+  }
 
   const money = lineItem.autoRenewingPlan?.recurringPrice;
   const priceAmount = money
@@ -201,41 +203,38 @@ Deno.serve(async (request) => {
     : offer.fallbackAmount;
   const priceCurrency = money?.currencyCode?.toUpperCase() || "USD";
   if (offer.kind === "campaign") {
-    if (offer.campaignType === "banner") {
-      const now = new Date().toISOString();
-      const { data: activeBanners, error: capacityError } = await admin
-        .from("commerce_ad_campaigns")
-        .select("service_id")
-        .eq("campaign_type", "banner")
-        .eq("status", "active")
-        .lte("starts_at", now)
-        .gt("ends_at", now);
-      if (capacityError)
-        return json({ error: "banner_capacity_lookup_failed" }, 503);
-      const services = new Set(
-        (activeBanners ?? []).map((campaign) => campaign.service_id),
-      );
-      if (!services.has(serviceId!) && services.size >= 3)
-        return json({ error: "banner_capacity_reached" }, 409);
-    }
-    const { error: campaignError } = await admin
-      .from("commerce_ad_campaigns")
-      .upsert(
+    const campaign =
         {
           service_id: serviceId!,
           user_id: user.id,
           campaign_type: offer.campaignType,
           target_url: offer.campaignType === "banner" ? targetUrl : null,
           image_url: offer.campaignType === "banner" ? imageUrl : null,
-    status: googleDatabaseStatus(purchase.subscriptionState),
+          status: "active",
           amount_usd: offer.fallbackAmount,
           provider_session_id: null,
           provider_subscription_id: providerId,
           ends_at: expiresAt,
-        },
-        { onConflict: "provider_subscription_id" },
-      );
-    if (campaignError) return json({ error: "campaign_write_failed" }, 500);
+        };
+    const { error: campaignError } = offer.campaignType === "banner"
+      ? await admin.rpc("upsert_google_play_banner_campaign", {
+          p_service_id: campaign.service_id,
+          p_user_id: campaign.user_id,
+          p_target_url: campaign.target_url,
+          p_image_url: campaign.image_url,
+          p_amount_usd: campaign.amount_usd,
+          p_provider_subscription_id: campaign.provider_subscription_id,
+          p_ends_at: campaign.ends_at,
+        })
+      : await admin.from("commerce_ad_campaigns").upsert(campaign, { onConflict: "provider_subscription_id" });
+    if (campaignError)
+      return json({ error: campaignError.message.includes("banner_capacity_reached") ? "banner_capacity_reached" : "campaign_write_failed" }, campaignError.message.includes("banner_capacity_reached") ? 409 : 500);
+    try {
+      if (purchase.acknowledgementState !== "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED")
+        await acknowledgeGoogleSubscription(productId, purchaseToken);
+    } catch {
+      return json({ error: "google_play_acknowledge_failed" }, 502);
+    }
     if (purchaseIntentId)
       await admin.from("google_play_purchase_intents").update({ consumed_at: new Date().toISOString() }).eq("id", purchaseIntentId);
     return json({
@@ -264,6 +263,17 @@ Deno.serve(async (request) => {
       .eq("provider_subscription_id", `google_play:${await sha256(purchase.linkedPurchaseToken)}`)
       .neq("provider_subscription_id", providerId);
   }
+  const { data: providerExisting, error: providerLookupError } = await admin
+    .from("subscriptions")
+    .select("id,user_id,service_id")
+    .eq("provider_subscription_id", providerId)
+    .maybeSingle();
+  if (providerLookupError) return json({ error: "subscription_lookup_failed" }, 500);
+  if (providerExisting?.user_id !== undefined && providerExisting.user_id !== user.id)
+    return json({ error: "purchase_account_mismatch" }, 403);
+  if (providerExisting?.service_id && serviceId && providerExisting.service_id !== serviceId)
+    return json({ error: "subscription_service_mismatch" }, 409);
+  if (providerExisting) subscription.service_id = providerExisting.service_id ?? serviceId ?? null;
   let existingQuery = admin
     .from("subscriptions")
     .select("id")
@@ -273,9 +283,11 @@ Deno.serve(async (request) => {
   existingQuery = serviceId
     ? existingQuery.eq("service_id", serviceId)
     : existingQuery.is("service_id", null);
-  const { data: existing, error: existingError } =
-    await existingQuery.maybeSingle();
+  const { data: fallbackExisting, error: existingError } = providerExisting
+    ? { data: null, error: null }
+    : await existingQuery.maybeSingle();
   if (existingError) return json({ error: "subscription_lookup_failed" }, 500);
+  const existing = providerExisting ?? fallbackExisting;
   const { error: writeError } = existing
     ? await admin
         .from("subscriptions")
@@ -283,6 +295,15 @@ Deno.serve(async (request) => {
         .eq("id", existing.id)
     : await admin.from("subscriptions").insert(subscription);
   if (writeError) return json({ error: "subscription_write_failed" }, 500);
+
+  try {
+    if (purchase.acknowledgementState !== "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED")
+      await acknowledgeGoogleSubscription(productId, purchaseToken);
+  } catch {
+    return json({ error: "google_play_acknowledge_failed" }, 502);
+  }
+  if (purchaseIntentId)
+    await admin.from("google_play_purchase_intents").update({ consumed_at: new Date().toISOString() }).eq("id", purchaseIntentId);
 
   return json({
     verified: true,
@@ -304,7 +325,7 @@ function isSafeTargetUrl(value?: string) {
 
 function googleDatabaseStatus(state: string): "pending" | "active" | "past_due" | "canceled" | "expired" {
   if (state === "SUBSCRIPTION_STATE_ACTIVE") return "active";
-  if (state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD" || state === "SUBSCRIPTION_STATE_ON_HOLD" || state === "SUBSCRIPTION_STATE_PAUSED") return "past_due";
+  if (state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD") return "past_due";
   if (state === "SUBSCRIPTION_STATE_CANCELED") return "canceled";
   if (state === "SUBSCRIPTION_STATE_PENDING") return "pending";
   return "expired";

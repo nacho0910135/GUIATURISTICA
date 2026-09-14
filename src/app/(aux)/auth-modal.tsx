@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 
 import { useApp } from '@/providers/app-provider';
 import { FrogLoader } from '@/components/frog-loader';
+import { supabase } from '@/lib/supabase';
 
 export default function AuthModal() {
   const { intent } = useLocalSearchParams<{ intent?: string }>();
@@ -64,6 +65,14 @@ export default function AuthModal() {
     }
     await signIn(email, password);
     router.back();
+  });
+
+  const recoverPassword = () => void run(async () => {
+    if (!email.trim()) throw new Error(language === 'es' ? 'Ingresá el correo de tu cuenta.' : 'Enter your account email.');
+    const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : 'descubriendocr://reset-password';
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    if (resetError) throw resetError;
+    setNotice(language === 'es' ? 'Te enviamos un enlace para crear una contraseña nueva.' : 'We sent you a link to create a new password.');
   });
 
   return (
@@ -131,6 +140,9 @@ export default function AuthModal() {
             <>
               <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy }} className="mt-5 min-h-14 items-center justify-center rounded-control bg-ui-primary px-4 active:bg-ui-primary-pressed disabled:opacity-60 dark:bg-ui-dark-primary" disabled={busy} onPress={() => submit(false)}>
                 {busy ? <FrogLoader color="white" /> : <Text className="font-sans font-bold text-white">{language === 'es' ? 'Iniciar sesión' : 'Sign in'}</Text>}
+              </Pressable>
+              <Pressable accessibilityRole="button" className="mt-2 min-h-11 items-center justify-center" disabled={busy} onPress={recoverPassword}>
+                <Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Olvidé mi contraseña' : 'Forgot my password'}</Text>
               </Pressable>
               <Pressable accessibilityRole="button" className="mt-3 min-h-14 items-center justify-center rounded-control border border-ui-primary px-4 active:bg-ui-primary-soft disabled:opacity-60" disabled={busy} onPress={() => { setMode('signup'); setError(''); setNotice(''); }}>
                 <Text className="font-sans font-bold text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Crear cuenta' : 'Create account'}</Text>

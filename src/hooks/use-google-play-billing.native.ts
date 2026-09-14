@@ -109,6 +109,13 @@ export function useGooglePlayBilling({ onError, onVerified, userId }: Options) {
     const replacedPurchase = !billingOffers[offerId].business
       ? availablePurchases.find((item) => item.productId !== productId && productToOffer.has(item.productId) && item.purchaseToken)
       : undefined;
+    const { error: intentError } = await supabase.rpc('save_google_play_purchase_intent', {
+      p_product_id: productId,
+      p_service_id: serviceId ?? null,
+      p_target_url: null,
+      p_image_url: null,
+    });
+    if (intentError) throw new Error('No se pudo preparar la compra. Intentá nuevamente.');
     serviceByProduct.current.set(productId, serviceId);
     await requestPurchase({
       type: 'subs',

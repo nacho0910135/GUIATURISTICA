@@ -15,7 +15,7 @@ Deno.serve(async (request) => {
   if (userError || !user) return json({ error: 'unauthorized' }, 401);
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
-  const buckets = ['profile-avatars', 'fauna-photos', 'business-photos', 'chat-media', 'review-photos', 'destination-user-photos', 'traveler-posts'];
+  const buckets = ['profile-avatars', 'fauna-photos', 'business-photos', 'campaign-banners', 'chat-media', 'review-photos', 'destination-suggestion-photos', 'destination-user-photos', 'traveler-posts'];
   for (const bucket of buckets) {
     const paths: string[] = [];
     const walk = async (prefix: string) => {
@@ -37,6 +37,8 @@ Deno.serve(async (request) => {
   }
 
   for (const [table, column, extra] of [
+    ['business_events', 'user_id', undefined],
+    ['information_reports', 'reporter_id', undefined],
     ['destination_suggestions', 'user_id', undefined],
     ['fauna_species', 'created_by', undefined],
     ['commercial_services', 'owner_id', { source: 'owner_registered' }],
@@ -46,6 +48,8 @@ Deno.serve(async (request) => {
     const { error } = await query;
     if (error) throw error;
   }
+  const { error: ownershipError } = await admin.from('commercial_services').update({ owner_id: null, claim_status: 'unclaimed', is_claimed: false, subscription_required: false }).eq('owner_id', user.id).neq('source', 'owner_registered');
+  if (ownershipError) return json({ error: 'business_ownership_cleanup_failed' }, 500);
   const { error: profileError } = await admin.from('users').delete().eq('id', user.id);
   if (profileError) return json({ error: 'profile_deletion_failed' }, 500);
   const { error: authError } = await admin.auth.admin.deleteUser(user.id);
