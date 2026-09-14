@@ -196,7 +196,7 @@ for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx']
 }
 const exploreSource = readFileSync('src/app/(tabs)/explore.tsx', 'utf8');
 assert.ok(exploreSource.includes('await refreshUserLocation()'), 'Explore refreshes the provider-owned session location');
-assert.ok(readFileSync('src/app/(tabs)/commerce.tsx', 'utf8').includes('refreshUserLocation'), 'Commerce refreshes the provider-owned session location');
+assert.ok(readFileSync('src/providers/app-provider.tsx', 'utf8').includes('void refreshUserLocation()'), 'Startup acquires the provider-owned session location');
 assert.match(exploreSource, /if \(!isFocused\) resetExplore\(\)/, 'Explore clears temporary nearby results on blur');
 assert.match(exploreSource, /onPress=\{\(\) => \{\s*resetExplore\(\);\s*router\.push\(\{ pathname: '\/\(aux\)\/province'/, 'Opening a nearby destination clears the list first');
 assert.ok(exploreSource.includes("'mapbox-road-routes-v3'"), 'Nearby destinations cannot reuse the old straight-distance query cache');

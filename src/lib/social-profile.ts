@@ -28,15 +28,15 @@ export type PrivateConversation = {
   unread_count: number;
 };
 
-export async function getPrivateConversations(userId: string): Promise<PrivateConversation[]> {
-  const { data, error } = await supabase
-    .from('traveler_messages')
-    .select('id,sender_id,recipient_id,body,media_path,media_type,media_duration_ms,read_status,created_at')
-    .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-    .order('created_at', { ascending: true });
-  if (error) throw error;
+type PrivateConversationSummaryRow = Omit<PrivateMessage, 'id' | 'reactions' | 'media_url'> & {
+  partner_id: string;
+  partner_name: string;
+  partner_avatar_url: string | null;
+  unread_count: number | string;
+  message_id: string;
+};
 
-  const rawMessages = (data ?? []) as Omit<PrivateMessage, 'reactions' | 'media_url'>[];
+async function enrichPrivateMessages(rawMessages: Omit<PrivateMessage, 'reactions' | 'media_url'>[]) {
   const messageIds = rawMessages.map((item) => item.id);
   const paths = rawMessages.flatMap((item) => item.media_path ? [item.media_path] : []);
   const [reactionsResult, signedResult] = await Promise.all([
@@ -47,32 +47,38 @@ export async function getPrivateConversations(userId: string): Promise<PrivateCo
   const reactionsByMessage = new Map<string, { user_id: string; emoji: string }[]>();
   for (const reaction of reactionsResult.data ?? []) reactionsByMessage.set(reaction.message_id, [...(reactionsByMessage.get(reaction.message_id) ?? []), reaction]);
   const mediaUrlByPath = new Map((signedResult.data ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl]));
-  const messages: PrivateMessage[] = rawMessages.map((item) => ({ ...item, media_url: item.media_path ? mediaUrlByPath.get(item.media_path) ?? null : null, reactions: reactionsByMessage.get(item.id) ?? [] }));
-  const partnerIds = [...new Set(messages.map((item) => item.sender_id === userId ? item.recipient_id : item.sender_id))];
-  if (!partnerIds.length) return [];
-  const { data: profiles, error: profilesError } = await supabase.from('users').select('id,username,full_name,avatar_url').in('id', partnerIds);
-  if (profilesError) throw profilesError;
-  const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
-  const conversations = new Map<string, PrivateConversation>();
-  for (const message of messages) {
-    const partnerId = message.sender_id === userId ? message.recipient_id : message.sender_id;
-    const profile = profileById.get(partnerId);
-    const current: PrivateConversation = conversations.get(partnerId) ?? {
-      partner_id: partnerId,
-      partner_name: profile?.username || profile?.full_name || 'Viajero',
-      partner_avatar_url: profile?.avatar_url ?? null,
-      messages: [] as PrivateMessage[],
-      unread_count: 0,
-    };
-    current.messages.push(message);
-    if (message.recipient_id === userId && !message.read_status) current.unread_count += 1;
-    conversations.set(partnerId, current);
-  }
-  return [...conversations.values()].sort((a, b) => {
-    const latestA = a.messages[a.messages.length - 1]?.created_at ?? '';
-    const latestB = b.messages[b.messages.length - 1]?.created_at ?? '';
-    return latestB.localeCompare(latestA);
+  return rawMessages.map((item) => ({ ...item, media_url: item.media_path ? mediaUrlByPath.get(item.media_path) ?? null : null, reactions: reactionsByMessage.get(item.id) ?? [] })) as PrivateMessage[];
+}
+
+export async function getPrivateConversations(_userId: string): Promise<PrivateConversation[]> {
+  const { data, error } = await supabase.rpc('get_private_conversation_summaries', { p_limit: 30 });
+  if (error) throw error;
+  const rows = (data ?? []) as PrivateConversationSummaryRow[];
+  const messages = await enrichPrivateMessages(rows.map((row) => ({
+    id: row.message_id, sender_id: row.sender_id, recipient_id: row.recipient_id, body: row.body,
+    media_path: row.media_path, media_type: row.media_type as PrivateMessage['media_type'],
+    media_duration_ms: row.media_duration_ms, read_status: row.read_status, created_at: row.created_at,
+  })));
+  return rows.map((row, index) => ({
+    partner_id: row.partner_id,
+    partner_name: row.partner_name,
+    partner_avatar_url: row.partner_avatar_url,
+    unread_count: Number(row.unread_count),
+    messages: [messages[index]],
+  }));
+}
+
+export async function getPrivateMessages(partnerId: string, cursor?: { createdAt: string; id: string }) {
+  const { data, error } = await supabase.rpc('get_private_messages', {
+    p_partner_id: partnerId,
+    p_cursor_created_at: cursor?.createdAt,
+    p_cursor_id: cursor?.id,
+    p_limit: 50,
   });
+  if (error) throw error;
+  const messages = await enrichPrivateMessages((data ?? []) as Omit<PrivateMessage, 'reactions' | 'media_url'>[]);
+  const oldest = messages.at(-1);
+  return { messages: messages.reverse(), nextCursor: messages.length === 50 && oldest ? { createdAt: oldest.created_at, id: oldest.id } : undefined };
 }
 
 export async function markNotificationRead(notificationId: string) {
@@ -99,11 +105,11 @@ export async function markMessageRead(messageId: string) {
 export async function getSocialProfile(userId: string) {
   const [profile, followers, following, posts, sightings, saved, notifications] = await Promise.all([
     supabase.from('users').select('id,username,full_name,avatar_url,bio,contact_email').eq('id', userId).single(),
-    supabase.from('user_follows').select('follower_id').eq('followed_id', userId),
-    supabase.from('user_follows').select('followed_id').eq('follower_id', userId),
-    supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at').eq('user_id', userId).order('created_at', { ascending: false }),
-    supabase.from('fauna_photos').select('id,fauna_id,user_id,image_url,caption,likes_count,created_at,fauna_species(common_name_es,common_name_en)').eq('user_id', userId).order('created_at', { ascending: false }),
-    supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'destination'),
+    supabase.from('user_follows').select('follower_id', { count: 'exact' }).eq('followed_id', userId).limit(100),
+    supabase.from('user_follows').select('followed_id', { count: 'exact' }).eq('follower_id', userId).limit(100),
+    supabase.from('traveler_posts').select('id,user_id,body,image_url,latitude,longitude,topic,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
+    supabase.from('fauna_photos').select('id,fauna_id,user_id,image_url,caption,likes_count,created_at,fauna_species(common_name_es,common_name_en)', { count: 'exact' }).eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
+    supabase.from('likes').select('target_id', { count: 'exact' }).eq('user_id', userId).eq('target_type', 'destination').limit(100),
     supabase.from('notifications').select('id,recipient_id,actor_id,type,target_id,read_status,created_at,actor:users!notifications_actor_id_fkey(username,full_name,avatar_url)').eq('recipient_id', userId).order('created_at', { ascending: false }).limit(50),
   ]);
   const profileError = profile.error ?? followers.error ?? following.error ?? posts.error ?? sightings.error ?? saved.error ?? notifications.error;
@@ -120,7 +126,19 @@ export async function getSocialProfile(userId: string) {
     ...photo,
     fauna_species: Array.isArray(photo.fauna_species) ? photo.fauna_species[0] : photo.fauna_species,
   }));
-  return { profile: profile.data, followers: followerProfiles.data ?? [], following: following.data ?? [], posts: posts.data ?? [], sightings: normalizedSightings, saved: savedDestinations, notifications: notifications.data ?? [] };
+  return {
+    profile: profile.data,
+    followers: followerProfiles.data ?? [],
+    followersCount: followers.count ?? followerIds.length,
+    following: following.data ?? [],
+    followingCount: following.count ?? following.data?.length ?? 0,
+    posts: posts.data ?? [],
+    sightings: normalizedSightings,
+    sightingsCount: sightings.count ?? normalizedSightings.length,
+    saved: savedDestinations,
+    savedCount: saved.count ?? savedDestinations.length,
+    notifications: notifications.data ?? [],
+  };
 }
 
 async function uploadImage(bucket: 'profile-avatars' | 'destination-photos', owner: string, asset: ImagePickerAsset) {
@@ -283,13 +301,7 @@ export async function sendTravelerMessage(senderId: string, recipientId: string,
 }
 
 export async function toggleTravelerMessageReaction(messageId: string, emoji: string) {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new Error('Debés iniciar sesión para reaccionar.');
-  const existing = await supabase.from('traveler_message_reactions').select('message_id').eq('message_id', messageId).eq('user_id', auth.user.id).eq('emoji', emoji).maybeSingle();
-  if (existing.error) throw existing.error;
-  const { error } = existing.data
-    ? await supabase.from('traveler_message_reactions').delete().eq('message_id', messageId).eq('user_id', auth.user.id).eq('emoji', emoji)
-    : await supabase.from('traveler_message_reactions').insert({ message_id: messageId, user_id: auth.user.id, emoji });
+  const { error } = await supabase.rpc('toggle_traveler_message_reaction', { p_message_id: messageId, p_emoji: emoji });
   if (error) throw error;
 }
 

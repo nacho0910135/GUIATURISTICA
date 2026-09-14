@@ -289,12 +289,12 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
 
 export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   const [official, communityWithPhotos, sanctuaries] = await Promise.all([
-    supabase.from('destinations').select('id,name,province,category,description,description_en,difficulty,price_national_crc,latitude,longitude,cover_image_url,validated_by,verification_evidence_url,verification_checked_at,destination_photos(image_url,sort_order)').eq('status', 'Activo'),
-    supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,photos,community_verified_at').eq('status', 'published'),
-    supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url,location_name,description_es,description_en,verified').eq('verified', true).order('name'),
+    supabase.from('destinations').select('id,name,province,category,description,description_en,difficulty,price_national_crc,latitude,longitude,cover_image_url,validated_by,verification_evidence_url,verification_checked_at,destination_photos(image_url,sort_order)').eq('status', 'Activo').limit(1000),
+    supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,photos,community_verified_at').eq('status', 'published').order('created_at', { ascending: false }).limit(500),
+    supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url,location_name,description_es,description_en,verified').eq('verified', true).order('name').limit(500),
   ]);
   const community = communityWithPhotos.error
-    ? await supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,community_verified_at').eq('status', 'published')
+    ? await supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,community_verified_at').eq('status', 'published').order('created_at', { ascending: false }).limit(500)
     : communityWithPhotos;
   const error = official.error ?? community.error;
   if (error) throw error;

@@ -23,10 +23,10 @@
       ["expo-splash-screen", { "backgroundColor": "#FFFFFF", "image": "./assets/brand/splash-transparent.png", "imageWidth": 1 }],
       "expo-iap",
       "expo-font",
-      ["expo-sensors", { "motionPermission": "Descubriendo CR usa los sensores de orientaciÃ³n para mostrar el rumbo real del telÃ©fono en la brÃºjula." }],
-      ["expo-audio", { "microphonePermission": "Descubriendo CR usa el micrÃ³fono para grabar notas de voz en tus mensajes.", "recordAudioAndroid": true }],
-      ["expo-image-picker", { "photosPermission": "Descubriendo CR accede a tus fotos para compartir imÃ¡genes en la comunidad y tus aportes." }],
-      ["expo-location", { "locationWhenInUsePermission": "Descubriendo CR usa tu ubicaciÃ³n para recomendar destinos cercanos y calcular rutas." }]
+      ["expo-sensors", { "motionPermission": "Descubriendo CR usa los sensores de orientación para mostrar el rumbo real del teléfono en la brújula." }],
+      ["expo-audio", { "microphonePermission": "Descubriendo CR usa el micrófono para grabar notas de voz en tus mensajes.", "recordAudioAndroid": true }],
+      ["expo-image-picker", { "photosPermission": "Descubriendo CR accede a tus fotos para compartir imágenes en la comunidad y tus aportes." }],
+      ["expo-location", { "locationWhenInUsePermission": "Descubriendo CR usa tu ubicación para recomendar destinos cercanos y calcular rutas." }]
     ],
     "runtimeVersion": { "policy": "appVersion" },
     "experiments": { "typedRoutes": true },

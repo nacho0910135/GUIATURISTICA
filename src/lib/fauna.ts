@@ -150,8 +150,10 @@ export async function addFaunaSpecies(input: { commonName: string; scientificNam
   }
 }
 
-export async function getFaunaPhotos(speciesId: string) {
-  const { data, error } = await supabase.from('fauna_photos').select('id,fauna_id,user_id,image_url,caption,likes_count,created_at,photographer:users!fauna_photos_user_id_fkey(id,username,full_name,avatar_url)').eq('fauna_id', speciesId).order('created_at', { ascending: false });
+export async function getFaunaPhotos(speciesId: string, cursor?: { createdAt: string; id: string }) {
+  let query = supabase.from('fauna_photos').select('id,fauna_id,user_id,image_url,caption,likes_count,created_at,photographer:users!fauna_photos_user_id_fkey(id,username,full_name,avatar_url)').eq('fauna_id', speciesId);
+  if (cursor) query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
+  const { data, error } = await query.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(30);
   if (error) throw error;
   return (data ?? []).map((row) => ({ ...row, photographer: Array.isArray(row.photographer) ? row.photographer[0] ?? null : row.photographer })) as FaunaPhoto[];
 }
@@ -163,12 +165,13 @@ export async function getFaunaPhotoLikeIds(photoIds: string[], userId: string) {
   return new Set((data ?? []).map((row) => row.target_id as string));
 }
 
-export async function getFaunaPhotoComments(photoId: string) {
-  const { data, error } = await supabase
+export async function getFaunaPhotoComments(photoId: string, cursor?: { createdAt: string; id: string }) {
+  let query = supabase
     .from('fauna_comments')
     .select('id,photo_id,user_id,body,created_at,author:users!fauna_comments_user_id_fkey(id,username,full_name,avatar_url,role)')
-    .eq('photo_id', photoId)
-    .order('created_at', { ascending: true });
+    .eq('photo_id', photoId);
+  if (cursor) query = query.or(`created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})`);
+  const { data, error } = await query.order('created_at', { ascending: true }).order('id', { ascending: true }).limit(30);
   if (error) throw error;
   return (data ?? []).map((row) => ({ ...row, author: Array.isArray(row.author) ? row.author[0] ?? null : row.author })) as FaunaComment[];
 }

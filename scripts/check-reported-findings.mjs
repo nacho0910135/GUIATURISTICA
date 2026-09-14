@@ -18,7 +18,7 @@ assert.doesNotMatch(app, /Ã/);
 assert.match(manifest, /android\.permission\.RECORD_AUDIO/);
 assert.doesNotMatch(manifest, /RECORD_AUDIO[^>]+tools:node="remove"/);
 assert.doesNotMatch(tabs, /hardwareBackPress/);
-assert.match(splash, /setDeadlineReached\(true\)/);
+assert.match(splash, /animationFinished && appReady/);
 assert.match(provider, /authRestoreError/);
 assert.match(provider, /Continuar sin sesión/);
 assert.doesNotMatch(provider, /requestStartupLocation/);

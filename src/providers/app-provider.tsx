@@ -11,7 +11,7 @@ import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { getPlannerOptions } from '@/lib/app-options';
 import { ensureOfflineTripPacks } from '@/lib/offline-trip-pack';
-import { observePushNotifications, registerPushNotifications, unregisterPushNotifications } from '@/lib/push-notifications';
+import { observePushNotifications, unregisterPushNotifications } from '@/lib/push-notifications';
 import { useAppTheme } from '@/theme/theme-provider';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -247,9 +247,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
-    if (Platform.OS !== 'android' || !userSession) return;
-    void registerPushNotifications().catch((error) => console.warn('No se pudo registrar para notificaciones push.', error));
-  }, [userSession]);
+    if (Platform.OS === 'web') return;
+    void refreshUserLocation().catch(() => undefined);
+  }, [refreshUserLocation]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;

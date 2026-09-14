@@ -112,9 +112,11 @@ export async function cancelGroupRide(rideId: string, organizerId: string) {
   if (!data) throw new Error('La rodada ya fue cancelada o no tenés permiso para cancelarla.');
 }
 
-export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general') {
+export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general', cursor?: { createdAt: string; id: string }) {
+  let postsQuery = supabase.from('traveler_posts').select('id,user_id,body,image_url,image_urls,latitude,longitude,recommended_destination_id,recommended_destination_is_community,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic);
+  if (cursor) postsQuery = postsQuery.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
   const [postsResult, blocksResult] = await Promise.all([
-    supabase.from('traveler_posts').select('id,user_id,body,image_url,image_urls,latitude,longitude,recommended_destination_id,recommended_destination_is_community,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic).order('created_at', { ascending: false }).limit(40),
+    postsQuery.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(20),
     userId ? supabase.from('user_blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`) : Promise.resolve({ data: [], error: null }),
   ]);
   if (postsResult.error || blocksResult.error) throw postsResult.error ?? blocksResult.error;
@@ -123,7 +125,7 @@ export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'g
   const postIds = (postRows ?? []).map((post) => post.id);
   const [replies, reactions, replyReactions, follows] = await Promise.all([
     postIds.length
-      ? supabase.from('traveler_replies').select('id,post_id,parent_reply_id,user_id,body,created_at,user:users!traveler_replies_user_id_fkey(id,username,full_name,avatar_url,role)').in('post_id', postIds).order('created_at').limit(200)
+      ? supabase.rpc('get_traveler_replies', { p_post_ids: postIds, p_per_post_limit: 20 })
       : Promise.resolve({ data: [], error: null }),
     postIds.length
       ? supabase.from('traveler_reactions').select('post_id,user_id,reaction').in('post_id', postIds)
@@ -138,14 +140,16 @@ export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'g
   const oneProfile = <T,>(value: T | T[] | null) => Array.isArray(value) ? value[0] : value;
   const reactionRows = (reactions.data ?? []) as { post_id: string; user_id: string; reaction: ReactionType }[];
   const replyReactionRows = (replyReactions.data ?? []) as unknown as TravelerReplyReaction[];
+  const lastPost = postsResult.data?.at(-1);
   return {
     posts: (postRows ?? []).map((post) => ({ ...post, user: oneProfile(post.user) ?? undefined })) as TravelerPost[],
-    replies: (replies.data ?? []).map((reply) => ({ ...reply, user: oneProfile(reply.user) ?? undefined })) as TravelerReply[],
+    replies: ((replies.data ?? []) as TravelerReply[]).map((reply) => ({ ...reply, user: oneProfile(reply.user) ?? undefined })),
     myReactions: reactionRows.reduce<Record<string, ReactionType>>((mine, row) => { if (row.user_id === userId) mine[row.post_id] = row.reaction; return mine; }, {}),
     followedUserIds: new Set((follows.data ?? []).map((row) => row.followed_id as string)),
     reactionCounts: reactionRows.reduce<Record<string, Record<ReactionType, number>>>((counts, row) => { const post = counts[row.post_id] ??= {} as Record<ReactionType, number>; post[row.reaction] = (post[row.reaction] ?? 0) + 1; return counts; }, {}),
     myReplyReactions: replyReactionRows.reduce<Record<string, ReactionType>>((mine, row) => { if (row.user_id === userId) mine[row.reply_id] = row.reaction; return mine; }, {}),
     replyReactionCounts: replyReactionRows.reduce<Record<string, Record<ReactionType, number>>>((counts, row) => { const reply = counts[row.reply_id] ??= {} as Record<ReactionType, number>; reply[row.reaction] = (reply[row.reaction] ?? 0) + 1; return counts; }, {}),
+    nextCursor: postsResult.data?.length === 20 && lastPost ? { createdAt: lastPost.created_at, id: lastPost.id } : undefined,
   };
 }
 

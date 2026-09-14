@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
@@ -14,11 +14,12 @@ import { useScreenActive } from '@/hooks/use-screen-active';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { reviewCommercialClaim } from '@/lib/commerce';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
-import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, reviewUserSubmission, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation } from '@/lib/social-profile';
+import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getPrivateMessages, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, reviewUserSubmission, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation } from '@/lib/social-profile';
 import { reportTypeLabel, updateInformationReportStatus } from '@/lib/reports';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
 import { openNotification } from '@/lib/notification-route';
+import { registerPushNotifications } from '@/lib/push-notifications';
 import { useApp } from '@/providers/app-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
@@ -188,19 +189,19 @@ export default function ProfileScreen() {
       key: 'community',
       icon: 'account-group-outline',
       label: tr(language, 'Seguidores', 'Followers'),
-      count: data ? data.followers.length : undefined,
+      count: data?.followersCount,
     },
     {
       key: 'sightings',
       icon: 'camera-outline',
       label: tr(language, 'Mis avistamientos', 'My sightings'),
-      count: data ? data.sightings.length : undefined,
+      count: data?.sightingsCount,
     },
     {
       key: 'saved',
       icon: 'heart-outline',
       label: tr(language, 'Guardados', 'Saved'),
-      count: data ? data.saved.length : undefined,
+      count: data?.savedCount,
     },
     {
       key: 'messages',
@@ -312,16 +313,25 @@ export default function ProfileScreen() {
               </View>
             ) : null}
             <View className="mt-3 flex-row flex-wrap gap-3">
-              <Stat value={data ? data.followers.length : '—'} label={tr(language, 'seguidores', 'followers')} />
-              <Stat value={data ? data.following.length : '—'} label={tr(language, 'siguiendo', 'following')} />
-              <Stat value={data ? data.sightings.length : '—'} label={tr(language, 'avistamientos', 'sightings')} />
-              <Stat value={data ? data.saved.length : '—'} label={tr(language, 'guardados', 'saved')} />
+              <Stat value={data?.followersCount ?? '—'} label={tr(language, 'seguidores', 'followers')} />
+              <Stat value={data?.followingCount ?? '—'} label={tr(language, 'siguiendo', 'following')} />
+              <Stat value={data?.sightingsCount ?? '—'} label={tr(language, 'avistamientos', 'sightings')} />
+              <Stat value={data?.savedCount ?? '—'} label={tr(language, 'guardados', 'saved')} />
             </View>
           </View>
         </View>
         {Platform.OS !== 'ios' ? <Pressable accessibilityRole="link" className="mt-4 flex-row items-center justify-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => router.push('/subscriptions')}>
           <MaterialCommunityIcons name="crown-outline" size={20} color="white" />
           <Text className="ml-2 font-black text-white">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
+        </Pressable> : null}
+        {Platform.OS !== 'web' ? <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface" disabled={busy} onPress={() => void run(async () => {
+          const enabled = await registerPushNotifications();
+          Alert.alert(tr(language, 'Notificaciones push', 'Push notifications'), enabled
+            ? tr(language, 'Listo. Activaste las notificaciones push.', 'Done. Push notifications are enabled.')
+            : tr(language, 'No se activaron. Podés habilitarlas desde los ajustes del teléfono cuando quieras.', 'They were not enabled. You can allow them in your phone settings whenever you want.'));
+        })}>
+          <MaterialCommunityIcons name="bell-plus-outline" size={20} color="#0B6B4F" />
+          <Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{tr(language, 'Activar notificaciones push', 'Enable push notifications')}</Text>
         </Pressable> : null}
         <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950" disabled={busy} onPress={() => void run(signOut)}>
           <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
@@ -860,22 +870,31 @@ export function MessagesPanel({ conversations, initialPartnerId, language, userI
   const [activePartnerId, setActivePartnerId] = useState<string | undefined>(initialPartnerId);
   const [reply, setReply] = useState('');
   const messageListRef = useRef<ScrollView>(null);
-  const active = conversations.find((conversation) => conversation.partner_id === activePartnerId);
+  const history = useInfiniteQuery({
+    queryKey: ['private-message-history', userId, activePartnerId],
+    queryFn: ({ pageParam }) => getPrivateMessages(activePartnerId!, pageParam),
+    initialPageParam: undefined as { createdAt: string; id: string } | undefined,
+    getNextPageParam: (page) => page.nextCursor,
+    enabled: Boolean(activePartnerId),
+    staleTime: 30000,
+  });
+  const activeSummary = conversations.find((conversation) => conversation.partner_id === activePartnerId);
+  const active = activeSummary ? { ...activeSummary, messages: history.data ? [...history.data.pages].reverse().flatMap((page) => page.messages) : [] } : undefined;
+  const unreadIds = active?.messages.filter((item) => item.recipient_id === userId && !item.read_status).map((item) => item.id).join(',') ?? '';
+  useEffect(() => {
+    if (!unreadIds) return;
+    void Promise.all(unreadIds.split(',').map(markMessageRead)).then(refresh).catch(() => undefined);
+  }, [refresh, unreadIds]);
   const openConversation = (conversation: PrivateConversation) =>
     void run(async () => {
       setActivePartnerId(conversation.partner_id);
-      const unread = conversation.messages.filter((item) => item.recipient_id === userId && !item.read_status);
-      if (unread.length) {
-        await Promise.all(unread.map((item) => markMessageRead(item.id)));
-        await refresh();
-      }
     });
   const send = (attachment?: { uri: string; type: 'image' | 'audio'; durationMs?: number; width?: number }) =>
     void run(async () => {
       if (!active || (!reply.trim() && !attachment)) return;
       await sendTravelerMessage(userId, active.partner_id, reply, attachment);
       setReply('');
-      await refresh();
+      await Promise.all([refresh(), history.refetch()]);
     });
   const chooseImage = () =>
     void run(async () => {
@@ -896,7 +915,7 @@ export function MessagesPanel({ conversations, initialPartnerId, language, userI
           type: 'image',
         });
       setReply('');
-      await refresh();
+      await Promise.all([refresh(), history.refetch()]);
     });
   if (active)
     return (
@@ -909,6 +928,7 @@ export function MessagesPanel({ conversations, initialPartnerId, language, userI
           <Text className="ml-3 text-lg font-black text-ui-text dark:text-ui-dark-text">{active.partner_name}</Text>
         </View>
         <ScrollView ref={messageListRef} className="max-h-96 rounded-2xl bg-ui-muted p-3 dark:bg-ui-dark-muted" onContentSizeChange={() => messageListRef.current?.scrollToEnd({ animated: true })}>
+          {history.hasNextPage ? <Pressable accessibilityRole="button" className="mb-3 self-center rounded-full bg-ui-primary-soft px-4 py-2 dark:bg-ui-dark-primary-soft" disabled={history.isFetchingNextPage} onPress={() => void history.fetchNextPage()}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{history.isFetchingNextPage ? tr(language, 'Cargando…', 'Loading…') : tr(language, 'Cargar mensajes anteriores', 'Load previous messages')}</Text></Pressable> : null}
           {active.messages.map((item) => (
             <TravelerMessage
               key={item.id}
@@ -920,7 +940,7 @@ export function MessagesPanel({ conversations, initialPartnerId, language, userI
               onReact={(emoji) =>
                 void run(async () => {
                   await toggleTravelerMessageReaction(item.id, emoji);
-                  await refresh();
+                  await history.refetch();
                 })
               }
             />

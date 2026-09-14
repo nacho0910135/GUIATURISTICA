@@ -21,7 +21,7 @@ import { useColorScheme } from 'nativewind';
 import { AnimatedSplash } from '@/components/animated-splash';
 import { ThemedAlertProvider } from '@/components/themed-alert';
 import { AppProvider } from '@/providers/app-provider';
-import { queryClient } from '@/lib/query-client';
+import { persistQueryCache, queryClient, restoreQueryCache } from '@/lib/query-client';
 import { isExploreStartupReady, subscribeToExploreStartupReady } from '@/lib/startup-gate';
 import { AppThemeProvider } from '@/theme/theme-provider';
 
@@ -32,6 +32,17 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
 }
 
 export default function RootLayout() {
+  const [cacheReady, setCacheReady] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    let stop: () => void = () => undefined;
+    void restoreQueryCache().finally(() => {
+      if (!mounted) return;
+      stop = persistQueryCache();
+      setCacheReady(true);
+    });
+    return () => { mounted = false; stop(); };
+  }, []);
   useEffect(() => {
     if (Platform.OS === 'web') return;
     focusManager.setFocused(AppState.currentState === 'active');
@@ -42,6 +53,7 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const [showSplash, setShowSplash] = useState(Platform.OS !== 'web');
   const [exploreReady, setExploreReady] = useState(isExploreStartupReady);
+  const [startupDeadline, setStartupDeadline] = useState(false);
   const finishSplash = useCallback(() => setShowSplash(false), []);
   useFonts({
     PlusJakartaSans_400Regular,
@@ -56,6 +68,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => subscribeToExploreStartupReady(() => setExploreReady(true)), []);
+  useEffect(() => {
+    const timer = setTimeout(() => setStartupDeadline(true), 10_000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -66,7 +82,7 @@ export default function RootLayout() {
       <AppThemeProvider>
         <QueryClientProvider client={queryClient}>
           <BottomSheetModalProvider>
-            <AppProvider>
+            {cacheReady ? <AppProvider>
               <ThemedAlertProvider>
                 <View className="flex-1 bg-ui-background dark:bg-ui-dark-background" onLayout={onReady}>
                   <Stack screenOptions={{ headerShown: false }}>
@@ -86,10 +102,10 @@ export default function RootLayout() {
                     <Stack.Screen name="(aux)/auth-modal" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
                   </Stack>
                 </View>
-                {showSplash ? <AnimatedSplash appReady={exploreReady} onFinish={finishSplash} /> : null}
+                {showSplash ? <AnimatedSplash appReady={exploreReady || startupDeadline} onFinish={finishSplash} /> : null}
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
               </ThemedAlertProvider>
-          </AppProvider>
+            </AppProvider> : null}
           </BottomSheetModalProvider>
         </QueryClientProvider>
       </AppThemeProvider>

@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
 import { openNotification } from '@/lib/notification-route';
 import { supabase } from '@/lib/supabase';
@@ -14,12 +15,13 @@ export async function registerPushNotifications() {
   await Notifications.setNotificationChannelAsync('default', { name: 'Descubriendo CR', importance: Notifications.AndroidImportance.HIGH });
   const current = await Notifications.getPermissionsAsync();
   const status = current.status === 'granted' ? current.status : (await Notifications.requestPermissionsAsync()).status;
-  if (status !== 'granted') return;
+  if (status !== 'granted') return false;
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-  if (!projectId) return;
+  if (!projectId) return false;
   token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  const { error } = await supabase.rpc('register_push_token', { p_expo_push_token: token, p_platform: 'android' });
+  const { error } = await supabase.rpc('register_push_token', { p_expo_push_token: token, p_platform: Platform.OS });
   if (error) throw error;
+  return true;
 }
 
 export async function unregisterPushNotifications() {

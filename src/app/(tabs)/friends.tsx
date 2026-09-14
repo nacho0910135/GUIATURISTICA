@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useScrollToTop } from 'expo-router/react-navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
@@ -151,15 +151,28 @@ export default function FriendsScreen() {
   const longPressedPostId = useRef<string | undefined>(undefined);
   const topicOptions = useQuery({ queryKey: ['app-options', 'traveler_topic'], queryFn: () => getAppOptions('traveler_topic'), staleTime: Infinity });
   const reactionOptions = useQuery({ queryKey: ['app-options', 'traveler_reaction'], queryFn: () => getAppOptions('traveler_reaction'), staleTime: Infinity });
-  const wallQuery = useQuery({
+  const wallQuery = useInfiniteQuery({
     queryKey: ['traveler-wall', userId, topic],
-    queryFn: () => getTravelerWall(userId, topic),
+    queryFn: ({ pageParam }) => getTravelerWall(userId, topic, pageParam),
+    initialPageParam: undefined as { createdAt: string; id: string } | undefined,
+    getNextPageParam: (page) => page.nextCursor,
     enabled: isActive,
     placeholderData: undefined,
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,
   });
-  const wall = wallQuery.data;
+  const wall = useMemo(() => {
+    const pages = wallQuery.data?.pages;
+    if (!pages?.length) return undefined;
+    return pages.reduce((all, page) => ({
+      posts: [...all.posts, ...page.posts], replies: [...all.replies, ...page.replies],
+      myReactions: { ...all.myReactions, ...page.myReactions },
+      followedUserIds: new Set([...all.followedUserIds, ...page.followedUserIds]),
+      reactionCounts: { ...all.reactionCounts, ...page.reactionCounts },
+      myReplyReactions: { ...all.myReplyReactions, ...page.myReplyReactions },
+      replyReactionCounts: { ...all.replyReactionCounts, ...page.replyReactionCounts },
+    }), { posts: [], replies: [], myReactions: {}, followedUserIds: new Set<string>(), reactionCounts: {}, myReplyReactions: {}, replyReactionCounts: {} } as Omit<Awaited<ReturnType<typeof getTravelerWall>>, 'nextCursor'>);
+  }, [wallQuery.data]);
   const error = wallQuery.error instanceof Error ? wallQuery.error.message : undefined;
   const explorePlaces = useQuery({ queryKey: ['explore-places', 'v3'], queryFn: getExplorePlaces, staleTime: 5 * 60 * 1000, enabled: isActive && (placeSearchOpen || Boolean(wall?.posts.some((post) => post.recommended_destination_id))) });
   const topics = topicOptions.data ?? [];
@@ -416,6 +429,7 @@ export default function FriendsScreen() {
             })}{parentReplyId ? <View className="mb-2 flex-row items-center"><Text className="flex-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Respondiendo a un comentario' : 'Replying to a comment'}</Text><Pressable onPress={() => setParentReplyId(undefined)}><Text className="font-black text-ui-danger dark:text-ui-dark-danger">×</Text></Pressable></View> : null}<View className="flex-row items-end"><TextInput className="mr-2 flex-1 rounded-control bg-ui-surface px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text" maxLength={1000} multiline onChangeText={setReply} placeholder={language === 'es' ? 'Escribí una respuesta…' : 'Write a reply…'} placeholderTextColor="#68737A" value={reply} /><Pressable className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary shadow-card disabled:opacity-40 dark:bg-ui-dark-primary" style={communityDepth} disabled={busy || !reply.trim()} onPress={() => void respond(post.id)}><MaterialCommunityIcons name="send" size={20} color="white" /></Pressable></View></View> : null}
           </View>;
         })}
+        {wallQuery.hasNextPage ? <Pressable accessibilityRole="button" className="mx-auto mt-5 min-h-11 items-center justify-center rounded-control bg-ui-primary px-6 disabled:opacity-50 dark:bg-ui-dark-primary" disabled={wallQuery.isFetchingNextPage} onPress={() => void wallQuery.fetchNextPage()}><Text className="font-black text-white">{wallQuery.isFetchingNextPage ? (language === 'es' ? 'Cargando…' : 'Loading…') : (language === 'es' ? 'Cargar más' : 'Load more')}</Text></Pressable> : null}
       </View>
     </ScrollView>
   );

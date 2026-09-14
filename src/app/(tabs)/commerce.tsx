@@ -2,7 +2,7 @@ import { roadRouteLabel } from "@/lib/location-quality";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Picker } from "@react-native-picker/picker";
 import { useScrollToTop } from "expo-router/react-navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import * as Linking from "expo-linking";
 import { LinearGradient } from "expo-linear-gradient";
@@ -2010,7 +2010,7 @@ export default function CommerceScreen() {
   const selectedRegion = regions.find((region) => region.id === regionId);
   const viewMode = userLocation ? "nearby" : selectedRegion ? "region" : "all";
   const directoryOrigin = userLocation ?? (selectedRegion ? { latitude: selectedRegion.latitude, longitude: selectedRegion.longitude } : undefined);
-  const directory = useQuery({
+  const directory = useInfiniteQuery({
     queryKey: [
       "commerce-directory",
       category,
@@ -2020,8 +2020,10 @@ export default function CommerceScreen() {
       directoryOrigin?.longitude,
       regionId,
     ],
-    queryFn: () =>
-      getCommerceDirectory(category, directoryOrigin, subcategory, selectedRegion),
+    queryFn: ({ pageParam }) =>
+      getCommerceDirectory(category, directoryOrigin, subcategory, selectedRegion, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.nextCursor,
     enabled: Boolean(category),
     staleTime: 10 * 60 * 1000,
   });
@@ -2095,8 +2097,8 @@ export default function CommerceScreen() {
   const registrationOrigin = registrationLocation;
   const isCinemaCategory = category === "cinemas";
   const catalog = [
-    ...(directory.data?.featured ?? []),
-    ...(directory.data?.organic ?? []),
+    ...(directory.data?.pages.flatMap((page) => page.featured) ?? []),
+    ...(directory.data?.pages.flatMap((page) => page.organic) ?? []),
   ].sort(
     (a, b) =>
       commerceDistanceSortValue(a.distance_km) -
@@ -2870,6 +2872,8 @@ export default function CommerceScreen() {
           </View>
         )}
         contentContainerStyle={{ paddingBottom: 28 }}
+        onEndReached={() => { if (directory.hasNextPage && !directory.isFetchingNextPage) void directory.fetchNextPage(); }}
+        onEndReachedThreshold={0.4}
         ListHeaderComponent={
           <>
             {header}

@@ -9,6 +9,18 @@ const compile = (source) => ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 
+const providerSource = read('src/providers/app-provider.tsx');
+assert.ok(providerSource.includes('void refreshUserLocation().catch'), 'Startup must request precise location');
+assert.ok(!providerSource.includes('void registerPushNotifications('), 'Startup must never request push permission');
+assert.ok(read('src/app/(tabs)/profile.tsx').includes('registerPushNotifications()'), 'Profile must expose opt-in push activation');
+assert.match(read('src/lib/travelers.ts'), /order\('id'.*limit\(20\)/s, 'Traveler wall must use bounded cursor pages');
+assert.match(read('src/lib/commerce.ts'), /gt\('id', cursor\).*limit\(50\)/s, 'Commerce directory must use bounded cursor pages');
+assert.match(read('src/lib/social-profile.ts'), /rpc\('get_private_conversation_summaries'.*p_limit: 30/s, 'Conversation list must use bounded server summaries');
+assert.match(read('src/lib/social-profile.ts'), /rpc\('get_private_messages'.*p_limit: 50/s, 'Message history must use bounded cursor pages');
+assert.match(read('src/app/(aux)/private-messages.tsx'), /fetchNextPage\(\)/, 'Older messages must remain reachable');
+assert.match(read('src/lib/places.ts'), /eq\('status', 'Activo'\)\.limit\(1000\)/, 'Explore catalog must have a hard response ceiling');
+assert.equal((read('src/lib/social-profile.ts').match(/\.limit\(100\)/g) ?? []).length, 5, 'Profile growth lists must be bounded');
+
 // Exercise the actual sync hook with deterministic navigation, timers and Realtime.
 let focused = true;
 let effect;

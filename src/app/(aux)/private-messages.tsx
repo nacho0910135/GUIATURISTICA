@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -11,7 +11,7 @@ import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
 import { useScreenActive } from '@/hooks/use-screen-active';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
-import { getPrivateConversations, markMessageRead, sendTravelerMessage, toggleTravelerMessageReaction } from '@/lib/social-profile';
+import { getPrivateConversations, getPrivateMessages, markMessageRead, sendTravelerMessage, toggleTravelerMessageReaction } from '@/lib/social-profile';
 import { useApp } from '@/providers/app-provider';
 
 export default function PrivateMessagesScreen() {
@@ -32,8 +32,18 @@ export default function PrivateMessagesScreen() {
     placeholderData: undefined,
     staleTime: 30000,
   });
+  const messageHistory = useInfiniteQuery({
+    queryKey: ['private-message-history', userId, activePartnerId],
+    queryFn: ({ pageParam }) => getPrivateMessages(activePartnerId!, pageParam),
+    initialPageParam: undefined as { createdAt: string; id: string } | undefined,
+    getNextPageParam: (page) => page.nextCursor,
+    enabled: Boolean(userId && activePartnerId) && isActive,
+    staleTime: 30000,
+  });
   const refetchConversations = conversations.refetch;
-  const active = conversations.data?.find((conversation) => conversation.partner_id === activePartnerId) ?? (activePartnerId && partnerName ? { partner_id: activePartnerId, partner_name: partnerName, partner_avatar_url: partnerAvatarUrl || null, messages: [], unread_count: 0 } : undefined);
+  const activeSummary = conversations.data?.find((conversation) => conversation.partner_id === activePartnerId);
+  const activeMessages = messageHistory.data ? [...messageHistory.data.pages].reverse().flatMap((page) => page.messages) : [];
+  const active = activeSummary ? { ...activeSummary, messages: activeMessages } : (activePartnerId && partnerName ? { partner_id: activePartnerId, partner_name: partnerName, partner_avatar_url: partnerAvatarUrl || null, messages: activeMessages, unread_count: 0 } : undefined);
   const unreadMessageIds = active?.messages.filter((item) => item.recipient_id === userId && !item.read_status).map((item) => item.id).join(',') ?? '';
 
   useTravelerMessagesSync(userId || undefined, () => { void conversations.refetch({ cancelRefetch: false }); });
@@ -55,7 +65,7 @@ export default function PrivateMessagesScreen() {
       if (!active || (!reply.trim() && !attachment)) return;
       await sendTravelerMessage(userId, active.partner_id, reply, attachment);
       setReply('');
-      await conversations.refetch();
+      await Promise.all([conversations.refetch(), messageHistory.refetch()]);
     });
   const chooseImage = () => void run(async () => {
     if (!active) return;
@@ -65,7 +75,7 @@ export default function PrivateMessagesScreen() {
     if (result.canceled) return;
     await sendTravelerMessage(userId, active.partner_id, reply, { uri: result.assets[0].uri, width: result.assets[0].width, type: 'image' });
     setReply('');
-    await conversations.refetch();
+    await Promise.all([conversations.refetch(), messageHistory.refetch()]);
   });
 
   return <SafeAreaView className="flex-1 bg-ui-background dark:bg-ui-dark-background">
@@ -78,7 +88,8 @@ export default function PrivateMessagesScreen() {
       </View>
       {active ? <>
         <ScrollView ref={messageListRef} className="flex-1 px-3 pt-3" contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled" onContentSizeChange={() => messageListRef.current?.scrollToEnd({ animated: false })}>
-          {active.messages.map((item) => <TravelerMessage key={item.id} message={item} mine={item.sender_id === userId} language={language} avatarUrl={item.sender_id === userId ? avatarUrl : active.partner_avatar_url} senderName={item.sender_id === userId ? text('Vos', 'You') : active.partner_name} onReact={(emoji) => void run(async () => { await toggleTravelerMessageReaction(item.id, emoji); await conversations.refetch(); })} />)}
+          {messageHistory.hasNextPage ? <Pressable accessibilityRole="button" className="mb-3 self-center rounded-full bg-ui-primary-soft px-4 py-2 dark:bg-ui-dark-primary-soft" disabled={messageHistory.isFetchingNextPage} onPress={() => void messageHistory.fetchNextPage()}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{messageHistory.isFetchingNextPage ? text('Cargando…', 'Loading…') : text('Cargar mensajes anteriores', 'Load previous messages')}</Text></Pressable> : null}
+          {active.messages.map((item) => <TravelerMessage key={item.id} message={item} mine={item.sender_id === userId} language={language} avatarUrl={item.sender_id === userId ? avatarUrl : active.partner_avatar_url} senderName={item.sender_id === userId ? text('Vos', 'You') : active.partner_name} onReact={(emoji) => void run(async () => { await toggleTravelerMessageReaction(item.id, emoji); await messageHistory.refetch(); })} />)}
         </ScrollView>
         <View className="border-t border-ui-border bg-ui-surface px-3 pb-2 pt-2 dark:border-ui-dark-border dark:bg-ui-dark-surface">
           <View className="flex-row items-end gap-2">
