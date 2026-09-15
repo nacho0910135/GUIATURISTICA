@@ -14,7 +14,6 @@ import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
 const COSTA_RICA = { latitude: 9.7489, longitude: -83.7534 };
-const ignorePick = () => {};
 
 export default function CompassScreen() {
   const router = useRouter();
@@ -46,7 +45,7 @@ export default function CompassScreen() {
       : (es ? 'Sin ubicación precisa. El mapa no indica tu posición.' : 'No precise location. The map does not show your position.');
 
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <MapCanvas expanded focusLocation={center} onLocationPick={ignorePick} selectedLocation={position?.coords} />
+    <MapCanvas expanded focusLocation={center} selectedLocation={position?.coords} />
     <View style={{ position: 'absolute', top: insets.top + 12, left: 16 }}>
       <IconButton accessibilityLabel={es ? 'Atrás' : 'Back'} icon={<ArrowLeft color={colors.text} />} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/explore')} />
     </View>

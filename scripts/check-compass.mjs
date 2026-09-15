@@ -20,6 +20,8 @@ assert.equal(headingDegrees({ trueHeading: -1, magHeading: 40 }), 40);
 assert.equal(headingDegrees({ trueHeading: NaN, magHeading: NaN }), null);
 assert.equal(headingDegrees({ trueHeading: 360, magHeading: 0 }), 0);
 const header = readFileSync('src/components/global-header.tsx', 'utf8');
+const screen = readFileSync('src/app/compass.tsx', 'utf8');
 assert(header.indexOf("'Compra USD'") < header.indexOf("router.push('/compass')"));
 assert(header.indexOf("router.push('/compass')") < header.indexOf('visitorOptions.map'));
+assert(!screen.includes('onLocationPick='), 'Compass uses the token-independent Costa Rica map');
 console.log('Compass: wraparound, smoothing, heading validity and button placement passed.');

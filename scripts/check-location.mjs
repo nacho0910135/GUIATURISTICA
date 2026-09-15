@@ -234,4 +234,8 @@ const cachedRoute = await offlineRouting.getRoadRoute({ latitude: 9.93, longitud
 assert.equal(cachedRoute.distanceKm, 58);
 assert.equal(cachedRoute.cached, true);
 assert.match(quality.roadRouteLabel(cachedRoute, 'es'), /58\.0 km por carretera · 60 min · Última consulta/);
+const lastCachedRoute = await offlineRouting.getRoadRoute({ latitude: 9.94, longitude: -84.09 }, { latitude: 10.63, longitude: -85.44 });
+assert.equal(lastCachedRoute.distanceKm, 58, 'A changed GPS origin falls back to the last route for this destination');
+assert.equal(lastCachedRoute.cached, true);
+assert.match(readFileSync('supabase/migrations/20260915120000_allow_location_only_traveler_posts.sql', 'utf8'), /latitude is not null and longitude is not null/, 'Location-only community posts must satisfy the content constraint');
 console.log('Location checks passed: precision, freshness, permissions, shared movement, revocation, cleanup, Mapbox road-distance labels and all three capture flows.');

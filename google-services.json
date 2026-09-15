@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "230499289648",
+    "project_id": "project-f8dfb843-6eba-404a-b1a",
+    "storage_bucket": "project-f8dfb843-6eba-404a-b1a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:230499289648:android:344ccc4f7e0915d465bbf5",
+        "android_client_info": {
+          "package_name": "com.descubriendo.cr"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "230499289648-jm6dfcgbd69d3or2vfcj0pv7oalrc29r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmKXpYISI863HMcN6vRx9KTmXf22Gi-LA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "230499289648-jm6dfcgbd69d3or2vfcj0pv7oalrc29r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

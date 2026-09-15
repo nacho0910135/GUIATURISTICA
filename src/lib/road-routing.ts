@@ -17,6 +17,7 @@ export function getRoadRoute(from: RoadPoint, to: RoadPoint, geometry = false) {
   const cached = cache.get(key);
   if (cached) return cached;
   const storageKey = `road-route:${key}`;
+  const lastStorageKey = `road-route:last:${to.longitude.toFixed(5)},${to.latitude.toFixed(5)};${geometry}`;
   const request = (async () => {
     const token = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -29,14 +30,14 @@ export function getRoadRoute(from: RoadPoint, to: RoadPoint, geometry = false) {
         const route = body.code === 'Ok' ? body.routes?.[0] : undefined;
         if (route && Number.isFinite(route.distance) && Number.isFinite(route.duration)) {
           const value: RoadRoute = { distanceKm: route.distance! / 1000, durationMinutes: route.duration! / 60, geometry: route.geometry, cached: false, updatedAt: new Date().toISOString() };
-          await AsyncStorage.setItem(storageKey, JSON.stringify(value));
+          await Promise.all([storageKey, lastStorageKey].map((key) => AsyncStorage.setItem(key, JSON.stringify(value))));
           return value;
         }
       }
     } catch { /* fall through to the last valid route */ }
     finally { clearTimeout(timeout); }
     try {
-      const stored = await AsyncStorage.getItem(storageKey);
+      const stored = await AsyncStorage.getItem(storageKey) ?? await AsyncStorage.getItem(lastStorageKey);
       if (!stored) return null;
       const value = JSON.parse(stored) as RoadRoute;
       return Number.isFinite(value.distanceKm) && Number.isFinite(value.durationMinutes) ? { ...value, cached: true } : null;
