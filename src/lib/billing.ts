@@ -17,8 +17,8 @@ export const billingOffers = {
     icon: "calendar-month-outline",
     title: ["Mensual", "Monthly"],
     detail: [
-      "Acceso completo; se renueva automáticamente.",
-      "Full access; renews automatically.",
+      "Guardá y llevá tus escapadas sin conexión; se renueva automáticamente.",
+      "Save and carry your trips offline; renews automatically.",
     ],
     price: ["US$2 / mes", "US$2 / month"],
   },
@@ -29,8 +29,8 @@ export const billingOffers = {
     icon: "calendar-star",
     title: ["Anual", "Annual"],
     detail: [
-      "Ahorrás US$4; se renueva automáticamente cada año hasta que cancelés.",
-      "Save US$4; renews automatically every year until canceled.",
+      "Escapadas sin conexión; ahorrás US$4 y se renueva automáticamente cada año hasta que cancelés.",
+      "Offline trips; save US$4 and renew automatically each year until canceled.",
     ],
     price: ["US$20 / año", "US$20 / year"],
   },
@@ -41,8 +41,8 @@ export const billingOffers = {
     icon: "passport",
     title: ["Pase visitante", "Visitor Pass"],
     detail: [
-      "30 días de acceso; pago único, no se renueva.",
-      "30 days of access; one-time payment, no renewal.",
+      "Planificá y llevá tu viaje sin señal por 30 días; no se renueva.",
+      "Plan and carry your trip offline for 30 days; no renewal.",
     ],
     price: ["US$5 / 30 días", "US$5 / 30 days"],
   },

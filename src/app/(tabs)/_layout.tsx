@@ -38,7 +38,7 @@ export default function TabsLayout() {
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
   const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session) });
-  if (!isAdmin && session && !access.isLoading && access.data?.hasAccess !== true) return <Redirect href="/subscriptions" />;
+  if (!isAdmin && session && access.data?.hasAccess === false) return <Redirect href="/subscriptions" />;
   return (
     <Tabs
       backBehavior="initialRoute"

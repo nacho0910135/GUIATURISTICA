@@ -19,7 +19,7 @@ export const queryClient = new QueryClient({
 });
 
 const CACHE_KEY = 'query-cache-v1';
-const PERSISTED_QUERIES = new Set(['app-options', 'explore-places', 'planner-options', 'ferry-routes', 'commerce-regions']);
+const PERSISTED_QUERIES = new Set(['app-options', 'explore-places', 'planner-options', 'ferry-routes', 'commerce-regions', 'my-app-access']);
 
 export async function restoreQueryCache() {
   try {

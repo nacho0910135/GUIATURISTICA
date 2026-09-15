@@ -31,7 +31,7 @@ let lastPresentedSocialNotificationId: string | null = null;
 
 export function GlobalHeader() {
   const isFocused = useScreenActive();
-  const { avatarUrl, exchangeRate, exchangeRateReady, language, session, setVisitorType, visitorType } = useApp();
+  const { avatarUrl, exchangeRate, exchangeRateReady, language, session, setLanguage, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -289,6 +289,7 @@ export function GlobalHeader() {
               );
             })}
           </View>
+          <View className="flex-row rounded-control border border-ui-border bg-ui-muted p-0.5 dark:border-ui-dark-border dark:bg-ui-dark-muted">{(['es', 'en'] as const).map((item) => <Pressable accessibilityLabel={item === 'es' ? 'Español' : 'English'} accessibilityRole="button" accessibilityState={{ selected: language === item }} className={language === item ? 'h-9 justify-center rounded-[10px] bg-ui-secondary px-3' : 'h-9 justify-center rounded-[10px] px-3'} key={item} onPress={() => setLanguage(item)}><Text className={language === item ? 'text-xs font-black text-white' : 'text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted'}>{item.toUpperCase()}</Text></Pressable>)}</View>
 
           <View className="hidden flex-row gap-2 md:flex">
             <ThemeButton isSpanish={isSpanish} mode={mode} onPress={toggleMode} />

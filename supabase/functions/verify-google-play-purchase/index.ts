@@ -17,6 +17,12 @@ const offers = {
     business: false,
     fallbackAmount: 20,
   },
+  visitor_pass_30d: {
+    kind: "plan",
+    plan: "no_ads",
+    business: false,
+    fallbackAmount: 5,
+  },
   business_monthly: {
     kind: "plan",
     plan: "business",

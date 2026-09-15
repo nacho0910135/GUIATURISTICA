@@ -14,14 +14,16 @@ import { billingOffers, getMyAccessStatus, getMySubscriptions, hasActiveBusiness
 import { useGooglePlayBilling } from '../hooks/use-google-play-billing';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
+import { trackConversion } from '@/lib/conversion-analytics';
 
 import { FrogLoader } from '@/components/frog-loader';
-const universalOffers: BillingOfferId[] = ['universal_monthly', 'universal_annual'];
+const universalOffers: BillingOfferId[] = ['universal_monthly', 'universal_annual', 'visitor_pass_30d'];
 const businessOffers: BillingOfferId[] = ['business_monthly'];
 const checkoutArtwork = [
   require('../../assets/images/subscriptions/rainforest-card.png'),
   require('../../assets/images/subscriptions/sloth-monthly.png'),
   require('../../assets/images/subscriptions/capuchin-annual.png'),
+  require('../../assets/images/subscriptions/coati-visitor.png'),
   require('../../assets/images/subscriptions/jaguar-business.png'),
 ];
 
@@ -43,12 +45,14 @@ export default function SubscriptionsScreen() {
     void Asset.loadAsync(checkoutArtwork).finally(() => { if (mounted) setArtworkReady(true); });
     return () => { mounted = false; };
   }, []);
+  useEffect(() => { void trackConversion('paywall_viewed', { audience: businessIntent ? 'business' : 'traveler' }); }, [businessIntent]);
 
   const purchaseVerified = useCallback(async () => {
     const purchasedOffer = busyOffer;
     checkoutInProgress.current = false;
     setBusyOffer(undefined);
     await refetchSubscriptions();
+    if (purchasedOffer) void trackConversion('purchase_verified', { offer_id: purchasedOffer });
     Alert.alert('Descubriendo CR', language === 'es' ? 'Compra validada por Google Play. Tu plan ya está activo.' : 'Google Play validated your purchase. Your plan is now active.');
     if (purchasedOffer && billingOffers[purchasedOffer].business) {
       router.replace(claimServiceId ? { pathname: '/claim-business', params: { serviceId: claimServiceId } } : '/(tabs)/commerce');
@@ -74,6 +78,7 @@ export default function SubscriptionsScreen() {
       return;
     }
     checkoutInProgress.current = true;
+    void trackConversion('checkout_started', { offer_id: offerId });
     setBusyOffer(offerId);
     try {
       if (Platform.OS === 'android') {
@@ -141,8 +146,8 @@ function PlanCard({ active, adminAccess = false, busy, language, offerId, onPres
   const offer = billingOffers[offerId];
   const { colors, mode, tokens } = useAppTheme();
   const disabled = busy || active || storeLoading || !storeAvailable;
-  const kind = offer.business ? 'business' : offer.featured ? 'annual' : 'monthly';
-  const art = kind === 'business' ? require('../../assets/images/subscriptions/jaguar-business.png') : kind === 'annual' ? require('../../assets/images/subscriptions/capuchin-annual.png') : require('../../assets/images/subscriptions/sloth-monthly.png');
+  const kind = offer.business ? 'business' : offerId === 'visitor_pass_30d' ? 'visitor' : offer.featured ? 'annual' : 'monthly';
+  const art = kind === 'business' ? require('../../assets/images/subscriptions/jaguar-business.png') : kind === 'visitor' ? require('../../assets/images/subscriptions/coati-visitor.png') : kind === 'annual' ? require('../../assets/images/subscriptions/capuchin-annual.png') : require('../../assets/images/subscriptions/sloth-monthly.png');
   const borderColor = kind === 'monthly'
     ? tokens.colors.neutral[mode === 'dark' ? 400 : 300]
     : tokens.colors.commerceGold[mode === 'dark' ? 'darkInk' : 'ink'];
@@ -154,7 +159,7 @@ function PlanCard({ active, adminAccess = false, busy, language, offerId, onPres
     <View className={kind === 'business' ? 'flex-1 justify-between p-5 pt-56' : 'flex-1 justify-between p-5'}>
       <View>
         {offer.featured ? <Text className="mb-3 self-start rounded-full bg-ui-primary px-3 py-1 text-xs font-black text-white dark:text-ui-dark-on-primary">{language === 'es' ? 'MEJOR VALOR' : 'BEST VALUE'}</Text> : null}
-        <GlassSurface className={kind === 'annual' ? 'mr-24 rounded-2xl p-3' : kind === 'monthly' ? 'ml-24 rounded-2xl p-3' : 'rounded-2xl p-4'}>
+        <GlassSurface className={kind === 'annual' || kind === 'visitor' ? 'mr-24 rounded-2xl p-3' : kind === 'monthly' ? 'ml-24 rounded-2xl p-3' : 'rounded-2xl p-4'}>
         <View className="flex-row items-start">
           <View className="h-11 w-11 items-center justify-center rounded-2xl bg-ui-glass dark:bg-ui-dark-glass"><MaterialCommunityIcons name={offer.icon} size={24} color={colors.primary} /></View>
           <View className="ml-3 min-w-0 flex-1"><Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{offer.title[language === 'es' ? 0 : 1]}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{offer.detail[language === 'es' ? 0 : 1]}</Text><Text className="mt-3 text-xl font-black text-ui-primary dark:text-ui-dark-primary">{storePrice ?? offer.price[language === 'es' ? 0 : 1]}</Text></View>
@@ -167,7 +172,7 @@ function PlanCard({ active, adminAccess = false, busy, language, offerId, onPres
   </PressableCard>;
 }
 
-type AnimalKind = 'monthly' | 'annual' | 'business';
+type AnimalKind = 'monthly' | 'annual' | 'visitor' | 'business';
 
 function PlanAnimal({ kind, source }: { kind: AnimalKind; source: React.ComponentProps<typeof Image>['source'] }) {
   const reduceMotion = useReducedMotion();
@@ -199,4 +204,5 @@ const styles = StyleSheet.create({
   businessAnimal: { height: 220, right: -8, top: 4, width: 330 },
   jungle: { opacity: 0.88 },
   monthlyAnimal: { height: 190, left: -12, top: 8, width: 145 },
+  visitorAnimal: { height: 180, right: -8, top: 14, width: 150 },
 });

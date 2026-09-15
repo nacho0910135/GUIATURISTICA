@@ -16,7 +16,8 @@ export type Destination = {
   longitude: number;
   has_high_tides_risk: boolean;
   cover_image_url: string | null;
-  price_national_crc: number;
+  price_national_crc: number | null;
+  price_foreigner_usd: number | null;
   difficulty: string | null;
   description: string | null;
   schedule: string | null;
@@ -38,6 +39,10 @@ export type TripPlanInput = {
   vehicle: TripVehicle;
   categories: PlannerPreference[];
   language: 'es' | 'en';
+  startsAt?: string;
+  visitorType?: 'tico' | 'foreigner';
+  exchangeRate?: number;
+  excludedDestinationIds?: string[];
 };
 export type TripStop = {
   destination: Destination;
@@ -46,7 +51,7 @@ export type TripStop = {
   visitMinutes: number;
   arrivalAt: string;
   departureAt: string;
-  estimatedCostCrc: number;
+  estimatedCostCrc: number | null;
 };
 export type TripPlan = {
   startsAt: string;
@@ -172,7 +177,7 @@ export const emergencyContacts = [
   { label: 'OIJ · línea confidencial', phone: '8008000645' },
 ] as const;
 
-const destinationFields = 'id,name,province,category,latitude,longitude,has_high_tides_risk,cover_image_url,price_national_crc,difficulty,description,requires_sinac_booking,sinac_booking_url,normativas_destinos(horario_ingreso,dia_cierre)';
+const destinationFields = 'id,name,province,category,latitude,longitude,has_high_tides_risk,cover_image_url,price_national_crc,price_foreigner_usd,difficulty,description,requires_sinac_booking,sinac_booking_url,normativas_destinos(horario_ingreso,dia_cierre)';
 
 const ROAD_CORRIDORS = [
   { id: 'route-32', name: 'Ruta 32 (San José - Guápiles)', from: [-84.07486, 9.932607], to: [-83.78975, 10.21547] },
@@ -235,7 +240,8 @@ export async function recommendDestinations(input: { latitude: number; longitude
   if (!input.hasVehicle && (destination.dist_meters ?? 0) > 20000) warnings.push(input.language === 'es' ? 'Confirmá transporte de regreso antes de salir.' : 'Confirm return transportation before leaving.');
   if (input.children || input.seniors || input.reducedMobility) warnings.push(input.language === 'es' ? 'Confirmá accesibilidad, baños y condiciones del sendero con el operador.' : 'Confirm accessibility, restrooms and trail conditions with the operator.');
   if (destination.closed_day) warnings.push(`${input.language === 'es' ? 'Cierre indicado' : 'Listed closure'}: ${destination.closed_day}.`);
-  return { destination, weather, travelMinutes, visitMinutes, estimatedTotalCrc: destination.price_national_crc, warnings, nearbyService, createdAt: new Date().toISOString() };
+  if (destination.price_national_crc == null) warnings.push(input.language === 'es' ? 'Precio de entrada por confirmar; no está incluido en el total.' : 'Admission price needs confirmation and is not included in the total.');
+  return { destination, weather, travelMinutes, visitMinutes, estimatedTotalCrc: destination.price_national_crc ?? 0, warnings, nearbyService, createdAt: new Date().toISOString() };
 }
 
 export async function buildTripPlan(input: TripPlanInput): Promise<TripPlan | null> {
@@ -246,12 +252,35 @@ export async function buildTripPlan(input: TripPlanInput): Promise<TripPlan | nu
   return assembleTripPlan(input, matrixCandidates, travel.minutes, travel.source);
 }
 
+export async function rebuildTripPlan(input: TripPlanInput, stops: TripStop[]): Promise<TripPlan | null> {
+  if (!stops.length) return null;
+  const destinations = stops.map((stop) => stop.destination);
+  const travel = await getTravelMatrixMinutes([input, ...destinations], input.vehicle);
+  const startsAt = tripStart(input.availableHours, input.startsAt);
+  let elapsedMinutes = 0;
+  const rebuilt = stops.map((stop, index) => {
+    const travelMinutes = travel.minutes[index]?.[index + 1] ?? stop.travelMinutes;
+    const arrivalAt = new Date(startsAt.getTime() + (elapsedMinutes + travelMinutes) * 60000);
+    elapsedMinutes += travelMinutes + stop.visitMinutes;
+    const admissionCrc = tripAdmissionCrc(stop.destination, input);
+    return { ...stop, order: index + 1, travelMinutes, arrivalAt: arrivalAt.toISOString(), departureAt: new Date(arrivalAt.getTime() + stop.visitMinutes * 60000).toISOString(), estimatedCostCrc: admissionCrc == null ? null : admissionCrc * input.travelers };
+  });
+  const returnTravelMinutes = travel.minutes[destinations.length]?.[0] ?? 0;
+  if (elapsedMinutes + returnTravelMinutes > input.availableHours * 60) return null;
+  const mealCostCrc = mealBudgetPerPerson(input.availableHours) * input.travelers;
+  const estimatedTotalCrc = mealCostCrc + rebuilt.reduce((total, stop) => total + (stop.estimatedCostCrc ?? 0), 0);
+  if (estimatedTotalCrc > input.maxBudget) return null;
+  return { startsAt: startsAt.toISOString(), endsAt: new Date(startsAt.getTime() + (elapsedMinutes + returnTravelMinutes) * 60000).toISOString(), stops: rebuilt, totalTravelMinutes: rebuilt.reduce((total, stop) => total + stop.travelMinutes, 0) + returnTravelMinutes, returnTravelMinutes, totalVisitMinutes: rebuilt.reduce((total, stop) => total + stop.visitMinutes, 0), mealCostCrc, estimatedTotalCrc, travelTimeSource: travel.source };
+}
+
 export function buildOfflineTripPlan(input: TripPlanInput, destinations: Destination[]): TripPlan | null {
   const hasVehicle = input.vehicle !== 'bus';
   const radiusKm = Math.min(input.availableHours <= 4 ? 50 : input.availableHours <= 8 ? 120 : 250, input.availableHours * (hasVehicle ? 12 : 4));
   const candidates = destinations
     .map((destination) => ({ ...destination, dist_meters: distanceKm(input, destination) * 1000 }))
-    .filter((destination) => destination.dist_meters <= radiusKm * 1000 && destination.price_national_crc <= input.maxBudget)
+    .filter((destination) => !isClosedOn(destination, input.startsAt))
+    .filter((destination) => !input.excludedDestinationIds?.includes(destination.id))
+    .filter((destination) => destination.dist_meters <= radiusKm * 1000 && (tripAdmissionCrc(destination, input) ?? 0) <= input.maxBudget)
     .filter((destination) => !input.categories.length || countPreferenceMatches(destination, input.categories) > 0)
     .sort((a, b) => scoreDestination(b, { ...input, category: input.categories, hasVehicle, children: false, seniors: false, reducedMobility: false }) - scoreDestination(a, { ...input, category: input.categories, hasVehicle, children: false, seniors: false, reducedMobility: false }));
   return assembleTripPlan(input, candidates);
@@ -260,7 +289,7 @@ export function buildOfflineTripPlan(input: TripPlanInput, destinations: Destina
 function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matrix?: number[][], travelTimeSource: TripPlan['travelTimeSource'] = 'estimated'): TripPlan | null {
   const hasVehicle = input.vehicle !== 'bus';
   const plannerInput = { ...input, category: input.categories, hours: input.availableHours, children: false, seniors: false, reducedMobility: false, hasVehicle };
-  const startsAt = tripStart(input.availableHours);
+  const startsAt = tripStart(input.availableHours, input.startsAt);
   let current = { latitude: input.latitude, longitude: input.longitude };
   let remainingMinutes = input.availableHours * 60;
   const mealCostCrc = mealBudgetPerPerson(input.availableHours) * input.travelers;
@@ -272,7 +301,7 @@ function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matri
 
   while (stops.length < 4 && remainingBudget >= 0) {
     const destination = candidates
-      .filter((item) => item.price_national_crc * input.travelers <= remainingBudget && !stops.some((stop) => stop.destination.id === item.id))
+      .filter((item) => (tripAdmissionCrc(item, input) ?? 0) * input.travelers <= remainingBudget && !stops.some((stop) => stop.destination.id === item.id))
       .sort((a, b) => {
         const aIndex = matrixCandidates.findIndex((item) => item.id === a.id) + 1;
         const bIndex = matrixCandidates.findIndex((item) => item.id === b.id) + 1;
@@ -296,10 +325,11 @@ function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matri
       if (visitMinutes < 60) { candidates = candidates.filter((item) => item.id !== destination.id); continue; }
     }
     const departureAt = new Date(arrivalAt.getTime() + visitMinutes * 60 * 1000);
-    const estimatedCostCrc = destination.price_national_crc * input.travelers;
+    const admissionCrc = tripAdmissionCrc(destination, input);
+    const estimatedCostCrc = admissionCrc == null ? null : admissionCrc * input.travelers;
     stops.push({ destination, order: stops.length + 1, travelMinutes, visitMinutes, arrivalAt: arrivalAt.toISOString(), departureAt: departureAt.toISOString(), estimatedCostCrc });
     remainingMinutes -= travelMinutes + visitMinutes;
-    remainingBudget -= estimatedCostCrc;
+    remainingBudget -= estimatedCostCrc ?? 0;
     current = destination;
     currentMatrixIndex = destinationMatrixIndex;
   }
@@ -315,13 +345,14 @@ function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matri
     returnTravelMinutes,
     totalVisitMinutes: stops.reduce((total, stop) => total + stop.visitMinutes, 0),
     mealCostCrc,
-    estimatedTotalCrc: mealCostCrc + stops.reduce((total, stop) => total + stop.estimatedCostCrc, 0),
+    estimatedTotalCrc: mealCostCrc + stops.reduce((total, stop) => total + (stop.estimatedCostCrc ?? 0), 0),
     travelTimeSource,
   };
 }
 
-function tripStart(availableHours: number) {
-  const start = new Date();
+function tripStart(availableHours: number, requestedStart?: string) {
+  const start = requestedStart ? new Date(requestedStart) : new Date();
+  if (requestedStart && !Number.isNaN(start.getTime())) return start;
   if (availableHours >= 6) start.setHours(8, 0, 0, 0);
   else start.setTime(start.getTime() + 45 * 60000);
   if (start.getTime() < Date.now()) start.setDate(start.getDate() + 1);
@@ -376,7 +407,7 @@ async function getPlannerCandidates(input: { latitude: number; longitude: number
   const destinations = (details ?? []).map(normalizeDestination);
   const distances = await getRoadDistances(input, destinations);
   return destinations.map((item) => ({ ...item, dist_meters: (distances.get(item.id) ?? Infinity) * 1000 }))
-    .filter((item) => item.price_national_crc <= input.maxBudget)
+    .filter((item) => (item.price_national_crc ?? 0) <= input.maxBudget)
     .filter((item) => !input.reducedMobility || /fácil|facil/i.test(item.difficulty ?? ''))
     .sort((a, b) => scoreDestination(b, input) - scoreDestination(a, input));
 }
@@ -394,7 +425,9 @@ async function getTripPlannerCandidates(input: TripPlanInput & { hasVehicle: boo
   const distances = await getRoadDistances(input, destinations);
   return destinations
     .map((item) => ({ ...item, dist_meters: (distances.get(item.id) ?? Infinity) * 1000 }))
-    .filter((item) => item.price_national_crc <= input.maxBudget)
+    .filter((item) => !isClosedOn(item, input.startsAt))
+    .filter((item) => !input.excludedDestinationIds?.includes(item.id))
+    .filter((item) => (tripAdmissionCrc(item, input) ?? 0) <= input.maxBudget)
     .filter((item) => !input.categories.length || countPreferenceMatches(item, input.categories) > 0)
     .sort((a, b) => scoreDestination(b, { category: input.categories, children: false, seniors: false, reducedMobility: false, hasVehicle: input.hasVehicle }) - scoreDestination(a, { category: input.categories, children: false, seniors: false, reducedMobility: false, hasVehicle: input.hasVehicle }));
 }
@@ -497,7 +530,21 @@ function normalizeDestination(row: Record<string, unknown>): Destination {
   const rules = (Array.isArray(rulesValue) ? rulesValue[0] : rulesValue) as { horario_ingreso?: string | null; dia_cierre?: string | null } | null;
   return {
     ...(row as Omit<Destination, 'price_national_crc'>),
-    latitude: Number(row.latitude), longitude: Number(row.longitude), price_national_crc: Number(row.price_national_crc ?? 0),
+    latitude: Number(row.latitude), longitude: Number(row.longitude), price_national_crc: row.price_national_crc == null ? null : Number(row.price_national_crc), price_foreigner_usd: row.price_foreigner_usd == null ? null : Number(row.price_foreigner_usd),
     schedule: rules?.horario_ingreso ?? null, closed_day: rules?.dia_cierre ?? null,
   };
+}
+
+function tripAdmissionCrc(destination: Destination, input: Pick<TripPlanInput, 'visitorType' | 'exchangeRate'>) {
+  if (input.visitorType === 'foreigner') return destination.price_foreigner_usd == null ? null : destination.price_foreigner_usd * (input.exchangeRate ?? 503.84);
+  return destination.price_national_crc;
+}
+
+export function isClosedOn(destination: Pick<Destination, 'closed_day'>, startsAt?: string) {
+  if (!destination.closed_day || !startsAt) return false;
+  const date = new Date(startsAt);
+  if (Number.isNaN(date.getTime())) return false;
+  const days = [['domingo', 'sunday'], ['lunes', 'monday'], ['martes', 'tuesday'], ['miércoles', 'miercoles', 'wednesday'], ['jueves', 'thursday'], ['viernes', 'friday'], ['sábado', 'sabado', 'saturday']];
+  const closure = destination.closed_day.toLocaleLowerCase();
+  return days[date.getDay()].some((day) => closure.includes(day));
 }

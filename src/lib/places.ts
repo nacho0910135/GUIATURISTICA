@@ -193,10 +193,6 @@ export function matchesSearchTargets(searchableText: string, targets: string[]) 
   });
 }
 
-function initialDestinationRating(id: string) {
-  return 4.1 + (Array.from(id).reduce((total, character) => total + character.charCodeAt(0), 0) % 10) / 10;
-}
-
 function getSanctuaryVisitDetails(row: VerifiedSanctuaryRow) {
   return VERIFIED_SANCTUARY_LOCATIONS[row.id] ?? Object.values(VERIFIED_SANCTUARY_LOCATIONS).find((details) => details.aliases.some((alias) => normalizedName(alias) === normalizedName(row.name)));
 }
@@ -278,7 +274,7 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
     notes: row.location_name ? `Ubicación: ${row.location_name}.` : null,
     likes_count: 0,
     reviews_count: 0,
-    average_rating: initialDestinationRating(row.id),
+    average_rating: 0,
     liked: false,
     photos: [],
     community_photos: [],
@@ -430,7 +426,7 @@ async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPl
     notes: null,
     likes_count: (likes.data ?? []).length,
     reviews_count: ratings.length,
-    average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : initialDestinationRating(suggestion.id),
+    average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : 0,
     liked: (mine.data ?? []).length > 0,
     photos: suggestionPhotos,
     community_photos: [],
@@ -484,12 +480,12 @@ async function getPlaces(filter: 'province' | 'category' | 'id' | 'all', value: 
       longitude: Number(place.longitude),
       price_national_crc: place.price_national_crc == null ? null : Number(place.price_national_crc),
       price_foreigner_usd: place.price_foreigner_usd == null ? null : Number(place.price_foreigner_usd),
-      schedule: hasOfficialSchedule && rules?.horario_ingreso ? rules.horario_ingreso : 'Todo el día',
+      schedule: hasOfficialSchedule && rules?.horario_ingreso ? rules.horario_ingreso : null,
       closed_day: hasOfficialSchedule ? rules?.dia_cierre ?? null : null,
       notes: rules?.observaciones_especiales ?? null,
       likes_count: (likes.data ?? []).filter((row) => row.target_id === place.id).length,
       reviews_count: ratings.length,
-      average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : initialDestinationRating(place.id),
+      average_rating: ratings.length ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length : 0,
       liked: likedIds.has(place.id),
       community_photos: communityPhotos,
       cover_image_url: mobileImageUrl(place.cover_image_url),

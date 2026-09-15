@@ -35,6 +35,7 @@ for (const offer of ['universal_monthly', 'universal_annual', 'visitor_pass_30d'
   assert.match(checkout, new RegExp(offer));
   assert.match(webhook, new RegExp(offer));
 }
+assert.match(playVerifier, /visitor_pass_30d:[\s\S]*?fallbackAmount: 5/);
 for (const offer of ['featured_monthly', 'banner_monthly']) {
   assert.match(billing, new RegExp(offer));
   assert.match(commerce, new RegExp(offer));
@@ -48,7 +49,13 @@ for (const price of ['US$2 / mes', 'US$20 / año', 'US$5 / 30 días', 'US$9,99 /
 assert.match(screen, /billingOffers/);
 assert.match(screen, /!businessIntent \? universalOffers\.map/);
 assert.match(screen, /businessIntent \? businessOffers\.map/);
-assert.doesNotMatch(screen, /visitor_pass_30d/);
+assert.match(screen, /universalOffers[^\n]+visitor_pass_30d/);
+assert.match(billing, /visitor_pass_30d:\s*\{[\s\S]*?business:\s*false/);
+assert.match(screen, /function PlanAnimal[\s\S]*?withRepeat\(withSequence/);
+assert.match(screen, /kind === 'visitor'[\s\S]*?coati-visitor\.png/);
+assert.match(screen, /paywall_viewed/);
+assert.match(screen, /checkout_started/);
+assert.match(screen, /purchase_verified/);
 assert.match(screen, /MEJOR VALOR/);
 assert.match(checkout, /supabase\.auth\.getUser/);
 assert.match(checkout, /eq\(["']owner_id["'], user\.id\)/);

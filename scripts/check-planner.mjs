@@ -31,10 +31,18 @@ assert.match(source, /mealBudgetPerPerson[\s\S]*20500/);
 assert.match(source, /estimatedTotalCrc: mealCostCrc/);
 const screen = await readFile(new URL('../src/app/(tabs)/my-trip.tsx', import.meta.url), 'utf8');
 assert.match(screen, /getPreciseCurrentLocation\(language\)/);
+assert.match(screen, /SAVED_TRIP_PLAN/);
+assert.match(screen, /LocationPickerModal/);
+assert.match(screen, /Share\.share/);
+assert.match(screen, /RideDateFields/);
+assert.match(source, /price_national_crc == null \? null/);
+assert.match(screen, /trip_created/);
 assert.doesNotMatch(screen, /9\.9326|Descargar \$\{zone|Prepará la zona sin conexión/);
 assert.match(screen, /pueden variar según la zona/);
 const provider = await readFile(new URL('../src/providers/app-provider.tsx', import.meta.url), 'utf8');
+const queryClient = await readFile(new URL('../src/lib/query-client.ts', import.meta.url), 'utf8');
 assert.match(provider, /ensureOfflineTripPacks\(provinces\)/);
+assert.match(queryClient, /PERSISTED_QUERIES[\s\S]*my-app-access/);
 
 const planner = load('src/lib/logistics.ts', {
   'expo-linking': {}, 'react-native': { Platform: { OS: 'android' } },
@@ -45,7 +53,8 @@ const destinations = [
   { id: 'near-free', name: 'Museo cercano', province: 'San José', category: 'Cultura', latitude: 9.94, longitude: -84.08, price_national_crc: 0 },
   { id: 'nature', name: 'Reserva natural', province: 'Heredia', category: 'Naturaleza', latitude: 10.01, longitude: -84.1, price_national_crc: 4000 },
   { id: 'far', name: 'Playa lejana', province: 'Guanacaste', category: 'Playa', latitude: 10.5, longitude: -85.6, price_national_crc: 3000 },
-].map((item) => ({ ...item, has_high_tides_risk: false, cover_image_url: null, difficulty: null, description: null, schedule: null, closed_day: null, requires_sinac_booking: false, sinac_booking_url: null }));
+  { id: 'unknown-price', name: 'Galería nueva', province: 'San José', category: 'Cultura', latitude: 9.935, longitude: -84.075, price_national_crc: null },
+].map((item) => ({ ...item, price_foreigner_usd: item.price_national_crc === null ? null : 20, has_high_tides_risk: false, cover_image_url: null, difficulty: null, description: null, schedule: null, closed_day: null, requires_sinac_booking: false, sinac_booking_url: null }));
 for (const input of [
   { ...origin, availableHours: 3, maxBudget: 10000, travelers: 1, vehicle: 'sedan', categories: [], language: 'es' },
   { ...origin, availableHours: 8, maxBudget: 50000, travelers: 2, vehicle: '4x4', categories: ['Naturaleza'], language: 'es' },
@@ -57,6 +66,11 @@ for (const input of [
   assert.ok(new Date(plan.endsAt) - new Date(plan.startsAt) <= input.availableHours * 3600000, 'Travel, visits, and return stay within available time');
   assert.equal(plan.travelTimeSource, 'estimated');
 }
+const monday = new Date('2026-09-14T08:00:00-06:00').toISOString();
+assert.equal(planner.isClosedOn({ closed_day: 'Lunes' }, monday), true);
+assert.equal(planner.isClosedOn({ closed_day: 'Martes' }, monday), false);
+const foreignPlan = planner.buildOfflineTripPlan({ ...origin, availableHours: 4, maxBudget: 50000, travelers: 1, vehicle: 'sedan', categories: [], language: 'en', startsAt: monday, visitorType: 'foreigner', exchangeRate: 500 }, destinations.filter((item) => item.id === 'near-free'));
+assert.equal(foreignPlan.stops[0].estimatedCostCrc, 10000, 'Foreign admission is converted from USD independently of language');
 assert.match(optionsSource, /getAppOptions\("destination_category"\)/);
 assert.match(optionsSource, /categories\.filter\(\(option\) => option\.parent_id === null\)/);
 assert.match(exploreSource, /categories\.length > 3/);

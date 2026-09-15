@@ -12,7 +12,7 @@ type Options = {
   userId?: string;
 };
 
-const subscriptionOffers: BillingOfferId[] = ['universal_monthly', 'universal_annual', 'business_monthly'];
+const subscriptionOffers: BillingOfferId[] = ['universal_monthly', 'universal_annual', 'visitor_pass_30d', 'business_monthly'];
 const productToOffer = new Map<string, BillingOfferId>(subscriptionOffers.map((offerId) => [googlePlayProductIds[offerId], offerId]));
 
 function errorMessage(reason: unknown) {
@@ -106,8 +106,8 @@ export function useGooglePlayBilling({ onError, onVerified, userId }: Options) {
     const storeOffer = product.subscriptionOffers.find((item) => item.offerTokenAndroid);
     if (!storeOffer?.offerTokenAndroid) throw new Error('Google Play no devolvió un plan de cobro válido.');
     const obfuscatedAccountId = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, userId);
-    const replacedPurchase = !billingOffers[offerId].business
-      ? availablePurchases.find((item) => item.productId !== productId && productToOffer.has(item.productId) && item.purchaseToken)
+    const replacedPurchase = !billingOffers[offerId].business && offerId !== 'visitor_pass_30d'
+      ? availablePurchases.find((item) => item.productId !== productId && productToOffer.get(item.productId) !== 'visitor_pass_30d' && item.purchaseToken)
       : undefined;
     const { error: intentError } = await supabase.rpc('save_google_play_purchase_intent', {
       p_product_id: productId,
