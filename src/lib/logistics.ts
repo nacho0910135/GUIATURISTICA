@@ -215,27 +215,10 @@ function incidentLabel(type: string | undefined, language: 'es' | 'en') {
 }
 
 export async function getWeather(destination: Pick<Destination, 'latitude' | 'longitude'>, language: 'es' | 'en'): Promise<Weather> {
-  const key = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY;
-  try {
-    if (!key) throw new Error('OPENWEATHER_KEY_MISSING');
-    const params = new URLSearchParams({ lat: String(destination.latitude), lon: String(destination.longitude), appid: key, units: language === 'es' ? 'metric' : 'imperial', lang: language });
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?${params}`, { signal: AbortSignal.timeout(12_000) });
-    if (!response.ok) throw new Error(`OpenWeather ${response.status}`);
-    const body = await response.json() as { main: { temp: number; humidity: number }; weather?: { description: string; icon: string }[] };
-    if (!Number.isFinite(body.main?.temp) || !Number.isFinite(body.main?.humidity)) throw new Error('OpenWeather invalid response');
-    return { temperature: Math.round(body.main.temp), temperatureUnit: language === 'es' ? 'C' : 'F', humidity: body.main.humidity, description: body.weather?.[0]?.description ?? '', icon: body.weather?.[0]?.icon ?? '01d' };
-  } catch {
-    const params = new URLSearchParams({ latitude: String(destination.latitude), longitude: String(destination.longitude), current: 'temperature_2m,relative_humidity_2m,weather_code,is_day', temperature_unit: language === 'es' ? 'celsius' : 'fahrenheit' });
-    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { signal: AbortSignal.timeout(12_000) });
-    if (!response.ok) throw new Error(`Open-Meteo ${response.status}`);
-    const { current } = await response.json() as { current?: { temperature_2m?: number; relative_humidity_2m?: number; weather_code?: number; is_day?: number } };
-    if (!current || !Number.isFinite(current.temperature_2m) || !Number.isFinite(current.relative_humidity_2m)) throw new Error('Open-Meteo invalid response');
-    const code = current.weather_code ?? 0;
-    const descriptions = language === 'es' ? ['Despejado', 'Parcialmente nublado', 'Nublado', 'Niebla', 'Llovizna', 'Lluvia', 'Nieve', 'Tormenta'] : ['Clear', 'Partly cloudy', 'Cloudy', 'Fog', 'Drizzle', 'Rain', 'Snow', 'Thunderstorm'];
-    const group = code === 0 ? 0 : code <= 2 ? 1 : code === 3 ? 2 : code <= 48 ? 3 : code <= 57 ? 4 : code <= 67 || (code >= 80 && code <= 82) ? 5 : code <= 77 || (code >= 85 && code <= 86) ? 6 : 7;
-    const icons = ['01', '02', '04', '50', '09', '10', '13', '11'];
-    return { temperature: Math.round(current.temperature_2m!), temperatureUnit: language === 'es' ? 'C' : 'F', humidity: Math.round(current.relative_humidity_2m!), description: descriptions[group], icon: `${icons[group]}${current.is_day === 0 ? 'n' : 'd'}` };
-  }
+  const { data, error } = await supabase.functions.invoke('weather', { body: { ...destination, language } });
+  if (error) throw error;
+  if (!data || !Number.isFinite(data.temperature) || !Number.isFinite(data.humidity)) throw new Error('Weather invalid response');
+  return data as Weather;
 }
 
 export async function recommendDestinations(input: { latitude: number; longitude: number; hours: number; category: PlannerPreference; maxBudget: number; children: boolean; seniors: boolean; reducedMobility: boolean; hasVehicle: boolean; language: 'es' | 'en' }): Promise<DayPlan | null> {

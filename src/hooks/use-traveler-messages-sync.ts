@@ -16,20 +16,33 @@ export function useTravelerMessagesSync(userId: string | undefined, onChange: ()
     const refresh = () => {
       if (AppState.currentState === 'active') onChangeRef.current();
     };
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const stopPolling = () => {
+      if (interval) clearInterval(interval);
+      interval = undefined;
+    };
+    const startPolling = () => {
+      if (interval) return;
+      interval = setInterval(refresh, CHAT_REFRESH_INTERVAL_MS);
+    };
     const channel = supabase
       .channel(`traveler-messages:${userId}:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'traveler_messages', filter: `recipient_id=eq.${userId}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'traveler_messages', filter: `sender_id=eq.${userId}` }, refresh)
-      .subscribe((status) => { if (status === 'SUBSCRIBED') refresh(); });
-    const interval = setInterval(() => {
-      if (AppState.currentState === 'active') refresh();
-    }, CHAT_REFRESH_INTERVAL_MS);
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          stopPolling();
+          refresh();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          startPolling();
+        }
+      });
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active') refresh();
     });
 
     return () => {
-      clearInterval(interval);
+      stopPolling();
       appState.remove();
       void supabase.removeChannel(channel).catch(() => undefined);
     };

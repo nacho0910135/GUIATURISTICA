@@ -56,7 +56,7 @@ npm run check:fauna
 Copiá `.env.example` a `.env.local` y agregá las claves públicas de OpenWeatherMap y WorldTides:
 
 ```env
-EXPO_PUBLIC_OPENWEATHER_API_KEY=tu_clave
+OPENWEATHER_API_KEY=tu_clave # secreto de Supabase Edge Functions, nunca del cliente
 EXPO_PUBLIC_WORLDTIDES_API_KEY=tu_clave
 ```
 

@@ -70,17 +70,22 @@ assert.equal(channels.length, 0, 'Hidden screens must not subscribe');
 focused = true;
 let cleanup = mount('traveler');
 assert.equal(channels.length, 1);
-intervalCallback();
 channels[0].callbacks[0]();
 channels[0].callbacks[1]();
-assert.equal(refreshed, 3, 'Polling and incoming/outgoing events must refresh');
+assert.equal(refreshed, 2, 'Incoming and outgoing events must refresh');
+channels[0].status('SUBSCRIBED');
+assert.equal(intervalCount, 0, 'Healthy Realtime must not poll');
+channels[0].status('CHANNEL_ERROR');
+assert.equal(intervalCount, 1, 'Polling is only a Realtime failure fallback');
+intervalCallback();
+assert.equal(refreshed, 4);
 appState.currentState = 'background';
 intervalCallback();
 channels[0].callbacks[0]();
-assert.equal(refreshed, 3, 'Background events must not fetch');
+assert.equal(refreshed, 4, 'Background events must not fetch');
 appState.currentState = 'active';
 changeCallback('active');
-assert.equal(refreshed, 4, 'Returning to the app must catch up immediately');
+assert.equal(refreshed, 5, 'Returning to the app must catch up immediately');
 cleanup();
 assert.equal(removed, 1);
 assert.equal(intervalCount, 0);
@@ -89,8 +94,8 @@ focused = false;
 assert.equal(mount('traveler'), undefined);
 focused = true;
 cleanup = mount('traveler');
-intervalCallback();
-assert.equal(refreshed, 5, 'Returning to the screen must resume polling');
+channels.at(-1).status('SUBSCRIBED');
+assert.equal(intervalCount, 0, 'Returning to the screen must prefer Realtime');
 cleanup();
 assert.equal(intervalCount, 0);
 assert.equal(listenerCount, 0);
@@ -142,11 +147,14 @@ for (const language of ['es', 'en']) {
   }
 }
 assert.deepEqual(data.map((place) => place.id), [0, 1, 2, 3, 4], 'Search must not mutate the cached list');
-// Realtime reconnection catches up without waiting for the backup timer.
+// Realtime reconnection stops backup polling and catches up immediately.
 cleanup = mount('traveler');
+channels.at(-1).status('TIMED_OUT');
+assert.equal(intervalCount, 1);
 const beforeReconnect = refreshed;
 channels.at(-1).status('SUBSCRIBED');
 assert.equal(refreshed, beforeReconnect + 1);
+assert.equal(intervalCount, 0);
 cleanup();
 appState.currentState = 'background';
 assert.equal(mount('traveler'), undefined, 'Background mount must not open a channel');
@@ -173,6 +181,20 @@ for (const foreground of ['active', 'background', 'inactive']) {
   }
 }
 assert.equal(listenerCount, 0);
+
+const repliesMigration = read('supabase/migrations/20260914222307_latest_traveler_replies.sql');
+assert.match(repliesMigration, /cardinality\(p_post_ids\) > 50/);
+assert.match(repliesMigration, /array_position\(p_post_ids, null\) is not null/);
+assert.match(repliesMigration, /select distinct requested_id from unnest\(p_post_ids\)/);
+const messagesMigration = read('supabase/migrations/20260914221345_paginate_private_messages_and_storage_quota.sql');
+assert.doesNotMatch(messagesMigration, /row_number\(\) over/);
+assert.match(messagesMigration, /traveler_messages_unread_recipient_sender_idx/);
+const logisticsSource = read('src/lib/logistics.ts');
+assert.doesNotMatch(logisticsSource, /EXPO_PUBLIC_OPENWEATHER_API_KEY|api\.openweathermap\.org/);
+assert.match(logisticsSource, /functions\.invoke\('weather'/);
+const weatherFunction = read('supabase/functions/weather/index.ts');
+assert.match(weatherFunction, /Deno\.env\.get\("OPENWEATHER_API_KEY"\)/);
+assert.match(weatherFunction, /latitude! < -90|longitude! < -180/);
 
 // Real Query observers: concurrent consumers share a request, fresh data survives
 // navigation, account changes never display the previous user's private data.
