@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/@react-native-firebase/app/firebase-schema.json",
+  "remoteconfig": {
+    "template": "remote_config.json"
+  },
+  "react-native": {
+    "crashlytics_debug_enabled": true,
+    "crashlytics_javascript_exception_handler_chaining_enabled": false
+  }
+}

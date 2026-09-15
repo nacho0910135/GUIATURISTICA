@@ -24,7 +24,9 @@ import { AppProvider } from '@/providers/app-provider';
 import { persistQueryCache, queryClient, restoreQueryCache } from '@/lib/query-client';
 import { isExploreStartupReady, subscribeToExploreStartupReady } from '@/lib/startup-gate';
 import { AppThemeProvider } from '@/theme/theme-provider';
+import { initializeFirebaseAppCheck } from '../lib/destination-ai';
 
+initializeFirebaseAppCheck();
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export function ErrorBoundary({ retry }: ErrorBoundaryProps) {

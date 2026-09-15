@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "descubriendocr",
     "userInterfaceStyle": "automatic",
-    "ios": { "bundleIdentifier": "com.descubriendo.cr", "buildNumber": "1", "supportsTablet": true, "infoPlist": { "ITSAppUsesNonExemptEncryption": false, "LSApplicationQueriesSchemes": ["waze"] } },
+    "ios": { "bundleIdentifier": "com.descubriendo.cr", "buildNumber": "1", "googleServicesFile": "./GoogleService-Info.plist", "supportsTablet": true, "infoPlist": { "ITSAppUsesNonExemptEncryption": false, "LSApplicationQueriesSchemes": ["waze"] } },
     "android": {
       "package": "com.descubriendo.cr",
       "googleServicesFile": "./google-services.json",

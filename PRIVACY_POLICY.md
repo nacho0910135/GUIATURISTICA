@@ -22,7 +22,7 @@ Según las funciones que decidás usar, podemos tratar:
 - Audio, cámara y fotografías únicamente cuando activás funciones como notas de voz, captura o carga de imágenes.
 - Preferencias de la app y de viaje, como idioma, modo de visitante, tema, destinos guardados y datos preparados para uso sin conexión.
 - Datos de compras y suscripciones: plan, estado, importe, moneda, vigencia e identificadores del proveedor. No almacenamos números completos de tarjetas.
-- Datos técnicos necesarios para seguridad y operación, como el token del dispositivo para entregar notificaciones, registros de errores, solicitudes de red, marcas de tiempo e identificadores internos.
+- Datos técnicos necesarios para seguridad, analítica y operación, como el token del dispositivo para entregar notificaciones, eventos de uso, información del dispositivo, registros de errores, solicitudes de red, marcas de tiempo e identificadores internos.
 
 ## Cómo usamos los datos
 
@@ -36,7 +36,7 @@ Usamos esos datos para:
 - gestionar mensajes, notificaciones, reportes y bloqueos;
 - confirmar compras, suscripciones y acceso a funciones pagadas;
 - prevenir fraude, abuso, riesgos para la fauna y violaciones de las reglas;
-- mantener, diagnosticar y mejorar la estabilidad y seguridad del servicio.
+- medir el uso de las funciones y mantener, diagnosticar y mejorar la estabilidad y seguridad del servicio.
 
 No vendemos datos personales.
 
@@ -50,6 +50,9 @@ Compartimos únicamente los datos necesarios para operar una función con los si
 
 - **Supabase:** autenticación, base de datos, almacenamiento y funciones del servidor.
 - **Expo/EAS:** compilación de la aplicación y entrega de notificaciones push.
+- **Google Firebase:** Google Analytics para medir uso agregado, Crashlytics para diagnosticar errores y Firebase AI Logic para responder cuando elegís **Conocé más con IA**.
+
+Al usar **Conocé más con IA**, enviamos a Google los datos públicos de la ficha y la pregunta que escribís. No incluimos tu identidad ni guardamos la conversación; evitá escribir datos personales. La respuesta puede contener errores y no sustituye fuentes oficiales.
 - **Google:** inicio de sesión con Google y distribución mediante Google Play.
 - **OpenStreetMap y Mapbox:** mapas y solicitudes cartográficas según la plataforma.
 - **OpenWeather:** información meteorológica asociada al área consultada.

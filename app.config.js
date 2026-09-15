@@ -10,6 +10,17 @@ module.exports = ({ config }) => {
     'expo-web-browser',
     'expo-status-bar',
     'expo-notifications',
+    '@react-native-firebase/app',
+    [
+      '@react-native-firebase/analytics',
+      { ios: { withoutAdIdSupport: true } },
+    ],
+    '@react-native-firebase/crashlytics',
+    '@react-native-firebase/app-check',
+    [
+      'expo-build-properties',
+      { ios: { useFrameworks: 'static' } },
+    ],
     '@react-native-community/datetimepicker',
     [
       '@rnmapbox/maps',

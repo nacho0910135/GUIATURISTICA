@@ -18,6 +18,8 @@ import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerifi
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
+import { askDestinationAI, getDestinationAIConfig } from '../../lib/destination-ai';
+import { getMyAccessStatus } from '@/lib/billing';
 import { getRoadRoutes, type RoadRoute } from '@/lib/road-routing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -424,6 +426,8 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
   const myCommunityVerification = useQuery({ queryKey: ['my-community-suggestion-verification', place?.id, session?.user.id], queryFn: () => getMyCommunitySuggestionVerification(place!.id, session!.user.id), enabled: Boolean(place?.is_community_submission && session && place.community_contributor_id !== session.user.id) });
   const weather = useQuery({ queryKey: ['weather', 'destination', place?.id, language], queryFn: () => getWeather(place!, language), enabled: Boolean(place), staleTime: WEATHER_STALE_TIME });
   const marine = useQuery({ queryKey: ['marine-weather', place?.latitude, place?.longitude], queryFn: () => getMarineConditions(place!), enabled: Boolean(place && isBeachPlace(place)), staleTime: MARINE_WEATHER_STALE_TIME });
+  const aiConfig = useQuery({ queryKey: ['destination-ai-config'], queryFn: getDestinationAIConfig, staleTime: 60 * 60 * 1000 });
+  const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session), staleTime: 60_000 });
   if (!place) return null;
   const communityLocationVerified = Boolean(place.community_verified_at) || (communityVerification.data?.location_correct.confirmed ?? 0) >= 3;
   const ferries = ferryAccess ? (ferryQuery.data ?? ferryRoutes).filter((route) => ferryAccess.routeIds.includes(route.id)) : [];
@@ -514,7 +518,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
               <VisitQuickFacts closedDay={place.closed_day} language={language} price={visitPrice} schedule={place.schedule} onNavigate={() => void openNavigation(place.latitude, place.longitude)} />
               {marine.data ? <MarineWeatherPanel conditions={marine.data} language={language} /> : marine.isError ? <Text accessibilityRole="alert" className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No se pudieron cargar las condiciones marinas.' : 'Marine conditions could not be loaded.'}</Text> : null}
-              <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{destinationDescription(place, language)}</Text></View>
+              <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{destinationDescription(place, language)}</Text>{aiConfig.data?.ai_destination_assistant_enabled ? <DestinationAIAssistant canUse={access.data?.hasAccess === true} context={`${place.name}\nProvincia: ${place.province}\nCategoría: ${categoryLabel(place.category, language)}\nDescripción: ${destinationDescription(place, language)}\nDificultad: ${difficultyLabel(place.difficulty, language)}\nHorario: ${place.schedule || 'sin dato'}\nCierre: ${place.closed_day || 'sin dato'}\nPrecio mostrado: ${visitPrice}\nNotas: ${place.notes || 'sin dato'}\nFuente: ${place.source_url || 'sin fuente'}`} language={language} name={place.name} onSubscribe={() => { onClose(); router.push('/subscriptions'); }} /> : null}</View>
               <DestinationVisitInfoPanel language={language} place={place} />
               <DestinationFreshnessPanel destinationId={place.id} language={language} />
               {place.is_community_submission ? <CommunitySuggestionVerificationPanel busy={communityVerificationBusy} canVerify={place.community_contributor_id !== session?.user.id} language={language} mine={myCommunityVerification.data} onSubmit={submitCommunityVerification} verifiedAt={place.community_verified_at} verification={communityVerification.data} /> : null}
@@ -548,6 +552,23 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
       <InformationReportModal open={reportOpen} targetType="destination" targetId={place.id} targetLabel={place.name} language={language} onClose={() => setReportOpen(false)} />
     </>
   );
+}
+
+function DestinationAIAssistant({ canUse, context, language, name, onSubscribe }: { canUse: boolean; context: string; language: 'es' | 'en'; name: string; onSubscribe: () => void }) {
+  const [answer, setAnswer] = useState('');
+  const [question, setQuestion] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const ask = async (prompt: string) => {
+    if (!canUse) return onSubscribe();
+    if (!prompt.trim() || busy) return;
+    setBusy(true); setError('');
+    try { setAnswer(await askDestinationAI(context, prompt.trim(), language)); setQuestion(''); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : (language === 'es' ? 'No pudimos consultar el asistente.' : 'We could not reach the assistant.')); }
+    finally { setBusy(false); }
+  };
+  if (!answer) return <Pressable accessibilityRole="button" className="mt-4 min-h-12 flex-row items-center justify-center rounded-2xl bg-ui-primary px-5 py-3 dark:bg-ui-dark-primary" disabled={busy} onPress={() => void ask(language === 'es' ? `Ampliá la información útil para visitar ${name}.` : `Expand the useful information for visiting ${name}.`)}>{busy ? <FrogLoader color="white" size="small" /> : <MaterialCommunityIcons name="creation" size={21} color="white" />}<Text className="ml-2 font-black text-white">{busy ? (language === 'es' ? 'Consultando…' : 'Asking…') : (language === 'es' ? 'Conocé más con IA' : 'Learn more with AI')}</Text>{!canUse ? <Text className="ml-2 rounded-full bg-white/20 px-2 py-1 text-[10px] font-black text-white">PRO</Text> : null}</Pressable>;
+  return <View className="mt-4 rounded-3xl border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted"><View className="flex-row items-center"><MaterialCommunityIcons name="creation" size={20} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Conocé más con IA' : 'Learn more with AI'}</Text></View><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{answer}</Text><Text className="mt-3 text-xs font-semibold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Generado con IA a partir de la ficha. Verificá horarios, precios y seguridad con la fuente oficial.' : 'AI-generated from this listing. Verify hours, prices, and safety with the official source.'}</Text><View className="mt-4 flex-row items-end gap-2"><TextInput accessibilityLabel={language === 'es' ? 'Pregunta sobre el lugar' : 'Question about the place'} className="min-h-12 flex-1 rounded-2xl bg-ui-surface px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text" maxLength={300} multiline onChangeText={setQuestion} placeholder={language === 'es' ? '¿Qué querés saber?' : 'What would you like to know?'} placeholderTextColor="#68737A" value={question} /><Pressable accessibilityLabel={language === 'es' ? 'Preguntar' : 'Ask'} accessibilityRole="button" className="h-12 w-12 items-center justify-center rounded-2xl bg-ui-primary dark:bg-ui-dark-primary" disabled={busy || !question.trim()} onPress={() => void ask(question)}>{busy ? <FrogLoader color="white" size="small" /> : <MaterialCommunityIcons name="send" size={20} color="white" />}</Pressable></View>{error ? <Text accessibilityRole="alert" className="mt-3 font-bold text-ui-danger dark:text-ui-dark-danger">{error}</Text> : null}</View>;
 }
 
 function MarineWeatherPanel({ conditions, language }: { conditions: MarineConditions; language: 'es' | 'en' }) {
