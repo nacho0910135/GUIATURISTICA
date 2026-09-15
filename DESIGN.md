@@ -152,7 +152,7 @@ La brújula abre cartografía urbana real a pantalla completa, con retorno super
 
 El movimiento comunica jerarquía o cambio de estado: feedback 180 ms, contenido 260 ms y sheets alrededor de 320 ms con resorte contenido. No se reanima una lista completa después de cada render. Reduced Motion elimina desplazamientos y deja transiciones de opacidad breves.
 
-La transición completa —rana grande centrada respecto a la pantalla, acompañada debajo por el wordmark “Descubriendo CR” y “EXPLORÁ DISTINTO 🇨🇷”— se reserva exclusivamente para abrir catálogos de provincia o categoría. Todas las demás superficies permanecen en blanco mientras cargan, incluidos los estados ocupados de controles; no muestran rana, spinner ni otro indicador. En los catálogos la rana alterna una imagen con ojos abiertos y otra en parpadeo; con movimiento reducido permanece estática. La introducción animada se reproduce una sola vez; al terminar, conserva un fondo limpio hasta revelar Explorar.
+La transición completa —rana grande centrada respecto a la pantalla, acompañada debajo por el wordmark “Descubriendo CR” y “EXPLORÁ DISTINTO 🇨🇷”— se usa al abrir catálogos de provincia o categoría y mientras se prepara una pasarela de pago o una fotografía inmersiva. El contenido que depende de imágenes no se revela con placeholders borrosos: la rana ocupa la geometría final hasta que la imagen esté lista. En los demás estados ocupados de controles se conserva su ancho y no se agrega movimiento innecesario. La rana alterna una imagen con ojos abiertos y otra en parpadeo; con movimiento reducido permanece estática.
 
 ### Content and data visualization
 

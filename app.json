@@ -10,7 +10,7 @@
     "ios": { "bundleIdentifier": "com.descubriendo.cr", "buildNumber": "1", "supportsTablet": true, "infoPlist": { "ITSAppUsesNonExemptEncryption": false, "LSApplicationQueriesSchemes": ["waze"] } },
     "android": {
       "package": "com.descubriendo.cr",
-      "versionCode": 43,
+      "versionCode": 44,
       "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],
       "permissions": ["CAMERA", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"],
       "intentFilters": [{ "action": "VIEW", "autoVerify": true, "data": [{ "scheme": "descubriendocr" }], "category": ["BROWSABLE", "DEFAULT"] }],

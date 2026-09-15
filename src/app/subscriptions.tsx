@@ -1,5 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useQuery } from '@tanstack/react-query';
+import { Asset } from 'expo-asset';
 import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,6 +18,12 @@ import { useAppTheme } from '@/theme/theme-provider';
 import { FrogLoader } from '@/components/frog-loader';
 const universalOffers: BillingOfferId[] = ['universal_monthly', 'universal_annual'];
 const businessOffers: BillingOfferId[] = ['business_monthly'];
+const checkoutArtwork = [
+  require('../../assets/images/subscriptions/rainforest-card.png'),
+  require('../../assets/images/subscriptions/sloth-monthly.png'),
+  require('../../assets/images/subscriptions/capuchin-annual.png'),
+  require('../../assets/images/subscriptions/jaguar-business.png'),
+];
 
 export default function SubscriptionsScreen() {
   const { isAdmin, isAuthenticated, language, requireAuth, session } = useApp();
@@ -25,10 +32,17 @@ export default function SubscriptionsScreen() {
   const { claimServiceId, intent, serviceId } = useLocalSearchParams<{ claimServiceId?: string; intent?: string; serviceId?: string }>();
   const businessIntent = intent === 'business';
   const [busyOffer, setBusyOffer] = useState<BillingOfferId>();
+  const [artworkReady, setArtworkReady] = useState(false);
   const checkoutInProgress = useRef(false);
   const subscriptions = useQuery({ queryKey: ['my-subscriptions'], queryFn: getMySubscriptions, enabled: isAuthenticated });
   const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: isAuthenticated });
   const refetchSubscriptions = subscriptions.refetch;
+
+  useEffect(() => {
+    let mounted = true;
+    void Asset.loadAsync(checkoutArtwork).finally(() => { if (mounted) setArtworkReady(true); });
+    return () => { mounted = false; };
+  }, []);
 
   const purchaseVerified = useCallback(async () => {
     const purchasedOffer = busyOffer;
@@ -106,6 +120,8 @@ export default function SubscriptionsScreen() {
         ? (language === 'es' ? 'Tu período gratuito terminó' : 'Your free trial has ended')
         : (language === 'es' ? '15 días gratis con toda la app' : '15 free days with the complete app')
       : (language === 'es' ? 'Consultá los planes disponibles' : 'See available plans');
+  if (!artworkReady) return <View className="flex-1 bg-ui-background dark:bg-ui-dark-background"><FrogLoader accessibilityLabel={language === 'es' ? 'Cargando pasarela de pago' : 'Loading payment gateway'} branded size="large" /></View>;
+
   return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(bottom, 24), paddingHorizontal: 20, paddingTop: top + 20 }}>
     <View className="mx-auto w-full max-w-2xl flex-1">
       <View className="flex-row items-center"><Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-ui-muted active:opacity-70 dark:bg-ui-dark-muted" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={23} color="#087443" /></Pressable><View className="min-w-0 flex-1"><Text className="text-3xl font-black tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Planes Pro' : 'Pro plans'}</Text><Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{Platform.OS === 'android' ? (language === 'es' ? 'Pago seguro y validado con Google Play.' : 'Secure payment validated with Google Play.') : (language === 'es' ? 'Pago seguro en la web.' : 'Secure web payment.')}</Text></View></View>

@@ -267,17 +267,21 @@ function ImmersiveCatalog({ language, onClose, onOpenDetails, places, visible }:
 
 function ImmersivePlacePage({ active, bottomInset, language, onOpenDetails, place, screenHeight, screenWidth }: { active: boolean; bottomInset: number; language: 'es' | 'en'; onOpenDetails: () => void; place: MapPlace; screenHeight: number; screenWidth: number }) {
   const photos = useMemo(() => [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))], [place.cover_image_url, place.photos]);
+  const [failedPhotos, setFailedPhotos] = useState<string[]>([]);
+  const availablePhotos = useMemo(() => photos.filter((url) => !failedPhotos.includes(url)), [failedPhotos, photos]);
   const photoList = useRef<FlatList<string>>(null);
   const [photoIndex, setPhotoIndex] = useState(0);
+  useEffect(() => { setFailedPhotos([]); setPhotoIndex(0); }, [place.id]);
+  useEffect(() => { if (photoIndex >= availablePhotos.length) setPhotoIndex(Math.max(0, availablePhotos.length - 1)); }, [availablePhotos.length, photoIndex]);
   const goToPhoto = (index: number) => {
-    const next = Math.max(0, Math.min(index, photos.length - 1));
+    const next = Math.max(0, Math.min(index, availablePhotos.length - 1));
     photoList.current?.scrollToIndex({ animated: true, index: next });
     setPhotoIndex(next);
   };
   return (
     <View className="items-center justify-center bg-black" style={{ height: screenHeight, width: screenWidth }}>
       <View className="overflow-hidden bg-ui-dark-surface" style={{ height: screenHeight, width: screenWidth }}>
-        {photos.length ? <FlatList data={photos} horizontal keyExtractor={(url) => url} onMomentumScrollEnd={(event) => setPhotoIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth))} pagingEnabled ref={photoList} renderItem={({ item }) => <Image cachePolicy="memory-disk" contentFit="cover" placeholder={destinationPlaceholder} placeholderContentFit="cover" priority={active ? 'high' : 'low'} source={{ uri: item }} style={{ height: screenHeight, width: screenWidth }} />} showsHorizontalScrollIndicator={false} /> : <View className="flex-1 items-center justify-center"><MaterialCommunityIcons name="image-off-outline" size={46} color="white" /></View>}
+        {availablePhotos.length ? <FlatList data={availablePhotos} horizontal keyExtractor={(url) => url} onMomentumScrollEnd={(event) => setPhotoIndex(Math.round(event.nativeEvent.contentOffset.x / screenWidth))} pagingEnabled ref={photoList} renderItem={({ item }) => <FullscreenDestinationImage active={active} language={language} onError={() => setFailedPhotos((failed) => failed.includes(item) ? failed : [...failed, item])} screenHeight={screenHeight} screenWidth={screenWidth} uri={item} />} showsHorizontalScrollIndicator={false} /> : <View className="flex-1 items-center justify-center"><MaterialCommunityIcons name="image-off-outline" size={46} color="white" /><Text className="mt-3 font-bold text-white/75">{language === 'es' ? 'Imagen no disponible' : 'Image unavailable'}</Text></View>}
         <LinearGradient colors={['transparent', 'rgba(0,0,0,0.18)', 'rgba(0,0,0,0.92)']} locations={[0.42, 0.62, 1]} pointerEvents="none" style={StyleSheet.absoluteFill} />
         <View className="absolute left-5 right-5" style={{ bottom: bottomInset + 32 }}>
           <Text className="text-xs font-black uppercase tracking-wider text-white/75">{place.province} · {categoryLabel(place.category, language)}</Text>
@@ -285,10 +289,18 @@ function ImmersivePlacePage({ active, bottomInset, language, onOpenDetails, plac
           <Text className="mt-2 text-sm leading-5 text-white/80" numberOfLines={3}>{destinationDescription(place, language)}</Text>
           <Pressable accessibilityRole="button" className="mt-4 min-h-11 self-end justify-center rounded-full bg-white/90 px-5" onPress={onOpenDetails}><Text className="font-black text-ui-text">{language === 'es' ? 'Ver sitio' : 'View place'}</Text></Pressable>
         </View>
-        {photos.length > 1 ? <View className="absolute left-5 top-16 flex-row items-center gap-1"><Pressable accessibilityLabel={language === 'es' ? 'Foto anterior' : 'Previous photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex === 0} onPress={() => goToPhoto(photoIndex - 1)}><MaterialCommunityIcons name="chevron-left" size={25} color="white" /></Pressable><Pressable accessibilityLabel={language === 'es' ? 'Foto siguiente' : 'Next photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex >= photos.length - 1} onPress={() => goToPhoto(photoIndex + 1)}><MaterialCommunityIcons name="chevron-right" size={25} color="white" /></Pressable><Text className="ml-1 text-xs font-black text-white">{photoIndex + 1}/{photos.length}</Text></View> : null}
+        {availablePhotos.length > 1 ? <View className="absolute left-5 top-16 flex-row items-center gap-1"><Pressable accessibilityLabel={language === 'es' ? 'Foto anterior' : 'Previous photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex === 0} onPress={() => goToPhoto(photoIndex - 1)}><MaterialCommunityIcons name="chevron-left" size={25} color="white" /></Pressable><Pressable accessibilityLabel={language === 'es' ? 'Foto siguiente' : 'Next photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex >= availablePhotos.length - 1} onPress={() => goToPhoto(photoIndex + 1)}><MaterialCommunityIcons name="chevron-right" size={25} color="white" /></Pressable><Text className="ml-1 text-xs font-black text-white">{photoIndex + 1}/{availablePhotos.length}</Text></View> : null}
       </View>
     </View>
   );
+}
+
+function FullscreenDestinationImage({ active, language, onError, screenHeight, screenWidth, uri }: { active: boolean; language: 'es' | 'en'; onError: () => void; screenHeight: number; screenWidth: number; uri: string }) {
+  const [loading, setLoading] = useState(true);
+  return <View style={{ height: screenHeight, width: screenWidth }}>
+    <Image cachePolicy="memory-disk" contentFit="cover" onError={onError} onLoad={() => setLoading(false)} placeholder={destinationPlaceholder} placeholderContentFit="cover" priority={active ? 'high' : 'low'} source={{ uri }} style={StyleSheet.absoluteFill} transition={160} />
+    {loading ? <View className="absolute inset-0 bg-ui-dark-surface"><FrogLoader accessibilityLabel={language === 'es' ? 'Cargando imagen' : 'Loading image'} branded size="large" /></View> : null}
+  </View>;
 }
 
 function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, route, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; route: RoadRoute | null; visitorType: 'tico' | 'foreigner' }) {
