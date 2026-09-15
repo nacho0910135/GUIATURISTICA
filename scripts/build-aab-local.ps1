@@ -32,7 +32,7 @@ $env:DESCUBRIENDO_KEY_ALIAS = $credentials.android.keystore.keyAlias
 $env:DESCUBRIENDO_KEY_PASSWORD = $credentials.android.keystore.keyPassword
 
 $appJsonPath = Join-Path $project "app.json"
-$appJsonText = Get-Content -LiteralPath $appJsonPath -Raw
+$appJsonText = Get-Content -LiteralPath $appJsonPath -Raw -Encoding UTF8
 $appConfig = $appJsonText | ConvertFrom-Json
 $versionCode = [int]$appConfig.expo.android.versionCode
 
@@ -52,12 +52,12 @@ if ($IncrementVersion) {
 }
 
 $manifestPath = Join-Path $project "android\app\src\main\AndroidManifest.xml"
-$manifestText = Get-Content -LiteralPath $manifestPath -Raw
+$manifestText = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8
 $manifestText = [regex]::Replace($manifestText, 'android:enableOnBackInvokedCallback="(?:true|false)"', 'android:enableOnBackInvokedCallback="true"', 1)
 [IO.File]::WriteAllText($manifestPath, $manifestText, [Text.UTF8Encoding]::new($false))
 
 $gradlePath = Join-Path $project "android\app\build.gradle"
-$gradleText = Get-Content -LiteralPath $gradlePath -Raw
+$gradleText = Get-Content -LiteralPath $gradlePath -Raw -Encoding UTF8
 $gradleText = [regex]::Replace($gradleText, 'versionCode\s+\d+', "versionCode $versionCode", 1)
 $releaseSigning = @'
     signingConfigs {
