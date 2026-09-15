@@ -19,6 +19,7 @@ import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 import { getRoadRoutes, type RoadRoute } from '@/lib/road-routing';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FrogLoader } from '@/components/frog-loader';
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
@@ -89,6 +90,7 @@ export default function ProvinceCatalogScreen() {
   const [activeSubcategoryId, setActiveSubcategoryId] = useState<string>();
   const [visiblePlaceCount, setVisiblePlaceCount] = useState(CATALOG_BATCH_SIZE);
   const [visiblePlaceIds, setVisiblePlaceIds] = useState<Set<string>>(() => new Set());
+  const [immersiveOpen, setImmersiveOpen] = useState(false);
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 });
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<MapPlace>[] }) => {
     setVisiblePlaceIds(new Set(viewableItems.filter((item) => item.isViewable).map((item) => item.item.id)));
@@ -188,6 +190,9 @@ export default function ProvinceCatalogScreen() {
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
           </Pressable>
           <View className="ml-4 flex-1"><Text className="text-[23px] font-black leading-[29px] text-ui-text dark:text-ui-dark-text">{scopeTitle}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{categoryName ? (language === 'es' ? 'Todo Costa Rica' : 'Across Costa Rica') : (language === 'es' ? 'Lugares para descubrir' : 'Places to discover')}</Text></View>
+          <Pressable accessibilityLabel={language === 'es' ? 'Ver catálogo a pantalla completa' : 'View full-screen catalog'} accessibilityRole="button" className="mr-2 h-11 w-11 items-center justify-center rounded-full bg-ui-primary dark:bg-ui-dark-primary" disabled={!displayedPlaces.length} onPress={() => setImmersiveOpen(true)}>
+            <MaterialCommunityIcons name="fullscreen" size={23} color="white" />
+          </Pressable>
           <View className="flex-row overflow-hidden rounded-xl border border-ui-border dark:border-white/30">{(['tico', 'foreigner'] as const).map((item) => <Pressable accessibilityLabel={item === 'tico' ? 'Modo Tico' : 'Foreigner mode'} accessibilityRole="button" className={visitorType === item ? 'bg-white px-3 py-2' : 'px-3 py-2'} key={item} onPress={() => setVisitorType(item)}><Text className={visitorType === item ? 'text-xs font-black text-[#002b7f]' : 'text-xs font-bold text-ui-text dark:text-ui-dark-text'}>{item === 'tico' ? 'Tico' : 'Foreigner'}</Text></Pressable>)}</View>
         </View>
       </View>
@@ -207,6 +212,73 @@ export default function ProvinceCatalogScreen() {
         viewabilityConfig={viewabilityConfig.current}
       />
       <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} route={selected ? roadRoutes.data?.get(selected.id) ?? null : null} />
+      <ImmersiveCatalog language={language} onClose={() => setImmersiveOpen(false)} onOpenDetails={(place) => { setImmersiveOpen(false); setSelected(place); }} places={displayedPlaces} visible={immersiveOpen} />
+    </View>
+  );
+}
+
+function ImmersiveCatalog({ language, onClose, onOpenDetails, places, visible }: { language: 'es' | 'en'; onClose: () => void; onOpenDetails: (place: MapPlace) => void; places: MapPlace[]; visible: boolean }) {
+  const { height, width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const list = useRef<FlatList<MapPlace>>(null);
+  const [siteIndex, setSiteIndex] = useState(0);
+  const screenHeight = height - insets.top - insets.bottom;
+  const frameWidth = Math.min(width, screenHeight * 9 / 16);
+  const frameHeight = frameWidth * 16 / 9;
+  useEffect(() => { if (visible) setSiteIndex(0); }, [visible]);
+  const goToSite = (index: number) => {
+    const next = Math.max(0, Math.min(index, places.length - 1));
+    list.current?.scrollToIndex({ animated: true, index: next });
+    setSiteIndex(next);
+  };
+  return (
+    <Modal animationType="fade" onRequestClose={onClose} presentationStyle="fullScreen" supportedOrientations={['portrait']} visible={visible}>
+      <SafeAreaView className="flex-1 bg-black" edges={['top', 'bottom']}>
+        <FlatList
+          data={places}
+          decelerationRate="fast"
+          keyExtractor={(item) => item.id}
+          onMomentumScrollEnd={(event) => setSiteIndex(Math.round(event.nativeEvent.contentOffset.y / screenHeight))}
+          pagingEnabled
+          ref={list}
+          renderItem={({ item }) => <ImmersivePlacePage frameHeight={frameHeight} frameWidth={frameWidth} language={language} onOpenDetails={() => onOpenDetails(item)} place={item} screenHeight={screenHeight} screenWidth={width} />}
+          showsVerticalScrollIndicator={false}
+        />
+        <View className="absolute left-4 right-4 top-4 flex-row items-center justify-between">
+          <Pressable accessibilityLabel={language === 'es' ? 'Cerrar pantalla completa' : 'Close full screen'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/65" onPress={onClose}><MaterialCommunityIcons name="close" size={25} color="white" /></Pressable>
+          <Text className="rounded-full bg-black/65 px-3 py-2 text-xs font-black text-white">{siteIndex + 1} / {places.length}</Text>
+        </View>
+        <View className="absolute right-4 top-1/2 gap-2">
+          <Pressable accessibilityLabel={language === 'es' ? 'Sitio anterior' : 'Previous place'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/65 disabled:opacity-30" disabled={siteIndex === 0} onPress={() => goToSite(siteIndex - 1)}><MaterialCommunityIcons name="chevron-up" size={27} color="white" /></Pressable>
+          <Pressable accessibilityLabel={language === 'es' ? 'Sitio siguiente' : 'Next place'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/65 disabled:opacity-30" disabled={siteIndex >= places.length - 1} onPress={() => goToSite(siteIndex + 1)}><MaterialCommunityIcons name="chevron-down" size={27} color="white" /></Pressable>
+        </View>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+function ImmersivePlacePage({ frameHeight, frameWidth, language, onOpenDetails, place, screenHeight, screenWidth }: { frameHeight: number; frameWidth: number; language: 'es' | 'en'; onOpenDetails: () => void; place: MapPlace; screenHeight: number; screenWidth: number }) {
+  const photos = useMemo(() => [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))], [place.cover_image_url, place.photos]);
+  const photoList = useRef<FlatList<string>>(null);
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const goToPhoto = (index: number) => {
+    const next = Math.max(0, Math.min(index, photos.length - 1));
+    photoList.current?.scrollToIndex({ animated: true, index: next });
+    setPhotoIndex(next);
+  };
+  return (
+    <View className="items-center justify-center bg-black" style={{ height: screenHeight, width: screenWidth }}>
+      <View className="overflow-hidden bg-ui-dark-surface" style={{ height: frameHeight, width: frameWidth }}>
+        {photos.length ? <FlatList data={photos} horizontal keyExtractor={(url) => url} onMomentumScrollEnd={(event) => setPhotoIndex(Math.round(event.nativeEvent.contentOffset.x / frameWidth))} pagingEnabled ref={photoList} renderItem={({ item }) => <Image cachePolicy="memory-disk" contentFit="cover" placeholder={destinationPlaceholder} source={{ uri: item }} style={{ height: frameHeight, width: frameWidth }} />} showsHorizontalScrollIndicator={false} /> : <View className="flex-1 items-center justify-center"><MaterialCommunityIcons name="image-off-outline" size={46} color="white" /></View>}
+        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.18)', 'rgba(0,0,0,0.92)']} locations={[0.42, 0.62, 1]} pointerEvents="none" style={StyleSheet.absoluteFill} />
+        <View className="absolute bottom-8 left-5 right-5">
+          <Text className="text-xs font-black uppercase tracking-wider text-white/75">{place.province} · {categoryLabel(place.category, language)}</Text>
+          <Text className="mt-2 text-3xl font-black leading-9 text-white">{place.name}</Text>
+          <Text className="mt-2 text-sm leading-5 text-white/80" numberOfLines={3}>{destinationDescription(place, language)}</Text>
+          <Pressable accessibilityRole="button" className="mt-4 min-h-11 self-end justify-center rounded-full bg-white/90 px-5" onPress={onOpenDetails}><Text className="font-black text-ui-text">{language === 'es' ? 'Ver sitio' : 'View place'}</Text></Pressable>
+        </View>
+        {photos.length > 1 ? <View className="absolute left-5 top-16 flex-row items-center gap-1"><Pressable accessibilityLabel={language === 'es' ? 'Foto anterior' : 'Previous photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex === 0} onPress={() => goToPhoto(photoIndex - 1)}><MaterialCommunityIcons name="chevron-left" size={25} color="white" /></Pressable><Pressable accessibilityLabel={language === 'es' ? 'Foto siguiente' : 'Next photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex >= photos.length - 1} onPress={() => goToPhoto(photoIndex + 1)}><MaterialCommunityIcons name="chevron-right" size={25} color="white" /></Pressable><Text className="ml-1 text-xs font-black text-white">{photoIndex + 1}/{photos.length}</Text></View> : null}
+      </View>
     </View>
   );
 }
