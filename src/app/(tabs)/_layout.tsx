@@ -41,7 +41,6 @@ export default function TabsLayout() {
   useEffect(() => {
     if (Platform.OS !== 'android' || segments[0] !== '(tabs)') return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (router.canGoBack()) return false;
       if (segments[1] !== 'explore') router.replace('/(tabs)/explore');
       return true;
     });

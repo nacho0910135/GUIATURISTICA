@@ -113,6 +113,7 @@
     "check:compass": "node scripts/check-compass.mjs",
     "check:performance": "node scripts/check-performance.mjs",
     "check:navigation": "node scripts/check-android-navigation.mjs",
+    "check:forum-sharing": "node scripts/check-forum-place-sharing.mjs",
     "build:android:aab": "npx eas-cli@latest build --platform android --profile production",
     "build:android:apk": "npx eas-cli@latest build --platform android --profile preview",
     "build:ios:ipa": "npx eas-cli@latest build --platform ios --profile production",
