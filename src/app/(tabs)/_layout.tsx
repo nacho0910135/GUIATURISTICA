@@ -1,7 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Tabs, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
-import { BackHandler, Platform, Text, View, type ColorValue } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
@@ -33,19 +32,9 @@ const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }
 );
 
 export default function TabsLayout() {
-  const router = useRouter();
-  const segments = useSegments();
   const { language, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
-  useEffect(() => {
-    if (Platform.OS !== 'android' || segments[0] !== '(tabs)') return;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (segments[1] !== 'explore') router.replace('/(tabs)/explore');
-      return true;
-    });
-    return () => subscription.remove();
-  }, [router, segments]);
   return (
     <Tabs
       backBehavior="history"

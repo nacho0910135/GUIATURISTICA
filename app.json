@@ -12,12 +12,12 @@
       "package": "com.descubriendo.cr",
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 53,
+      "versionCode": 54,
       "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW", "android.permission.ACTIVITY_RECOGNITION", "android.permission.USE_BIOMETRIC", "android.permission.USE_FINGERPRINT", "com.google.android.gms.permission.AD_ID", "android.permission.ACCESS_ADSERVICES_AD_ID", "android.permission.ACCESS_ADSERVICES_ATTRIBUTION"],
       "permissions": ["CAMERA", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "RECORD_AUDIO"],
       "intentFilters": [{ "action": "VIEW", "data": [{ "scheme": "descubriendocr" }], "category": ["BROWSABLE", "DEFAULT"] }],
       "adaptiveIcon": { "backgroundColor": "#053326", "foregroundImage": "./assets/images/android-icon-foreground.png", "monochromeImage": "./assets/images/android-icon-monochrome.png" },
-      "predictiveBackGestureEnabled": true
+      "predictiveBackGestureEnabled": false
     },
     "web": { "bundler": "metro", "output": "static", "favicon": "./assets/images/favicon.png" },
     "plugins": [

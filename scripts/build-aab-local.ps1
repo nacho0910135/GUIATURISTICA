@@ -58,7 +58,7 @@ if ($IncrementVersion) {
 
 $manifestPath = Join-Path $project "android\app\src\main\AndroidManifest.xml"
 $manifestText = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8
-$manifestText = [regex]::Replace($manifestText, 'android:enableOnBackInvokedCallback="(?:true|false)"', 'android:enableOnBackInvokedCallback="true"', 1)
+$manifestText = [regex]::Replace($manifestText, 'android:enableOnBackInvokedCallback="(?:true|false)"', 'android:enableOnBackInvokedCallback="false"', 1)
 [IO.File]::WriteAllText($manifestPath, $manifestText, [Text.UTF8Encoding]::new($false))
 
 $gradlePath = Join-Path $project "android\app\build.gradle"

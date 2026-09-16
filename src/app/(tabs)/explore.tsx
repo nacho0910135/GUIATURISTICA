@@ -109,8 +109,7 @@ export default function ExploreScreen() {
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (!proposalOpen && !search && !coordinates) return false;
-        resetExplore();
+        if (proposalOpen || search || coordinates) resetExplore();
         return true;
       });
       return () => subscription.remove();
