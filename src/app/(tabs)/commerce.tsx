@@ -40,7 +40,6 @@ import {
   type CampaignOfferId,
 } from "@/lib/billing";
 import { FrogLoader } from "@/components/frog-loader";
-import { PaymentLoadingOverlay, waitForPaymentLoader } from "@/components/payment-loading-overlay";
 import {
   activateAdminTestCampaign,
   deleteBusinessPhoto,
@@ -1411,6 +1410,7 @@ function CampaignOptions({
   onCancel,
   onBannerUrlChange,
   onBuy,
+  storeLoading,
   storePrices,
 }: {
   activeCampaigns: {
@@ -1425,6 +1425,7 @@ function CampaignOptions({
   onCancel: (offerId: CampaignOfferId) => void;
   onBannerUrlChange: (value: string) => void;
   onBuy: (offerId: CampaignOfferId, banner?: PreparedCampaignBanner) => void;
+  storeLoading: boolean;
   storePrices: Partial<Record<CampaignOfferId, string>>;
 }) {
   const { isDark } = useApp();
@@ -1520,6 +1521,8 @@ function CampaignOptions({
           ? "Son adicionales a tu plan actual. Cada periodo dura 30 días."
           : "These are separate from your current plan. Each period lasts 30 days."}
       </Text>
+      {storeLoading ? <View className="min-h-48 items-center justify-center"><FrogLoader accessibilityLabel={language === "es" ? "Cargando opciones de pago" : "Loading payment options"} branded size="large" /></View> : null}
+      {!storeLoading ? <>
       {options.map((option) => {
         const offer = campaignOffers[option.offerId];
         const active = activeCampaigns.find(
@@ -1753,6 +1756,7 @@ function CampaignOptions({
           </View>
         );
       })}
+      </> : null}
     </View>
   );
 }
@@ -2215,7 +2219,6 @@ export default function CommerceScreen() {
       }
     }
     setCampaignBusy(`${service.id}:${offerId}`);
-    await waitForPaymentLoader();
     let uploadedBanner:
       Awaited<ReturnType<typeof uploadCampaignBanner>> | undefined;
     try {
@@ -2859,7 +2862,6 @@ export default function CommerceScreen() {
 
   return (
     <View className="flex-1 bg-[#F8F6F0] dark:bg-ui-dark-background">
-      <PaymentLoadingOverlay language={language} visible={Boolean(campaignBusy)} />
       <FlatList
         ref={scrollRef}
         data={catalog}
@@ -3210,6 +3212,7 @@ export default function CommerceScreen() {
                               : undefined
                           }
                           language={language}
+                          storeLoading={Platform.OS === "android" && (!playCampaignBilling.connected || !playCampaignBilling.productsLoaded)}
                           storePrices={playCampaignBilling.storePrices}
                           onCancel={(offerId) => {
                             void openGooglePlayCampaignManagement(

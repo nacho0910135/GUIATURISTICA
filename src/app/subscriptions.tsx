@@ -17,7 +17,6 @@ import { useAppTheme } from '@/theme/theme-provider';
 import { trackConversion } from '@/lib/conversion-analytics';
 
 import { FrogLoader } from '@/components/frog-loader';
-import { PaymentLoadingOverlay, waitForPaymentLoader } from '@/components/payment-loading-overlay';
 const universalOffers: BillingOfferId[] = ['universal_monthly', 'universal_annual', 'visitor_pass_30d'];
 const businessOffers: BillingOfferId[] = ['business_monthly'];
 const checkoutArtwork = [
@@ -81,7 +80,6 @@ export default function SubscriptionsScreen() {
     checkoutInProgress.current = true;
     void trackConversion('checkout_started', { offer_id: offerId });
     setBusyOffer(offerId);
-    await waitForPaymentLoader();
     try {
       if (Platform.OS === 'android') {
         await playBilling.purchase(offerId, offer.business ? serviceId : undefined);
@@ -127,9 +125,9 @@ export default function SubscriptionsScreen() {
         ? (language === 'es' ? 'Tu período gratuito terminó' : 'Your free trial has ended')
         : (language === 'es' ? '15 días gratis con toda la app' : '15 free days with the complete app')
       : (language === 'es' ? 'Consultá los planes disponibles' : 'See available plans');
-  if (!artworkReady) return <View className="flex-1 bg-ui-background dark:bg-ui-dark-background"><FrogLoader accessibilityLabel={language === 'es' ? 'Cargando pasarela de pago' : 'Loading payment gateway'} branded size="large" /></View>;
+  if (!artworkReady || (Platform.OS === 'android' && (!playBilling.connected || !playBilling.productsLoaded))) return <View className="flex-1 bg-ui-background dark:bg-ui-dark-background"><FrogLoader accessibilityLabel={language === 'es' ? 'Cargando opciones de pago' : 'Loading payment options'} branded size="large" /></View>;
 
-  return <><PaymentLoadingOverlay language={language} visible={Boolean(busyOffer)} /><ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(bottom, 16), paddingHorizontal: 16, paddingTop: top + 12 }}>
+  return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(bottom, 16), paddingHorizontal: 16, paddingTop: top + 12 }}>
     <View className="mx-auto w-full max-w-2xl flex-1">
       <View className="flex-row items-center"><Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-ui-muted active:opacity-70 dark:bg-ui-dark-muted" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={23} color="#087443" /></Pressable><View className="min-w-0 flex-1"><Text className="text-3xl font-black tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Planes Pro' : 'Pro plans'}</Text><Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{Platform.OS === 'android' ? (language === 'es' ? 'Pago seguro y validado con Google Play.' : 'Secure payment validated with Google Play.') : (language === 'es' ? 'Pago seguro en la web.' : 'Secure web payment.')}</Text></View></View>
       {businessIntent ? <View accessibilityRole="alert" className="mt-3 rounded-2xl border border-ui-primary bg-ui-primary-soft p-3 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Plan para comercio o servicio seleccionado' : 'Business or service plan selected'}</Text><Text className="mt-1 text-sm leading-5 text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Emití y confirmá el pago. Después se habilitarán el registro y el Panel de propietarios.' : 'Complete and confirm payment. Registration and the Owner dashboard will then be unlocked.'}</Text></View> : <View className="mt-3 rounded-2xl bg-ui-primary-soft p-3 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{trialHeadline}</Text><Text className="mt-0.5 text-xs text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Elegí el plan que mejor se adapte a tu viaje.' : 'Choose the plan that best fits your trip.'}</Text></View>}
@@ -141,7 +139,7 @@ export default function SubscriptionsScreen() {
       {subscriptions.isLoading ? <FrogLoader className="mt-5" color="#087443" /> : null}
       {subscriptions.isError ? <View accessibilityRole="alert" className="mt-5 items-center rounded-2xl border border-ui-danger bg-red-50 p-4 dark:bg-red-950"><Text className="text-center font-bold text-ui-danger dark:text-ui-dark-danger">{language === 'es' ? 'No pudimos cargar tus suscripciones.' : 'We could not load your subscriptions.'}</Text><Pressable accessibilityRole="button" className="mt-3 rounded-control bg-ui-primary px-5 py-3" onPress={() => void subscriptions.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : null}
     </View>
-  </ScrollView></>;
+  </ScrollView>;
 }
 
 function PlanCard({ active, adminAccess = false, busy, language, offerId, onPress, storeAvailable = true, storeLoading = false, storePrice }: { active: boolean; adminAccess?: boolean; busy: boolean; language: 'es' | 'en'; offerId: BillingOfferId; onPress: () => void; storeAvailable?: boolean; storeLoading?: boolean; storePrice?: string }) {
