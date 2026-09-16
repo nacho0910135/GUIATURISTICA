@@ -45,7 +45,8 @@ assert.match(firebase, /"analytics_auto_collection_enabled": false/);
 assert.match(firebase, /"google_analytics_adid_collection_enabled": false/);
 assert.match(firebase, /"crashlytics_auto_collection_enabled": false/);
 assert.match(firebase, /"crashlytics_debug_enabled": false/);
-assert.match(appCheck, /getToken\(initializeFirebaseAppCheck\(\), false\)/);
+assert.match(appCheck, /getToken\(verifiedAppCheck, false\)/);
+assert.match(appCheck, /getAI\(getApp\(\), \{ appCheck: verifiedAppCheck, backend: new GoogleAIBackend\(\) \}\)/);
 assert.doesNotMatch(appCheck, /App Check no pudo inicializarse/);
 
 console.log('Audit remediations are guarded.');

@@ -17,6 +17,7 @@ export const queryClient = new QueryClient({
     mutations: { networkMode: 'offlineFirst', retry: 0, throwOnError: false },
   },
 });
+queryClient.setQueryDefaults(['my-app-access'], { refetchInterval: 60_000 });
 
 const CACHE_KEY = 'query-cache-v1';
 const CACHE_RESTORE_TIMEOUT_MS = 2_000;
