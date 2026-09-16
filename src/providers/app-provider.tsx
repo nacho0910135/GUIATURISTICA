@@ -37,7 +37,6 @@ type AppContextValue = {
   isDark: boolean;
   t: (key: CopyKey) => string;
   setVisitorType: (value: VisitorType) => void;
-  setLanguage: (value: Language) => void;
   formatPrice: (crcAmount: number) => string;
   requireAuth: (intent: string) => boolean;
   isAdmin: boolean;
@@ -62,8 +61,12 @@ function getOAuthRedirectUri() {
 
 export function AppProvider({ children }: PropsWithChildren) {
   const { mode } = useAppTheme();
-  const [visitorType, setVisitorType] = useState<VisitorType>('tico');
+  const [visitorType, setVisitorTypeState] = useState<VisitorType>('tico');
   const [language, setLanguage] = useState<Language>('es');
+  const setVisitorType = useCallback((value: VisitorType) => {
+    setVisitorTypeState(value);
+    setLanguage(value === 'tico' ? 'es' : 'en');
+  }, []);
   const currency: Currency = visitorType === 'tico' ? 'CRC' : 'USD';
   const [exchangeRate, setExchangeRate] = useState(FALLBACK_USD_CRC);
   const [exchangeRateReady, setExchangeRateReady] = useState(false);
@@ -374,8 +377,8 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<AppContextValue>(() => ({
     language, currency, visitorType, exchangeRate, exchangeRateReady, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, isDark: mode === 'dark', t,
-    setVisitorType, setLanguage, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut,
-  }), [language, currency, visitorType, exchangeRate, exchangeRateReady, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, mode, t, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
+    setVisitorType, setAvatarUrl, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut,
+  }), [language, currency, visitorType, exchangeRate, exchangeRateReady, avatarUrl, session, authReady, userLocation, locating, locationError, refreshUserLocation, mode, t, setVisitorType, formatPrice, requireAuth, isAdmin, isAuthenticated, signIn, signUp, signInWithGoogle, signOut]);
 
   return <AppContext.Provider value={value}>{authReady ? children : <View className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text accessibilityRole="alert" className="text-center text-xl font-black text-ui-text dark:text-ui-dark-text">{authRestoreError ? (language === 'es' ? 'No pudimos restaurar tu sesión' : 'We could not restore your session') : (language === 'es' ? 'Restaurando tu sesión…' : 'Restoring your session…')}</Text>{authRestoreError ? <><Text className="mt-2 text-center text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Revisá tu conexión o continuá sin iniciar sesión.' : 'Check your connection or continue signed out.'}</Text><Pressable accessibilityRole="button" className="mt-5 rounded-control bg-ui-primary px-6 py-4" onPress={() => void restoreSession().catch(() => setAuthRestoreError(true))}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable><Pressable accessibilityRole="button" className="mt-3 px-6 py-3" onPress={() => { setUserSession(null); setAuthReady(true); }}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Continuar sin sesión' : 'Continue signed out'}</Text></Pressable></> : null}</View>}</AppContext.Provider>;
 }

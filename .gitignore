@@ -24,6 +24,7 @@ expo-env.d.ts
 *.mobileprovision
 /credentials.json
 /credentials/
+/.signing.local.ps1
 
 # Metro
 .metro-health-check*

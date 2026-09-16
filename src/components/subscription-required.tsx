@@ -10,7 +10,7 @@ import { useApp } from '@/providers/app-provider';
 export function usePaidAccess() {
   const { session } = useApp();
   const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session), staleTime: 60_000 });
-  return { ...access, hasPaidAccess: access.data?.hasPaidAccess === true };
+  return { ...access, hasPaidAccess: access.data?.hasAccess === true };
 }
 
 export function SubscriptionRequired({ compact = false }: { compact?: boolean }) {

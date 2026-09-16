@@ -3,6 +3,7 @@ param([switch]$IncrementVersion)
 $ErrorActionPreference = "Stop"
 $project = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $project
+. (Join-Path $project ".signing.local.ps1")
 
 $jdkCandidates = @(
     $env:JAVA_HOME,
@@ -20,7 +21,7 @@ $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
 $env:NODE_ENV = "production"
 
 $keystore = $env:DESCUBRIENDO_KEYSTORE_PATH
-if (-not (Test-Path $keystore)) { throw "No se encontró el keystore: $keystore" }
+if (-not $keystore -or -not (Test-Path -LiteralPath $keystore)) { throw "Falta DESCUBRIENDO_KEYSTORE_PATH o no apunta a un archivo existente." }
 $requiredSigningVariables = 'DESCUBRIENDO_STORE_PASSWORD', 'DESCUBRIENDO_KEY_ALIAS', 'DESCUBRIENDO_KEY_PASSWORD'
 foreach ($name in $requiredSigningVariables) {
     if (-not [Environment]::GetEnvironmentVariable($name)) { throw "Falta la variable de firma $name." }

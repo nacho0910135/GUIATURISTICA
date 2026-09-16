@@ -216,12 +216,12 @@ export default function ProvinceCatalogScreen() {
         viewabilityConfig={viewabilityConfig.current}
       />
       <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} route={selected ? roadRoutes.data?.get(selected.id) ?? null : null} />
-      <ImmersiveCatalog language={language} onClose={() => setImmersiveOpen(false)} onOpenDetails={(place) => { setImmersiveOpen(false); setSelected(place); }} places={displayedPlaces} visible={immersiveOpen} />
+      <ImmersiveCatalog formatPrice={formatPrice} language={language} onClose={() => setImmersiveOpen(false)} onOpenDetails={(place) => { setImmersiveOpen(false); setSelected(place); }} places={displayedPlaces} visible={immersiveOpen} visitorType={visitorType} />
     </View>
   );
 }
 
-function ImmersiveCatalog({ language, onClose, onOpenDetails, places, visible }: { language: 'es' | 'en'; onClose: () => void; onOpenDetails: (place: MapPlace) => void; places: MapPlace[]; visible: boolean }) {
+function ImmersiveCatalog({ formatPrice, language, onClose, onOpenDetails, places, visible, visitorType }: { formatPrice: (value: number) => string; language: 'es' | 'en'; onClose: () => void; onOpenDetails: (place: MapPlace) => void; places: MapPlace[]; visible: boolean; visitorType: 'tico' | 'foreigner' }) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const list = useRef<FlatList<MapPlace>>(null);
@@ -251,7 +251,7 @@ function ImmersiveCatalog({ language, onClose, onOpenDetails, places, visible }:
           onMomentumScrollEnd={(event) => setSiteIndex(Math.round(event.nativeEvent.contentOffset.y / screenHeight))}
           pagingEnabled
           ref={list}
-          renderItem={({ index, item }) => <ImmersivePlacePage active={index === siteIndex} bottomInset={insets.bottom} language={language} onOpenDetails={() => onOpenDetails(item)} place={item} screenHeight={screenHeight} screenWidth={width} />}
+          renderItem={({ index, item }) => <ImmersivePlacePage active={visible && index === siteIndex} bottomInset={insets.bottom} formatPrice={formatPrice} language={language} onOpenDetails={() => onOpenDetails(item)} place={item} screenHeight={screenHeight} screenWidth={width} visitorType={visitorType} />}
           extraData={siteIndex}
           showsVerticalScrollIndicator={false}
         />
@@ -268,7 +268,12 @@ function ImmersiveCatalog({ language, onClose, onOpenDetails, places, visible }:
   );
 }
 
-function ImmersivePlacePage({ active, bottomInset, language, onOpenDetails, place, screenHeight, screenWidth }: { active: boolean; bottomInset: number; language: 'es' | 'en'; onOpenDetails: () => void; place: MapPlace; screenHeight: number; screenWidth: number }) {
+function ImmersivePlacePage({ active, bottomInset, formatPrice, language, onOpenDetails, place, screenHeight, screenWidth, visitorType }: { active: boolean; bottomInset: number; formatPrice: (value: number) => string; language: 'es' | 'en'; onOpenDetails: () => void; place: MapPlace; screenHeight: number; screenWidth: number; visitorType: 'tico' | 'foreigner' }) {
+  const weather = useQuery({ queryKey: ['weather', 'destination', place.id, language], queryFn: () => getWeather(place, language), enabled: active, staleTime: WEATHER_STALE_TIME });
+  const weatherIcon = weather.data ? weatherIcons[weather.data.icon.slice(0, 2) as keyof typeof weatherIcons] ?? 'weather-cloudy' : null;
+  const price = visitorType === 'tico'
+    ? (place.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : place.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(place.price_national_crc))
+    : (place.price_foreigner_usd == null ? 'Check price' : place.price_foreigner_usd === 0 ? 'Free' : `$${place.price_foreigner_usd.toFixed(2)}`);
   const photos = useMemo(() => [...new Set([place.cover_image_url, ...place.photos].filter((url): url is string => Boolean(url)))], [place.cover_image_url, place.photos]);
   const [failedPhotos, setFailedPhotos] = useState<string[]>([]);
   const availablePhotos = useMemo(() => photos.filter((url) => !failedPhotos.includes(url)), [failedPhotos, photos]);
@@ -290,6 +295,10 @@ function ImmersivePlacePage({ active, bottomInset, language, onOpenDetails, plac
           <Text className="text-xs font-black uppercase tracking-wider text-white/75">{place.province} · {categoryLabel(place.category, language)}</Text>
           <Text className="mt-2 text-3xl font-black leading-9 text-white">{place.name}</Text>
           <Text className="mt-2 text-sm leading-5 text-white/80" numberOfLines={3}>{destinationDescription(place, language)}</Text>
+          <View className="mt-3 flex-row flex-wrap items-center gap-2">
+            {weather.data && weatherIcon ? <View className="flex-row items-center rounded-full bg-black/55 px-3 py-2"><MaterialCommunityIcons accessibilityElementsHidden name={weatherIcon} size={17} color="white" /><Text className="ml-1.5 text-xs font-black capitalize text-white">{weather.data.temperature}°{weather.data.temperatureUnit} · {weather.data.description}</Text></View> : null}
+            <View className="rounded-full bg-black/55 px-3 py-2"><Text className="text-xs font-black text-white">{price}</Text></View>
+          </View>
           <Pressable accessibilityRole="button" className="mt-4 min-h-11 self-end justify-center rounded-full bg-white/90 px-5" onPress={onOpenDetails}><Text className="font-black text-ui-text">{language === 'es' ? 'Ver sitio' : 'View place'}</Text></Pressable>
         </View>
         {availablePhotos.length > 1 ? <View className="absolute left-5 top-16 flex-row items-center gap-1"><Pressable accessibilityLabel={language === 'es' ? 'Foto anterior' : 'Previous photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex === 0} onPress={() => goToPhoto(photoIndex - 1)}><MaterialCommunityIcons name="chevron-left" size={25} color="white" /></Pressable><Pressable accessibilityLabel={language === 'es' ? 'Foto siguiente' : 'Next photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex >= availablePhotos.length - 1} onPress={() => goToPhoto(photoIndex + 1)}><MaterialCommunityIcons name="chevron-right" size={25} color="white" /></Pressable><Text className="ml-1 text-xs font-black text-white">{photoIndex + 1}/{availablePhotos.length}</Text></View> : null}
