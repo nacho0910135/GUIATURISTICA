@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { roadRouteLabel } from '@/lib/location-quality';
+import { distanceKm, roadRouteLabel } from '@/lib/location-quality';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { FlatList, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, useWindowDimensions, View, type GestureResponderEvent, type ViewToken } from 'react-native';
@@ -21,7 +21,7 @@ import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 import { askDestinationAI, getDestinationAIConfig } from '../../lib/destination-ai';
 import { getMyAccessStatus } from '@/lib/billing';
-import { getRoadRoutes, type RoadRoute } from '@/lib/road-routing';
+import { getRoadRoute, routeWindow, type RoadRoute } from '@/lib/road-routing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FrogLoader } from '@/components/frog-loader';
@@ -76,7 +76,7 @@ function tourismRegion(place: MapPlace) {
 }
 
 
-const CATALOG_BATCH_SIZE = 5;
+const CATALOG_BATCH_SIZE = 4;
 const IMMERSIVE_PREFETCH_RADIUS = 3;
 const DESTINATION_CARD_HEIGHT = 346;
 const DESTINATION_INFO_HEIGHT = 170;
@@ -94,10 +94,19 @@ export default function ProvinceCatalogScreen() {
   const [activeSubcategoryId, setActiveSubcategoryId] = useState<string>();
   const [visiblePlaceCount, setVisiblePlaceCount] = useState(CATALOG_BATCH_SIZE);
   const [visiblePlaceIds, setVisiblePlaceIds] = useState<Set<string>>(() => new Set());
+  const [firstVisibleIndex, setFirstVisibleIndex] = useState(0);
+  const [roadRoutes, setRoadRoutes] = useState(() => new Map<string, RoadRoute>());
+  const [finishedRoutes, setFinishedRoutes] = useState(() => new Set<string>());
+  const [routeOrigin, setRouteOrigin] = useState(sessionLocation);
+  const attemptedRoutes = useRef(new Set<string>());
+  const routeWindowGeneration = useRef(0);
+  const catalogMounted = useRef(true);
   const [immersiveOpen, setImmersiveOpen] = useState(false);
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 });
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<MapPlace>[] }) => {
-    setVisiblePlaceIds(new Set(viewableItems.filter((item) => item.isViewable).map((item) => item.item.id)));
+    const visible = viewableItems.filter((item) => item.isViewable);
+    setVisiblePlaceIds(new Set(visible.map((item) => item.item.id)));
+    if (visible.length) setFirstVisibleIndex(Math.min(...visible.map((item) => item.index ?? 0)));
   });
   const isCommunitySubmission = communityParam === '1';
   const directDestination = directParam === '1';
@@ -144,15 +153,8 @@ export default function ProvinceCatalogScreen() {
     if (match) setSelected(match);
   }, [destinationId, places.data]);
   useEffect(() => { setActiveSubcategoryId(undefined); }, [categoryId]);
-  const roadRoutes = useQuery({
-    queryKey: ['road-distances', userLocation?.latitude, userLocation?.longitude, (places.data ?? []).map(({ id }) => id).join(',')],
-    queryFn: () => getRoadRoutes(userLocation!, places.data ?? []),
-    enabled: Boolean(userLocation && places.data?.length),
-    staleTime: 10 * 60 * 1000,
-  });
-  const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => userLocation
-    ? (roadRoutes.data?.get(a.id)?.distanceKm ?? Infinity) - (roadRoutes.data?.get(b.id)?.distanceKm ?? Infinity)
-    : 0), [places.data, roadRoutes.data, userLocation]);
+  useEffect(() => { if (!routeOrigin && userLocation) setRouteOrigin(userLocation); }, [routeOrigin, userLocation]);
+  const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => routeOrigin ? distanceKm(routeOrigin, a) - distanceKm(routeOrigin, b) : 0), [places.data, routeOrigin]);
   const visibleCategorySubcategories = useMemo(
     () => categorySubcategories.filter((subcategory) => sortedPlaces.some((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, subcategory.allowed_targets ?? []))),
     [categorySubcategories, sortedPlaces],
@@ -161,12 +163,31 @@ export default function ProvinceCatalogScreen() {
   const subcategoryPlaces = useMemo(() => !activeSubcategory ? sortedPlaces : sortedPlaces.filter((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, activeSubcategory.allowed_targets ?? [])), [activeSubcategory, sortedPlaces]);
   const displayedPlaces = subcategoryPlaces;
   const visiblePlaces = useMemo(() => displayedPlaces.slice(0, visiblePlaceCount), [displayedPlaces, visiblePlaceCount]);
+  const routeTargetIds = useMemo(() => new Set(routeWindow(displayedPlaces, firstVisibleIndex).map((place) => place.id)), [displayedPlaces, firstVisibleIndex]);
   const loadNextPlaces = useCallback(() => {
     setVisiblePlaceCount((current) => Math.min(current + CATALOG_BATCH_SIZE, displayedPlaces.length));
   }, [displayedPlaces.length]);
   useEffect(() => {
     setVisiblePlaceCount(CATALOG_BATCH_SIZE);
+    setFirstVisibleIndex(0);
   }, [activeSubcategoryId, scopeKey]);
+  useEffect(() => () => { catalogMounted.current = false; }, []);
+  useEffect(() => {
+    if (!routeOrigin) return;
+    const generation = ++routeWindowGeneration.current;
+    const targets = selected ? [selected, ...routeWindow(displayedPlaces, firstVisibleIndex).filter((place) => place.id !== selected.id)] : routeWindow(displayedPlaces, firstVisibleIndex);
+    void (async () => {
+      for (const place of targets) {
+        if (attemptedRoutes.current.has(place.id)) continue;
+        attemptedRoutes.current.add(place.id);
+        const route = await getRoadRoute(routeOrigin, place);
+        if (!catalogMounted.current) return;
+        if (route) setRoadRoutes((current) => new Map(current).set(place.id, route));
+        setFinishedRoutes((current) => new Set(current).add(place.id));
+        if (generation !== routeWindowGeneration.current) return;
+      }
+    })();
+  }, [displayedPlaces, firstVisibleIndex, routeOrigin, selected]);
 
   const like = async (place: MapPlace) => {
     if (!requireAuth(language === 'es' ? 'Dar me gusta a un destino' : 'Like a destination') || !session) return;
@@ -212,10 +233,10 @@ export default function ProvinceCatalogScreen() {
         onEndReached={visiblePlaces.length < displayedPlaces.length ? loadNextPlaces : undefined}
         onEndReachedThreshold={0.35}
         onViewableItemsChanged={onViewableItemsChanged.current}
-        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} route={roadRoutes.data?.get(item.id) ?? null} visitorType={visitorType} />}
+        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} route={roadRoutes.get(item.id) ?? null} routeLoading={Boolean(routeOrigin && routeTargetIds.has(item.id) && !finishedRoutes.has(item.id))} visitorType={visitorType} />}
         viewabilityConfig={viewabilityConfig.current}
       />
-      <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} route={selected ? roadRoutes.data?.get(selected.id) ?? null : null} />
+      <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} route={selected ? roadRoutes.get(selected.id) ?? null : null} />
       <ImmersiveCatalog formatPrice={formatPrice} language={language} onClose={() => setImmersiveOpen(false)} onOpenDetails={(place) => { setImmersiveOpen(false); setSelected(place); }} places={displayedPlaces} visible={immersiveOpen} visitorType={visitorType} />
     </View>
   );
@@ -315,13 +336,13 @@ function FullscreenDestinationImage({ active, language, onError, screenHeight, s
   </View>;
 }
 
-function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, route, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; route: RoadRoute | null; visitorType: 'tico' | 'foreigner' }) {
+function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, route, routeLoading, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; route: RoadRoute | null; routeLoading: boolean; visitorType: 'tico' | 'foreigner' }) {
   const weather = useQuery({ queryKey: ['weather', 'destination', item.id, language], queryFn: () => getWeather(item, language), enabled: autoplay, staleTime: WEATHER_STALE_TIME });
   const weatherIcon = weather.data ? weatherIcons[weather.data.icon.slice(0, 2) as keyof typeof weatherIcons] ?? 'weather-cloudy' : null;
   const price = visitorType === 'tico'
     ? (item.price_national_crc == null ? (language === 'es' ? 'Consultar' : 'Check') : item.price_national_crc === 0 ? (language === 'es' ? 'Gratis' : 'Free') : formatPrice(item.price_national_crc))
     : (item.price_foreigner_usd == null ? 'Check price' : item.price_foreigner_usd === 0 ? 'Free' : `$${item.price_foreigner_usd.toFixed(2)}`);
-  const decisionFacts = destinationDecisionFacts(item, language, price, route);
+  const decisionFacts = destinationDecisionFacts(item, language, price, route, routeLoading);
   const reservationUrl = destinationReservationUrl(item);
 
   return (
@@ -363,7 +384,7 @@ function destinationReservationUrl(item: MapPlace) {
   return null;
 }
 
-function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, route: RoadRoute | null) {
+function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: string, route: RoadRoute | null, routeLoading = false) {
   const facts: DestinationFactItem[] = [];
   if (item.has_high_tides_risk) facts.push({ icon: 'waves-arrow-up', label: language === 'es' ? 'Revisar mareas' : 'Check tides', urgent: true });
   if (item.visit_info?.reserva_requerida || item.requires_online_ticket || item.requires_sinac_booking) facts.push({ action: 'reservation', icon: 'calendar-check-outline', label: destinationReservationUrl(item) ? (language === 'es' ? 'Reservar ahora ↗' : 'Book now ↗') : (language === 'es' ? 'Ver cómo reservar ›' : 'How to book ›'), urgent: true });
@@ -373,7 +394,7 @@ function destinationDecisionFacts(item: MapPlace, language: 'es' | 'en', price: 
   const duration = item.visit_info?.duracion_estimada?.replace(/\s*\(.*/, '').trim();
   if (duration) facts.push({ icon: 'clock-outline', label: duration });
   facts.push({ icon: 'ticket-confirmation-outline', label: price });
-  facts.push({ icon: 'map-marker-distance', label: roadRouteLabel(route, language) });
+  facts.push({ icon: 'map-marker-distance', label: routeLoading ? (language === 'es' ? 'Calculando distancia…' : 'Calculating distance…') : roadRouteLabel(route, language) });
   return facts.slice(0, 4);
 }
 

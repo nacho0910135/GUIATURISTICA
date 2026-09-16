@@ -65,6 +65,11 @@ export async function getRoadDistances<T extends RoadPoint & { id: string }>(fro
   return new Map([...await getRoadRoutes(from, destinations)].map(([id, route]) => [id, route.distanceKm]));
 }
 
+export function routeWindow<T>(destinations: T[], firstVisibleIndex: number, size = 4) {
+  const start = Math.max(0, firstVisibleIndex);
+  return destinations.slice(start, start + size);
+}
+
 function valid(point: RoadPoint) {
   return Number.isFinite(point.latitude) && Math.abs(point.latitude) <= 90
     && Number.isFinite(point.longitude) && Math.abs(point.longitude) <= 180;

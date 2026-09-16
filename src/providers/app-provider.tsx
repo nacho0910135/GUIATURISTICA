@@ -7,6 +7,7 @@ import { createContext, type PropsWithChildren, useCallback, useContext, useEffe
 import { AppState, Platform, Pressable, Text, View } from 'react-native';
 
 import { hasPrecisePermission, isUsablePosition, LOCATION_MAX_AGE_MS } from '@/lib/location-quality';
+import { cacheCurrentLocation, getCachedCurrentLocation, subscribeToCurrentLocation } from '@/lib/current-location';
 import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { getPlannerOptions } from '@/lib/app-options';
@@ -74,7 +75,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [userSession, setUserSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [authRestoreError, setAuthRestoreError] = useState(false);
-  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+  const [userLocation, setUserLocation] = useState<Coordinates | null>(() => getCachedCurrentLocation());
   const locationRefreshInFlight = useRef(false);
   const locationWatcher = useRef<Location.LocationSubscription | null>(null);
   const locationWatcherActive = useRef(false);
@@ -82,7 +83,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const locationGeneration = useRef(0);
   const oauthCallbackInFlight = useRef<Promise<boolean> | null>(null);
   const lastOAuthCallbackUrl = useRef<string | undefined>(undefined);
-  const lastLocationTimestamp = useRef(0);
+  const lastLocationTimestamp = useRef(getCachedCurrentLocation()?.timestamp ?? 0);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<'denied' | 'unavailable' | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -100,13 +101,12 @@ export function AppProvider({ children }: PropsWithChildren) {
     const accept = (position: Location.LocationObject, requireActiveGeneration = true) => {
       if ((requireActiveGeneration && !active()) || position.timestamp < lastLocationTimestamp.current) return;
       if (!isUsablePosition(position)) {
-        setUserLocation(null);
-        setLocationError('unavailable');
+        if (!lastLocationTimestamp.current) setLocationError('unavailable');
         setLocating(false);
         return;
       }
       lastLocationTimestamp.current = position.timestamp;
-      setUserLocation(position.coords);
+      setUserLocation(cacheCurrentLocation(position));
       setLocationError(null);
       setLocating(false);
     };
@@ -145,8 +145,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         locationWatcherActive.current = true;
         const watcher = await Location.watchPositionAsync(options, (position) => { if (locationWatcherActive.current) accept(position, false); }, () => {
           if (!locationWatcherActive.current) return;
-          setUserLocation(null);
-          setLocationError('unavailable');
+          if (!lastLocationTimestamp.current) setLocationError('unavailable');
           setLocating(false);
         });
         if (!active()) { watcher.remove(); return; }
@@ -165,21 +164,24 @@ export function AppProvider({ children }: PropsWithChildren) {
         clearTimeout(timeout);
       }
     } catch {
-      if (active() && Date.now() - lastLocationTimestamp.current > LOCATION_MAX_AGE_MS) {
-        setUserLocation(null);
-        setLocationError('unavailable');
-      }
+      if (active() && !lastLocationTimestamp.current) setLocationError('unavailable');
     } finally {
       if (active()) { locationRefreshInFlight.current = false; setLocating(false); }
     }
   }, []);
 
+  useEffect(() => subscribeToCurrentLocation((location) => {
+    lastLocationTimestamp.current = location.timestamp;
+    setUserLocation(location);
+  }), []);
+
+  useEffect(() => {
+    void refreshUserLocation().catch(() => undefined);
+  }, [refreshUserLocation]);
+
   useEffect(() => {
     const timer = setInterval(() => {
-      if (Date.now() - lastLocationTimestamp.current > LOCATION_MAX_AGE_MS) {
-        setUserLocation(null);
-        if (AppState.currentState === 'active' && locationActivated.current) void refreshUserLocation().catch(() => undefined);
-      }
+      if (lastLocationTimestamp.current && Date.now() - lastLocationTimestamp.current > LOCATION_MAX_AGE_MS && AppState.currentState === 'active') void refreshUserLocation().catch(() => undefined);
     }, 15000);
     return () => {
       clearInterval(timer);
@@ -272,7 +274,6 @@ export function AppProvider({ children }: PropsWithChildren) {
         locationWatcherActive.current = false;
         locationWatcher.current?.remove();
         locationWatcher.current = null;
-        setUserLocation(null);
         return;
       }
       void supabase.auth.getSession().then(({ data, error }) => { if (error) throw error; return syncSession(data.session); }).catch((error) => console.warn('No se pudo actualizar la sesión.', error));

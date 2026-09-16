@@ -52,7 +52,7 @@ assert.equal(options.accuracy, 6);
 assert.equal(requested, 0, 'Reuse the session permission');
 for (const bad of [fix(1000), fix(null), fix(10, Date.now() - 600000), fix(10, Date.now(), NaN)]) {
   position = bad;
-  await assert.rejects(current.getPreciseCurrentLocation('es'), /precisa/);
+  assert.equal((await current.getPreciseCurrentLocation('es')).timestamp, result.timestamp, 'An unusable fresh fix falls back to the session cache');
 }
 permission = { granted: true, android: { accuracy: 'coarse' } };
 await assert.rejects(current.getPreciseCurrentLocation('es'), /precisa/);
@@ -125,29 +125,32 @@ const provider = load('src/providers/app-provider.tsx', {
   'expo-web-browser': { maybeCompleteAuthSession() {} },
   'react-native': { Platform: { OS: 'web' }, AppState: appState },
   '@/lib/location-quality': quality, '@/lib/admin-push-notifications': {},
+  '@/lib/current-location': current,
   '@/lib/app-options': { getPlannerOptions: async () => ({ provinces: [] }) },
+  '@/lib/billing': { getMyAccessStatus: async () => ({ hasAccess: false }) },
   '@/lib/offline-trip-pack': { ensureOfflineTripPacks: async () => {} },
   '@/lib/i18n': { copy: { es: {}, en: {} } }, '@/lib/push-notifications': {},
   '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: null } }) } } },
   '@/theme/theme-provider': { useAppTheme: () => ({ mode: 'light' }) },
 }, { Date: class extends Date { static now() { return now; } }, setInterval: (callback) => { expire = callback; return 1; }, clearInterval() {} });
-const render = () => { cursor = 0; effects = []; return provider.AppProvider({ children: null }).value; };
-let context = render();
 permission = { granted: true, android: { accuracy: 'fine' } };
 position = fix();
-await context.refreshUserLocation();
+const render = () => { cursor = 0; effects = []; return provider.AppProvider({ children: null }).value; };
+let context = render();
+effects.find((effect) => effect.toString().includes('void refreshUserLocation().catch'))();
+await new Promise(setImmediate);
 context = render();
 assert.equal(context.userLocation.latitude, 9.93);
 watchCallback(fix(8, Date.now() + 1000, 10.1, -84.4));
 context = render();
 assert.equal(context.userLocation.latitude, 10.1, 'All consumers get movement updates');
 watchCallback(fix(2000, Date.now() + 2000));
-assert.equal(render().userLocation, null, 'Hide unreliable updates');
+assert.equal(render().userLocation.latitude, 10.1, 'An unreliable update keeps the session backup');
 watchCallback(fix(8, Date.now() + 3000, 10.2));
 assert.equal(render().userLocation.latitude, 10.2, 'Recover from coarse fixes');
 watchError('GPS lost');
-assert.equal(render().userLocation, null);
-assert.equal(render().locationError, 'unavailable');
+assert.equal(render().userLocation.latitude, 10.2, 'A GPS error keeps the session backup');
+assert.equal(render().locationError, null);
 const staleCallback = watchCallback;
 permission = { granted: false, canAskAgain: false };
 await render().refreshUserLocation();
@@ -163,8 +166,9 @@ await render().refreshUserLocation();
 assert.ok(render().userLocation);
 now += 120000;
 expire();
-assert.equal(render().userLocation, null, 'A silent GPS cannot leave stale distances on screen');
+assert.ok(render().userLocation, 'An expired fix remains available as the session backup');
 await new Promise(setImmediate);
+assert.ok(render().userLocation, 'A failed refresh does not erase the session backup');
 now = Date.now();
 position = fix(8, Date.now() + 4500);
 await render().refreshUserLocation();
@@ -172,9 +176,9 @@ assert.ok(render().userLocation);
 effects.find((effect) => effect.toString().includes('AppState.addEventListener'))();
 const backgroundCallback = watchCallback;
 onAppState('background');
-assert.equal(render().userLocation, null);
+assert.ok(render().userLocation, 'Backgrounding keeps the session backup');
 backgroundCallback(fix(8, Date.now() + 4800));
-assert.equal(render().userLocation, null, 'Background callback cannot restore a stale origin');
+assert.notEqual(render().userLocation.latitude, 11, 'A stopped background watcher cannot replace the backup');
 onAppState('active');
 await new Promise(setImmediate);
 assert.ok(render().userLocation, 'Resume reacquires location without asking permission again');
@@ -209,6 +213,10 @@ for (const path of ['src/app/(tabs)/explore.tsx', 'src/app/(tabs)/commerce.tsx',
 const routingSource = readFileSync('src/lib/road-routing.ts', 'utf8');
 assert.ok(routingSource.includes('/directions/v5/mapbox/driving/'), 'Mapbox Directions is the road-distance source');
 assert.ok(routingSource.includes('route.distance! / 1000'), 'Mapbox meters become kilometers');
+const catalogSource = readFileSync('src/app/(aux)/province.tsx', 'utf8');
+assert.ok(catalogSource.includes('const CATALOG_BATCH_SIZE = 4'), 'Catalog renders four destinations per batch');
+assert.ok(catalogSource.includes('routeWindow(displayedPlaces, firstVisibleIndex)'), 'Catalog requests only the visible route window');
+assert.ok(!catalogSource.includes('getRoadRoutes(userLocation'), 'Catalog does not request every route at once');
 let directionsUrl;
 const routeCache = new Map();
 const asyncStorage = { setItem: async (key, value) => routeCache.set(key, value), getItem: async (key) => routeCache.get(key) ?? null };
@@ -225,6 +233,7 @@ assert.equal(roadRoute.distanceKm, 58);
 assert.equal(roadRoute.durationMinutes, 60);
 assert.equal(roadRoute.cached, false);
 assert.match(directionsUrl, /-84\.08000,9\.93000;-85\.44000,10\.63000/);
+assert.deepEqual([...routing.routeWindow(['a', 'b', 'c', 'd', 'e'], 1)], ['b', 'c', 'd', 'e'], 'Catalog loads the visible destination and three below');
 const offlineRouting = load('src/lib/road-routing.ts', { '@react-native-async-storage/async-storage': asyncStorage }, {
   AbortController,
   process: { env: { EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: 'public-test-token' } },

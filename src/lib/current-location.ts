@@ -6,7 +6,27 @@ export type PreciseLocation = {
   latitude: number;
   longitude: number;
   accuracy: number | null;
+  timestamp: number;
 };
+
+let sessionLocation: PreciseLocation | null = null;
+const listeners = new Set<(location: PreciseLocation) => void>();
+
+export function getCachedCurrentLocation() {
+  return sessionLocation;
+}
+
+export function cacheCurrentLocation(position: Location.LocationObject) {
+  if (!isUsablePosition(position) || position.timestamp < (sessionLocation?.timestamp ?? 0)) return sessionLocation;
+  sessionLocation = { ...position.coords, timestamp: position.timestamp };
+  listeners.forEach((listener) => listener(sessionLocation!));
+  return sessionLocation;
+}
+
+export function subscribeToCurrentLocation(listener: (location: PreciseLocation) => void) {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
 
 export async function getPreciseCurrentLocation(language: 'es' | 'en'): Promise<PreciseLocation> {
   const permission = await Location.getForegroundPermissionsAsync();
@@ -30,17 +50,17 @@ export async function getPreciseCurrentLocation(language: 'es' | 'en'): Promise<
           : 'Could not get a precise location. Check GPS and try again.')), 25000);
       }),
     ]);
+  } catch (reason) {
+    if (sessionLocation) return sessionLocation;
+    throw reason;
   } finally { clearTimeout(timeout); }
   const accuracy = position.coords.accuracy;
   if (!isUsablePosition(position)) {
+    if (sessionLocation) return sessionLocation;
     throw new Error(language === 'es'
       ? 'El dispositivo no logró una ubicación suficientemente precisa. Activá la ubicación precisa del teléfono o marcá el punto directamente en el mapa.'
       : 'The device could not get a precise enough location. Enable precise location on your phone or mark the point directly on the map.');
   }
 
-  return {
-    accuracy,
-    latitude: position.coords.latitude,
-    longitude: position.coords.longitude,
-  };
+  return cacheCurrentLocation(position) ?? { accuracy, latitude: position.coords.latitude, longitude: position.coords.longitude, timestamp: position.timestamp };
 }
