@@ -37,7 +37,7 @@ export default function TabsLayout() {
   const { bottom } = useSafeAreaInsets();
   return (
     <Tabs
-      backBehavior="initialRoute"
+      backBehavior="history"
       initialRouteName="explore"
       screenListeners={{ tabPress: () => { void haptic('selection'); } }}
       screenOptions={{

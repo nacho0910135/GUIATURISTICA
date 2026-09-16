@@ -17,6 +17,7 @@ import { useAppTheme } from '@/theme/theme-provider';
 import { trackConversion } from '@/lib/conversion-analytics';
 
 import { FrogLoader } from '@/components/frog-loader';
+import { PaymentLoadingOverlay, waitForPaymentLoader } from '@/components/payment-loading-overlay';
 const universalOffers: BillingOfferId[] = ['universal_monthly', 'universal_annual', 'visitor_pass_30d'];
 const businessOffers: BillingOfferId[] = ['business_monthly'];
 const checkoutArtwork = [
@@ -80,6 +81,7 @@ export default function SubscriptionsScreen() {
     checkoutInProgress.current = true;
     void trackConversion('checkout_started', { offer_id: offerId });
     setBusyOffer(offerId);
+    await waitForPaymentLoader();
     try {
       if (Platform.OS === 'android') {
         await playBilling.purchase(offerId, offer.business ? serviceId : undefined);
@@ -127,11 +129,11 @@ export default function SubscriptionsScreen() {
       : (language === 'es' ? 'Consultá los planes disponibles' : 'See available plans');
   if (!artworkReady) return <View className="flex-1 bg-ui-background dark:bg-ui-dark-background"><FrogLoader accessibilityLabel={language === 'es' ? 'Cargando pasarela de pago' : 'Loading payment gateway'} branded size="large" /></View>;
 
-  return <ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(bottom, 24), paddingHorizontal: 20, paddingTop: top + 20 }}>
+  return <><PaymentLoadingOverlay language={language} visible={Boolean(busyOffer)} /><ScrollView className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(bottom, 16), paddingHorizontal: 16, paddingTop: top + 12 }}>
     <View className="mx-auto w-full max-w-2xl flex-1">
       <View className="flex-row items-center"><Pressable accessibilityLabel={language === 'es' ? 'Volver' : 'Back'} accessibilityRole="button" className="mr-3 h-12 w-12 items-center justify-center rounded-full bg-ui-muted active:opacity-70 dark:bg-ui-dark-muted" onPress={() => router.back()}><MaterialCommunityIcons name="arrow-left" size={23} color="#087443" /></Pressable><View className="min-w-0 flex-1"><Text className="text-3xl font-black tracking-tight text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Planes Pro' : 'Pro plans'}</Text><Text className="mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{Platform.OS === 'android' ? (language === 'es' ? 'Pago seguro y validado con Google Play.' : 'Secure payment validated with Google Play.') : (language === 'es' ? 'Pago seguro en la web.' : 'Secure web payment.')}</Text></View></View>
-      {businessIntent ? <View accessibilityRole="alert" className="mt-5 rounded-2xl border border-ui-primary bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Plan para comercio o servicio seleccionado' : 'Business or service plan selected'}</Text><Text className="mt-1 text-sm leading-5 text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Emití y confirmá el pago. Después se habilitarán el registro y el Panel de propietarios.' : 'Complete and confirm payment. Registration and the Owner dashboard will then be unlocked.'}</Text></View> : <View className="mt-5 rounded-2xl bg-ui-primary-soft p-4 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{trialHeadline}</Text><Text className="mt-1 text-sm leading-5 text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Elegí el plan que mejor se adapte a tu viaje.' : 'Choose the plan that best fits your trip.'}</Text></View>}
-      <View className="mt-4 flex-1 gap-4">
+      {businessIntent ? <View accessibilityRole="alert" className="mt-3 rounded-2xl border border-ui-primary bg-ui-primary-soft p-3 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Plan para comercio o servicio seleccionado' : 'Business or service plan selected'}</Text><Text className="mt-1 text-sm leading-5 text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Emití y confirmá el pago. Después se habilitarán el registro y el Panel de propietarios.' : 'Complete and confirm payment. Registration and the Owner dashboard will then be unlocked.'}</Text></View> : <View className="mt-3 rounded-2xl bg-ui-primary-soft p-3 dark:bg-ui-dark-primary-soft"><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{trialHeadline}</Text><Text className="mt-0.5 text-xs text-ui-primary dark:text-ui-dark-primary">{language === 'es' ? 'Elegí el plan que mejor se adapte a tu viaje.' : 'Choose the plan that best fits your trip.'}</Text></View>}
+      <View className="mt-2 flex-1 gap-2">
         {businessIntent ? businessOffers.map((offerId) => <PlanCard active={isAdmin || Boolean(active(offerId))} adminAccess={isAdmin} busy={busyOffer === offerId} key={offerId} language={language} offerId={offerId} onPress={() => void startCheckout(offerId)} storeAvailable={Platform.OS !== 'android' || Boolean(playBilling.storePrices[offerId])} storeLoading={Platform.OS === 'android' && (!playBilling.connected || !playBilling.productsLoaded)} storePrice={playBilling.storePrices[offerId]} />) : null}
         {!businessIntent ? universalOffers.map((offerId) => <PlanCard active={isAdmin || Boolean(active(offerId)) || (Platform.OS !== 'android' && Boolean(managedSubscription))} adminAccess={isAdmin} busy={busyOffer === offerId} key={offerId} language={language} offerId={offerId} onPress={() => void startCheckout(offerId)} storeAvailable={Platform.OS !== 'android' || Boolean(playBilling.storePrices[offerId])} storeLoading={Platform.OS === 'android' && (!playBilling.connected || !playBilling.productsLoaded)} storePrice={playBilling.storePrices[offerId]} />) : null}
       </View>
@@ -139,7 +141,7 @@ export default function SubscriptionsScreen() {
       {subscriptions.isLoading ? <FrogLoader className="mt-5" color="#087443" /> : null}
       {subscriptions.isError ? <View accessibilityRole="alert" className="mt-5 items-center rounded-2xl border border-ui-danger bg-red-50 p-4 dark:bg-red-950"><Text className="text-center font-bold text-ui-danger dark:text-ui-dark-danger">{language === 'es' ? 'No pudimos cargar tus suscripciones.' : 'We could not load your subscriptions.'}</Text><Pressable accessibilityRole="button" className="mt-3 rounded-control bg-ui-primary px-5 py-3" onPress={() => void subscriptions.refetch()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar' : 'Retry'}</Text></Pressable></View> : null}
     </View>
-  </ScrollView>;
+  </ScrollView></>;
 }
 
 function PlanCard({ active, adminAccess = false, busy, language, offerId, onPress, storeAvailable = true, storeLoading = false, storePrice }: { active: boolean; adminAccess?: boolean; busy: boolean; language: 'es' | 'en'; offerId: BillingOfferId; onPress: () => void; storeAvailable?: boolean; storeLoading?: boolean; storePrice?: string }) {
@@ -153,21 +155,20 @@ function PlanCard({ active, adminAccess = false, busy, language, offerId, onPres
     : tokens.colors.commerceGold[mode === 'dark' ? 'darkInk' : 'ink'];
   const actionLabel = adminAccess ? (language === 'es' ? 'Acceso gratuito para pruebas' : 'Free testing access') : active ? (language === 'es' ? 'Plan activo' : 'Plan active') : !storeAvailable ? (language === 'es' ? 'No disponible en Google Play' : 'Not available on Google Play') : Platform.OS === 'android' ? (language === 'es' ? 'Suscribirme con Google Play' : 'Subscribe with Google Play') : (language === 'es' ? 'Continuar a Checkout' : 'Continue to Checkout');
 
-  return <PressableCard accessibilityLabel={`${offer.title[language === 'es' ? 0 : 1]}. ${actionLabel}`} className="flex-1 overflow-hidden disabled:opacity-50" disabled={disabled} onPress={onPress} padding="none" style={{ borderColor, borderWidth: kind === 'monthly' ? 2 : 3, minHeight: kind === 'business' ? 410 : 250 }} variant="raised">
+  return <PressableCard accessibilityLabel={`${offer.title[language === 'es' ? 0 : 1]}. ${actionLabel}`} className="flex-1 overflow-hidden disabled:opacity-50" disabled={disabled} onPress={onPress} padding="none" style={{ borderColor, borderWidth: kind === 'monthly' ? 2 : 3, minHeight: kind === 'business' ? 410 : kind === 'annual' ? 174 : 182 }} variant="raised">
     <Image contentFit="cover" contentPosition={kind === 'monthly' ? 'left' : kind === 'annual' ? 'right' : 'center'} source={require('../../assets/images/subscriptions/rainforest-card.png')} style={[StyleSheet.absoluteFill, styles.jungle]} />
     <PlanAnimal kind={kind} source={art} />
-    <View className={kind === 'business' ? 'flex-1 justify-between p-5 pt-56' : 'flex-1 justify-between p-5'}>
+    <View className={kind === 'business' ? 'flex-1 justify-between p-5 pt-56' : 'flex-1 justify-between p-3'}>
       <View>
-        {offer.featured ? <Text className="mb-3 self-start rounded-full bg-ui-primary px-3 py-1 text-xs font-black text-white dark:text-ui-dark-on-primary">{language === 'es' ? 'MEJOR VALOR' : 'BEST VALUE'}</Text> : null}
-        <GlassSurface className={kind === 'annual' || kind === 'visitor' ? 'mr-24 rounded-2xl p-3' : kind === 'monthly' ? 'ml-24 rounded-2xl p-3' : 'rounded-2xl p-4'}>
+        <GlassSurface className={kind === 'annual' || kind === 'visitor' ? 'mr-20 rounded-2xl p-2' : kind === 'monthly' ? 'ml-20 rounded-2xl p-2' : 'rounded-2xl p-4'}>
         <View className="flex-row items-start">
-          <View className="h-11 w-11 items-center justify-center rounded-2xl bg-ui-glass dark:bg-ui-dark-glass"><MaterialCommunityIcons name={offer.icon} size={24} color={colors.primary} /></View>
-          <View className="ml-3 min-w-0 flex-1"><Text className="text-xl font-black text-ui-text dark:text-ui-dark-text">{offer.title[language === 'es' ? 0 : 1]}</Text><Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{offer.detail[language === 'es' ? 0 : 1]}</Text><Text className="mt-3 text-xl font-black text-ui-primary dark:text-ui-dark-primary">{storePrice ?? offer.price[language === 'es' ? 0 : 1]}</Text></View>
+          <View className="h-9 w-9 items-center justify-center rounded-xl bg-ui-glass dark:bg-ui-dark-glass"><MaterialCommunityIcons name={offer.icon} size={21} color={colors.primary} /></View>
+          <View className="ml-2 min-w-0 flex-1"><View className="flex-row flex-wrap items-center gap-1"><Text className="text-lg font-black text-ui-text dark:text-ui-dark-text">{offer.title[language === 'es' ? 0 : 1]}</Text>{offer.featured ? <Text className="rounded-full bg-ui-primary px-2 py-0.5 text-[9px] font-black text-white dark:text-ui-dark-on-primary">{language === 'es' ? 'MEJOR VALOR' : 'BEST VALUE'}</Text> : null}</View><Text className="mt-0.5 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted" numberOfLines={2}>{offer.detail[language === 'es' ? 0 : 1]}</Text><Text className="mt-1 text-lg font-black text-ui-primary dark:text-ui-dark-primary">{storePrice ?? offer.price[language === 'es' ? 0 : 1]}</Text></View>
           {active ? <Text className="rounded-full bg-ui-primary-soft px-2.5 py-1 text-xs font-black text-ui-primary dark:bg-ui-dark-primary-soft dark:text-ui-dark-primary">{adminAccess ? 'ADMIN' : (language === 'es' ? 'ACTIVO' : 'ACTIVE')}</Text> : null}
         </View>
         </GlassSurface>
       </View>
-      <View className="mt-4 min-h-12 items-center justify-center rounded-2xl bg-ui-primary px-4 dark:bg-ui-dark-primary">{busy || storeLoading ? <FrogLoader color={mode === 'dark' ? colors.onPrimary : 'white'} /> : <Text className="text-center font-black text-white dark:text-ui-dark-background">{actionLabel}</Text>}</View>
+      <View className="mt-2 min-h-11 items-center justify-center rounded-xl bg-ui-primary px-3 dark:bg-ui-dark-primary">{busy || storeLoading ? <FrogLoader color={mode === 'dark' ? colors.onPrimary : 'white'} /> : <Text className="text-center text-sm font-black text-white dark:text-ui-dark-background">{actionLabel}</Text>}</View>
     </View>
   </PressableCard>;
 }
@@ -200,9 +201,9 @@ function PlanAnimal({ kind, source }: { kind: AnimalKind; source: React.Componen
 
 const styles = StyleSheet.create({
   animal: { position: 'absolute', zIndex: 2 },
-  annualAnimal: { height: 168, right: -12, top: 18, width: 145 },
+  annualAnimal: { height: 126, right: -10, top: 20, width: 112 },
   businessAnimal: { height: 220, right: -8, top: 4, width: 330 },
   jungle: { opacity: 0.88 },
-  monthlyAnimal: { height: 190, left: -12, top: 8, width: 145 },
-  visitorAnimal: { height: 180, right: -8, top: 14, width: 150 },
+  monthlyAnimal: { height: 136, left: -10, top: 16, width: 110 },
+  visitorAnimal: { height: 132, right: -8, top: 18, width: 112 },
 });

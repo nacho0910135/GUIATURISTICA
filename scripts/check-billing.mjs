@@ -62,6 +62,8 @@ assert.match(checkout, /eq\(["']owner_id["'], user\.id\)/);
 assert.match(checkout, /STRIPE_SECRET_KEY/);
 assert.match(checkout, /Idempotency-Key/);
 assert.match(screen, /checkoutInProgress\.current/);
+assert.match(screen, /setBusyOffer\(offerId\);\s*await waitForPaymentLoader\(\)/);
+assert.match(commerce, /setCampaignBusy\(`\$\{service\.id\}:\$\{offerId\}`\);\s*await waitForPaymentLoader\(\)/);
 assert.match(checkout, /banner_capacity_reached/);
 assert.match(checkout, /new Set\(\(data \?\? \[\]\)\.map\(\(campaign\) => campaign\.service_id\)\)\.size >= 3/);
 assert.match(checkout, /mode: offer\.mode/);

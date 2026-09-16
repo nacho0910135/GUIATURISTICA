@@ -35,20 +35,20 @@ export function useCompass(retry: number) {
 
     async function start() {
       try {
-        const permission = await Location.requestForegroundPermissionsAsync();
+        let permission = await Location.getForegroundPermissionsAsync();
+        if (!permission.granted) permission = await Location.requestForegroundPermissionsAsync();
         if (disposed) return;
         if (!permission.granted) { setLocationStatus('denied'); return; }
         const cached = await Location.getLastKnownPositionAsync({ maxAge: LOCATION_MAX_AGE_MS, requiredAccuracy: LOCATION_MAX_ACCURACY_METERS });
         if (!disposed && cached && !cached.mocked && isUsablePosition(cached)) {
           fix = cached; setPosition(cached); setLocationStatus('ready');
         }
-        keep(await Location.watchPositionAsync({ accuracy: Location.Accuracy.High, distanceInterval: 5, timeInterval: 1000 }, (value) => {
-          if (disposed) return;
-          fix = value;
-          const valid = !value.mocked && isUsablePosition(value);
-          setPosition(valid ? value : null);
-          setLocationStatus(valid ? 'ready' : 'imprecise');
-        }));
+        const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        if (disposed) return;
+        fix = current;
+        const valid = !current.mocked && isUsablePosition(current);
+        setPosition(valid ? current : null);
+        setLocationStatus(valid ? 'ready' : 'imprecise');
       } catch { if (!disposed) setLocationStatus('error'); }
     }
     async function sensors() {

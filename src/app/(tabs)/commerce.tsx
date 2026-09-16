@@ -40,6 +40,7 @@ import {
   type CampaignOfferId,
 } from "@/lib/billing";
 import { FrogLoader } from "@/components/frog-loader";
+import { PaymentLoadingOverlay, waitForPaymentLoader } from "@/components/payment-loading-overlay";
 import {
   activateAdminTestCampaign,
   deleteBusinessPhoto,
@@ -2214,6 +2215,7 @@ export default function CommerceScreen() {
       }
     }
     setCampaignBusy(`${service.id}:${offerId}`);
+    await waitForPaymentLoader();
     let uploadedBanner:
       Awaited<ReturnType<typeof uploadCampaignBanner>> | undefined;
     try {
@@ -2857,6 +2859,7 @@ export default function CommerceScreen() {
 
   return (
     <View className="flex-1 bg-[#F8F6F0] dark:bg-ui-dark-background">
+      <PaymentLoadingOverlay language={language} visible={Boolean(campaignBusy)} />
       <FlatList
         ref={scrollRef}
         data={catalog}

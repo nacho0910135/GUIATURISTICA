@@ -21,6 +21,8 @@ import { useApp, type VisitorType } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
+import { PaymentLoadingOverlay } from '@/components/payment-loading-overlay';
+// eslint-disable-next-line import/no-unresolved -- Metro resolves the .native/.web pair.
 import { AdBanner } from '@/components/ad-banner';
 const visitorOptions: readonly { id: VisitorType; label: string; labelEs: string }[] = [
   { id: 'tico', label: 'Tico', labelEs: 'Tico' },
@@ -221,6 +223,8 @@ export function GlobalHeader() {
   };
 
   return (
+    <>
+      <PaymentLoadingOverlay language={language} visible={openingCheckout} />
     <SafeAreaView edges={['top']} className="relative border-b border-ui-border bg-ui-glass shadow-floating dark:border-ui-dark-border dark:bg-ui-dark-glass" style={{ elevation: 14, shadowColor: colors.primary, shadowOffset: { height: 8, width: 0 }, shadowOpacity: mode === 'dark' ? 0.32 : 0.2, shadowRadius: 16 }}>
       <BlurView intensity={mode === 'dark' ? 42 : 62} style={StyleSheet.absoluteFill} tint={mode === 'dark' ? 'dark' : 'light'} />
       <View className="absolute inset-0 bg-ui-glass/80 dark:bg-ui-dark-glass/80" pointerEvents="none" />
@@ -302,6 +306,7 @@ export function GlobalHeader() {
         <AdBanner />
       </Animated.View>
     </SafeAreaView>
+    </>
   );
 }
 

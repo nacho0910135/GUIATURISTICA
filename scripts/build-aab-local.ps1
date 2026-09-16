@@ -37,6 +37,15 @@ if ($LASTEXITCODE -ne 0) { throw "Falló TypeScript." }
 npm run lint
 if ($LASTEXITCODE -ne 0) { throw "Falló lint." }
 
+$adsFiles = @(
+    (Join-Path $project "package.json"),
+    (Join-Path $project "app.config.js"),
+    (Join-Path $project "android\app\src\main\AndroidManifest.xml")
+)
+if (Select-String -Path $adsFiles -Pattern 'react-native-google-mobile-ads', 'com.google.android.gms.ads.APPLICATION_ID' -SimpleMatch -Quiet) {
+    throw "Google Mobile Ads debe permanecer desactivado hasta configurar un App ID de producción."
+}
+
 if ($IncrementVersion) {
     $versionCode++
     $appJsonText = [regex]::Replace(
@@ -75,14 +84,23 @@ $gradleText = [regex]::Replace($gradleText, '(?s)    signingConfigs \{.*?\r?\n  
 $gradleText = [regex]::Replace($gradleText, '(?s)(buildTypes\s*\{\s*debug\s*\{.*?\}\s*release\s*\{.*?signingConfig\s*=\s*)signingConfigs\.debug', '${1}signingConfigs.release', 1)
 [IO.File]::WriteAllText($gradlePath, $gradleText, [Text.UTF8Encoding]::new($false))
 
-$releaseAab = Join-Path $project "android\app\build\outputs\bundle\release\app-release.aab"
-& "$project\android\gradlew.bat" -p "$project\android" bundleRelease --no-daemon --no-build-cache --console=plain
-if ($LASTEXITCODE -ne 0 -and -not (Test-Path -LiteralPath $releaseAab)) { throw "Falló la compilación." }
-if ($LASTEXITCODE -ne 0) { Write-Warning "Gradle perdió conexión con el daemon después de generar el AAB; se continuará con la verificación del artefacto." }
-
 $versionName = $appConfig.expo.version
 $outputDirectory = Join-Path $project "builds"
 $output = Join-Path $outputDirectory "DescubriendoCR-v$versionName-build$versionCode.aab"
+$releaseAab = Join-Path $project "android\app\build\outputs\bundle\release\app-release.aab"
+$androidAppDirectory = [IO.Path]::GetFullPath((Join-Path $project "android\app"))
+foreach ($staleBuildDirectory in @((Join-Path $androidAppDirectory "build"), (Join-Path $androidAppDirectory ".cxx"))) {
+    $resolvedBuildDirectory = [IO.Path]::GetFullPath($staleBuildDirectory)
+    if (-not $resolvedBuildDirectory.StartsWith($androidAppDirectory + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Ruta de limpieza fuera de android/app: $resolvedBuildDirectory"
+    }
+    if (Test-Path -LiteralPath $resolvedBuildDirectory) { Remove-Item -LiteralPath $resolvedBuildDirectory -Recurse -Force }
+}
+if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output -Force }
+& "$project\android\gradlew.bat" -p "$project\android" bundleRelease --no-daemon --no-build-cache --console=plain
+if ($LASTEXITCODE -ne 0) { throw "Falló la compilación de Gradle." }
+if (-not (Test-Path -LiteralPath $releaseAab)) { throw "Gradle terminó sin generar el AAB." }
+
 New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 Copy-Item -LiteralPath $releaseAab -Destination $output -Force
 

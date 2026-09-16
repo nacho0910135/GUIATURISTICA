@@ -13,6 +13,7 @@ assert.equal(config.expo.android.predictiveBackGestureEnabled, true);
 assert.match(manifest, /android:enableOnBackInvokedCallback="true"/);
 assert.match(build, /enableOnBackInvokedCallback=.*true/);
 assert.doesNotMatch(root, /BackHandler|hardwareBackPress|backToExplore/);
+assert.match(tabs, /backBehavior=["']history["']/);
 assert.match(tabs, /tabPress:[\s\S]*haptic\('selection'\)/);
 assert.doesNotMatch(tabs, /tabPress:[\s\S]*haptic\('error'\)/);
 

@@ -19,6 +19,6 @@ assert.match(compass, /!access\.hasPaidAccess.*SubscriptionRequired/s);
 assert.match(logistics, /!access\.hasPaidAccess.*SubscriptionRequired/s);
 assert.match(explore, /!paidAccess\.hasPaidAccess[\s\S]*setShowNearbyPaywall\(true\)/);
 assert.match(community, /paidAccess\.hasPaidAccess \? <View/);
-assert.match(ad, /trialDaysRemaining === 0 && !access\.data\.hasPersonalPlan/);
-assert.match(ad, /react-native-google-mobile-ads/);
+assert.match(ad, /return null/);
+assert.doesNotMatch(ad, /react-native-google-mobile-ads/);
 console.log('The 15-day trial unlocks personal features while commerce keeps its separate subscription.');
