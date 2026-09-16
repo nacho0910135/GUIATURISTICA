@@ -367,7 +367,7 @@ export async function getPlacesForTargets(targets: string[], userId?: string): P
 
 export async function getPlaceById(id: string, userId?: string, community = false): Promise<MapPlace | null> {
   if (community) return getCommunityPlaceById(id, userId);
-  return (await getPlaces('id', id, userId))[0] ?? null;
+  return (await getPlaces('id', id, userId))[0] ?? getCommunityPlaceById(id, userId);
 }
 
 async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPlace | null> {
@@ -388,8 +388,6 @@ async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPl
     supabase.from('reviews').select('rating').eq('target_type', 'destination').eq('target_id', id),
     userId ? supabase.from('likes').select('target_id').eq('user_id', userId).eq('target_type', 'destination').eq('target_id', id) : Promise.resolve({ data: [], error: null }),
   ]);
-  const socialError = likes.error ?? reviews.error ?? mine.error;
-  if (socialError) throw socialError;
   const ratings = (reviews.data ?? []).map((review) => Number(review.rating));
   return {
     id: suggestion.id,
@@ -463,8 +461,6 @@ async function getPlaces(filter: 'province' | 'category' | 'id' | 'all', value: 
     photoIds.length ? supabase.from('destination_photo_likes').select('photo_id,user_id').in('photo_id', photoIds) : Promise.resolve({ data: [], error: null }),
     userId && photoIds.length ? supabase.from('destination_photo_likes').select('photo_id').eq('user_id', userId).in('photo_id', photoIds) : Promise.resolve({ data: [], error: null }),
   ]);
-  const socialError = likes.error ?? reviews.error ?? mine.error ?? photoLikes.error ?? myPhotoLikes.error;
-  if (socialError) throw socialError;
   const likedIds = new Set((mine.data ?? []).map((row) => row.target_id));
   const likedPhotoIds = new Set((myPhotoLikes.data ?? []).map((row) => row.photo_id));
   return (data ?? []).map((place) => {

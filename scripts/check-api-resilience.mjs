@@ -5,6 +5,8 @@ const supabase = readFileSync(new URL('../src/lib/supabase.ts', import.meta.url)
 const queries = readFileSync(new URL('../src/lib/query-client.ts', import.meta.url), 'utf8');
 const logistics = readFileSync(new URL('../src/lib/logistics.ts', import.meta.url), 'utf8');
 const weather = readFileSync(new URL('../supabase/functions/weather/index.ts', import.meta.url), 'utf8');
+const places = readFileSync(new URL('../src/lib/places.ts', import.meta.url), 'utf8');
+const app = JSON.parse(readFileSync(new URL('../app.json', import.meta.url), 'utf8'));
 assert.doesNotMatch(supabase, /if \(!SUPABASE_URL[^}]+throw/s);
 assert.match(supabase, /https:\/\/offline\.invalid/);
 assert.match(supabase, /try \{ return window\.localStorage; \} catch/);
@@ -15,4 +17,9 @@ assert.match(logistics, /functions\.invoke\('weather'/);
 assert.doesNotMatch(logistics, /OPENWEATHER|api\.openweathermap\.org/);
 assert.match(weather, /catch \{[\s\S]+https:\/\/api\.open-meteo\.com\/v1\/forecast/);
 assert.match(weather, /AbortSignal\.timeout\(10_000\)/);
+assert.match(places, /\?\? getCommunityPlaceById\(id, userId\)/);
+assert.doesNotMatch(places, /if \(socialError\) throw socialError/);
+assert.equal(app.expo.plugins.find(([name]) => name === 'expo-audio')[1].enableBackgroundPlayback, false);
+assert.ok(app.expo.android.blockedPermissions.includes('android.permission.FOREGROUND_SERVICE'));
+assert.ok(app.expo.android.blockedPermissions.includes('android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK'));
 console.log('API failure fallbacks OK');
