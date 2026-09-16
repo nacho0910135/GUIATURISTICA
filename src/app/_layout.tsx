@@ -19,7 +19,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from 'nativewind';
 
 import { AnimatedSplash } from '@/components/animated-splash';
-import { GuestRegistrationPrompt } from '@/components/guest-registration-prompt';
 import { ThemedAlertProvider } from '@/components/themed-alert';
 import { AppProvider } from '@/providers/app-provider';
 import { persistQueryCache, queryClient, restoreQueryCache } from '@/lib/query-client';
@@ -101,7 +100,6 @@ export default function RootLayout() {
                     <Stack.Screen name="(aux)/private-messages" options={{ animation: 'slide_from_right' }} />
                     <Stack.Screen name="(aux)/auth-modal" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
                   </Stack>
-                  <GuestRegistrationPrompt />
                 </View>
                 {showSplash ? <AnimatedSplash appReady={exploreReady || startupDeadline} onFinish={finishSplash} /> : null}
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />

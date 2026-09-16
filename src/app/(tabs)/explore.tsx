@@ -151,6 +151,7 @@ export default function ExploreScreen() {
   const hasSearch = Boolean(search.trim());
 
   const discover = async () => {
+    if (!requireAuth(language === 'es' ? 'ver destinos turísticos cercanos' : 'view nearby tourist destinations')) return;
     if (!paidAccess.hasPaidAccess) {
       setShowNearbyPaywall(true);
       setNearbyEnabled(false);

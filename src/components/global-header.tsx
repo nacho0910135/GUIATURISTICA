@@ -83,7 +83,7 @@ export function GlobalHeader() {
   const refetchCancelledRideRef = useRef(cancelledRide.refetch);
   refetchCancelledRideRef.current = cancelledRide.refetch;
   useTravelerMessagesSync(session?.user.id, () => { void messages.refetch({ cancelRefetch: false }); });
-  const showTrialBanner = Boolean(access.data && !access.isPending && !access.isFetching && !access.data.hasPersonalPlan);
+  const showTrialBanner = Boolean(access.data && !access.isPending && !access.isFetching && !access.data.hasAccess);
   const unreadConversation = messages.data?.filter((item) => item.unread_count > 0).sort((a, b) => (b.messages.at(-1)?.created_at ?? '').localeCompare(a.messages.at(-1)?.created_at ?? ''))[0];
   const isInChat = pathname.includes('traveler-profile') || (pathname.includes('profile') && routeParams.section === 'messages');
   const socialActor = Array.isArray(socialActivity.data?.actor) ? socialActivity.data.actor[0] : socialActivity.data?.actor;

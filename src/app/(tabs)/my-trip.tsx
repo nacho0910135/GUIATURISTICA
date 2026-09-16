@@ -2,13 +2,13 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Redirect } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 
 import { LocationPickerModal } from '@/components/location-picker-modal';
 import { RideDateFields } from '@/components/community/ride-date-fields';
+import { SubscriptionRequired } from '@/components/subscription-required';
 import { AppCard, PrimaryButton } from '@/components/ui';
 import { buildTripPlan, openNavigation, rebuildTripPlan, TRIP_VEHICLES, type PlannerPreference, type TripPlan, type TripPlanInput, type TripVehicle } from '@/lib/logistics';
 import { getPlannerOptions } from '@/lib/app-options';
@@ -22,7 +22,7 @@ const SAVED_TRIP_KEY = 'SAVED_TRIP_PLAN';
 type SavedTrip = { id: string; name: string; notes: string; plan: TripPlan; input?: TripPlanInput; savedAt: string };
 
 export default function MyTripScreen() {
-  const { exchangeRate, isDark, language, session, userLocation, visitorType, setVisitorType } = useApp();
+  const { exchangeRate, isDark, language, requireAuth, session, userLocation, visitorType, setVisitorType } = useApp();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
   const [time, setTime] = useState('8');
@@ -61,10 +61,11 @@ export default function MyTripScreen() {
     });
   }, [access.data?.hasAccess, isSpanish]);
 
-  if (!session || access.data?.hasAccess === false) return <Redirect href="/subscriptions" />;
-  if (access.isPending || access.isError) return <View accessibilityRole="alert" className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text className="text-center font-bold text-ui-text dark:text-ui-dark-text">{access.isError ? (isSpanish ? 'No pudimos comprobar tu acceso. Revisá la conexión e intentá de nuevo.' : 'We could not verify your access. Check your connection and try again.') : (isSpanish ? 'Comprobando acceso…' : 'Checking access…')}</Text>{access.isError ? <PrimaryButton className="mt-4" onPress={() => void access.refetch()}>{isSpanish ? 'Reintentar' : 'Retry'}</PrimaryButton> : null}</View>;
+  if (session && access.data?.hasAccess === false) return <SubscriptionRequired />;
+  if (session && (access.isPending || access.isError)) return <View accessibilityRole="alert" className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text className="text-center font-bold text-ui-text dark:text-ui-dark-text">{access.isError ? (isSpanish ? 'No pudimos comprobar tu acceso. Revisá la conexión e intentá de nuevo.' : 'We could not verify your access. Check your connection and try again.') : (isSpanish ? 'Comprobando acceso…' : 'Checking access…')}</Text>{access.isError ? <PrimaryButton className="mt-4" onPress={() => void access.refetch()}>{isSpanish ? 'Reintentar' : 'Retry'}</PrimaryButton> : null}</View>;
 
   const createPlan = async () => {
+    if (!requireAuth(isSpanish ? 'crear tu ruta' : 'create your route')) return;
     if (!origin) return setMessage(isSpanish ? 'Elegí y confirmá el punto de salida antes de crear la ruta.' : 'Choose and confirm the starting point before creating the route.');
     const availableHours = Number(time) * (timeUnit === 'days' ? 8 : 1);
     const maxBudget = Number(budget) * (budgetCurrency === 'USD' ? exchangeRate : 1);

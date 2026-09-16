@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const [build, config, explore, manifest, root, tabs] = await Promise.all([
+const [build, config, explore, manifest, myTrip, root, tabs] = await Promise.all([
   readFile(new URL('./build-aab-local.ps1', import.meta.url), 'utf8'),
   readFile(new URL('../app.json', import.meta.url), 'utf8').then(JSON.parse),
   readFile(new URL('../src/app/(tabs)/explore.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../android/app/src/main/AndroidManifest.xml', import.meta.url), 'utf8'),
+  readFile(new URL('../src/app/(tabs)/my-trip.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/app/_layout.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8'),
 ]);
@@ -17,6 +18,8 @@ assert.doesNotMatch(root, /BackHandler|hardwareBackPress|backToExplore/);
 assert.match(tabs, /backBehavior=["']history["']/);
 assert.doesNotMatch(tabs, /BackHandler|hardwareBackPress/);
 assert.match(explore, /useFocusEffect\([\s\S]*BackHandler\.addEventListener\('hardwareBackPress'[\s\S]*return true;/);
+assert.doesNotMatch(myTrip, /<Redirect/);
+assert.match(myTrip, /if \(session && access\.data\?\.hasAccess === false\) return <SubscriptionRequired \/>/);
 assert.match(tabs, /tabPress:[\s\S]*haptic\('selection'\)/);
 assert.doesNotMatch(tabs, /tabPress:[\s\S]*haptic\('error'\)/);
 
