@@ -19,11 +19,16 @@ export const queryClient = new QueryClient({
 });
 
 const CACHE_KEY = 'query-cache-v1';
+const CACHE_RESTORE_TIMEOUT_MS = 2_000;
 const PERSISTED_QUERIES = new Set(['app-options', 'explore-places', 'planner-options', 'ferry-routes', 'commerce-regions', 'my-app-access']);
 
 export async function restoreQueryCache() {
   try {
-    const value = await queryStorage.getItem(CACHE_KEY);
+    // ponytail: skip a stuck cache read; live queries repopulate it after startup.
+    const value = await Promise.race([
+      queryStorage.getItem(CACHE_KEY),
+      new Promise<null>((resolve) => setTimeout(resolve, CACHE_RESTORE_TIMEOUT_MS, null)),
+    ]);
     if (!value) return;
     const saved = JSON.parse(value) as { savedAt: number; state: Parameters<typeof hydrate>[1] };
     if (Date.now() - saved.savedAt < DAY) hydrate(queryClient, saved.state);

@@ -213,15 +213,16 @@ export function AppProvider({ children }: PropsWithChildren) {
     lastOAuthCallbackUrl.current = url;
     const request = (async () => {
       const callbackUrl = new URL(url);
-      if (Platform.OS !== 'web' && (callbackUrl.protocol !== 'descubriendocr:' || callbackUrl.hostname !== 'auth' || callbackUrl.pathname !== '/callback')) return false;
+      const nativePath = `${callbackUrl.hostname}${callbackUrl.pathname}`;
+      if (Platform.OS !== 'web' && (callbackUrl.protocol !== 'descubriendocr:' || !['auth/callback', 'reset-password'].includes(nativePath))) return false;
       const callback = new URL(url.replace('#', url.includes('?') ? '&' : '?'));
       const oauthError = callback.searchParams.get('error_description') ?? callback.searchParams.get('error');
       if (oauthError) throw new Error(oauthError);
 
       const code = callback.searchParams.get('code');
       const flowId = callback.searchParams.get('sb_flow_id');
-      if (!code || !flowId) return false;
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code, { flowId });
+      if (!code) return false;
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code, flowId ? { flowId } : undefined);
       if (error) throw error;
       await syncSession(data.session);
       return Boolean(data.session);
@@ -246,11 +247,6 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (Platform.OS === 'web') return;
     return observePushNotifications();
   }, []);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    void refreshUserLocation().catch(() => undefined);
-  }, [refreshUserLocation]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;

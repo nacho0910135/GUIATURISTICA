@@ -19,17 +19,12 @@ $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA "Android\Sdk"
 $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
 $env:NODE_ENV = "production"
 
-$keystore = Join-Path $project "@nacho091011__descubriendo-cr.jks"
+$keystore = $env:DESCUBRIENDO_KEYSTORE_PATH
 if (-not (Test-Path $keystore)) { throw "No se encontró el keystore: $keystore" }
-
-$credentialsText = git show "3174fb5^:credentials.json" 2>$null | Out-String
-if (-not $credentialsText.Trim()) { throw "No se encontraron las credenciales locales de firma." }
-$credentials = $credentialsText | ConvertFrom-Json
-
-$env:DESCUBRIENDO_KEYSTORE_PATH = $keystore
-$env:DESCUBRIENDO_STORE_PASSWORD = $credentials.android.keystore.keystorePassword
-$env:DESCUBRIENDO_KEY_ALIAS = $credentials.android.keystore.keyAlias
-$env:DESCUBRIENDO_KEY_PASSWORD = $credentials.android.keystore.keyPassword
+$requiredSigningVariables = 'DESCUBRIENDO_STORE_PASSWORD', 'DESCUBRIENDO_KEY_ALIAS', 'DESCUBRIENDO_KEY_PASSWORD'
+foreach ($name in $requiredSigningVariables) {
+    if (-not [Environment]::GetEnvironmentVariable($name)) { throw "Falta la variable de firma $name." }
+}
 
 $appJsonPath = Join-Path $project "app.json"
 $appJsonText = Get-Content -LiteralPath $appJsonPath -Raw -Encoding UTF8
@@ -78,24 +73,6 @@ $releaseSigning = @'
 $gradleText = [regex]::Replace($gradleText, '(?s)    signingConfigs \{.*?\r?\n    \}\r?\n    buildTypes \{', ($releaseSigning + "`r`n    buildTypes {"), 1)
 $gradleText = [regex]::Replace($gradleText, '(?s)(buildTypes\s*\{\s*debug\s*\{.*?\}\s*release\s*\{.*?signingConfig\s*=\s*)signingConfigs\.debug', '${1}signingConfigs.release', 1)
 [IO.File]::WriteAllText($gradlePath, $gradleText, [Text.UTF8Encoding]::new($false))
-
-# dexBuilderRelease can leave incomplete desugar/CMake state after an interrupted
-# Windows build. Remove only the app's generated directories: Gradle's `clean`
-# task also invokes CMake clean and can fail when codegen folders no longer exist.
-$generatedDirectories = @(
-    (Join-Path $project "android\app\build"),
-    (Join-Path $project "android\app\.cxx")
-)
-$androidAppRoot = [IO.Path]::GetFullPath((Join-Path $project "android\app")) + [IO.Path]::DirectorySeparatorChar
-foreach ($directory in $generatedDirectories) {
-    $resolvedDirectory = [IO.Path]::GetFullPath($directory)
-    if (-not $resolvedDirectory.StartsWith($androidAppRoot, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Ruta generada fuera de android/app: $resolvedDirectory"
-    }
-    if (Test-Path -LiteralPath $resolvedDirectory) {
-        Remove-Item -LiteralPath $resolvedDirectory -Recurse -Force
-    }
-}
 
 $releaseAab = Join-Path $project "android\app\build\outputs\bundle\release\app-release.aab"
 & "$project\android\gradlew.bat" -p "$project\android" bundleRelease --no-daemon --no-build-cache --console=plain

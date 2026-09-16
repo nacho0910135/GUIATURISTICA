@@ -1,6 +1,6 @@
 # Descubriendo CR
 
-Base móvil guest-first para descubrir Costa Rica desde Android e iOS con un solo repositorio. Usa Expo SDK 54, Expo Router, TypeScript, NativeWind, Reanimated, react-native-maps y Supabase.
+Base móvil guest-first para descubrir Costa Rica desde Android e iOS con un solo repositorio. Usa Expo SDK 57, Expo Router, TypeScript, NativeWind, Reanimated, Mapbox y Supabase.
 
 ## Ejecutar
 
@@ -28,11 +28,11 @@ Todas las tablas públicas deben tener RLS habilitado. Las lecturas anónimas de
 
 ## Google OAuth
 
-Habilitá Google en Supabase Auth y agregá `descubriendocr://auth/callback?sb_flow_id=*` a la lista de Redirect URLs. Para Expo Go, agregá también la URL que produzca `Linking.createURL('auth/callback')` en tu entorno de desarrollo. Los identificadores nativos son `com.descubriendo.cr`.
+Habilitá Google en Supabase Auth y agregá `descubriendocr://auth/callback?sb_flow_id=*` y `descubriendocr://reset-password` a la lista de Redirect URLs. Para Expo Go, agregá también la URL que produzca `Linking.createURL('auth/callback')` en tu entorno de desarrollo. Los identificadores nativos son `com.descubriendo.cr`.
 
 ## Mapas en builds de tienda
 
-El mapa principal usa react-native-maps con teselas de OpenStreetMap en Android/iOS, sin credenciales nativas y compatible con Expo Go. La versión web conserva Mapbox GL.
+El mapa principal usa `@rnmapbox/maps` en Android/iOS y Mapbox GL en web; los builds nativos requieren el token de descarga configurado durante la compilación.
 
 Los límites y centros de las siete provincias provienen de `CR_distritos_geojson` y se distribuyen bajo Apache-2.0 con los cambios descritos en `THIRD_PARTY_NOTICES.md`. Para regenerar el archivo móvil desde una copia de la fuente:
 

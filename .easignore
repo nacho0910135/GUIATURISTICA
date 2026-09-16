@@ -15,9 +15,19 @@ web-build/
 .codex-bundle-test/
 tmp/
 coverage/
+/builds/
+/android/
+/ios/
 
 # Local credentials and caches
 .env*.local
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+/credentials.json
+/credentials/
 *.log
 *.tsbuildinfo
 

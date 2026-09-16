@@ -22,13 +22,17 @@ export async function getDestinationAIConfig() {
 
 export function initializeFirebaseAppCheck() {
   if (appCheckReady) return;
-  const provider = new ReactNativeFirebaseAppCheckProvider();
-  provider.configure({
-    android: { provider: __DEV__ ? 'debug' : 'playIntegrity', debugToken: process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN },
-    apple: { provider: __DEV__ ? 'debug' : 'appAttestWithDeviceCheckFallback', debugToken: process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN },
-  });
-  initializeAppCheck(undefined, { provider, isTokenAutoRefreshEnabled: true });
-  appCheckReady = true;
+  try {
+    const provider = new ReactNativeFirebaseAppCheckProvider();
+    provider.configure({
+      android: { provider: __DEV__ ? 'debug' : 'playIntegrity', debugToken: process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN },
+      apple: { provider: __DEV__ ? 'debug' : 'appAttestWithDeviceCheckFallback', debugToken: process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN },
+    });
+    initializeAppCheck(undefined, { provider, isTokenAutoRefreshEnabled: true });
+    appCheckReady = true;
+  } catch (error) {
+    console.warn('App Check no pudo inicializarse.', error);
+  }
 }
 
 export async function askDestinationAI(context: string, question: string, language: 'es' | 'en') {

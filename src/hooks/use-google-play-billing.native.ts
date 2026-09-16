@@ -3,7 +3,7 @@ import { ErrorCode, finishTransaction, type ProductSubscription, type Purchase, 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { billingOffers, googlePlayProductIds, type BillingOfferId } from '@/lib/billing';
+import { billingOffers, googlePlayBasePlanIds, googlePlayProductIds, type BillingOfferId } from '@/lib/billing';
 import { supabase } from '@/lib/supabase';
 
 type Options = {
@@ -103,7 +103,10 @@ export function useGooglePlayBilling({ onError, onVerified, userId }: Options) {
     const productId = googlePlayProductIds[offerId];
     const product = subscriptions.find((item) => item.id === productId) as ProductSubscription | undefined;
     if (!product || product.platform !== 'android') throw new Error('Este plan no está disponible para esta cuenta de Google Play.');
-    const storeOffer = product.subscriptionOffers.find((item) => item.offerTokenAndroid);
+    const matchingOffers = product.subscriptionOffers.filter((item) =>
+      item.basePlanIdAndroid === googlePlayBasePlanIds[offerId] && item.offerTokenAndroid,
+    );
+    const storeOffer = matchingOffers.length === 1 ? matchingOffers[0] : undefined;
     if (!storeOffer?.offerTokenAndroid) throw new Error('Google Play no devolvió un plan de cobro válido.');
     const obfuscatedAccountId = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, userId);
     const replacedPurchase = !billingOffers[offerId].business && offerId !== 'visitor_pass_30d'

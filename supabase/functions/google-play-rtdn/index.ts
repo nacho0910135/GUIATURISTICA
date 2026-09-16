@@ -4,6 +4,7 @@ import { acknowledgeGoogleSubscription, getGoogleSubscription, sha256 } from "..
 const products = {
   universal_monthly: { kind: "plan", plan: "no_ads", amount: 2 },
   universal_annual: { kind: "plan", plan: "no_ads", amount: 20 },
+  visitor_pass_30d: { kind: "plan", plan: "no_ads", amount: 5 },
   business_monthly: { kind: "plan", plan: "business", amount: 9.99 },
   featured_monthly: { kind: "campaign", campaignType: "featured", amount: 5 },
   banner_monthly: { kind: "campaign", campaignType: "banner", amount: 50 },
@@ -39,7 +40,7 @@ Deno.serve(async (request) => {
   const now = new Date().toISOString();
   const { data: subscriptions, error: subscriptionError } = await admin.from("subscriptions").update({ status, provider_status: purchase.subscriptionState, current_period_end: end ?? null, updated_at: now }).eq("provider_subscription_id", providerId).select("id");
   const { data: existingCampaign, error: campaignLookupError } = await admin.from("commerce_ad_campaigns")
-    .select("id,service_id,user_id,campaign_type,target_url,image_url,amount_usd")
+    .select("id,service_id,user_id,campaign_type,target_url,image_url,price_amount,price_currency")
     .eq("provider_subscription_id", providerId).maybeSingle();
   let campaignError = campaignLookupError;
   if (existingCampaign) {
@@ -49,7 +50,8 @@ Deno.serve(async (request) => {
         p_user_id: existingCampaign.user_id,
         p_target_url: existingCampaign.target_url,
         p_image_url: existingCampaign.image_url,
-        p_amount_usd: existingCampaign.amount_usd,
+        p_price_amount: existingCampaign.price_amount,
+        p_price_currency: existingCampaign.price_currency,
         p_provider_subscription_id: providerId,
         p_ends_at: end,
       });
@@ -72,6 +74,10 @@ Deno.serve(async (request) => {
     if (!intent || !isEntitled(purchase.subscriptionState, end) || !end)
       return new Response("reconciliation_pending", { status: 503 });
     const product = products[productId];
+    const money = lineItem.autoRenewingPlan?.recurringPrice;
+    const priceAmount = money ? Number(money.units ?? 0) + Number(money.nanos ?? 0) / 1_000_000_000 : product.amount;
+    const priceCurrency = money?.currencyCode?.toUpperCase() || "USD";
+    if (product.kind === "campaign" && !money?.currencyCode) return new Response("purchase_price_missing", { status: 502 });
     if (intent.service_id) {
       const { data: service } = await admin.from("commercial_services")
         .select("id,subscription_required")
@@ -92,7 +98,9 @@ Deno.serve(async (request) => {
         target_url: product.campaignType === "banner" ? intent.target_url : null,
         image_url: product.campaignType === "banner" ? intent.image_url : null,
         status: "active",
-        amount_usd: product.amount,
+        amount_usd: null,
+        price_amount: priceAmount,
+        price_currency: priceCurrency,
         provider_session_id: null,
         provider_subscription_id: providerId,
         ends_at: end,
@@ -103,22 +111,22 @@ Deno.serve(async (request) => {
             p_user_id: campaign.user_id,
             p_target_url: campaign.target_url,
             p_image_url: campaign.image_url,
-            p_amount_usd: campaign.amount_usd,
+            p_price_amount: campaign.price_amount,
+            p_price_currency: campaign.price_currency,
             p_provider_subscription_id: campaign.provider_subscription_id,
             p_ends_at: campaign.ends_at,
           })
         : await admin.from("commerce_ad_campaigns").upsert(campaign, { onConflict: "provider_subscription_id" });
       if (error) return new Response(error.message.includes("banner_capacity_reached") ? "banner_capacity_reached" : "reconciliation_failed", { status: error.message.includes("banner_capacity_reached") ? 409 : 500 });
     } else {
-      const money = lineItem.autoRenewingPlan?.recurringPrice;
       const { error } = await admin.from("subscriptions").upsert({
         user_id: intent.user_id,
         service_id: intent.service_id,
         plan: product.plan,
         offer_id: productId,
         status,
-        price_amount: money ? Number(money.units ?? 0) + Number(money.nanos ?? 0) / 1_000_000_000 : product.amount,
-        price_currency: money?.currencyCode?.toUpperCase() || "USD",
+        price_amount: priceAmount,
+        price_currency: priceCurrency,
         provider: "google_play",
         provider_status: purchase.subscriptionState,
         provider_subscription_id: providerId,

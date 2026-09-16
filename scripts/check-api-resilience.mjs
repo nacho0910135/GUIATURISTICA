@@ -10,6 +10,7 @@ assert.match(supabase, /https:\/\/offline\.invalid/);
 assert.match(supabase, /try \{ return window\.localStorage; \} catch/);
 assert.match(queries, /throwOnError: false/);
 assert.match(queries, /placeholderData:/);
+assert.match(queries, /Promise\.race\([\s\S]+CACHE_RESTORE_TIMEOUT_MS/);
 assert.match(logistics, /functions\.invoke\('weather'/);
 assert.doesNotMatch(logistics, /OPENWEATHER|api\.openweathermap\.org/);
 assert.match(weather, /catch \{[\s\S]+https:\/\/api\.open-meteo\.com\/v1\/forecast/);

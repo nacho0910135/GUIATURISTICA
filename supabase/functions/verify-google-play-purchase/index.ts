@@ -209,6 +209,7 @@ Deno.serve(async (request) => {
     : offer.fallbackAmount;
   const priceCurrency = money?.currencyCode?.toUpperCase() || "USD";
   if (offer.kind === "campaign") {
+    if (!money?.currencyCode) return json({ error: "purchase_price_missing" }, 502);
     const campaign =
         {
           service_id: serviceId!,
@@ -217,7 +218,9 @@ Deno.serve(async (request) => {
           target_url: offer.campaignType === "banner" ? targetUrl : null,
           image_url: offer.campaignType === "banner" ? imageUrl : null,
           status: "active",
-          amount_usd: offer.fallbackAmount,
+          amount_usd: null,
+          price_amount: priceAmount,
+          price_currency: priceCurrency,
           provider_session_id: null,
           provider_subscription_id: providerId,
           ends_at: expiresAt,
@@ -228,7 +231,8 @@ Deno.serve(async (request) => {
           p_user_id: campaign.user_id,
           p_target_url: campaign.target_url,
           p_image_url: campaign.image_url,
-          p_amount_usd: campaign.amount_usd,
+          p_price_amount: campaign.price_amount,
+          p_price_currency: campaign.price_currency,
           p_provider_subscription_id: campaign.provider_subscription_id,
           p_ends_at: campaign.ends_at,
         })

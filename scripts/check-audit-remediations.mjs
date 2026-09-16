@@ -11,6 +11,11 @@ const portal = read('supabase/functions/create-customer-portal/index.ts');
 const checklist = read('docs/google-play-production-checklist.md');
 const authConfig = read('supabase/config.toml');
 const zeroTrust = read('supabase/migrations/20260830120057_zero_trust_hardening.sql');
+const easIgnore = read('.easignore');
+const localBuild = read('scripts/build-aab-local.ps1');
+const firebase = read('firebase.json');
+const resetPassword = read('src/app/reset-password.tsx');
+const appCheck = read('src/lib/destination-ai.native.ts');
 
 assert.match(app, /blockedPermissions[\s\S]*android\.permission\.SYSTEM_ALERT_WINDOW/);
 assert.doesNotMatch(provider, /requestStartupLocation/);
@@ -26,5 +31,19 @@ assert.match(zeroTrust, /revoke update on table public\.traveler_messages from a
 assert.match(authConfig, /minimum_password_length = 8/);
 assert.match(authConfig, /enable_confirmations = true/);
 assert.match(authConfig, /secure_password_change = true/);
+assert.match(provider, /\['auth\/callback', 'reset-password'\]\.includes\(nativePath\)/);
+assert.match(provider, /exchangeCodeForSession\(code, flowId \? \{ flowId \} : undefined\)/);
+assert.doesNotMatch(provider, /void refreshUserLocation\(\)\.catch\(\(\) => undefined\);\n  \}, \[refreshUserLocation\]\);/);
+assert.match(resetPassword, /setTimeout\(\(\) => setValidationTimedOut\(true\), 12_000\)/);
+assert.match(easIgnore, /\.env\*\.local[\s\S]*\*\.jks/);
+assert.match(easIgnore, /\/builds\/[\s\S]*\/android\//);
+assert.doesNotMatch(localBuild, /git show|credentials\.json/);
+assert.match(localBuild, /DESCUBRIENDO_KEYSTORE_PATH/);
+assert.match(app, /android\.permission\.ACTIVITY_RECOGNITION/);
+assert.match(app, /com\.google\.android\.gms\.permission\.AD_ID/);
+assert.match(firebase, /"analytics_auto_collection_enabled": false/);
+assert.match(firebase, /"google_analytics_adid_collection_enabled": false/);
+assert.match(firebase, /"crashlytics_auto_collection_enabled": true/);
+assert.match(appCheck, /catch \(error\)[\s\S]*App Check no pudo inicializarse/);
 
 console.log('Audit remediations are guarded.');

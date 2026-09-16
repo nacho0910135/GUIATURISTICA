@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-const [verifier, rtdn, planHook, campaignHook, billing, paywall, migration, safety] = await Promise.all([
+const [verifier, rtdn, planHook, campaignHook, billing, paywall, migration, safety, findings, deleteScreen, deleteFunction] = await Promise.all([
   read('supabase/functions/verify-google-play-purchase/index.ts'),
   read('supabase/functions/google-play-rtdn/index.ts'),
   read('src/hooks/use-google-play-billing.native.ts'),
@@ -11,6 +11,9 @@ const [verifier, rtdn, planHook, campaignHook, billing, paywall, migration, safe
   read('src/app/subscriptions.tsx'),
   read('supabase/migrations/20260914120000_google_play_purchase_recovery.sql'),
   read('supabase/migrations/20260914170000_closed_test_safety_fixes.sql'),
+  read('supabase/migrations/20260915120000_google_play_billing_findings.sql'),
+  read('src/app/delete-account.tsx'),
+  read('supabase/functions/delete-account/index.ts'),
 ]);
 
 for (const source of [verifier, rtdn]) {
@@ -35,5 +38,13 @@ assert.match(safety, /pg_advisory_xact_lock[\s\S]*commerce-banner-capacity/);
 assert.match(safety, /revoke insert on table public\.business_events from anon, authenticated/);
 assert.match(safety, /storage_upload_within_quota[\s\S]*262144000/);
 assert.match(safety, /bucket_id <> 'chat-media'[\s\S]*traveler_messages[\s\S]*discard_failed_traveler_message/);
+assert.match(findings, /visitor_pass_30d/);
+assert.match(findings, /purchase_intent_already_pending/);
+assert.match(findings, /prevent_google_play_campaign_reassignment/);
+assert.match(findings, /price_amount[\s\S]*price_currency/);
+assert.match(planHook, /basePlanIdAndroid === googlePlayBasePlanIds/);
+assert.match(campaignHook, /basePlanIdAndroid === googlePlayCampaignBasePlanIds/);
+assert.match(deleteScreen, /Administrar en Google Play/);
+assert.match(deleteFunction, /active_google_play_subscription_requires_acknowledgement/);
 
 console.log('Google Play purchase recovery and entitlement rules are guarded.');

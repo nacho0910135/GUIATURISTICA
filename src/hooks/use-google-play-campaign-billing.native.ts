@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform } from "react-native";
 
 import {
+  googlePlayCampaignBasePlanIds,
   googlePlayCampaignProductIds,
   type CampaignOfferId,
 } from "@/lib/billing";
@@ -188,9 +189,11 @@ export function useGooglePlayCampaignBilling({
         throw new Error(
           "Esta campaña no está disponible para esta cuenta de Google Play.",
         );
-      const storeOffer = product.subscriptionOffers.find(
-        (item) => item.offerTokenAndroid,
+      const matchingOffers = product.subscriptionOffers.filter((item) =>
+        item.basePlanIdAndroid === googlePlayCampaignBasePlanIds[offerId] &&
+        item.offerTokenAndroid,
       );
+      const storeOffer = matchingOffers.length === 1 ? matchingOffers[0] : undefined;
       if (!storeOffer?.offerTokenAndroid)
         throw new Error("Google Play no devolvió un plan de cobro válido.");
       const obfuscatedAccountId = await Crypto.digestStringAsync(

@@ -68,6 +68,12 @@ export const googlePlayProductIds = {
   visitor_pass_30d: "visitor_pass_30d",
   business_monthly: "business_monthly",
 } as const satisfies Record<BillingOfferId, string>;
+export const googlePlayBasePlanIds = {
+  universal_monthly: "monthly",
+  universal_annual: "annual",
+  visitor_pass_30d: "visitor-30d",
+  business_monthly: "monthly",
+} as const satisfies Record<BillingOfferId, string>;
 export const campaignOffers = {
   featured_monthly: {
     campaignType: "featured",
@@ -92,6 +98,10 @@ export type CampaignOfferId = keyof typeof campaignOffers;
 export const googlePlayCampaignProductIds = {
   featured_monthly: "featured_monthly",
   banner_monthly: "banner_monthly",
+} as const satisfies Record<CampaignOfferId, string>;
+export const googlePlayCampaignBasePlanIds = {
+  featured_monthly: "monthly",
+  banner_monthly: "monthly",
 } as const satisfies Record<CampaignOfferId, string>;
 export const BANNER_CAPACITY_ERROR = "banner_capacity_reached";
 
