@@ -9,7 +9,7 @@ const compass = read('src/app/compass.tsx');
 const logistics = read('src/app/(tabs)/logistics.tsx');
 const explore = read('src/app/(tabs)/explore.tsx');
 const community = read('src/app/(tabs)/friends.tsx');
-const ad = read('src/components/ad-banner.tsx');
+const ad = read('src/components/ad-banner.native.tsx');
 
 for (const table of ['traveler_posts', 'traveler_replies', 'traveler_reactions', 'traveler_reply_reactions', 'group_ride_comments']) assert.match(migration, new RegExp(`on public\\.${table} as restrictive for insert`));
 assert.match(migration, /media_type is distinct from 'audio'/);
@@ -19,5 +19,6 @@ assert.match(compass, /!access\.hasPaidAccess.*SubscriptionRequired/s);
 assert.match(logistics, /!access\.hasPaidAccess.*SubscriptionRequired/s);
 assert.match(explore, /!paidAccess\.hasPaidAccess[\s\S]*setShowNearbyPaywall\(true\)/);
 assert.match(community, /paidAccess\.hasPaidAccess \? <View/);
-assert.match(ad, /enabled: !hidden && !access\.hasPaidAccess/);
+assert.match(ad, /trialDaysRemaining === 0 && !access\.data\.hasPersonalPlan/);
+assert.match(ad, /react-native-google-mobile-ads/);
 console.log('The 15-day trial unlocks personal features while commerce keeps its separate subscription.');

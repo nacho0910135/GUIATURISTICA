@@ -36,6 +36,7 @@ export default function MyTripScreen() {
   const [lastInput, setLastInput] = useState<TripPlanInput>();
   const [origin, setOrigin] = useState<{ latitude: number; longitude: number; label: string }>();
   const [originPickerOpen, setOriginPickerOpen] = useState(false);
+  const [locatingOrigin, setLocatingOrigin] = useState(false);
   const [startsAt, setStartsAt] = useState(() => { const date = new Date(); date.setDate(date.getDate() + 1); date.setHours(8, 0, 0, 0); return date; });
   const [savedAt, setSavedAt] = useState<string>();
   const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
@@ -64,14 +65,14 @@ export default function MyTripScreen() {
   if (access.isPending || access.isError) return <View accessibilityRole="alert" className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text className="text-center font-bold text-ui-text dark:text-ui-dark-text">{access.isError ? (isSpanish ? 'No pudimos comprobar tu acceso. Revisá la conexión e intentá de nuevo.' : 'We could not verify your access. Check your connection and try again.') : (isSpanish ? 'Comprobando acceso…' : 'Checking access…')}</Text>{access.isError ? <PrimaryButton className="mt-4" onPress={() => void access.refetch()}>{isSpanish ? 'Reintentar' : 'Retry'}</PrimaryButton> : null}</View>;
 
   const createPlan = async () => {
+    if (!origin) return setMessage(isSpanish ? 'Elegí y confirmá el punto de salida antes de crear la ruta.' : 'Choose and confirm the starting point before creating the route.');
     const availableHours = Number(time) * (timeUnit === 'days' ? 8 : 1);
     const maxBudget = Number(budget) * (budgetCurrency === 'USD' ? exchangeRate : 1);
     const travelerCount = Number(travelers);
     if (!Number.isFinite(availableHours) || availableHours < 2 || !Number.isFinite(maxBudget) || maxBudget <= 0 || !Number.isInteger(travelerCount) || travelerCount < 1 || travelerCount > 30) return setMessage(isSpanish ? 'Ingresá al menos 2 horas, un presupuesto válido y entre 1 y 30 personas.' : 'Enter at least 2 hours, a valid budget, and 1 to 30 travelers.');
     setBusy(true); setMessage(null);
     try {
-      const startingPoint = origin ?? await getPreciseCurrentLocation(language);
-      const input = { latitude: startingPoint.latitude, longitude: startingPoint.longitude, availableHours, maxBudget, travelers: travelerCount, vehicle, categories: stylesSelected, language, startsAt: startsAt.toISOString(), visitorType, exchangeRate };
+      const input = { latitude: origin.latitude, longitude: origin.longitude, availableHours, maxBudget, travelers: travelerCount, vehicle, categories: stylesSelected, language, startsAt: startsAt.toISOString(), visitorType, exchangeRate };
       const nextPlan = await buildTripPlan(input);
       setLastInput(input);
       setPlan(nextPlan);
@@ -87,6 +88,16 @@ export default function MyTripScreen() {
       setPlan(null);
       setMessage(isSpanish ? 'No se puede calcular el itinerario sin Mapbox Directions. Revisá la conexión e intentá de nuevo.' : 'The itinerary cannot be calculated without Mapbox Directions. Check your connection and try again.');
     } finally { setBusy(false); }
+  };
+
+  const selectCurrentOrigin = async () => {
+    setLocatingOrigin(true); setMessage(null);
+    try {
+      const current = await getPreciseCurrentLocation(language);
+      setOrigin({ latitude: current.latitude, longitude: current.longitude, label: isSpanish ? 'Ubicación actual' : 'Current location' });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : (isSpanish ? 'No se pudo obtener la ubicación.' : 'Could not get your location.'));
+    } finally { setLocatingOrigin(false); }
   };
 
   const savePlan = async () => {
@@ -160,7 +171,12 @@ export default function MyTripScreen() {
         <Text className="mt-1 text-sm leading-5 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Completá siete decisiones rápidas. Nosotros ordenamos el resto.' : 'Make seven quick choices. We will organize the rest.'}</Text>
 
         <PlannerSection icon="map-marker-outline" label={isSpanish ? '01 · Punto de salida' : '01 · Starting point'}>
-          <Pressable accessibilityRole="button" className="min-h-12 flex-row items-center rounded-control bg-ui-muted px-4 dark:bg-ui-dark-muted" onPress={() => setOriginPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={20} color="#087443" /><Text className="ml-3 flex-1 font-bold text-ui-text dark:text-ui-dark-text">{origin?.label ?? (isSpanish ? 'Mi ubicación actual' : 'My current location')}</Text><MaterialCommunityIcons name="chevron-right" size={22} color="#68737A" /></Pressable>
+          <View className="rounded-control border border-ui-border bg-ui-muted p-4 dark:border-ui-dark-border dark:bg-ui-dark-muted">
+            <Text className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{origin ? `${origin.label} · ${origin.latitude.toFixed(5)}, ${origin.longitude.toFixed(5)}` : (isSpanish ? 'Elegí y confirmá el lugar desde donde querés salir.' : 'Choose and confirm where you want to start.')}</Text>
+            <Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control bg-ui-primary px-4 disabled:opacity-50 dark:bg-ui-dark-primary" disabled={locatingOrigin} onPress={() => void selectCurrentOrigin()}><MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" /><Text className="ml-2 font-black text-white">{locatingOrigin ? (isSpanish ? 'Obteniendo ubicación…' : 'Getting location…') : (isSpanish ? 'Usar ubicación actual' : 'Use current location')}</Text></Pressable>
+            <Pressable accessibilityRole="button" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control bg-ui-secondary px-4 dark:bg-ui-dark-secondary" onPress={() => setOriginPickerOpen(true)}><MaterialCommunityIcons name="map-search-outline" size={21} color="white" /><Text className="ml-2 font-black text-white">{isSpanish ? (origin ? 'Cambiar ubicación en el mapa' : 'Ubicación manual en el mapa') : (origin ? 'Change map location' : 'Pick manually on map')}</Text></Pressable>
+            {origin ? <Pressable accessibilityRole="link" className="mt-3 min-h-12 flex-row items-center justify-center rounded-control border border-ui-primary px-4 dark:border-ui-dark-primary" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${origin.latitude},${origin.longitude}`)}><MaterialCommunityIcons name="map-marker-radius" size={21} color="#0B6B4F" /><Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{isSpanish ? 'Previsualizar ubicación' : 'Preview location'}</Text><MaterialCommunityIcons name="open-in-new" size={18} color="#0B6B4F" /></Pressable> : null}
+          </View>
         </PlannerSection>
 
         <PlannerSection icon="calendar-clock" label={isSpanish ? '02 · Fecha y hora' : '02 · Date and time'}>
