@@ -33,6 +33,7 @@ export type MapCoordinate = { latitude: number; longitude: number };
 type MapCanvasProps = {
   expanded?: boolean;
   focusLocation?: MapCoordinate;
+  urban?: boolean;
   onLocationPick?: (coordinate: MapCoordinate) => void;
   onViewportChange?: (coordinate: MapCoordinate) => void;
   selectedLocation?: MapCoordinate;
@@ -46,19 +47,20 @@ function weatherSymbol(icon?: string) {
   return '☁';
 }
 
-export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportChange, selectedLocation }: MapCanvasProps = {}) {
+export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, urban = false, onLocationPick, onViewportChange, selectedLocation }: MapCanvasProps = {}) {
   const { language } = useApp();
   const { width } = useWindowDimensions();
   const router = useRouter();
   const wide = width >= 900;
   const selectionMode = Boolean(onLocationPick);
+  const urbanMode = urban || selectionMode;
   const [mapError, setMapError] = useState(false);
   const [mapAttempt, setMapAttempt] = useState(0);
   const cameraRef = useRef<Mapbox.Camera>(null);
   const weather = useQueries({ queries: provinces.map((province) => ({
     queryKey: ['weather', 'province', province.code, language],
     queryFn: () => getWeather(province.center, language),
-    enabled: !selectionMode,
+    enabled: !urbanMode,
     staleTime: WEATHER_STALE_TIME,
   })) });
   const openProvince = useCallback((name: string) => router.push({ pathname: '/(aux)/province', params: { province: name } }), [router]);
@@ -72,9 +74,9 @@ export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, onLo
     if (typeof name === 'string') openProvince(name);
   }, [openProvince]);
   useEffect(() => {
-    if (focusLocation) cameraRef.current?.flyTo([focusLocation.longitude, focusLocation.latitude], 450);
+    if (focusLocation) cameraRef.current?.setCamera({ centerCoordinate: [focusLocation.longitude, focusLocation.latitude], zoomLevel: 17, animationDuration: 450 });
   }, [focusLocation]);
-  const weatherAnnotations = useMemo(() => selectionMode ? null : provinces.map((province, index) => {
+  const weatherAnnotations = useMemo(() => urbanMode ? null : provinces.map((province, index) => {
     const current = weather[index].data;
     return (
       <Mapbox.MarkerView allowOverlap id={`province-${province.code}`} key={province.code} coordinate={provinceMarkerCoordinates[province.code]}>
@@ -86,13 +88,13 @@ export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, onLo
         </Pressable>
       </Mapbox.MarkerView>
     );
-  }), [openProvince, selectionMode, weather, wide]);
+  }), [openProvince, urbanMode, weather, wide]);
 
   return (
     <View className="overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={expanded ? styles.expandedMap : { borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, height: wide ? 371 : 322, position: 'relative' }}>
-      <Mapbox.MapView key={mapAttempt} onMapLoadingError={() => setMapError(true)} onDidFinishLoadingMap={() => setMapError(false)} attributionEnabled compassEnabled logoEnabled onCameraChanged={onViewportChange ? (state) => { const [longitude, latitude] = state.properties.center; onViewportChange({ latitude, longitude }); } : undefined} onPress={onLocationPick ? handleMapPress : undefined} pitchEnabled={false} rotateEnabled={false} scaleBarEnabled={false} style={StyleSheet.absoluteFill} styleJSON={selectionMode ? undefined : PROVINCE_MAP_STYLE} styleURL={selectionMode ? 'mapbox://styles/mapbox/streets-v12' : undefined}>
-        <Mapbox.Camera ref={cameraRef} defaultSettings={{ centerCoordinate: focusLocation ? [focusLocation.longitude, focusLocation.latitude] : [-84.12, 9.88], zoomLevel: focusLocation ? 15 : wide ? 7.37 : 6.67 }} maxZoomLevel={selectionMode ? 20 : 10} minZoomLevel={5} />
-        {!selectionMode ? (
+      <Mapbox.MapView key={mapAttempt} onMapLoadingError={() => setMapError(true)} onDidFinishLoadingMap={() => setMapError(false)} attributionEnabled compassEnabled logoEnabled onCameraChanged={onViewportChange ? (state) => { const [longitude, latitude] = state.properties.center; onViewportChange({ latitude, longitude }); } : undefined} onPress={onLocationPick ? handleMapPress : undefined} pitchEnabled={false} rotateEnabled={false} scaleBarEnabled={false} style={StyleSheet.absoluteFill} styleJSON={urbanMode ? undefined : PROVINCE_MAP_STYLE} styleURL={urbanMode ? 'mapbox://styles/mapbox/streets-v12' : undefined}>
+        <Mapbox.Camera ref={cameraRef} defaultSettings={{ centerCoordinate: focusLocation ? [focusLocation.longitude, focusLocation.latitude] : [-84.12, 9.88], zoomLevel: focusLocation ? 17 : wide ? 7.37 : 6.67 }} maxZoomLevel={urbanMode ? 20 : 10} minZoomLevel={5} />
+        {!urbanMode ? (
           <Mapbox.ShapeSource id="provinces" shape={provinceShape} onPress={handleProvincePress}>
             <Mapbox.FillLayer id="province-fills" style={{ fillColor: ['get', 'color'], fillOpacity: 1 }} />
             <Mapbox.LineLayer id="province-halo" style={{ lineColor: '#FFFDF8', lineOpacity: 0.9, lineWidth: 6 }} />
@@ -106,8 +108,8 @@ export const MapCanvas = memo(function MapCanvas({ expanded, focusLocation, onLo
         ) : null}
         {weatherAnnotations}
       </Mapbox.MapView>
-      {selectionMode && mapError ? <Pressable accessibilityRole="button" className="absolute left-4 right-4 top-24 min-h-12 rounded-xl bg-ui-surface p-4 dark:bg-ui-dark-surface" onPress={() => { setMapError(false); setMapAttempt((value) => value + 1); }}><Text className="text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No se pudo cargar el mapa. Revisá tu conexión y tocá para reintentar.' : 'Could not load the map. Check your connection and tap to retry.'}</Text></Pressable> : null}
-      {!selectionMode && weather.every(({ isPending }) => isPending) ? <View className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/90 p-2"><FrogLoader color="#2A7B4C" /></View> : null}
+      {urbanMode && mapError ? <Pressable accessibilityRole="button" className="absolute left-4 right-4 top-24 min-h-12 rounded-xl bg-ui-surface p-4 dark:bg-ui-dark-surface" onPress={() => { setMapError(false); setMapAttempt((value) => value + 1); }}><Text className="text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'No se pudo cargar el mapa. Revisá tu conexión y tocá para reintentar.' : 'Could not load the map. Check your connection and tap to retry.'}</Text></Pressable> : null}
+      {!urbanMode && weather.every(({ isPending }) => isPending) ? <View className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/90 p-2"><FrogLoader color="#2A7B4C" /></View> : null}
     </View>
   );
 });

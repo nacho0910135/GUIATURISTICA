@@ -126,7 +126,7 @@ function TravelerWallSkeleton({ language }: { language: 'es' | 'en' }) {
 
 export default function FriendsScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ postId?: string; commentId?: string }>();
+  const params = useLocalSearchParams<{ postId?: string; commentId?: string; destinationId?: string; community?: string }>();
   const { avatarUrl, language, requireAuth, session } = useApp();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
@@ -180,7 +180,7 @@ export default function FriendsScreen() {
     }), { posts: [], replies: [], myReactions: {}, followedUserIds: new Set<string>(), reactionCounts: {}, myReplyReactions: {}, replyReactionCounts: {} } as Omit<Awaited<ReturnType<typeof getTravelerWall>>, 'nextCursor'>);
   }, [wallQuery.data]);
   const error = wallQuery.error instanceof Error ? wallQuery.error.message : undefined;
-  const explorePlaces = useQuery({ queryKey: ['explore-places', 'v3'], queryFn: getExplorePlaces, staleTime: 5 * 60 * 1000, enabled: isActive && (placeSearchOpen || Boolean(wall?.posts.some((post) => post.recommended_destination_id))) });
+  const explorePlaces = useQuery({ queryKey: ['explore-places', 'v3'], queryFn: getExplorePlaces, staleTime: 5 * 60 * 1000, enabled: isActive && (placeSearchOpen || Boolean(params.destinationId) || Boolean(wall?.posts.some((post) => post.recommended_destination_id))) });
   const topics = topicOptions.data ?? [];
   const reactions = reactionOptions.data ?? [];
   const normalizedPlaceSearch = placeSearch.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -201,6 +201,15 @@ export default function FriendsScreen() {
     }, 200);
     return () => clearTimeout(timeout);
   }, [params.commentId, params.postId, wall]);
+
+  useEffect(() => {
+    if (!params.destinationId || !explorePlaces.data) return;
+    const place = explorePlaces.data.find((item) => item.id === params.destinationId && item.community === (params.community === '1'));
+    if (place) {
+      setRecommendation(place);
+      scrollRef.current?.scrollTo({ animated: true, y: 0 });
+    }
+  }, [explorePlaces.data, params.community, params.destinationId]);
 
   const choosePhoto = async () => {
     if (!requireAuth(language === 'es' ? 'Compartir una foto' : 'Share a photo')) return;

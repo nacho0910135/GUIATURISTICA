@@ -22,7 +22,7 @@ const provinceShape: GeoJSON.FeatureCollection = {
   features: provinces.map((province) => ({ type: 'Feature', id: province.code, properties: { code: province.code, name: province.name }, geometry: { type: 'MultiPolygon', coordinates: province.polygons.map((ring) => [ring]) } })),
 };
 export type MapCoordinate = { latitude: number; longitude: number };
-type MapCanvasProps = { expanded?: boolean; focusLocation?: MapCoordinate; onLocationPick?: (coordinate: MapCoordinate) => void; onViewportChange?: (coordinate: MapCoordinate) => void; selectedLocation?: MapCoordinate };
+type MapCanvasProps = { expanded?: boolean; focusLocation?: MapCoordinate; urban?: boolean; onLocationPick?: (coordinate: MapCoordinate) => void; onViewportChange?: (coordinate: MapCoordinate) => void; selectedLocation?: MapCoordinate };
 type WeatherMarker = { icon: HTMLSpanElement; label: HTMLSpanElement; marker: mapboxgl.Marker };
 
 function weatherSymbol(icon?: string) {
@@ -33,7 +33,7 @@ function weatherSymbol(icon?: string) {
   return '☁';
 }
 
-export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportChange, selectedLocation }: MapCanvasProps = {}) {
+export function MapCanvas({ expanded, focusLocation, urban = false, onLocationPick, onViewportChange, selectedLocation }: MapCanvasProps = {}) {
   const { language } = useApp();
   const { width } = useWindowDimensions();
   const router = useRouter();
@@ -48,7 +48,8 @@ export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportC
   const [mapError, setMapError] = useState(false);
   const wide = width >= 900;
   const selectionMode = Boolean(onLocationPick);
-  const weather = useQueries({ queries: provinces.map((province) => ({ queryKey: ['weather', 'province', province.code, language], queryFn: () => getWeather(province.center, language), enabled: !selectionMode, staleTime: WEATHER_STALE_TIME })) });
+  const urbanMode = urban || selectionMode;
+  const weather = useQueries({ queries: provinces.map((province) => ({ queryKey: ['weather', 'province', province.code, language], queryFn: () => getWeather(province.center, language), enabled: !urbanMode, staleTime: WEATHER_STALE_TIME })) });
   useEffect(() => { onLocationPickRef.current = onLocationPick; }, [onLocationPick]);
   useEffect(() => { onViewportChangeRef.current = onViewportChange; }, [onViewportChange]);
 
@@ -56,14 +57,14 @@ export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportC
     if (!mapContainer.current || mapRef.current) return;
     const weatherMarkers = weatherMarkersRef.current;
     let loaded = false;
-    const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: selectionMode ? 'mapbox://styles/mapbox/streets-v12' : PROVINCE_MAP_STYLE, center: initialFocusLocation ? [initialFocusLocation.longitude, initialFocusLocation.latitude] : [-84.12, 9.88], zoom: initialFocusLocation ? 15 : wide ? 7.37 : 6.67, minZoom: 5.7, maxZoom: selectionMode ? 20 : 10, dragRotate: false, pitchWithRotate: false, attributionControl: selectionMode });
-    if (selectionMode) map.scrollZoom.enable(); else map.scrollZoom.disable();
+    const map = new mapboxgl.Map({ accessToken: MAPBOX_TOKEN, container: mapContainer.current, style: urbanMode ? 'mapbox://styles/mapbox/streets-v12' : PROVINCE_MAP_STYLE, center: initialFocusLocation ? [initialFocusLocation.longitude, initialFocusLocation.latitude] : [-84.12, 9.88], zoom: initialFocusLocation ? 15 : wide ? 7.37 : 6.67, minZoom: 5.7, maxZoom: urbanMode ? 20 : 10, dragRotate: false, pitchWithRotate: false, attributionControl: urbanMode });
+    if (urbanMode) map.scrollZoom.enable(); else map.scrollZoom.disable();
     mapRef.current = map;
     map.on('load', () => {
       loaded = true;
       setMapReady(true);
       setMapError(false);
-      if (selectionMode) {
+      if (urbanMode) {
         map.on('click', (event) => onLocationPickRef.current?.({ latitude: event.lngLat.lat, longitude: event.lngLat.lng }));
         map.on('move', () => { const center = map.getCenter(); onViewportChangeRef.current?.({ latitude: center.lat, longitude: center.lng }); });
         return;
@@ -121,10 +122,10 @@ export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportC
       map.remove();
       mapRef.current = null;
     };
-  }, [initialFocusLocation, router, selectionMode, wide]);
+  }, [initialFocusLocation, router, selectionMode, urbanMode, wide]);
 
   useEffect(() => {
-    if (focusLocation && mapReady) mapRef.current?.flyTo({ center: [focusLocation.longitude, focusLocation.latitude], zoom: 15, duration: 450 });
+    if (focusLocation && mapReady) mapRef.current?.flyTo({ center: [focusLocation.longitude, focusLocation.latitude], zoom: 17, duration: 450 });
   }, [focusLocation, mapReady]);
 
   useEffect(() => {
@@ -143,7 +144,7 @@ export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportC
   useEffect(() => () => { locationMarkerRef.current?.remove(); }, []);
 
   useEffect(() => {
-    if (selectionMode || !mapReady) return;
+    if (urbanMode || !mapReady) return;
     provinces.forEach((province, index) => {
       const marker = weatherMarkersRef.current.get(province.code);
       const current = weather[index].data;
@@ -151,7 +152,7 @@ export function MapCanvas({ expanded, focusLocation, onLocationPick, onViewportC
       marker.icon.textContent = weatherSymbol(current?.icon);
       marker.label.textContent = `${province.name}\n${current ? `${current.temperature}°${current.temperatureUnit}` : '…'}`;
     });
-  }, [mapReady, selectionMode, weather]);
+  }, [mapReady, urbanMode, weather]);
 
   return (
     <View className="relative overflow-hidden bg-ui-secondary dark:bg-ui-dark-secondary" style={expanded ? { flex: 1 } : { borderColor: '#1E5B75', borderRadius: wide ? 28 : 0, borderWidth: 2, boxShadow: '0 10px 28px rgba(30, 91, 117, 0.28)', height: wide ? 530 : 460 }}>

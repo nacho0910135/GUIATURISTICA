@@ -81,7 +81,7 @@ export default function PrivateMessagesScreen() {
   });
 
   return <SafeAreaView className="flex-1 bg-ui-background dark:bg-ui-dark-background">
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+    <KeyboardAvoidingView behavior="padding" className="flex-1">
       <View className="min-h-16 flex-row items-center border-b border-ui-border bg-ui-surface px-3 dark:border-ui-dark-border dark:bg-ui-dark-surface">
         <Pressable accessibilityLabel={partnerId ? text('Cerrar chat', 'Close chat') : active ? text('Volver a conversaciones', 'Back to conversations') : text('Cerrar mensajes', 'Close messages')} className="h-11 w-11 items-center justify-center rounded-full" onPress={() => partnerId ? router.back() : active ? setActivePartnerId(undefined) : router.back()}>
           <MaterialCommunityIcons name="arrow-left" size={25} color="#0B6B4F" />
@@ -89,7 +89,7 @@ export default function PrivateMessagesScreen() {
         {active ? <><ChatAvatar url={active.partner_avatar_url} name={active.partner_name} /><Text className="ml-3 flex-1 text-lg font-black text-ui-text dark:text-ui-dark-text" numberOfLines={1}>{active.partner_name}</Text></> : <><View className="h-10 w-10 items-center justify-center rounded-full bg-ui-primary"><MaterialCommunityIcons name="message-text-outline" size={22} color="white" /></View><Text className="ml-3 text-xl font-black text-ui-text dark:text-ui-dark-text">{text('Mensajes privados', 'Private messages')}</Text></>}
       </View>
       {active ? <>
-        <ScrollView ref={messageListRef} className="flex-1 px-3 pt-3" contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled" onContentSizeChange={() => messageListRef.current?.scrollToEnd({ animated: false })}>
+        <ScrollView ref={messageListRef} automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'} className="flex-1 px-3 pt-3" contentContainerStyle={{ paddingBottom: 16 }} keyboardDismissMode="interactive" keyboardShouldPersistTaps="handled" onContentSizeChange={() => messageListRef.current?.scrollToEnd({ animated: false })}>
           {messageHistory.hasNextPage ? <Pressable accessibilityRole="button" className="mb-3 self-center rounded-full bg-ui-primary-soft px-4 py-2 dark:bg-ui-dark-primary-soft" disabled={messageHistory.isFetchingNextPage} onPress={() => void messageHistory.fetchNextPage()}><Text className="font-black text-ui-primary dark:text-ui-dark-primary">{messageHistory.isFetchingNextPage ? text('Cargando…', 'Loading…') : text('Cargar mensajes anteriores', 'Load previous messages')}</Text></Pressable> : null}
           {active.messages.map((item) => <TravelerMessage key={item.id} message={item} mine={item.sender_id === userId} language={language} avatarUrl={item.sender_id === userId ? avatarUrl : active.partner_avatar_url} senderName={item.sender_id === userId ? text('Vos', 'You') : active.partner_name} onReact={(emoji) => void run(async () => { await toggleTravelerMessageReaction(item.id, emoji); await messageHistory.refetch(); })} />)}
         </ScrollView>

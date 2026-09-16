@@ -53,7 +53,7 @@ function CompassContent() {
       : (es ? 'Sin ubicación precisa. El mapa no indica tu posición.' : 'No precise location. The map does not show your position.');
 
   return <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <MapCanvas expanded focusLocation={center} selectedLocation={position?.coords} />
+    <MapCanvas expanded urban focusLocation={center} selectedLocation={position?.coords} />
     <View style={{ position: 'absolute', top: insets.top + 12, left: 16 }}>
       <IconButton accessibilityLabel={es ? 'Atrás' : 'Back'} icon={<ArrowLeft color={colors.text} />} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/explore')} />
     </View>

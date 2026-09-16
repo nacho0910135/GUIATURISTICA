@@ -63,7 +63,7 @@ export function useCompass(retry: number) {
         // atan2(x,y) alone cannot correctly orient a geographic map.
         keep(await Location.watchHeadingAsync((value) => { if (!disposed) latest = value; }));
         if (disposed) return;
-        Magnetometer.setUpdateInterval(100);
+        Magnetometer.setUpdateInterval(50);
         keep(Magnetometer.addListener(({ x, y, z }) => {
           if (disposed) return;
           const strength = Math.hypot(x, y, z);
@@ -75,7 +75,7 @@ export function useCompass(retry: number) {
           const firstReading = filtered === null;
           filtered = smoothHeading(filtered, heading);
           if (filtered === null) return;
-          rotation.value = firstReading ? filtered : withTiming(filtered, { duration: 100 });
+          rotation.value = firstReading ? filtered : withTiming(filtered, { duration: 75 });
           setDegrees(filtered);
           setSensorStatus('ready');
         }));

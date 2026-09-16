@@ -3,7 +3,7 @@ export function normalizeHeading(value: number) {
 }
 
 // Keep the filtered angle unwrapped: 359 -> 1 travels two degrees, not 358.
-export function smoothHeading(previous: number | null, next: number, alpha = 0.2) {
+export function smoothHeading(previous: number | null, next: number, alpha = 0.35) {
   if (!Number.isFinite(next)) return previous;
   if (previous === null) return normalizeHeading(next);
   const delta = normalizeHeading(next - previous + 180) - 180;

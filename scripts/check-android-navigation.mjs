@@ -14,6 +14,9 @@ assert.match(manifest, /android:enableOnBackInvokedCallback="true"/);
 assert.match(build, /enableOnBackInvokedCallback=.*true/);
 assert.doesNotMatch(root, /BackHandler|hardwareBackPress|backToExplore/);
 assert.match(tabs, /backBehavior=["']history["']/);
+assert.match(tabs, /BackHandler\.addEventListener\('hardwareBackPress'/);
+assert.match(tabs, /if \(router\.canGoBack\(\)\) return false;/);
+assert.match(tabs, /if \(segments\[1\] !== 'explore'\) router\.replace\('\/\(tabs\)\/explore'\);[\s\S]*return true;/);
 assert.match(tabs, /tabPress:[\s\S]*haptic\('selection'\)/);
 assert.doesNotMatch(tabs, /tabPress:[\s\S]*haptic\('error'\)/);
 
