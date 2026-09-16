@@ -10,7 +10,7 @@ import { FrogLoader } from '@/components/frog-loader';
 import { supabase } from '@/lib/supabase';
 
 export default function AuthModal() {
-  const { intent } = useLocalSearchParams<{ intent?: string }>();
+  const { intent, mode: requestedMode } = useLocalSearchParams<{ intent?: string; mode?: 'signin' | 'signup' }>();
   const { language, signIn, signInWithGoogle, signUp } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +18,7 @@ export default function AuthModal() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup'>(requestedMode === 'signup' ? 'signup' : 'signin');
   const requestInFlight = useRef(false);
 
   const authErrorMessage = (reason: unknown) => {

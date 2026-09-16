@@ -91,6 +91,7 @@
     "check:marketplace": "node scripts/check-marketplace.mjs",
     "check:billing": "node scripts/check-billing.mjs",
     "check:freemium": "node scripts/check-freemium-access.mjs",
+    "check:guest-prompt": "node scripts/check-guest-registration-prompt.mjs",
     "check:google-play-remediation": "node scripts/check-google-play-remediation.mjs",
     "check:oauth": "node scripts/check-oauth-security.mjs",
     "check:findings": "node scripts/check-reported-findings.mjs",
