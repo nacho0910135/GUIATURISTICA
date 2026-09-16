@@ -14,6 +14,7 @@ Deno.serve(async (request) => {
   const { data: { user }, error: userError } = await userClient.auth.getUser();
   if (userError || !user) return json({ error: 'unauthorized' }, 401);
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
   const body = await request.json().catch(() => ({})) as { acknowledgeActiveGooglePlaySubscriptions?: boolean };
   const { count: activeGooglePlaySubscriptions, error: subscriptionError } = await admin.from('subscriptions')
     .select('id', { count: 'exact', head: true })
@@ -25,6 +26,24 @@ Deno.serve(async (request) => {
   if (subscriptionError) return json({ error: 'subscription_lookup_failed' }, 500);
   if (activeGooglePlaySubscriptions && !body.acknowledgeActiveGooglePlaySubscriptions)
     return json({ error: 'active_google_play_subscription_requires_acknowledgement' }, 409);
+
+  const { data: stripeSubscriptions, error: stripeLookupError } = await admin.from('subscriptions')
+    .select('provider_subscription_id')
+    .eq('user_id', user.id)
+    .eq('provider', 'stripe')
+    .neq('offer_id', 'visitor_pass_30d')
+    .in('status', ['active', 'past_due', 'canceled', 'pending'])
+    .or(`current_period_end.is.null,current_period_end.gt.${new Date().toISOString()}`);
+  if (stripeLookupError) return json({ error: 'subscription_lookup_failed' }, 500);
+  if (stripeSubscriptions?.length && !stripeKey) return json({ error: 'stripe_not_configured' }, 503);
+  for (const subscription of stripeSubscriptions ?? []) {
+    if (!subscription.provider_subscription_id) return json({ error: 'invalid_stripe_subscription' }, 500);
+    const response = await fetch(`https://api.stripe.com/v1/subscriptions/${encodeURIComponent(subscription.provider_subscription_id)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${stripeKey}`, 'Idempotency-Key': `delete-account-${user.id}-${subscription.provider_subscription_id}` },
+    });
+    if (!response.ok && response.status !== 404) return json({ error: 'stripe_cancellation_failed' }, 502);
+  }
 
   const buckets = ['profile-avatars', 'fauna-photos', 'business-photos', 'campaign-banners', 'chat-media', 'review-photos', 'destination-suggestion-photos', 'destination-user-photos', 'traveler-posts'];
   for (const bucket of buckets) {

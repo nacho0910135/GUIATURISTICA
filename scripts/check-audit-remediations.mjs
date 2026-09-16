@@ -43,7 +43,9 @@ assert.match(app, /android\.permission\.ACTIVITY_RECOGNITION/);
 assert.match(app, /com\.google\.android\.gms\.permission\.AD_ID/);
 assert.match(firebase, /"analytics_auto_collection_enabled": false/);
 assert.match(firebase, /"google_analytics_adid_collection_enabled": false/);
-assert.match(firebase, /"crashlytics_auto_collection_enabled": true/);
-assert.match(appCheck, /catch \(error\)[\s\S]*App Check no pudo inicializarse/);
+assert.match(firebase, /"crashlytics_auto_collection_enabled": false/);
+assert.match(firebase, /"crashlytics_debug_enabled": false/);
+assert.match(appCheck, /getToken\(initializeFirebaseAppCheck\(\), false\)/);
+assert.doesNotMatch(appCheck, /App Check no pudo inicializarse/);
 
 console.log('Audit remediations are guarded.');

@@ -25,8 +25,7 @@ export async function registerPushNotifications() {
 }
 
 export async function unregisterPushNotifications() {
-  if (!token) return;
-  const { error } = await supabase.rpc('unregister_push_token', { p_expo_push_token: token });
+  const { error } = await supabase.rpc('unregister_all_push_tokens');
   if (error) throw error;
   token = undefined;
 }

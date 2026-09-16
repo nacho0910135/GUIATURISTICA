@@ -315,7 +315,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [createSessionFromUrl]);
 
   const signOut = useCallback(async () => {
-    await unregisterPushNotifications().catch(() => undefined);
+    await unregisterPushNotifications();
     await supabase.auth.signOut();
     setUserSession(null);
     setIsAdmin(false);

@@ -28,6 +28,7 @@ import { LocationPickerModal } from "@/components/location-picker-modal";
 import { ThemedAlert as Alert } from "@/components/themed-alert";
 import { getAppOptions, type AppOption } from "@/lib/app-options";
 import { getPreciseCurrentLocation } from "@/lib/current-location";
+import { openExternalUrl } from "@/lib/external-url";
 import { useGooglePlayCampaignBilling } from "@/hooks/use-google-play-campaign-billing";
 import {
   BannerCapacityError,
@@ -383,7 +384,7 @@ function CampaignBanner({ campaign }: { campaign: CommerceBannerCampaign }) {
     <Pressable
       accessibilityRole="link"
       className="mx-5 mb-1 mt-4 overflow-hidden rounded-card border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface"
-      onPress={() => void Linking.openURL(campaign.target_url!)}
+      onPress={() => void openExternalUrl(campaign.target_url!)}
     >
       {imageUrl ? (
         <Image
@@ -830,7 +831,7 @@ function BusinessDetailModal({
                     accessibilityRole="link"
                     className="min-h-11 justify-center"
                     onPress={() =>
-                      void Linking.openURL(
+                      void openExternalUrl(
                         service.menu_url ?? service.external_url!,
                       )
                     }
@@ -856,7 +857,7 @@ function BusinessDetailModal({
                         "reservation",
                         attribution,
                       );
-                      void Linking.openURL(service.booking_url!);
+                      void openExternalUrl(service.booking_url!);
                     }}
                   >
                     <Text className="text-xs font-black text-ui-primary">
