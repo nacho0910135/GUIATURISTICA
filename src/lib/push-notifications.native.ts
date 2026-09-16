@@ -36,7 +36,10 @@ export function observePushNotifications() {
     void openNotification({ actorId: typeof data.actorId === 'string' ? data.actorId : null, targetId: typeof data.targetId === 'string' ? data.targetId : null, type: typeof data.type === 'string' ? data.type : null });
   };
   const last = Notifications.getLastNotificationResponse();
-  if (last) open(last.notification);
+  if (last) {
+    open(last.notification);
+    Notifications.clearLastNotificationResponse();
+  }
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => open(response.notification));
   return () => subscription.remove();
 }

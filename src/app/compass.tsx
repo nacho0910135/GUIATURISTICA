@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path, Text as SvgText } from 'react-native-svg';
 
 import { MapCanvas, type MapCoordinate } from '@/components/explore/map-canvas';
+import { SubscriptionRequired, usePaidAccess } from '@/components/subscription-required';
 import { Button, IconButton } from '@/components/ui/button';
 import { useCompass } from '@/hooks/use-compass';
 import { normalizeHeading } from '@/lib/compass';
@@ -16,6 +17,13 @@ import { useAppTheme } from '@/theme/theme-provider';
 const COSTA_RICA = { latitude: 9.7489, longitude: -83.7534 };
 
 export default function CompassScreen() {
+  const access = usePaidAccess();
+  if (!access.isPending && !access.hasPaidAccess) return <SubscriptionRequired />;
+  if (access.isPending) return <View className="flex-1 bg-ui-background dark:bg-ui-dark-background" />;
+  return <CompassContent />;
+}
+
+function CompassContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -72,8 +80,8 @@ export default function CompassScreen() {
       <Text style={{ color: colors.text }}>{sensorCopy}</Text>
       <Text style={{ color: colors.textMuted }}>{locationCopy}</Text>
       <Button onPress={recenter} emphasis="outline" label={es ? 'Centrar en mi ubicación' : 'Center on my location'} icon={<LocateFixed color={colors.primary} size={18} />} disabled={!position} />
-      {['unavailable', 'denied'].includes(sensorStatus) || ['error', 'denied', 'imprecise'].includes(locationStatus) ? <Button onPress={retrySensors} emphasis="ghost" label={es ? 'Reintentar' : 'Retry'} /> : null}
-      {locationStatus === 'denied' || sensorStatus === 'denied' ? <Button onPress={openSettings} emphasis="ghost" label={es ? 'Abrir ajustes' : 'Open settings'} /> : null}
+      {['unavailable', 'denied'].includes(sensorStatus) || ['error', 'denied', 'imprecise'].includes(locationStatus) ? <Button disabled={false} onPress={retrySensors} emphasis="ghost" label={es ? 'Reintentar' : 'Retry'} /> : null}
+      {locationStatus === 'denied' || sensorStatus === 'denied' ? <Button disabled={false} onPress={openSettings} emphasis="ghost" label={es ? 'Abrir ajustes' : 'Open settings'} /> : null}
     </ScrollView>
   </View>;
 }

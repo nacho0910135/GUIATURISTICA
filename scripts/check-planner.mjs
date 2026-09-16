@@ -41,7 +41,8 @@ assert.doesNotMatch(screen, /9\.9326|Descargar \$\{zone|Prepará la zona sin con
 assert.match(screen, /pueden variar según la zona/);
 const provider = await readFile(new URL('../src/providers/app-provider.tsx', import.meta.url), 'utf8');
 const queryClient = await readFile(new URL('../src/lib/query-client.ts', import.meta.url), 'utf8');
-assert.match(provider, /ensureOfflineTripPacks\(provinces\)/);
+assert.match(provider, /getMyAccessStatus\(\)[\s\S]*access\.hasAccess \? getPlannerOptions\(\) : null[\s\S]*ensureOfflineTripPacks\(options\.provinces\)/);
+assert.match(screen, /access\.data\?\.hasAccess === false[\s\S]*Redirect href="\/subscriptions"/);
 assert.match(queryClient, /PERSISTED_QUERIES[\s\S]*my-app-access/);
 
 const planner = load('src/lib/logistics.ts', {

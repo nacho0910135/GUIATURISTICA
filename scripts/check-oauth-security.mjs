@@ -7,8 +7,8 @@ const client = readFileSync(new URL('../src/lib/supabase.ts', import.meta.url), 
 
 assert.match(client, /flowType:\s*['"]pkce['"]/);
 assert.match(client, /appendPkceFlowIdToRedirects:\s*true/);
-assert.match(provider, /exchangeCodeForSession\(code, \{ flowId \}\)/);
-assert.match(provider, /callbackUrl\.protocol !== 'descubriendocr:'[\s\S]*callbackUrl\.hostname !== 'auth'[\s\S]*callbackUrl\.pathname !== '\/callback'/);
+assert.match(provider, /exchangeCodeForSession\(code, flowId \? \{ flowId \} : undefined\)/);
+assert.match(provider, /\['auth\/callback', 'reset-password'\]\.includes\(nativePath\)/);
 assert.doesNotMatch(provider, /setSession\s*\(/);
 assert.doesNotMatch(provider, /searchParams\.get\(['"](?:access_token|refresh_token)['"]\)/);
 

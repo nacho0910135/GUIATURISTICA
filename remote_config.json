@@ -4,18 +4,10 @@
     "ai_destination_assistant_enabled": {
       "defaultValue": { "value": "true" },
       "description": "Interruptor maestro de Conocé más con IA en las fichas de sitios."
-    },
-    "ai_destination_model": {
-      "defaultValue": { "value": "gemini-3.5-flash-lite" },
-      "description": "Modelo estable de Firebase AI Logic para ampliar información y responder preguntas sobre sitios."
-    },
-    "ai_destination_max_output_tokens": {
-      "defaultValue": { "value": "350" },
-      "description": "Límite de salida para controlar latencia y consumo."
     }
   },
   "parameterGroups": {},
   "version": {
-    "description": "Controles iniciales de IA; sin condiciones ni experimentos A/B."
+    "description": "Interruptor cliente de IA; modelo y límite se configuran únicamente en el servidor."
   }
 }

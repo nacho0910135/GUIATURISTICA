@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 export type ReportTargetType = 'destination' | 'commercial_service' | 'road' | 'traveler' | 'traveler_post';
 export type ReportType = string;
 export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'dismissed';
+export type ModerationAction = 'remove_content' | 'restrict_user' | 'remove_and_restrict';
 
 export type InformationReport = {
   id: string;
@@ -16,6 +17,8 @@ export type InformationReport = {
   resolution_note: string | null;
   created_at: string;
   reviewed_at: string | null;
+  moderation_action: ModerationAction | null;
+  actioned_at: string | null;
 };
 
 export function reportTypeLabel(type: ReportType, language: 'es' | 'en') {
@@ -48,12 +51,17 @@ export async function submitInformationReport(input: {
 
 export async function getInformationReportsForAdmin() {
   const { data, error } = await supabase.from('information_reports')
-    .select('id,target_type,target_id,target_key,target_label,report_type,details,status,resolution_note,created_at,reviewed_at')
+    .select('id,target_type,target_id,target_key,target_label,report_type,details,status,resolution_note,created_at,reviewed_at,moderation_action,actioned_at')
     .in('status', ['open', 'reviewing'])
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) throw error;
   return (data ?? []) as InformationReport[];
+}
+
+export async function moderateInformationReport(id: string, action: ModerationAction) {
+  const { error } = await supabase.rpc('moderate_information_report', { p_report_id: id, p_action: action });
+  if (error) throw error;
 }
 
 export async function updateInformationReportStatus(id: string, status: ReportStatus, resolutionNote?: string) {

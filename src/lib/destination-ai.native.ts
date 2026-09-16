@@ -3,7 +3,7 @@ import { fetchAndActivate, getRemoteConfig, getValue } from '@react-native-fireb
 
 import { supabase } from '@/lib/supabase';
 
-const defaults = { ai_destination_assistant_enabled: true, ai_destination_model: 'gemini-3.5-flash-lite', ai_destination_max_output_tokens: 350 };
+const defaults = { ai_destination_assistant_enabled: true };
 let appCheck: ReturnType<typeof initializeAppCheck> | undefined;
 let configPromise: Promise<typeof defaults> | undefined;
 
@@ -15,8 +15,6 @@ export async function getDestinationAIConfig() {
     await fetchAndActivate(config).catch(() => false);
     return {
       ai_destination_assistant_enabled: getValue(config, 'ai_destination_assistant_enabled').asBoolean(),
-      ai_destination_model: getValue(config, 'ai_destination_model').asString() || defaults.ai_destination_model,
-      ai_destination_max_output_tokens: Math.max(100, Math.min(700, getValue(config, 'ai_destination_max_output_tokens').asNumber() || defaults.ai_destination_max_output_tokens)),
     };
   })();
 }

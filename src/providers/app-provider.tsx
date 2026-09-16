@@ -11,6 +11,7 @@ import { copy, type CopyKey, type Language } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { getPlannerOptions } from '@/lib/app-options';
 import { ensureOfflineTripPacks } from '@/lib/offline-trip-pack';
+import { getMyAccessStatus } from '@/lib/billing';
 import { observePushNotifications, unregisterPushNotifications } from '@/lib/push-notifications';
 import { useAppTheme } from '@/theme/theme-provider';
 
@@ -315,18 +316,24 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [createSessionFromUrl]);
 
   const signOut = useCallback(async () => {
-    await unregisterPushNotifications();
-    await supabase.auth.signOut();
-    setUserSession(null);
-    setIsAdmin(false);
-    setAvatarUrl(null);
+    try {
+      await unregisterPushNotifications().catch(() => undefined);
+      await supabase.auth.signOut();
+    } finally {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      setUserSession(null);
+      setIsAdmin(false);
+      setAvatarUrl(null);
+    }
   }, []);
 
   useEffect(() => {
-    void getPlannerOptions()
-      .then(({ provinces }) => ensureOfflineTripPacks(provinces))
+    if (!session) return;
+    void getMyAccessStatus()
+      .then((access) => access.hasAccess ? getPlannerOptions() : null)
+      .then((options) => options ? ensureOfflineTripPacks(options.provinces) : undefined)
       .catch(() => undefined);
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     supabase

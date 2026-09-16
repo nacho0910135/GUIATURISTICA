@@ -140,6 +140,7 @@ export type Subscription = {
 
 export type AccessStatus = {
   hasAccess: boolean;
+  hasPaidAccess: boolean;
   hasPersonalPlan: boolean;
   trialDaysRemaining: number;
   trialEndsAt: string;

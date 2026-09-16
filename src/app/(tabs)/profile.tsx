@@ -8,6 +8,7 @@ import { Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'r
 
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { AudioRecorderButton } from '@/components/audio-recorder-button';
+import { usePaidAccess } from '@/components/subscription-required';
 import { MotionPressable } from '@/components/motion';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
 import { useScreenActive } from '@/hooks/use-screen-active';
@@ -15,7 +16,7 @@ import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
 import { reviewCommercialClaim } from '@/lib/commerce';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
 import { addDestinationPhoto, deleteDestinationPhoto, deleteTravelerPost, getAdminDashboard, getPrivateConversations, getPrivateMessages, getSocialProfile, markAllNotificationsRead, markMessageRead, markNotificationRead, reviewUserSubmission, sendCreatorSuggestion, sendTravelerMessage, setSanctuaryCover, shareSightingToWall, toggleTravelerMessageReaction, updateCreatorSuggestionStatus, updateTravelerProfile, type PrivateConversation } from '@/lib/social-profile';
-import { reportTypeLabel, updateInformationReportStatus } from '@/lib/reports';
+import { moderateInformationReport, reportTypeLabel, updateInformationReportStatus } from '@/lib/reports';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
 import { openNotification } from '@/lib/notification-route';
@@ -704,6 +705,7 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
               {reportTypeLabel(report.report_type, language)} · {reportStatusLabel(report.status, language)}
             </Text>
             {report.details ? <Text className="mt-2 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{report.details}</Text> : null}
+            {report.moderation_action ? <Text className="mt-2 text-xs font-black text-red-600 dark:text-red-300">{tr(language, 'Acción aplicada', 'Action applied')}: {report.moderation_action.replaceAll('_', ' ')}</Text> : null}
             <View className="mt-3 flex-row flex-wrap gap-2">
               {report.status === 'open' ? (
                 <ProfileButton
@@ -715,6 +717,20 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
                       await refresh();
                     })
                   }
+                />
+              ) : null}
+              {report.target_type === 'traveler_post' ? (
+                <ProfileButton
+                  label={tr(language, 'Retirar y restringir 7 días', 'Remove and restrict for 7 days')}
+                  disabled={busy}
+                  onPress={() => Alert.alert(tr(language, 'Aplicar moderación', 'Apply moderation'), tr(language, 'La publicación se retirará y su autor no podrá publicar ni enviar mensajes durante 7 días.', 'The post will be removed and its author will be unable to post or send messages for 7 days.'), [{ text: tr(language, 'Cancelar', 'Cancel') }, { text: tr(language, 'Aplicar', 'Apply'), style: 'destructive', onPress: () => void run(async () => { await moderateInformationReport(report.id, 'remove_and_restrict'); await refresh(); }) }])}
+                />
+              ) : null}
+              {report.target_type === 'traveler' ? (
+                <ProfileButton
+                  label={tr(language, 'Restringir 7 días', 'Restrict for 7 days')}
+                  disabled={busy}
+                  onPress={() => Alert.alert(tr(language, 'Restringir cuenta', 'Restrict account'), tr(language, 'La cuenta no podrá publicar ni enviar mensajes durante 7 días.', 'The account will be unable to post or send messages for 7 days.'), [{ text: tr(language, 'Cancelar', 'Cancel') }, { text: tr(language, 'Restringir', 'Restrict'), style: 'destructive', onPress: () => void run(async () => { await moderateInformationReport(report.id, 'restrict_user'); await refresh(); }) }])}
                 />
               ) : null}
               <ProfileButton
@@ -867,6 +883,7 @@ function NotificationRow({ item, language, notificationType, busy, onRead, onOpe
 }
 
 export function MessagesPanel({ conversations, initialPartnerId, language, userId, userAvatarUrl, busy, refresh, run }: { conversations: PrivateConversation[]; initialPartnerId?: string; language: 'es' | 'en'; userId: string; userAvatarUrl: string | null; busy: boolean; refresh: () => Promise<void>; run: (action: () => Promise<void>) => Promise<void> }) {
+  const paidAccess = usePaidAccess();
   const [activePartnerId, setActivePartnerId] = useState<string | undefined>(initialPartnerId);
   const [reply, setReply] = useState('');
   const messageListRef = useRef<ScrollView>(null);
@@ -952,7 +969,7 @@ export function MessagesPanel({ conversations, initialPartnerId, language, userI
             <MaterialCommunityIcons name="image-plus" size={22} color="#0B6B4F" />
           </Pressable>
           <TextInput className="min-h-12 flex-1 rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 text-ui-text dark:border-ui-dark-border dark:bg-ui-dark-surface dark:text-ui-dark-text" editable={!busy} onChangeText={setReply} placeholder={tr(language, 'Escribí una respuesta… 😀', 'Write a reply… 😀')} placeholderTextColor="#8f9bb2" value={reply} multiline />
-          <AudioRecorderButton busy={busy} language={language} onRecorded={send} />
+          {paidAccess.hasPaidAccess ? <AudioRecorderButton busy={busy} language={language} onRecorded={send} /> : null}
           {reply.trim() ? (
             <Pressable accessibilityLabel={tr(language, 'Enviar mensaje', 'Send message')} className="rounded-full bg-ui-primary p-3" disabled={busy} onPress={() => send()}>
               <MaterialCommunityIcons name="send" size={21} color="white" />

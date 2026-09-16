@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AudioRecorderButton } from '@/components/audio-recorder-button';
+import { usePaidAccess } from '@/components/subscription-required';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
 import { useScreenActive } from '@/hooks/use-screen-active';
@@ -20,6 +21,7 @@ export default function PrivateMessagesScreen() {
   const { partnerId, partnerName, partnerAvatarUrl } = useLocalSearchParams<{ partnerId?: string; partnerName?: string; partnerAvatarUrl?: string }>();
   const { avatarUrl, language, session } = useApp();
   const userId = session?.user.id ?? '';
+  const paidAccess = usePaidAccess();
   const text = (es: string, en: string) => language === 'es' ? es : en;
   const [activePartnerId, setActivePartnerId] = useState(partnerId);
   const [reply, setReply] = useState('');
@@ -95,7 +97,7 @@ export default function PrivateMessagesScreen() {
           <View className="flex-row items-end gap-2">
             <Pressable accessibilityLabel={text('Enviar imagen', 'Send image')} className="min-h-12 min-w-12 items-center justify-center rounded-full bg-ui-primary-soft dark:bg-ui-dark-primary-soft" disabled={busy} onPress={chooseImage}><MaterialCommunityIcons name="image-plus" size={22} color="#0B6B4F" /></Pressable>
             <TextInput className="max-h-28 min-h-12 flex-1 rounded-2xl bg-ui-muted px-4 py-3 text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" editable={!busy} multiline onChangeText={setReply} placeholder={text('Escribí un mensaje…', 'Write a message…')} placeholderTextColor="#8f9bb2" value={reply} />
-            <AudioRecorderButton busy={busy} language={language} onRecorded={send} />
+            {paidAccess.hasPaidAccess ? <AudioRecorderButton busy={busy} language={language} onRecorded={send} /> : null}
             {reply.trim() ? <Pressable accessibilityLabel={text('Enviar mensaje', 'Send message')} className="min-h-12 min-w-12 items-center justify-center rounded-full bg-ui-primary" disabled={busy} onPress={() => send()}><MaterialCommunityIcons name="send" size={21} color="white" /></Pressable> : null}
           </View>
         </View>

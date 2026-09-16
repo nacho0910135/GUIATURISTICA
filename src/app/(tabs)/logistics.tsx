@@ -9,10 +9,18 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { getBusRoutes, type BusRoute } from '@/lib/bus-routes';
 import { ferryRoutes, getFerryRoutes } from '@/lib/logistics';
 import { useApp } from '@/providers/app-provider';
+import { SubscriptionRequired, usePaidAccess } from '@/components/subscription-required';
 
 type ViewName = 'home' | 'buses' | 'ferries';
 
 export default function LogisticsScreen() {
+  const access = usePaidAccess();
+  if (!access.isPending && !access.hasPaidAccess) return <SubscriptionRequired />;
+  if (access.isPending) return <View className="flex-1 bg-ui-background dark:bg-ui-dark-background" />;
+  return <LogisticsContent />;
+}
+
+function LogisticsContent() {
   const { formatPrice, language } = useApp();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);

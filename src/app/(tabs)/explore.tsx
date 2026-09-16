@@ -31,6 +31,7 @@ import { useApp } from '@/providers/app-provider';
 
 import { useScreenActive } from '@/hooks/use-screen-active';
 import { FrogLoader } from '@/components/frog-loader';
+import { SubscriptionRequired, usePaidAccess } from '@/components/subscription-required';
 const fallbackDestinationThumbnail = require('../../../assets/images/startup-rainforest.gif');
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
 
@@ -50,6 +51,8 @@ export default function ExploreScreen() {
   const { width } = useWindowDimensions();
   const [search, setSearch] = useState('');
   const [nearbyEnabled, setNearbyEnabled] = useState(false);
+  const [showNearbyPaywall, setShowNearbyPaywall] = useState(false);
+  const paidAccess = usePaidAccess();
   const coordinates = nearbyEnabled ? userLocation ?? undefined : undefined;
   const [proposalOpen, setProposalOpen] = useState(false);
   const [roadReportOpen, setRoadReportOpen] = useState(false);
@@ -149,6 +152,11 @@ export default function ExploreScreen() {
   const hasSearch = Boolean(search.trim());
 
   const discover = async () => {
+    if (!paidAccess.hasPaidAccess) {
+      setShowNearbyPaywall(true);
+      setNearbyEnabled(false);
+      return;
+    }
     if (coordinates) {
       setNearbyEnabled(false);
       void haptic('selection');
@@ -204,6 +212,7 @@ export default function ExploreScreen() {
   return (
     <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180, zIndex: 10 }}>
+        {showNearbyPaywall && !paidAccess.hasPaidAccess ? <SubscriptionRequired compact /> : null}
         <View className="w-full flex-row items-stretch gap-2">
           <MotionPressable
             accessibilityRole="button"

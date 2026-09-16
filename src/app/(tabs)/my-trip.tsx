@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useScrollToTop } from 'expo-router/react-navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Redirect } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
@@ -14,13 +15,14 @@ import { getPlannerOptions } from '@/lib/app-options';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
 import { trackConversion } from '@/lib/conversion-analytics';
 import { offlineStorage } from '@/lib/query-storage';
+import { getMyAccessStatus } from '@/lib/billing';
 import { useApp } from '@/providers/app-provider';
 
 const SAVED_TRIP_KEY = 'SAVED_TRIP_PLAN';
 type SavedTrip = { id: string; name: string; notes: string; plan: TripPlan; input?: TripPlanInput; savedAt: string };
 
 export default function MyTripScreen() {
-  const { exchangeRate, isDark, language, userLocation, visitorType, setVisitorType } = useApp();
+  const { exchangeRate, isDark, language, session, userLocation, visitorType, setVisitorType } = useApp();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
   const [time, setTime] = useState('8');
@@ -42,10 +44,12 @@ export default function MyTripScreen() {
   const [busy, setBusy] = useState(false);
   const isSpanish = language === 'es';
   const plannerOptions = useQuery({ queryKey: ['planner-options'], queryFn: getPlannerOptions, staleTime: 60 * 60 * 1000 });
+  const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session), retry: 1 });
   const categories = plannerOptions.data?.categories ?? [];
   const formatCrc = (amount: number) => budgetCurrency === 'USD' ? `$${(amount / exchangeRate).toFixed(2)}` : `₡${Math.round(amount).toLocaleString('es-CR')}`;
 
   useEffect(() => {
+    if (!access.data?.hasAccess) return;
     void Promise.resolve(offlineStorage.getItem(SAVED_TRIP_KEY)).then((value) => {
       if (!value) return;
       try {
@@ -54,7 +58,10 @@ export default function MyTripScreen() {
         setSavedTrips(trips); setPlan(trips[0]?.plan ?? null); setLastInput(trips[0]?.input); setSavedAt(trips[0]?.savedAt); setNotes(trips[0]?.notes ?? '');
       } catch { /* Ignorar un guardado local dañado. */ }
     });
-  }, [isSpanish]);
+  }, [access.data?.hasAccess, isSpanish]);
+
+  if (!session || access.data?.hasAccess === false) return <Redirect href="/subscriptions" />;
+  if (access.isPending || access.isError) return <View accessibilityRole="alert" className="flex-1 items-center justify-center bg-ui-background px-6 dark:bg-ui-dark-background"><Text className="text-center font-bold text-ui-text dark:text-ui-dark-text">{access.isError ? (isSpanish ? 'No pudimos comprobar tu acceso. Revisá la conexión e intentá de nuevo.' : 'We could not verify your access. Check your connection and try again.') : (isSpanish ? 'Comprobando acceso…' : 'Checking access…')}</Text>{access.isError ? <PrimaryButton className="mt-4" onPress={() => void access.refetch()}>{isSpanish ? 'Reintentar' : 'Retry'}</PrimaryButton> : null}</View>;
 
   const createPlan = async () => {
     const availableHours = Number(time) * (timeUnit === 'days' ? 8 : 1);

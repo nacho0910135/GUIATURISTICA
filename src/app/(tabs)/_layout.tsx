@@ -1,11 +1,9 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useQuery } from '@tanstack/react-query';
-import { Redirect, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Text, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlobalHeader } from '@/components/global-header';
-import { getMyAccessStatus } from '@/lib/billing';
 import { haptic } from '@/lib/haptics';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
@@ -34,11 +32,9 @@ const exploreIcon = ({ color, focused }: { color: ColorValue; focused: boolean }
 );
 
 export default function TabsLayout() {
-  const { isAdmin, language, session, t } = useApp();
+  const { language, t } = useApp();
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
-  const access = useQuery({ queryKey: ['my-app-access', session?.user.id], queryFn: getMyAccessStatus, enabled: Boolean(session) });
-  if (!isAdmin && session && access.data?.hasAccess === false) return <Redirect href="/subscriptions" />;
   return (
     <Tabs
       backBehavior="initialRoute"
