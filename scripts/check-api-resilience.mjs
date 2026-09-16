@@ -10,6 +10,8 @@ const app = JSON.parse(readFileSync(new URL('../app.json', import.meta.url), 'ut
 assert.doesNotMatch(supabase, /if \(!SUPABASE_URL[^}]+throw/s);
 assert.match(supabase, /https:\/\/offline\.invalid/);
 assert.match(supabase, /try \{ return window\.localStorage; \} catch/);
+assert.match(supabase, /new Headers\(init\?\.headers\)\.forEach/);
+assert.match(supabase, /global: \{ fetch: fetchWithPlainHeaders \}/);
 assert.match(queries, /throwOnError: false/);
 assert.match(queries, /placeholderData:/);
 assert.match(queries, /Promise\.race\([\s\S]+CACHE_RESTORE_TIMEOUT_MS/);

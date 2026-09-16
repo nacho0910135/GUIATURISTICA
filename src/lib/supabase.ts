@@ -21,8 +21,15 @@ const storage = isWeb ? (() => {
   try { return window.localStorage; } catch { return undefined; }
 })() : secureStorage;
 
+const fetchWithPlainHeaders: typeof fetch = (input, init) => {
+  const headers: Record<string, string> = {};
+  new Headers(init?.headers).forEach((value, key) => { headers[key] = value; });
+  return fetch(input, { ...init, headers });
+};
+
 // Keep the catalogue shell usable when deployment configuration is missing.
 export const supabase = createClient(SUPABASE_URL ?? 'https://offline.invalid', SUPABASE_ANON_KEY ?? 'offline-anon-key', {
+  global: { fetch: fetchWithPlainHeaders },
   auth: {
     ...(storage ? { storage } : {}),
     autoRefreshToken: true,

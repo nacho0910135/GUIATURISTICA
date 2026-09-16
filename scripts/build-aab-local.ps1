@@ -32,11 +32,19 @@ $appJsonPath = Join-Path $project "app.json"
 $appJsonText = Get-Content -LiteralPath $appJsonPath -Raw -Encoding UTF8
 $appConfig = $appJsonText | ConvertFrom-Json
 $versionCode = [int]$appConfig.expo.android.versionCode
+$expectedAndroidPackage = "com.descubriendo.cr"
+if ($appConfig.expo.android.package -ne $expectedAndroidPackage) {
+    throw "Package Android incorrecto: $($appConfig.expo.android.package). Debe ser $expectedAndroidPackage."
+}
 
 npm run typecheck
 if ($LASTEXITCODE -ne 0) { throw "Falló TypeScript." }
 npm run lint
 if ($LASTEXITCODE -ne 0) { throw "Falló lint." }
+npm run check:resilience
+if ($LASTEXITCODE -ne 0) { throw "Falló la protección de red/Supabase." }
+npm run check:categories
+if ($LASTEXITCODE -ne 0) { throw "Supabase no entregó el catálogo antes de compilar." }
 
 $adsFiles = @(
     (Join-Path $project "package.json"),
@@ -64,6 +72,9 @@ $manifestText = [regex]::Replace($manifestText, 'android:enableOnBackInvokedCall
 
 $gradlePath = Join-Path $project "android\app\build.gradle"
 $gradleText = Get-Content -LiteralPath $gradlePath -Raw -Encoding UTF8
+if (-not $gradleText.Contains("applicationId '$expectedAndroidPackage'")) {
+    throw "android/app/build.gradle no genera $expectedAndroidPackage."
+}
 $gradleText = [regex]::Replace($gradleText, 'versionCode\s+\d+', "versionCode $versionCode", 1)
 $releaseSigning = @'
     signingConfigs {
