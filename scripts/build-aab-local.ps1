@@ -6,8 +6,9 @@ Set-Location -LiteralPath $project
 . (Join-Path $project ".signing.local.ps1")
 
 $jdkCandidates = @(
-    $env:JAVA_HOME,
+    "C:\Users\jose1\.gradle\jdks\eclipse_adoptium-17-amd64-windows.2",
     "C:\Users\jose1\AppData\Local\Temp\codex-jdk17-descubriendo\jdk",
+    $env:JAVA_HOME,
     "C:\Program Files\Android\Android Studio\jbr"
 ) | Where-Object { $_ -and (Test-Path (Join-Path $_ "bin\java.exe")) }
 
@@ -88,17 +89,14 @@ $versionName = $appConfig.expo.version
 $outputDirectory = Join-Path $project "builds"
 $output = Join-Path $outputDirectory "DescubriendoCR-v$versionName-build$versionCode.aab"
 $releaseAab = Join-Path $project "android\app\build\outputs\bundle\release\app-release.aab"
-$androidAppDirectory = [IO.Path]::GetFullPath((Join-Path $project "android\app"))
-foreach ($staleBuildDirectory in @((Join-Path $androidAppDirectory "build"), (Join-Path $androidAppDirectory ".cxx"))) {
-    $resolvedBuildDirectory = [IO.Path]::GetFullPath($staleBuildDirectory)
-    if (-not $resolvedBuildDirectory.StartsWith($androidAppDirectory + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Ruta de limpieza fuera de android/app: $resolvedBuildDirectory"
-    }
-    if (Test-Path -LiteralPath $resolvedBuildDirectory) { Remove-Item -LiteralPath $resolvedBuildDirectory -Recurse -Force }
-}
 if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output -Force }
-& "$project\android\gradlew.bat" -p "$project\android" bundleRelease --no-daemon --no-build-cache --console=plain
-if ($LASTEXITCODE -ne 0) { throw "Falló la compilación de Gradle." }
+$gradleArguments = @('-p', "$project\android", 'bundleRelease', '-PreactNativeArchitectures=armeabi-v7a,arm64-v8a', '--no-daemon', '--no-build-cache', '--console=plain')
+& "$project\android\gradlew.bat" @gradleArguments
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Gradle falló; se reintentará una vez conservando los artefactos ya generados."
+    & "$project\android\gradlew.bat" @gradleArguments
+}
+if ($LASTEXITCODE -ne 0) { throw "Falló la compilación de Gradle después del reintento." }
 if (-not (Test-Path -LiteralPath $releaseAab)) { throw "Gradle terminó sin generar el AAB." }
 
 New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
