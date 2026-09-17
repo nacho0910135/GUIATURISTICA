@@ -323,7 +323,7 @@ export default function ProfileScreen() {
           </View>
         </View>
         {Platform.OS !== 'ios' ? <Pressable accessibilityRole="link" className="mt-4 overflow-hidden rounded-2xl border border-[#F8DE7E]" onPress={() => router.push('/subscriptions')} style={{ elevation: 9, shadowColor: '#8A5A00', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.42, shadowRadius: 8 }}>
-          <LinearGradient colors={['#FFF1A8', '#D99A12', '#9A6500']} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} className="relative px-4 py-3.5">
+          <LinearGradient colors={['#FFF1A8', '#D99A12', '#9A6500']} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} className="relative px-4 py-4.5">
             <AnimatedShine travel={420} />
             <View className="w-full flex-row items-center justify-center">
               <MaterialCommunityIcons name="crown" size={21} color="#4A2B00" />
