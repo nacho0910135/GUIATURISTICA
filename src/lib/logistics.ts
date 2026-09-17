@@ -267,7 +267,7 @@ export async function rebuildTripPlan(input: TripPlanInput, stops: TripStop[]): 
   });
   const returnTravelMinutes = travel.minutes[destinations.length]?.[0] ?? 0;
   if (elapsedMinutes + returnTravelMinutes > input.availableHours * 60) return null;
-  const mealCostCrc = mealBudgetPerPerson(input.availableHours) * input.travelers;
+  const mealCostCrc = mealBudgetPerPerson(startsAt, input.availableHours) * input.travelers;
   const estimatedTotalCrc = mealCostCrc + rebuilt.reduce((total, stop) => total + (stop.estimatedCostCrc ?? 0), 0);
   if (estimatedTotalCrc > input.maxBudget) return null;
   return { startsAt: startsAt.toISOString(), endsAt: new Date(startsAt.getTime() + (elapsedMinutes + returnTravelMinutes) * 60000).toISOString(), stops: rebuilt, totalTravelMinutes: rebuilt.reduce((total, stop) => total + stop.travelMinutes, 0) + returnTravelMinutes, returnTravelMinutes, totalVisitMinutes: rebuilt.reduce((total, stop) => total + stop.visitMinutes, 0), mealCostCrc, estimatedTotalCrc, travelTimeSource: travel.source };
@@ -292,7 +292,7 @@ function assembleTripPlan(input: TripPlanInput, candidates: Destination[], matri
   const startsAt = tripStart(input.availableHours, input.startsAt);
   let current = { latitude: input.latitude, longitude: input.longitude };
   let remainingMinutes = input.availableHours * 60;
-  const mealCostCrc = mealBudgetPerPerson(input.availableHours) * input.travelers;
+  const mealCostCrc = mealBudgetPerPerson(startsAt, input.availableHours) * input.travelers;
   let remainingBudget = input.maxBudget - mealCostCrc;
   const stops: TripStop[] = [];
   const speedKph = input.vehicle === 'bus' ? 28 : input.vehicle === '4x4' ? 42 : 48;
@@ -359,10 +359,16 @@ function tripStart(availableHours: number, requestedStart?: string) {
   return start;
 }
 
-function mealBudgetPerPerson(availableHours: number) {
-  if (availableHours <= 4) return 3500;
-  if (availableHours <= 7) return 10500;
-  return 20500;
+function mealBudgetPerPerson(startsAt: Date, availableHours: number) {
+  const start = startsAt.getTime();
+  const end = start + availableHours * 60 * 60 * 1000;
+  const mealAt = (hour: number, minute = 0) => {
+    const time = new Date(startsAt);
+    time.setHours(hour, minute, 0, 0);
+    return time.getTime();
+  };
+  return [[8, 0, 3500], [12, 30, 7000], [19, 0, 10000]]
+    .reduce((total, [hour, minute, cost]) => total + (mealAt(hour, minute) >= start && mealAt(hour, minute) <= end ? cost : 0), 0);
 }
 
 function isNatureDestination(destination: Destination) {

@@ -43,6 +43,12 @@ npm run lint
 if ($LASTEXITCODE -ne 0) { throw "Falló lint." }
 npm run check:resilience
 if ($LASTEXITCODE -ne 0) { throw "Falló la protección de red/Supabase." }
+npm run check:ai
+if ($LASTEXITCODE -ne 0) { throw "Falló la configuración de Firebase AI Logic." }
+npm run check:audit
+if ($LASTEXITCODE -ne 0) { throw "Fallaron las protecciones de producción." }
+npm run check:findings
+if ($LASTEXITCODE -ne 0) { throw "Reapareció una corrección validada." }
 npm run check:categories
 if ($LASTEXITCODE -ne 0) { throw "Supabase no entregó el catálogo antes de compilar." }
 
@@ -99,8 +105,11 @@ $gradleText = [regex]::Replace($gradleText, '(?s)(buildTypes\s*\{\s*debug\s*\{.*
 $versionName = $appConfig.expo.version
 $outputDirectory = Join-Path $project "builds"
 $output = Join-Path $outputDirectory "DescubriendoCR-v$versionName-build$versionCode.aab"
+$mappingOutput = Join-Path $outputDirectory "DescubriendoCR-v$versionName-build$versionCode-mapping.txt"
 $releaseAab = Join-Path $project "android\app\build\outputs\bundle\release\app-release.aab"
+$releaseMapping = Join-Path $project "android\app\build\outputs\mapping\release\mapping.txt"
 if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output -Force }
+if (Test-Path -LiteralPath $mappingOutput) { Remove-Item -LiteralPath $mappingOutput -Force }
 $gradleArguments = @('-p', "$project\android", 'bundleRelease', '-PreactNativeArchitectures=armeabi-v7a,arm64-v8a', '--no-daemon', '--no-build-cache', '--console=plain')
 & "$project\android\gradlew.bat" @gradleArguments
 if ($LASTEXITCODE -ne 0) {
@@ -112,6 +121,7 @@ if (-not (Test-Path -LiteralPath $releaseAab)) { throw "Gradle terminó sin gene
 
 New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 Copy-Item -LiteralPath $releaseAab -Destination $output -Force
+if (Test-Path -LiteralPath $releaseMapping) { Copy-Item -LiteralPath $releaseMapping -Destination $mappingOutput -Force }
 
 $verification = & "$env:JAVA_HOME\bin\jarsigner.exe" -verify $output 2>&1
 if ($LASTEXITCODE -ne 0 -or -not ($verification -match "jar verified")) {
@@ -139,5 +149,6 @@ if ($IncrementVersion) {
 $hash = (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash
 Write-Host ""
 Write-Host "AAB generado: $output"
+if (Test-Path -LiteralPath $mappingOutput) { Write-Host "Mapa de desofuscación: $mappingOutput" }
 Write-Host "Version code: $versionCode"
 Write-Host "SHA-256: $hash"

@@ -27,7 +27,7 @@ assert.match(source, /directions-matrix\/v1\/mapbox/);
 assert.match(source, /travelTimeSource: 'live-road' \| 'estimated'/);
 assert.match(source, /source: 'live-road' as const/);
 assert.match(source, /isNatureDestination[\s\S]*setHours\(16, 0, 0, 0\)/);
-assert.match(source, /mealBudgetPerPerson[\s\S]*20500/);
+assert.match(source, /mealBudgetPerPerson[\s\S]*\[8, 0, 3500\][\s\S]*\[12, 30, 7000\][\s\S]*\[19, 0, 10000\]/);
 assert.match(source, /estimatedTotalCrc: mealCostCrc/);
 const screen = await readFile(new URL('../src/app/(tabs)/my-trip.tsx', import.meta.url), 'utf8');
 assert.match(screen, /getPreciseCurrentLocation\(language\)/);
@@ -42,7 +42,7 @@ assert.match(screen, /pueden variar según la zona/);
 const provider = await readFile(new URL('../src/providers/app-provider.tsx', import.meta.url), 'utf8');
 const queryClient = await readFile(new URL('../src/lib/query-client.ts', import.meta.url), 'utf8');
 assert.match(provider, /getMyAccessStatus\(\)[\s\S]*access\.hasAccess \? getPlannerOptions\(\) : null[\s\S]*ensureOfflineTripPacks\(options\.provinces\)/);
-assert.match(screen, /access\.data\?\.hasAccess === false[\s\S]*Redirect href="\/subscriptions"/);
+assert.match(screen, /access\.data\?\.hasAccess === false[\s\S]*SubscriptionRequired/);
 assert.match(queryClient, /PERSISTED_QUERIES[\s\S]*my-app-access/);
 
 const planner = load('src/lib/logistics.ts', {
@@ -72,6 +72,9 @@ assert.equal(planner.isClosedOn({ closed_day: 'Lunes' }, monday), true);
 assert.equal(planner.isClosedOn({ closed_day: 'Martes' }, monday), false);
 const foreignPlan = planner.buildOfflineTripPlan({ ...origin, availableHours: 4, maxBudget: 50000, travelers: 1, vehicle: 'sedan', categories: [], language: 'en', startsAt: monday, visitorType: 'foreigner', exchangeRate: 500 }, destinations.filter((item) => item.id === 'near-free'));
 assert.equal(foreignPlan.stops[0].estimatedCostCrc, 10000, 'Foreign admission is converted from USD independently of language');
+assert.equal(foreignPlan.mealCostCrc, 3500, 'An 08:00 trip budgets breakfast once, not every meal');
+const afternoonPlan = planner.buildOfflineTripPlan({ ...origin, availableHours: 4, maxBudget: 50000, travelers: 1, vehicle: 'sedan', categories: [], language: 'es', startsAt: new Date('2026-09-14T14:00:00-06:00').toISOString() }, destinations.filter((item) => item.id === 'near-free'));
+assert.equal(afternoonPlan.mealCostCrc, 0, 'A short afternoon trip does not charge meals outside its schedule');
 assert.match(optionsSource, /getAppOptions\("destination_category"\)/);
 assert.match(optionsSource, /categories\.filter\(\(option\) => option\.parent_id === null\)/);
 assert.match(exploreSource, /categories\.length > 3/);

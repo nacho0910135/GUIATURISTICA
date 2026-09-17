@@ -33,7 +33,7 @@ assert.match(authConfig, /enable_confirmations = true/);
 assert.match(authConfig, /secure_password_change = true/);
 assert.match(provider, /\['auth\/callback', 'reset-password'\]\.includes\(nativePath\)/);
 assert.match(provider, /exchangeCodeForSession\(code, flowId \? \{ flowId \} : undefined\)/);
-assert.doesNotMatch(provider, /void refreshUserLocation\(\)\.catch\(\(\) => undefined\);\n  \}, \[refreshUserLocation\]\);/);
+assert.match(provider, /void refreshUserLocation\(\)\.catch\(\(\) => undefined\);\n  \}, \[refreshUserLocation\]\);/);
 assert.match(resetPassword, /setTimeout\(\(\) => setValidationTimedOut\(true\), 12_000\)/);
 assert.match(easIgnore, /\.env\*\.local[\s\S]*\*\.jks/);
 assert.match(easIgnore, /\/builds\/[\s\S]*\/android\//);

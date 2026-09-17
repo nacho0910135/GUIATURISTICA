@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { Card } from '@/components/ui/card';
 import { getPublicTravelerProfile } from '@/lib/social-profile';
@@ -33,6 +33,7 @@ export default function TravelerProfileScreen() {
   const text = (es: string, en: string) => language === 'es' ? es : en;
   const name = data.profile.username || data.profile.full_name || text('Viajero', 'Traveler');
   const profileBio = data.profile.bio;
+  const contactEmail = data.profile.contact_email;
   const report = () => {
     if (!requireAuth(text('reportar a este usuario', 'report this user'))) return;
     Alert.alert(
@@ -98,6 +99,7 @@ export default function TravelerProfileScreen() {
       <View className="mt-5 w-full">
         <Text className="text-2xl font-black leading-8 text-ui-text dark:text-ui-dark-text">{name}</Text>
         <Text className="mt-2 text-base leading-6 text-ui-text-muted dark:text-ui-dark-text-muted">{data.profile.bio || text('Explorando Costa Rica', 'Exploring Costa Rica')}</Text>
+        {contactEmail ? <Pressable accessibilityLabel={text(`Enviar correo a ${contactEmail}`, `Email ${contactEmail}`)} accessibilityRole="link" className="mt-3 flex-row items-center self-start rounded-full bg-ui-primary-soft px-3 py-2 dark:bg-ui-dark-primary-soft" onPress={() => void Linking.openURL(`mailto:${contactEmail}`)}><MaterialCommunityIcons name="email-outline" size={18} color="#0B6B4F" /><Text className="ml-2 font-bold text-ui-primary dark:text-ui-dark-primary">{contactEmail}</Text></Pressable> : null}
         <View className="mt-4 flex-row items-center">
           <Text className="font-bold text-ui-text dark:text-ui-dark-text">{data.followers.length} {text('seguidores', 'followers')}</Text>
           <Text className="mx-2 text-ui-text-muted dark:text-ui-dark-text-muted">·</Text>

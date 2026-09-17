@@ -200,7 +200,7 @@ export default function MyTripScreen() {
 
         <PlannerSection icon="account-group-outline" label={isSpanish ? '05 · Cantidad de personas' : '05 · Number of travelers'}>
           <TextInput accessibilityLabel={isSpanish ? 'Cantidad de personas' : 'Number of travelers'} className="min-h-12 rounded-control bg-ui-muted px-4 text-base text-ui-text dark:bg-ui-dark-muted dark:text-ui-dark-text" keyboardType="number-pad" maxLength={2} onChangeText={setTravelers} value={travelers} />
-          <Text className="mt-2 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Aproximaciones por persona: almuerzo ₡7.000, café con acompañamiento ₡3.500 y cena ₡10.000. Los precios reales pueden variar según la zona y el establecimiento.' : 'Approximate amounts per person: lunch ₡7,000, coffee and a snack ₡3,500, and dinner ₡10,000. Actual prices vary by area and venue.'}</Text>
+          <Text className="mt-2 text-xs leading-4 text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Según la hora del recorrido, estimamos una sola vez por persona: desayuno ₡3.500, almuerzo ₡7.000 y cena ₡10.000. Los precios reales pueden variar.' : 'Based on the trip schedule, we estimate once per traveler: breakfast ₡3,500, lunch ₡7,000, and dinner ₡10,000. Actual prices may vary.'}</Text>
         </PlannerSection>
 
         <PlannerSection icon="car-outline" label={isSpanish ? '06 · Forma de viajar' : '06 · Way to travel'}>

@@ -6,11 +6,13 @@ const queries = readFileSync(new URL('../src/lib/query-client.ts', import.meta.u
 const logistics = readFileSync(new URL('../src/lib/logistics.ts', import.meta.url), 'utf8');
 const weather = readFileSync(new URL('../supabase/functions/weather/index.ts', import.meta.url), 'utf8');
 const places = readFileSync(new URL('../src/lib/places.ts', import.meta.url), 'utf8');
+const destinationAI = readFileSync(new URL('../src/lib/destination-ai.native.ts', import.meta.url), 'utf8');
 const app = JSON.parse(readFileSync(new URL('../app.json', import.meta.url), 'utf8'));
 assert.doesNotMatch(supabase, /if \(!SUPABASE_URL[^}]+throw/s);
 assert.match(supabase, /https:\/\/offline\.invalid/);
 assert.match(supabase, /try \{ return window\.localStorage; \} catch/);
-assert.match(supabase, /new Headers\(init\?\.headers\)\.forEach/);
+assert.doesNotMatch(supabase, /new Headers\(/);
+assert.match(supabase, /typeof \(source as Headers\)\.forEach === 'function'/);
 assert.match(supabase, /global: \{ fetch: fetchWithPlainHeaders \}/);
 assert.match(queries, /throwOnError: false/);
 assert.match(queries, /placeholderData:/);
@@ -21,6 +23,8 @@ assert.match(weather, /catch \{[\s\S]+https:\/\/api\.open-meteo\.com\/v1\/foreca
 assert.match(weather, /AbortSignal\.timeout\(10_000\)/);
 assert.match(places, /\?\? getCommunityPlaceById\(id, userId\)/);
 assert.doesNotMatch(places, /if \(socialError\) throw socialError/);
+assert.doesNotMatch(destinationAI, /^import .*from '@react-native-firebase\/ai';/m);
+assert.match(destinationAI, /await import\('@react-native-firebase\/ai'\)/);
 assert.equal(app.expo.plugins.find(([name]) => name === 'expo-audio')[1].enableBackgroundPlayback, false);
 assert.ok(app.expo.android.blockedPermissions.includes('android.permission.FOREGROUND_SERVICE'));
 assert.ok(app.expo.android.blockedPermissions.includes('android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK'));

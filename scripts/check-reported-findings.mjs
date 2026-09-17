@@ -58,7 +58,7 @@ assert.match(commerceScreen, /openExternalUrl\(campaign\.target_url!/);
 assert.match(commerceScreen, /openExternalUrl\(service\.booking_url!/);
 assert.match(firebase, /"crashlytics_auto_collection_enabled": false/);
 assert.match(firebase, /"crashlytics_debug_enabled": false/);
-assert.match(trip, /access\.data\?\.hasAccess === false[\s\S]*Redirect href="\/subscriptions"/);
+assert.match(trip, /access\.data\?\.hasAccess === false[\s\S]*SubscriptionRequired/);
 assert.match(trip, /access\.isPending \|\| access\.isError/);
 assert.match(push, /clearLastNotificationResponse\(\)/);
 assert.match(aiClient, /timeout: 20_000/);

@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -9,7 +10,7 @@ import { Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'r
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { AudioRecorderButton } from '@/components/audio-recorder-button';
 import { usePaidAccess } from '@/components/subscription-required';
-import { MotionPressable } from '@/components/motion';
+import { AnimatedShine, MotionPressable } from '@/components/motion';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
 import { useScreenActive } from '@/hooks/use-screen-active';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
@@ -321,9 +322,12 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-        {Platform.OS !== 'ios' ? <Pressable accessibilityRole="link" className="mt-4 flex-row items-center justify-center rounded-2xl bg-ui-primary px-4 py-3 dark:bg-ui-dark-primary" onPress={() => router.push('/subscriptions')}>
-          <MaterialCommunityIcons name="crown-outline" size={20} color="white" />
-          <Text className="ml-2 font-black text-white">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
+        {Platform.OS !== 'ios' ? <Pressable accessibilityRole="link" className="mt-4 overflow-hidden rounded-2xl border border-[#F8DE7E]" onPress={() => router.push('/subscriptions')} style={{ elevation: 9, shadowColor: '#8A5A00', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.42, shadowRadius: 8 }}>
+          <LinearGradient colors={['#FFF1A8', '#D99A12', '#9A6500']} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} className="relative flex-row items-center justify-center px-4 py-3.5">
+            <MaterialCommunityIcons name="crown" size={21} color="#4A2B00" />
+            <Text className="ml-2 font-black text-[#3B2400]">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
+            <AnimatedShine travel={420} />
+          </LinearGradient>
         </Pressable> : null}
         {Platform.OS !== 'web' ? <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface" disabled={busy} onPress={() => void run(async () => {
           const enabled = await registerPushNotifications();

@@ -23,7 +23,10 @@ const storage = isWeb ? (() => {
 
 const fetchWithPlainHeaders: typeof fetch = (input, init) => {
   const headers: Record<string, string> = {};
-  new Headers(init?.headers).forEach((value, key) => { headers[key] = value; });
+  const source = init?.headers;
+  if (Array.isArray(source)) source.forEach(([key, value]) => { headers[key] = value; });
+  else if (source && typeof (source as Headers).forEach === 'function') (source as Headers).forEach((value, key) => { headers[key] = value; });
+  else Object.assign(headers, source);
   return fetch(input, { ...init, headers });
 };
 

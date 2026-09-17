@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
+import { File } from 'expo-file-system';
 
 import { getAdminCommercialClaims } from '@/lib/commerce';
 import { getInformationReportsForAdmin } from '@/lib/reports';
@@ -263,9 +264,10 @@ export async function sendTravelerMessage(senderId: string, recipientId: string,
       bytes = await fetch(file.uri).then((response) => response.arrayBuffer());
       contentType = 'image/jpeg';
     } else {
-      const response = await fetch(attachment.uri);
-      contentType = response.headers.get('content-type') || (attachment.uri.endsWith('.webm') ? 'audio/webm' : 'audio/mp4');
-      bytes = await response.arrayBuffer();
+      const file = new File(attachment.uri);
+      if (!file.exists) throw new Error('No se pudo leer el audio grabado.');
+      contentType = file.type || (attachment.uri.endsWith('.webm') ? 'audio/webm' : 'audio/mp4');
+      bytes = await file.arrayBuffer();
     }
     const extension = attachment.type === 'image' ? 'jpg' : contentType.includes('webm') ? 'webm' : 'm4a';
     const messageId = Crypto.randomUUID();
@@ -312,7 +314,7 @@ export async function shareSightingToWall(userId: string, imageUrl: string, capt
 
 export async function getPublicTravelerProfile(userId: string, viewerId?: string) {
   const [profile, followers, following, posts] = await Promise.all([
-    supabase.from('users').select('id,username,full_name,avatar_url,bio').eq('id', userId).single(),
+    supabase.from('users').select('id,username,full_name,avatar_url,bio,contact_email').eq('id', userId).single(),
     supabase.from('user_follows').select('follower_id').eq('followed_id', userId),
     supabase.from('user_follows').select('followed_id').eq('follower_id', userId),
     supabase.from('traveler_posts').select('id,user_id,body,image_url,topic,created_at').eq('user_id', userId).order('created_at', { ascending: false }),

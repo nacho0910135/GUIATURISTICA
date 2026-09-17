@@ -1,6 +1,5 @@
 import { ReactNativeFirebaseAppCheckProvider, getToken, initializeAppCheck } from '@react-native-firebase/app-check';
 import { getApp } from '@react-native-firebase/app';
-import { getAI, getGenerativeModel, GoogleAIBackend } from '@react-native-firebase/ai';
 import { fetchAndActivate, getRemoteConfig, getValue } from '@react-native-firebase/remote-config';
 
 const defaults = { ai_destination_assistant_enabled: true, ai_destination_model: 'gemini-3.5-flash-lite', ai_destination_max_output_tokens: 350 };
@@ -25,16 +24,18 @@ export async function getDestinationAIConfig() {
 
 export function initializeFirebaseAppCheck() {
   if (appCheck) return appCheck;
+  const debugToken = process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN;
   const provider = new ReactNativeFirebaseAppCheckProvider();
     provider.configure({
-      android: { provider: __DEV__ ? 'debug' : 'playIntegrity', debugToken: process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN },
-      apple: { provider: __DEV__ ? 'debug' : 'appAttestWithDeviceCheckFallback', debugToken: process.env.EXPO_PUBLIC_FIREBASE_APP_CHECK_DEBUG_TOKEN },
+      android: { provider: __DEV__ ? 'debug' : 'playIntegrity', debugToken },
+      apple: { provider: __DEV__ ? 'debug' : 'appAttestWithDeviceCheckFallback', debugToken },
     });
   appCheck = initializeAppCheck(undefined, { provider, isTokenAutoRefreshEnabled: true });
   return appCheck;
 }
 
 export async function askDestinationAI(context: string, question: string, language: 'es' | 'en', history: DestinationAIMessage[] = []) {
+  const { getAI, getGenerativeModel, GoogleAIBackend } = await import('@react-native-firebase/ai');
   const verifiedAppCheck = initializeFirebaseAppCheck();
   const appCheckToken = await getToken(verifiedAppCheck, false);
   if (!appCheckToken.token) throw new Error(language === 'es' ? 'No se pudo verificar esta aplicación.' : 'This app could not be verified.');
