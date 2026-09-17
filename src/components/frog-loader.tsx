@@ -23,8 +23,8 @@ type FrogLoaderProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-const frogOpen = require('@/assets/brand/frog-logo-open.png');
-const frogBlink = require('@/assets/brand/frog-logo-blink.png');
+const frogOpen = require('@/assets/brand/frog1.png');
+const frogBlink = require('@/assets/brand/frog2.png');
 
 export function FrogLoader(props: FrogLoaderProps) {
   if (!props.branded) return null;
@@ -40,7 +40,7 @@ function BrandedFrogLoader({
   const { colors } = useAppTheme();
   const reducedMotion = useReducedMotion();
   const blinkOpacity = useSharedValue(0);
-  const dimension = typeof size === 'number' ? size : size === 'large' ? 112 : 24;
+  const dimension = typeof size === 'number' ? size : size === 'large' ? 224 : 48;
 
   useEffect(() => {
     if (reducedMotion) {
@@ -77,7 +77,7 @@ function BrandedFrogLoader({
         </Animated.View>
       </View>
       <View style={styles.wordmark}>
-        <Text style={[styles.title, { color: colors.text }]}>Descubriendo <Text style={styles.country}>CR</Text></Text>
+        <Text style={[styles.title, { color: colors.text }]}>Descubre <Text style={styles.country}>CR</Text></Text>
         <Text style={[styles.tagline, { color: colors.textMuted }]}>EXPLORÁ DISTINTO 🇨🇷</Text>
       </View>
     </View>

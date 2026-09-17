@@ -33,7 +33,7 @@ export function AnimatedSplash({ appReady, onFinish }: { appReady: boolean; onFi
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>
       {showAnimation ? <View style={styles.frame}>
         <Image
-          source={require('@/assets/images/startup-transition.gif')}
+          source={require('@/assets/images/intro.gif')}
           autoplay
           contentFit="contain"
           style={styles.image}

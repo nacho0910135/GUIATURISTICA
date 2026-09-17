@@ -235,11 +235,11 @@ export function GlobalHeader() {
             className="min-h-11 flex-row items-center rounded-xl pr-3 focus-visible:ring-2 focus-visible:ring-ui-focus active:opacity-75 dark:focus-visible:ring-ui-dark-focus"
             onPress={() => router.replace({ pathname: '/(tabs)/explore', params: { reset: String(Date.now()) } })}
           >
-            <View className="relative h-11 w-11 rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
+            <View className="relative h-14 w-14 rounded-2xl bg-ui-primary-soft dark:bg-ui-dark-primary-soft">
               <Animated.View className="absolute -inset-1 rounded-2xl bg-ui-secondary dark:bg-ui-dark-secondary" pointerEvents="none" style={{ opacity: glow, transform: [{ scale: glow.interpolate({ inputRange: [0.16, 0.46], outputRange: [0.94, 1.1] }) }] }} />
-              <Image contentFit="contain" contentPosition="center" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: '100%', width: '100%' }} />
+              <Image contentFit="contain" contentPosition="center" source={require('@/assets/brand/frog2.png')} style={{ height: '100%', width: '100%' }} />
               <Animated.View style={{ inset: 0, opacity: blink, pointerEvents: 'none', position: 'absolute' }}>
-                <Image contentFit="contain" source={require('@/assets/brand/frog-logo-blink.png')} style={{ height: '100%', width: '100%' }} />
+                <Image contentFit="contain" source={require('@/assets/brand/frog1.png')} style={{ height: '100%', width: '100%' }} />
               </Animated.View>
             </View>
             <View className="ml-3">
