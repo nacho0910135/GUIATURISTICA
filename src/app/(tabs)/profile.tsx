@@ -323,10 +323,12 @@ export default function ProfileScreen() {
           </View>
         </View>
         {Platform.OS !== 'ios' ? <Pressable accessibilityRole="link" className="mt-4 overflow-hidden rounded-2xl border border-[#F8DE7E]" onPress={() => router.push('/subscriptions')} style={{ elevation: 9, shadowColor: '#8A5A00', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.42, shadowRadius: 8 }}>
-          <LinearGradient colors={['#FFF1A8', '#D99A12', '#9A6500']} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} className="relative flex-row items-center justify-center px-4 py-3.5">
-            <MaterialCommunityIcons name="crown" size={21} color="#4A2B00" />
-            <Text className="ml-2 font-black text-[#3B2400]">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
+          <LinearGradient colors={['#FFF1A8', '#D99A12', '#9A6500']} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} className="relative px-4 py-3.5">
             <AnimatedShine travel={420} />
+            <View className="w-full flex-row items-center justify-center">
+              <MaterialCommunityIcons name="crown" size={21} color="#4A2B00" />
+              <Text className="ml-2 text-center font-black text-[#3B2400]">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
+            </View>
           </LinearGradient>
         </Pressable> : null}
         {Platform.OS !== 'web' ? <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface" disabled={busy} onPress={() => void run(async () => {

@@ -9,6 +9,7 @@ import * as Linking from 'expo-linking';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Modal, Platform, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { MapCanvas } from '@/components/explore/map-canvas';
 import { LocationPickerModal } from '@/components/location-picker-modal';
@@ -51,6 +52,7 @@ export default function ExploreScreen() {
   const { width } = useWindowDimensions();
   const [search, setSearch] = useState('');
   const [nearbyEnabled, setNearbyEnabled] = useState(false);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
   const [showNearbyPaywall, setShowNearbyPaywall] = useState(false);
   const paidAccess = usePaidAccess();
   const coordinates = nearbyEnabled ? userLocation ?? undefined : undefined;
@@ -97,6 +99,7 @@ export default function ExploreScreen() {
   const resetExplore = useCallback(() => {
     setSearch('');
     setNearbyEnabled(false);
+    setNearbyLoading(false);
     setProposalOpen(false);
   }, []);
   useEffect(() => {
@@ -150,6 +153,17 @@ export default function ExploreScreen() {
     .map(({ place }) => place), [coordinates, language, roadRoutes.data, routingCandidates]);
   const hasSearch = Boolean(search.trim());
 
+  useEffect(() => {
+    if (!nearbyLoading || locating || places.isPending) return;
+    if (locationError || !userLocation) {
+      setNearbyLoading(false);
+      return;
+    }
+    if (routingCandidates.length && (roadRoutes.isPending || roadRoutes.isFetching)) return;
+    setNearbyLoading(false);
+    void haptic('success');
+  }, [locating, locationError, nearbyLoading, places.isPending, roadRoutes.isFetching, roadRoutes.isPending, routingCandidates.length, userLocation]);
+
   const discover = async () => {
     if (!requireAuth(language === 'es' ? 'ver destinos turísticos cercanos' : 'view nearby tourist destinations')) return;
     if (!paidAccess.hasPaidAccess) {
@@ -159,12 +173,13 @@ export default function ExploreScreen() {
     }
     if (coordinates) {
       setNearbyEnabled(false);
+      setNearbyLoading(false);
       void haptic('selection');
       return;
     }
+    setNearbyLoading(true);
     setNearbyEnabled(true);
-    if (!userLocation) await refreshUserLocation();
-    void haptic('selection');
+    await refreshUserLocation();
   };
   const resultContent = (
     <View className="overflow-hidden rounded-control border border-ui-border bg-ui-surface dark:border-ui-dark-border dark:bg-ui-dark-surface">
@@ -214,20 +229,7 @@ export default function ExploreScreen() {
       <View className="w-full px-4 pb-4 pt-5" style={{ maxWidth: 1180, zIndex: 10 }}>
         {showNearbyPaywall && !paidAccess.hasPaidAccess ? <SubscriptionRequired compact /> : null}
         <View className="w-full flex-row items-stretch gap-2">
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: nearbyEnabled, busy: locating }}
-            disabled={locating}
-            className="relative min-h-12 flex-1 flex-row items-center justify-center overflow-hidden rounded-2xl border border-white/60 px-3 py-3"
-            containerStyle={{ flex: 1 }}
-            onPress={() => void discover()}
-            style={{ backgroundColor: volcanoColor, elevation: 9, shadowColor: '#163D3F', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.34, shadowRadius: 8 }}
-          >
-            <LinearGradient colors={['rgba(255,255,255,0.16)', 'rgba(0,0,0,0.12)']} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
-            <AnimatedShine travel={420} />
-            <MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" />
-            <Text className="ml-2 flex-shrink text-center text-xs font-black text-white" numberOfLines={2}>{language === 'es' ? 'Destinos Turísticos Cercanos' : 'Nearby Tourist Destinations'}</Text>
-          </MotionPressable>
+          <NearbyButton enabled={nearbyEnabled} language={language} loading={nearbyLoading} onPress={() => void discover()} />
           <MotionPressable
             accessibilityRole="button"
             className="relative min-h-12 flex-row items-center justify-center overflow-hidden rounded-2xl border border-[#5DB990] bg-[#DDF3E8] px-3 py-3 dark:border-[#47C08A] dark:bg-[#164330]"
@@ -241,7 +243,7 @@ export default function ExploreScreen() {
             <Text className="ml-1.5 text-xs font-black text-[#07543F] dark:text-[#8DE0B6]">{language === 'es' ? 'Fauna CR' : 'CR Wildlife'}</Text>
           </MotionPressable>
         </View>
-{nearbyEnabled && !userLocation ? <Text accessibilityRole={locationError ? 'alert' : 'text'} className="mt-3 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{locating ? (language === 'es' ? 'Obteniendo ubicación precisa…' : 'Getting precise location…') : (language === 'es' ? 'Activá la ubicación precisa y tocá Destinos Turísticos Cercanos para reintentar.' : 'Enable precise location and tap Nearby Tourist Destinations to retry.')}</Text> : null}
+{nearbyEnabled && !userLocation ? <Text accessibilityRole={locationError ? 'alert' : 'text'} className="mt-3 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{nearbyLoading ? (language === 'es' ? 'Obteniendo ubicación precisa…' : 'Getting precise location…') : (language === 'es' ? 'Activá la ubicación precisa y tocá Destinos Turísticos Cercanos para reintentar.' : 'Enable precise location and tap Nearby Tourist Destinations to retry.')}</Text> : null}
         <Text className="mb-1.5 mt-3 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Busca un sitio por nombre' : 'Search for a place by name'}</Text>
         <View className="relative z-20">
           <View className="flex-row items-stretch gap-2">
@@ -275,7 +277,7 @@ export default function ExploreScreen() {
           </View>
           {hasSearch ? <View className="absolute left-0 right-0 z-20" style={{ elevation: 20, marginTop: 8, top: '100%' }}>{resultContent}</View> : null}
         </View>
-        {coordinates ? <Text className="mt-3 text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ordenados del más cercano al más lejano.' : 'Sorted from nearest to farthest.'}</Text> : null}
+        {coordinates && !nearbyLoading ? <Text className="mt-3 text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Ordenados del más cercano al más lejano.' : 'Sorted from nearest to farthest.'}</Text> : null}
         {!coordinates ? (
           <View className="mt-5 flex-row flex-wrap">
             {destinationCategories.isPending ? <CategoryGridSkeleton language={language} wide={wide} /> : null}
@@ -323,7 +325,7 @@ export default function ExploreScreen() {
             })}
           </View>
         ) : null}
-        {coordinates && !hasSearch ? <View className="mt-4 gap-3">{resultContent}</View> : null}
+        {coordinates && !hasSearch && !nearbyLoading ? <View className="mt-4 gap-3">{resultContent}</View> : null}
       </View>
 
       <View className="w-full" style={{ maxWidth: 1180, paddingHorizontal: wide ? 20 : 0 }}>
@@ -351,6 +353,50 @@ export default function ExploreScreen() {
       <ProposalModal language={language} onClose={() => setProposalOpen(false)} onPublished={() => void queryClient.invalidateQueries({ queryKey: ['explore-places'] })} open={proposalOpen} session={session} />
       <InformationReportModal language={language} onClose={() => { setRoadReportOpen(false); setReportingRoad(null); }} open={roadReportOpen || Boolean(reportingRoad)} targetKey={reportingRoad?.id ?? 'costa-rica-road-network'} targetLabel={reportingRoad?.name ?? (language === 'es' ? 'Carreteras de Costa Rica' : 'Costa Rica road network')} targetType="road" />
     </ScrollView>
+  );
+}
+
+function NearbyButton({ enabled, language, loading, onPress }: { enabled: boolean; language: 'es' | 'en'; loading: boolean; onPress: () => void }) {
+  const reduceMotion = useReducedMotion();
+  const wasLoading = useRef(false);
+  const [width, setWidth] = useState(0);
+  const progress = useSharedValue(0);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (loading) {
+      wasLoading.current = true;
+      progress.value = reduceMotion ? 0.65 : withRepeat(withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) }), -1, false);
+      return () => cancelAnimation(progress);
+    }
+    progress.value = withTiming(0, { duration: 100 });
+    if (wasLoading.current && !reduceMotion) scale.value = withSequence(withSpring(1.045, { damping: 14, stiffness: 320 }), withSpring(1, { damping: 13, stiffness: 280 }));
+    wasLoading.current = false;
+    return undefined;
+  }, [loading, progress, reduceMotion, scale]);
+
+  const buttonStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const progressStyle = useAnimatedStyle(() => ({ width: progress.value * width }));
+
+  return (
+    <Animated.View onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={[{ flex: 1 }, buttonStyle]}>
+      <MotionPressable
+        accessibilityLabel={loading ? (language === 'es' ? 'Cargando destinos turísticos cercanos' : 'Loading nearby tourist destinations') : undefined}
+        accessibilityRole="button"
+        accessibilityState={{ selected: enabled, busy: loading, disabled: loading }}
+        disabled={loading}
+        className="relative min-h-12 flex-1 flex-row items-center justify-center overflow-hidden rounded-2xl border border-white/60 px-3 py-3"
+        containerStyle={{ flex: 1 }}
+        onPress={onPress}
+        style={{ backgroundColor: volcanoColor, elevation: 9, shadowColor: '#163D3F', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.34, shadowRadius: 8 }}
+      >
+        <LinearGradient colors={['rgba(255,255,255,0.16)', 'rgba(0,0,0,0.12)']} style={{ inset: 0, pointerEvents: 'none', position: 'absolute' }} />
+        {!loading ? <AnimatedShine travel={420} /> : null}
+        <MaterialCommunityIcons name="crosshairs-gps" size={21} color="white" />
+        <Text className="ml-2 flex-shrink text-center text-xs font-black text-white" numberOfLines={2}>{loading ? (language === 'es' ? 'Cargando cercanos…' : 'Loading nearby…') : (language === 'es' ? 'Destinos Turísticos Cercanos' : 'Nearby Tourist Destinations')}</Text>
+        {loading ? <View className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#7DD3FC]"><Animated.View className="h-full bg-[#F97316]" style={progressStyle} /></View> : null}
+      </MotionPressable>
+    </Animated.View>
   );
 }
 
