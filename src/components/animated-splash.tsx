@@ -1,5 +1,5 @@
+import { Image } from 'expo-image';
 import { useAudioPlayer } from 'expo-audio';
-import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
@@ -8,11 +8,6 @@ const INTRO_DURATION_MS = 3000;
 
 export function AnimatedSplash({ appReady, onFinish }: { appReady: boolean; onFinish: () => void }) {
   const player = useAudioPlayer(require('@/assets/audio/startup-transition.mp3'));
-  const video = useVideoPlayer(require('@/assets/VIDEO DE TRANSICION/NUEVO.mp4'), (videoPlayer) => {
-    videoPlayer.loop = true;
-    videoPlayer.muted = true;
-    videoPlayer.play();
-  });
   const [showAnimation, setShowAnimation] = useState(true);
   const [animationFinished, setAnimationFinished] = useState(false);
 
@@ -37,10 +32,10 @@ export function AnimatedSplash({ appReady, onFinish }: { appReady: boolean; onFi
   return (
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>
       {showAnimation ? <View style={styles.frame}>
-        <VideoView
+        <Image
+          source={require('@/assets/images/startup-transition.gif')}
+          autoplay
           contentFit="contain"
-          nativeControls={false}
-          player={video}
           style={styles.image}
         />
       </View> : null}
@@ -60,7 +55,7 @@ const styles = StyleSheet.create({
     width: '77%',
   },
   image: {
-    aspectRatio: 1,
+    aspectRatio: 800 / 1422,
     width: '100%',
   },
 });

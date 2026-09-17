@@ -1,7 +1,18 @@
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { Image } from 'expo-image';
 import { useEffect } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+
+import { useAppTheme } from '@/theme/theme-provider';
 
 type FrogLoaderProps = {
   accessibilityLabel?: string;
@@ -12,6 +23,9 @@ type FrogLoaderProps = {
   style?: StyleProp<ViewStyle>;
 };
 
+const frogOpen = require('@/assets/brand/frog-logo-open.png');
+const frogBlink = require('@/assets/brand/frog-logo-blink.png');
+
 export function FrogLoader(props: FrogLoaderProps) {
   if (!props.branded) return null;
   return <BrandedFrogLoader {...props} />;
@@ -20,23 +34,52 @@ export function FrogLoader(props: FrogLoaderProps) {
 function BrandedFrogLoader({
   accessibilityLabel = 'Cargando',
   className,
+  size = 'small',
   style,
 }: FrogLoaderProps) {
+  const { colors } = useAppTheme();
   const reducedMotion = useReducedMotion();
-  const player = useVideoPlayer(require('@/assets/VIDEO DE TRANSICION/NUEVO.mp4'), (videoPlayer) => {
-    videoPlayer.loop = true;
-    videoPlayer.muted = true;
-  });
-  useEffect(() => { if (reducedMotion) player.pause(); else player.play(); }, [player, reducedMotion]);
+  const blinkOpacity = useSharedValue(0);
+  const dimension = typeof size === 'number' ? size : size === 'large' ? 112 : 24;
+
+  useEffect(() => {
+    if (reducedMotion) {
+      blinkOpacity.value = 0;
+      return;
+    }
+
+    blinkOpacity.value = withRepeat(
+      withSequence(
+        withDelay(650, withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) })),
+        withTiming(0, { duration: 110, easing: Easing.in(Easing.quad) }),
+        withDelay(850, withTiming(0, { duration: 1 })),
+      ),
+      -1,
+    );
+  }, [blinkOpacity, reducedMotion]);
+
+  const blinkStyle = useAnimatedStyle(() => ({ opacity: blinkOpacity.value }));
 
   return (
     <View
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="progressbar"
       className={className}
-      style={[styles.container, style]}
+      style={[
+        styles.container,
+        style,
+      ]}
     >
-      <VideoView contentFit="contain" nativeControls={false} player={player} style={styles.video} />
+      <View style={{ height: dimension, width: dimension }}>
+        <Image contentFit="contain" source={frogOpen} style={StyleSheet.absoluteFill} />
+        <Animated.View style={[StyleSheet.absoluteFill, blinkStyle]}>
+          <Image contentFit="contain" source={frogBlink} style={StyleSheet.absoluteFill} />
+        </Animated.View>
+      </View>
+      <View style={styles.wordmark}>
+        <Text style={[styles.title, { color: colors.text }]}>Descubriendo <Text style={styles.country}>CR</Text></Text>
+        <Text style={[styles.tagline, { color: colors.textMuted }]}>EXPLORÁ DISTINTO 🇨🇷</Text>
+      </View>
     </View>
   );
 }
@@ -47,10 +90,25 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flex: 1,
     justifyContent: 'center',
+    transform: [{ translateY: -48 }],
     width: '100%',
   },
-  video: {
-    aspectRatio: 1,
-    width: '77%',
+  country: {
+    color: '#EF4B45',
+  },
+  tagline: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: 11,
+    letterSpacing: 2.2,
+    marginTop: 4,
+  },
+  title: {
+    fontFamily: 'PlusJakartaSans_700Bold',
+    fontSize: 23,
+    letterSpacing: -0.7,
+  },
+  wordmark: {
+    alignItems: 'center',
+    marginTop: 2,
   },
 });
