@@ -45,6 +45,7 @@
     "expo-splash-screen": "~57.0.9",
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
+    "expo-video": "~57.0.4",
     "expo-web-browser": "~57.0.3",
     "lucide-react-native": "1.37.0",
     "mapbox-gl": "^2.15.0",

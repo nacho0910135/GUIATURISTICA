@@ -14,8 +14,8 @@ export function AppFooter({ language }: { language: 'es' | 'en' }) {
     <View className="mt-8 w-full border-t border-[#244B44] bg-[#133C33] px-5 py-8 dark:border-[#2A554A] dark:bg-[#0A1E19]">
       <View className="mx-auto w-full" style={{ maxWidth: 760 }}>
         <View className="flex-row items-center">
-          <View className="h-11 w-11 overflow-hidden rounded-2xl bg-[#0A3B2E]"><Image accessibilityLabel="Descubriendo CR" contentFit="contain" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: '100%', width: '100%' }} /></View>
-          <Text className="ml-3 text-xl font-black text-[#E7FFF7]">Descubriendo <Text style={{ color: '#58C3DF', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 23, fontWeight: '800' }}>C</Text><Text style={{ color: '#F07171', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 23, fontWeight: '800' }}>R</Text></Text>
+          <View className="h-11 w-11 overflow-hidden rounded-2xl bg-[#0A3B2E]"><Image accessibilityLabel="DescubreCR" contentFit="contain" source={require('@/assets/brand/frog-logo-open.png')} style={{ height: '100%', width: '100%' }} /></View>
+          <Text className="ml-3 text-xl font-black text-[#E7FFF7]">Descubre<Text style={{ color: '#58C3DF', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 23, fontWeight: '800' }}>C</Text><Text style={{ color: '#F07171', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 23, fontWeight: '800' }}>R</Text></Text>
         </View>
         <Text className="mt-4 text-sm leading-6 text-[#C1D8D0]">{text('Plataforma turística y ecológica comunitaria para explorar Costa Rica de forma informada.', 'A community tourism and ecology platform for informed travel across Costa Rica.')}</Text>
 
@@ -40,7 +40,7 @@ export function AppFooter({ language }: { language: 'es' | 'en' }) {
         </View>
 
         <View className="mt-5 border-t border-white/15 pt-5">
-          <Text className="text-center text-xs leading-5 text-[#B5CCC4]">© {new Date().getFullYear()} Descubriendo CR · {text('Hecho con ❤️ para la promoción del turismo nacional.', 'Made with ❤️ to promote national tourism.')}</Text>
+          <Text className="text-center text-xs leading-5 text-[#B5CCC4]">© {new Date().getFullYear()} Descubre CR · {text('Hecho con ❤️ para la promoción del turismo nacional.', 'Made with ❤️ to promote national tourism.')}</Text>
           <Text className="mt-2 text-center text-sm font-bold text-[#D9F7ED]">¡Pura Vida! · CR 🇨🇷</Text>
         </View>
       </View>

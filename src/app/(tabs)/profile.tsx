@@ -1,7 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -10,7 +9,7 @@ import { Platform, Pressable, ScrollView, Share, Text, TextInput, View } from 'r
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { AudioRecorderButton } from '@/components/audio-recorder-button';
 import { usePaidAccess } from '@/components/subscription-required';
-import { AnimatedShine, MotionPressable } from '@/components/motion';
+import { MotionPressable } from '@/components/motion';
 import { ChatAvatar, TravelerMessage } from '@/components/traveler-message';
 import { useScreenActive } from '@/hooks/use-screen-active';
 import { useTravelerMessagesSync } from '@/hooks/use-traveler-messages-sync';
@@ -322,16 +321,11 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-        {Platform.OS !== 'ios' ? <Pressable accessibilityRole="link" className="mt-4 overflow-hidden rounded-2xl border border-[#F8DE7E]" onPress={() => router.push('/subscriptions')} style={{ elevation: 9, shadowColor: '#8A5A00', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.42, shadowRadius: 8 }}>
-          <LinearGradient colors={['#FFF1A8', '#D99A12', '#9A6500']} end={{ x: 1, y: 1 }} start={{ x: 0, y: 0 }} className="relative px-4 py-4.5">
-            <AnimatedShine travel={420} />
-            <View className="w-full flex-row items-center justify-center">
-              <MaterialCommunityIcons name="crown" size={21} color="#4A2B00" />
-              <Text className="ml-2 text-center font-black text-[#3B2400]">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
-            </View>
-          </LinearGradient>
+        {Platform.OS !== 'ios' ? <Pressable accessibilityRole="link" className="mt-4 h-14 self-center flex-row items-center justify-center rounded-2xl border border-white/60 bg-[#5F9EA0] px-6" onPress={() => router.push('/subscriptions')} style={{ elevation: 9, shadowColor: '#163D3F', shadowOffset: { height: 6, width: 0 }, shadowOpacity: 0.34, shadowRadius: 8 }}>
+          <MaterialCommunityIcons name="crown" size={21} color="white" />
+          <Text className="ml-2 text-center font-black text-white">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
         </Pressable> : null}
-        {Platform.OS !== 'web' ? <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-ui-border bg-ui-surface px-4 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface" disabled={busy} onPress={() => void run(async () => {
+        {Platform.OS !== 'web' ? <Pressable accessibilityRole="button" className="mt-3 h-14 self-center flex-row items-center justify-center rounded-2xl border border-ui-border bg-ui-surface px-6 dark:border-ui-dark-border dark:bg-ui-dark-surface" disabled={busy} onPress={() => void run(async () => {
           const enabled = await registerPushNotifications();
           Alert.alert(tr(language, 'Notificaciones push', 'Push notifications'), enabled
             ? tr(language, 'Listo. Activaste las notificaciones push.', 'Done. Push notifications are enabled.')
@@ -340,7 +334,7 @@ export default function ProfileScreen() {
           <MaterialCommunityIcons name="bell-plus-outline" size={20} color="#0B6B4F" />
           <Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{tr(language, 'Activar notificaciones push', 'Enable push notifications')}</Text>
         </Pressable> : null}
-        <Pressable accessibilityRole="button" className="mt-3 flex-row items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950" disabled={busy} onPress={() => void run(signOut)}>
+        <Pressable accessibilityRole="button" className="mt-3 h-14 self-center flex-row items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-6 dark:border-red-900 dark:bg-red-950" disabled={busy} onPress={() => void run(signOut)}>
           <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
           <Text className="ml-2 font-black text-red-600 dark:text-red-400">{tr(language, 'Cerrar sesión', 'Sign out')}</Text>
         </Pressable>

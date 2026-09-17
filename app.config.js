@@ -7,6 +7,7 @@ module.exports = ({ config }) => {
     'expo-sqlite',
     'expo-secure-store',
     'expo-image',
+    'expo-video',
     'expo-web-browser',
     'expo-status-bar',
     'expo-notifications',
