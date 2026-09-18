@@ -25,6 +25,8 @@ type FrogLoaderProps = {
 
 const frogOpen = require('@/assets/brand/frog1.png');
 const frogBlink = require('@/assets/brand/frog2.png');
+// Asegúrate de que esta ruta sea correcta en tu proyecto
+const Panel = require('@/assets/brand/panel.png');
 
 export function FrogLoader(props: FrogLoaderProps) {
   if (!props.branded) return null;
@@ -40,7 +42,15 @@ function BrandedFrogLoader({
   const { colors } = useAppTheme();
   const reducedMotion = useReducedMotion();
   const blinkOpacity = useSharedValue(0);
-  const dimension = typeof size === 'number' ? size : size === 'large' ? 224 : 48;
+
+  // **AJUSTE DE TAMAÑO DEL PANEL**
+  // El panel necesita ser más grande que las ranas para que se vea.
+  // Definimos una relación de aspecto o un multiplicador.
+  // Supongamos que el panel debe ser 2.5 veces más ancho que el icono de la rana.
+  const baseDimension = typeof size === 'number' ? size : size === 'large' ? 224 : 48;
+  const frogContainerSize = baseDimension;
+  const panelWidth = frogContainerSize * 2.5; // CAMBIO AQUÍ: El panel es más ancho
+  const panelHeight = panelWidth * 0.75; // CAMBIO AQUÍ: Altura proporcional (ajusta según tu imagen)
 
   useEffect(() => {
     if (reducedMotion) {
@@ -70,12 +80,38 @@ function BrandedFrogLoader({
         style,
       ]}
     >
-      <View style={{ height: dimension, width: dimension }}>
-        <Image contentFit="contain" source={frogOpen} style={StyleSheet.absoluteFill} />
-        <Animated.View style={[StyleSheet.absoluteFill, blinkStyle]}>
-          <Image contentFit="contain" source={frogBlink} style={StyleSheet.absoluteFill} />
-        </Animated.View>
-      </View>
+      {/* **CONTENEDOR GRUPO (Rana + Panel)**
+          Este View agrupa las ranas y el panel para posicionarlos juntos */}
+      <View style={styles.graphicGroup}> {/* CAMBIO AQUÍ: Nuevo contenedor */}
+        {/* **El Panel** (se renderiza primero para quedar detrás)
+            Usamos position: 'absolute' para colocarlo bajo la rana */}
+        <Image
+          contentFit="contain"
+          source={Panel}
+          style={[
+             StyleSheet.absoluteFill, // Lo estira al tamaño del contenedor padre (graphicGroup)
+             {
+               width: panelWidth,
+               height: panelHeight,
+               // Centramos el panel horizontalmente dentro de graphicGroup
+               left: (frogContainerSize * 2.5 / 2) * -0.2, // Esto es complejo, mejor centrar graphicGroup
+               // Ajuste vertical para que la base de la rana coincida con el panel
+               top: frogContainerSize * 0.1,
+               opacity: 0.9, // Un poco de transparencia para el efecto
+             }
+          ]}
+        />
+
+        {/* **El Contenedor de las Ranas** */}
+        <View style={{ height: frogContainerSize, width: frogContainerSize }}>
+          <Image contentFit="contain" source={frogOpen} style={StyleSheet.absoluteFill} />
+          <Animated.View style={[StyleSheet.absoluteFill, blinkStyle]}>
+            <Image contentFit="contain" source={frogBlink} style={StyleSheet.absoluteFill} />
+          </Animated.View>
+        </View>
+
+      </View> {/* FIN CAMBIO AQUÍ */}
+
       <View style={styles.wordmark}>
         <Text style={[styles.title, { color: colors.text }]}>Descubre <Text style={styles.country}>CR</Text></Text>
         <Text style={[styles.tagline, { color: colors.textMuted }]}>EXPLORÁ DISTINTO 🇨🇷</Text>
@@ -90,8 +126,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flex: 1,
     justifyContent: 'center',
-    transform: [{ translateY: -48 }],
+    // Eliminamos el translateY global de -48 para centrar mejor todo el bloque
     width: '100%',
+  },
+  // **NUEVO ESTILO**
+  graphicGroup: {
+    alignItems: 'center', // Centra horizontalmente la rana y el panel dentro de este bloque
+    justifyContent: 'center',
+    width: '100%',
+    height: 300, // Definimos una altura fija para este grupo para dar espacio al panel
+    marginBottom: -50, // Subimos el texto un poco para compensar el tamaño del panel
   },
   country: {
     color: '#EF4B45',
@@ -109,6 +153,6 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     alignItems: 'center',
-    marginTop: 2,
+    // Eliminamos el marginTop: 2, ya que el marginBottom negativo en graphicGroup lo controla
   },
 });
