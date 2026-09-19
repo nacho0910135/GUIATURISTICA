@@ -243,7 +243,7 @@ export function GlobalHeader() {
               </Animated.View>
             </View>
             <View className="ml-3">
-              <Text className="font-display text-lg tracking-tight text-ui-text dark:text-ui-dark-text">Descubre<Text style={{ color: '#0077A8', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 21, fontWeight: '800' }}>C</Text><Text style={{ color: '#E8494A', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 21, fontWeight: '800' }}>R</Text></Text>
+              <Text className="font-display text-lg tracking-tight text-ui-text dark:text-ui-dark-text">{visitorType === 'foreigner' ? 'Discover' : 'Descubre'}<Text style={{ color: '#0077A8', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 21, fontWeight: '800' }}>C</Text><Text style={{ color: '#E8494A', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 21, fontWeight: '800' }}>R</Text></Text>
               <Text className="font-sans text-[10px] uppercase tracking-[1.4px] text-ui-text-muted dark:text-ui-dark-text-muted">{isSpanish ? 'Explorá distinto 🇨🇷' : 'Explore differently 🇨🇷'}</Text>
             </View>
           </Pressable>
@@ -268,7 +268,7 @@ export function GlobalHeader() {
           <IconButton
             accessibilityLabel={isSpanish ? 'Abrir brújula y mapa' : 'Open compass and map'}
             className="overflow-hidden"
-            icon={<View className="relative h-full w-full items-center justify-center overflow-hidden rounded-full"><Image contentFit="contain" source={require('@/assets/iconos propios/brujula2.png')} style={{ height: 38, transform: [{ translateY: -3 }], width: 38 }} /><AnimatedShine travel={60} /></View>}
+            icon={<View className="relative h-full w-full items-center justify-center overflow-hidden rounded-full"><Image contentFit="cover" contentPosition="center" source={require('@/assets/iconos propios/brujula2.png')} style={{ height: 50, width: 57, transform: [{ translateY: -2 }] }} /><AnimatedShine travel={60} /></View>}
             onPress={() => router.push('/compass')}
             size="sm"
           />

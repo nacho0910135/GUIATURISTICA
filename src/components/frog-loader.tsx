@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useAppTheme } from '@/theme/theme-provider';
+import { useApp } from '@/providers/app-provider';
 
 type FrogLoaderProps = {
   accessibilityLabel?: string;
@@ -33,12 +34,15 @@ export function FrogLoader(props: FrogLoaderProps) {
 }
 
 function BrandedFrogLoader({
-  accessibilityLabel = 'Cargando',
+  accessibilityLabel,
   className,
   size = 'small',
   style,
 }: FrogLoaderProps) {
   const { colors } = useAppTheme();
+  const { visitorType } = useApp();
+  const isForeigner = visitorType === 'foreigner';
+  const resolvedAccessibilityLabel = accessibilityLabel ?? (isForeigner ? 'Loading' : 'Cargando');
   const reducedMotion = useReducedMotion();
   const blinkOpacity = useSharedValue(0);
   const dimension = typeof size === 'number' ? size : size === 'large' ? 224 : 48;
@@ -63,7 +67,7 @@ function BrandedFrogLoader({
 
   return (
     <View
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={resolvedAccessibilityLabel}
       accessibilityRole="progressbar"
       className={className}
       style={[
@@ -78,8 +82,8 @@ function BrandedFrogLoader({
         </Animated.View>
       </View>
       <View style={styles.wordmark}>
-        <Text style={[styles.title, { color: colors.text }]}>Descubre <Text style={styles.country}>CR</Text></Text>
-        <Text style={[styles.tagline, { color: colors.textMuted }]}>EXPLORÁ DISTINTO 🇨🇷</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{isForeigner ? 'Discover' : 'Descubre'} <Text style={styles.country}>CR</Text></Text>
+        <Text style={[styles.tagline, { color: colors.textMuted }]}>{isForeigner ? 'EXPLORE DIFFERENTLY 🇨🇷' : 'EXPLORÁ DISTINTO 🇨🇷'}</Text>
       </View>
     </View>
   );
