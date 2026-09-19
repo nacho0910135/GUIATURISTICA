@@ -193,6 +193,10 @@ export function matchesSearchTargets(searchableText: string, targets: string[]) 
   });
 }
 
+export function matchesPrimaryCategory(category: string, targets: string[]) {
+  return matchesSearchTargets(category.split('/')[0].trim(), targets);
+}
+
 function getSanctuaryVisitDetails(row: VerifiedSanctuaryRow) {
   return VERIFIED_SANCTUARY_LOCATIONS[row.id] ?? Object.values(VERIFIED_SANCTUARY_LOCATIONS).find((details) => details.aliases.some((alias) => normalizedName(alias) === normalizedName(row.name)));
 }
@@ -345,6 +349,33 @@ export async function getPlacesForProvince(province: string, userId?: string): P
   return getPlaces('province', province, userId);
 }
 
+export type CatalogPlace = Pick<MapPlace, 'id' | 'name' | 'province' | 'category' | 'description' | 'difficulty' | 'latitude' | 'longitude'> & { isSanctuary?: boolean };
+
+export async function getCatalogIndex(includeSanctuaries = false): Promise<CatalogPlace[]> {
+  const index: CatalogPlace[] = [];
+  for (let start = 0; ; start += 1000) {
+    const { data, error } = await supabase.from('destinations')
+      .select('id,name,province,category,description,difficulty,latitude,longitude')
+      .eq('status', 'Activo').order('name').order('id').range(start, start + 999);
+    if (error) throw error;
+    index.push(...(data ?? []).map((place) => ({ ...place, category: classifiedCategory(place), latitude: Number(place.latitude), longitude: Number(place.longitude) })));
+    if (!data || data.length < 1000) break;
+  }
+  if (!includeSanctuaries) return index;
+  const sanctuaries = (await getVerifiedSanctuaryRows()).map(toMapSanctuary).filter((place): place is MapPlace => place !== null);
+  const knownIds = new Set(index.map((place) => place.id));
+  return [...index, ...sanctuaries.filter((place) => !knownIds.has(place.id)).map((place) => ({ ...place, isSanctuary: true }))].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function getCatalogPlaces(ids: string[], userId?: string, sanctuaryIds: string[] = []): Promise<MapPlace[]> {
+  const ordinaryIds = ids.filter((id) => !sanctuaryIds.includes(id));
+  const ordinary = ordinaryIds.length ? await getPlaces('ids', '', userId, ordinaryIds) : [];
+  if (!sanctuaryIds.length) return ordinary;
+  const { data, error } = await supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url,location_name,description_es,description_en,verified').in('id', sanctuaryIds).eq('verified', true);
+  if (error) throw error;
+  return [...ordinary, ...(data ?? []).map(toMapSanctuary).filter((place): place is MapPlace => place !== null)];
+}
+
 export async function getPlacesForCategory(category: string, userId?: string): Promise<MapPlace[]> {
   const places = await getPlaces('category', category, userId);
   if (normalizedName(category) !== normalizedName(SANCTUARY_CATEGORY)) return places;
@@ -436,13 +467,14 @@ async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPl
   };
 }
 
-async function getPlaces(filter: 'province' | 'category' | 'id' | 'all', value: string, userId?: string): Promise<MapPlace[]> {
+async function getPlaces(filter: 'province' | 'category' | 'id' | 'ids' | 'all', value: string, userId?: string, selectedIds?: string[]): Promise<MapPlace[]> {
   let query = supabase
     .from('destinations')
     .select('id,name,province,region,category,description,description_en,difficulty,price_national_crc,price_foreigner_usd,fee_type,requires_sinac_booking,sinac_booking_url,requires_online_ticket,online_ticket_url,has_high_tides_risk,latitude,longitude,cover_image_url,featured_community_photo_id,image_verified,image_attribution,image_license,image_source_url,status,source_url,source_checked_at,validated_by,verification_evidence_url,verification_checked_at,normativas_destinos(horario_ingreso,dia_cierre,observaciones_especiales),destination_visit_info(tipo_acceso,estado_camino,duracion_estimada,mejor_temporada,recomendaciones_seguridad,enlace_web,reserva_requerida,booking_contact,booking_price,booking_notes,horario_atencion,estacionamiento,servicios_sanitarios,restaurante_o_soda,acceso_para_discapacitados,se_permite_mascotas,camping_permitido,codigo_local,relevancia_cultural),destination_photos(image_url,sort_order),destination_user_photos!destination_user_photos_destination_id_fkey(id,image_url,user_id,created_at,photographer:users!destination_user_photos_user_id_fkey(id,username,full_name,avatar_url))')
     .eq('status', 'Activo');
   if (filter === 'province') query = query.eq('province', value);
   else if (filter === 'id') query = query.eq('id', value);
+  else if (filter === 'ids') query = query.in('id', selectedIds ?? []);
   else if (value === RESERVE_CATEGORY) query = query.in('id', [...RESERVE_IDS]);
   else if (value === REFUGE_CATEGORY) query = query.in('id', [...REFUGE_IDS]);
   else if (value === 'Pozas / Lagos') query = query.or('category.ilike.%Poza%,category.ilike.%Lago%,category.ilike.%Laguna%');

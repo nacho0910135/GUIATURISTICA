@@ -23,7 +23,7 @@ import { haptic } from '@/lib/haptics';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
 import { getLiveRoadAlerts, getWeather, WEATHER_STALE_TIME, type RoadTrafficAlert } from '@/lib/logistics';
 import { getMarineConditionsMany, isBeachPlace, MARINE_WEATHER_STALE_TIME, OPEN_METEO_MARINE_URL } from '@/lib/marine-weather';
-import { getExplorePlaces, matchesSearchTargets, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
+import { getExplorePlaces, matchesPrimaryCategory, publishCommunityPlace, type ExplorePlace } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { getFollowedTravelerIds, toggleTravelerFollow } from '@/lib/travelers';
 import { markExploreStartupReady } from '@/lib/startup-gate';
@@ -122,7 +122,7 @@ export default function ExploreScreen() {
   const rootCategories = useMemo(() => categoryOptions.filter((option) => option.parent_id === null), [categoryOptions]);
   const categoryCounts = useMemo(() => new Map(rootCategories.map((category) => [
     category.id,
-    (places.data ?? []).reduce((count, place) => count + Number(matchesOption(place, category)), 0),
+    (places.data ?? []).reduce((count, place) => count + Number(matchesPrimaryCategory(place.category, category.allowed_targets?.length ? category.allowed_targets : [category.label_es, category.label_en])), 0),
   ])), [places.data, rootCategories]);
   const matchedPlaces = useMemo(() => {
     const term = normalizeSearchText(search);
@@ -448,11 +448,6 @@ function CategoryGridSkeleton({ language, wide }: { language: 'es' | 'en'; wide:
   );
 }
 
-function matchesOption(place: ExplorePlace, option: AppOption) {
-  const terms = option.allowed_targets?.length ? option.allowed_targets : [option.label_es, option.label_en];
-  return matchesSearchTargets(place.category, terms);
-}
-
 function normalizeSearchText(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().trim();
 }
@@ -596,7 +591,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
       mediaTypes: ['images'],
       allowsMultipleSelection: true,
       selectionLimit: 10 - photos.length,
-      quality: 0.9,
+      quality: 0.85,
     });
     if (!result.canceled) setPhotos((current) => [...current, ...result.assets].slice(0, 10));
   };

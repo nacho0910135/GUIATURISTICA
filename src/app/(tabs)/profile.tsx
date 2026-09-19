@@ -20,7 +20,7 @@ import { moderateInformationReport, reportTypeLabel, updateInformationReportStat
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
 import { openNotification } from '@/lib/notification-route';
-import { registerPushNotifications } from '@/lib/push-notifications';
+import { registerPushNotifications, unregisterPushNotifications } from '@/lib/push-notifications';
 import { useApp } from '@/providers/app-provider';
 
 import { FrogLoader } from '@/components/frog-loader';
@@ -45,6 +45,15 @@ export default function ProfileScreen() {
   const [adminPassword, setAdminPassword] = useState('');
   const userId = session?.user.id ?? '';
   const queryClient = useQueryClient();
+  const pushNotifications = useQuery({
+    queryKey: ['push-notifications', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('user_push_tokens').select('id').eq('user_id', userId).eq('active', true).limit(1);
+      if (error) throw error;
+      return data.length > 0;
+    },
+    enabled: Boolean(userId) && isActive && Platform.OS !== 'web',
+  });
   const notificationTypes = useQuery({
     queryKey: ['app-options', 'notification_type'],
     queryFn: () => getAppOptions('notification_type'),
@@ -136,7 +145,7 @@ export default function ProfileScreen() {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.9,
+      quality: 0.85,
     });
     const profile = data?.profile ?? profileSummary.data;
     if (result.canceled || !profile) return;
@@ -325,14 +334,25 @@ export default function ProfileScreen() {
           <MaterialCommunityIcons name="crown" size={21} color="white" />
           <Text className="ml-2 text-center font-black text-white">{tr(language, 'Ver planes Pro', 'View Pro plans')}</Text>
         </Pressable> : null}
-        {Platform.OS !== 'web' ? <Pressable accessibilityRole="button" className="mt-3 h-14 self-center flex-row items-center justify-center rounded-2xl border border-ui-border bg-ui-surface px-6 dark:border-ui-dark-border dark:bg-ui-dark-surface" disabled={busy} onPress={() => void run(async () => {
+        {Platform.OS !== 'web' ? <Pressable accessibilityRole="button" accessibilityState={{ checked: Boolean(pushNotifications.data) }} className="mt-3 h-14 self-center flex-row items-center justify-center rounded-2xl border border-ui-border bg-ui-surface px-6 dark:border-ui-dark-border dark:bg-ui-dark-surface" disabled={busy || pushNotifications.isPending} onPress={() => void run(async () => {
+          if (pushNotifications.isError) {
+            await pushNotifications.refetch();
+            return;
+          }
+          if (pushNotifications.data) {
+            await unregisterPushNotifications();
+            queryClient.setQueryData(['push-notifications', userId], false);
+            Alert.alert(tr(language, 'Notificaciones push', 'Push notifications'), tr(language, 'Desactivaste las notificaciones push.', 'Push notifications are disabled.'));
+            return;
+          }
           const enabled = await registerPushNotifications();
+          if (enabled) queryClient.setQueryData(['push-notifications', userId], true);
           Alert.alert(tr(language, 'Notificaciones push', 'Push notifications'), enabled
             ? tr(language, 'Listo. Activaste las notificaciones push.', 'Done. Push notifications are enabled.')
             : tr(language, 'No se activaron. Podés habilitarlas desde los ajustes del teléfono cuando quieras.', 'They were not enabled. You can allow them in your phone settings whenever you want.'));
         })}>
-          <MaterialCommunityIcons name="bell-plus-outline" size={20} color="#0B6B4F" />
-          <Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{tr(language, 'Activar notificaciones push', 'Enable push notifications')}</Text>
+          <MaterialCommunityIcons name={pushNotifications.data ? 'bell-off-outline' : 'bell-plus-outline'} size={20} color="#0B6B4F" />
+          <Text className="ml-2 font-black text-ui-primary dark:text-ui-dark-primary">{pushNotifications.data ? tr(language, 'Desactivar notificaciones push', 'Disable push notifications') : tr(language, 'Activar notificaciones push', 'Enable push notifications')}</Text>
         </Pressable> : null}
         <Pressable accessibilityRole="button" className="mt-3 h-14 self-center flex-row items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-6 dark:border-red-900 dark:bg-red-950" disabled={busy} onPress={() => void run(signOut)}>
           <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
@@ -522,7 +542,7 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.9,
+        quality: 0.85,
         exif: false,
       });
       if (result.canceled) return;
@@ -538,7 +558,7 @@ function AdminPanel({ data, busy, language, refresh, run, signOut }: { data?: Ad
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.9,
+        quality: 0.85,
         exif: false,
       });
       if (result.canceled) return;
@@ -922,7 +942,7 @@ export function MessagesPanel({ conversations, initialPartnerId, language, userI
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.9,
+        quality: 0.85,
         exif: false,
       });
       if (!result.canceled)

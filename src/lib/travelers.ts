@@ -112,16 +112,22 @@ export async function cancelGroupRide(rideId: string, organizerId: string) {
   if (!data) throw new Error('La rodada ya fue cancelada o no tenés permiso para cancelarla.');
 }
 
+export async function getTravelerPostTopic(postId: string): Promise<TravelerTopic | null> {
+  const { data, error } = await supabase.from('traveler_posts').select('topic').eq('id', postId).maybeSingle();
+  if (error) throw error;
+  return data?.topic ?? null;
+}
+
 export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'general', cursor?: { createdAt: string; id: string }) {
+  const blocksResult = userId ? await supabase.from('user_blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`) : { data: [], error: null };
+  if (blocksResult.error) throw blocksResult.error;
+  const blockedIds = new Set((blocksResult.data ?? []).map((row) => row.blocker_id === userId ? row.blocked_id : row.blocker_id));
   let postsQuery = supabase.from('traveler_posts').select('id,user_id,body,image_url,image_urls,latitude,longitude,recommended_destination_id,recommended_destination_is_community,topic,created_at,user:users!traveler_posts_user_id_fkey(id,username,full_name,avatar_url,role)').eq('topic', topic);
   if (cursor) postsQuery = postsQuery.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
-  const [postsResult, blocksResult] = await Promise.all([
-    postsQuery.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(20),
-    userId ? supabase.from('user_blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`) : Promise.resolve({ data: [], error: null }),
-  ]);
-  if (postsResult.error || blocksResult.error) throw postsResult.error ?? blocksResult.error;
-  const blockedIds = new Set((blocksResult.data ?? []).map((row) => row.blocker_id === userId ? row.blocked_id : row.blocker_id));
-  const postRows = (postsResult.data ?? []).filter((post) => !blockedIds.has(post.user_id));
+  if (blockedIds.size) postsQuery = postsQuery.not('user_id', 'in', `(${[...blockedIds].join(',')})`);
+  const postsResult = await postsQuery.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(10);
+  if (postsResult.error) throw postsResult.error;
+  const postRows = postsResult.data ?? [];
   const postIds = (postRows ?? []).map((post) => post.id);
   const [replies, reactions, replyReactions, follows] = await Promise.all([
     postIds.length
@@ -149,7 +155,7 @@ export async function getTravelerWall(userId?: string, topic: TravelerTopic = 'g
     reactionCounts: reactionRows.reduce<Record<string, Record<ReactionType, number>>>((counts, row) => { const post = counts[row.post_id] ??= {} as Record<ReactionType, number>; post[row.reaction] = (post[row.reaction] ?? 0) + 1; return counts; }, {}),
     myReplyReactions: replyReactionRows.reduce<Record<string, ReactionType>>((mine, row) => { if (row.user_id === userId) mine[row.reply_id] = row.reaction; return mine; }, {}),
     replyReactionCounts: replyReactionRows.reduce<Record<string, Record<ReactionType, number>>>((counts, row) => { const reply = counts[row.reply_id] ??= {} as Record<ReactionType, number>; reply[row.reaction] = (reply[row.reaction] ?? 0) + 1; return counts; }, {}),
-    nextCursor: postsResult.data?.length === 20 && lastPost ? { createdAt: lastPost.created_at, id: lastPost.id } : undefined,
+    nextCursor: postsResult.data?.length === 10 && lastPost ? { createdAt: lastPost.created_at, id: lastPost.id } : undefined,
   };
 }
 

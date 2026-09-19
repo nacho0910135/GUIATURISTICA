@@ -298,7 +298,7 @@ function FaunaProposalModal({ language, onClose: close, onPublished, open, userI
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return Alert.alert('Fauna CR', language === 'es' ? 'Permití el acceso a tus fotos para elegir una imagen.' : 'Allow photo access to choose an image.');
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.9, exif: false });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.85, exif: false });
     if (!result.canceled) setImage(result.assets[0]);
   };
   const fields = [

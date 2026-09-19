@@ -5,8 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FrogLoader } from '@/components/frog-loader';
 import { askDestinationAI, type DestinationAIMessage } from '@/lib/destination-ai';
+import { useApp } from '@/providers/app-provider';
 
 export function DestinationAIAssistant({ canUse, context, language, name, onSubscribe }: { canUse: boolean; context: string; language: 'es' | 'en'; name: string; onSubscribe: () => void }) {
+  const { requireAuth } = useApp();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<DestinationAIMessage[]>([]);
@@ -28,6 +30,7 @@ export function DestinationAIAssistant({ canUse, context, language, name, onSubs
   };
 
   const launch = () => {
+    if (!requireAuth(language === 'es' ? 'conocer más con IA' : 'learn more with AI')) return;
     if (!canUse) return onSubscribe();
     setOpen(true);
     if (!messages.length) void ask(language === 'es' ? `Ampliá la información útil para conocer y visitar ${name}.` : `Expand the useful information for learning about and visiting ${name}.`, []);

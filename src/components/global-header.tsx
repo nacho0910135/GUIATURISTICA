@@ -33,7 +33,7 @@ let lastPresentedSocialNotificationId: string | null = null;
 
 export function GlobalHeader() {
   const isFocused = useScreenActive();
-  const { avatarUrl, exchangeRate, exchangeRateReady, language, session, setVisitorType, visitorType } = useApp();
+  const { avatarUrl, exchangeRate, exchangeRateReady, language, requireAuth, session, setVisitorType, visitorType } = useApp();
   const { colors, mode, toggleMode } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -269,7 +269,7 @@ export function GlobalHeader() {
             accessibilityLabel={isSpanish ? 'Abrir brújula y mapa' : 'Open compass and map'}
             className="overflow-hidden"
             icon={<View className="relative h-full w-full items-center justify-center overflow-hidden rounded-full"><Image contentFit="cover" contentPosition="center" source={require('@/assets/iconos propios/brujula2.png')} style={{ height: 50, width: 57, transform: [{ translateY: -2 }] }} /><AnimatedShine travel={60} /></View>}
-            onPress={() => router.push('/compass')}
+            onPress={() => { if (requireAuth(language === 'es' ? 'usar la brújula' : 'use the compass')) router.push('/compass'); }}
             size="sm"
           />
 

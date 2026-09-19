@@ -1473,7 +1473,7 @@ function CampaignOptions({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: false,
-      quality: 1,
+      quality: 0.85,
     });
     if (!result.canceled) await processBanner(result.assets[0], "center");
   };
@@ -2414,7 +2414,7 @@ export default function CommerceScreen() {
       mediaTypes: ["images"],
       allowsMultipleSelection: true,
       selectionLimit: Math.max(1, 12 - registerPhotos.length),
-      quality: 0.9,
+      quality: 0.85,
       exif: false,
     });
     if (!result.canceled)
@@ -2522,7 +2522,7 @@ export default function CommerceScreen() {
       mediaTypes: ["images"],
       allowsMultipleSelection: true,
       selectionLimit: Math.max(1, 12 - service.photos.length),
-      quality: 0.9,
+      quality: 0.85,
     });
     if (result.canceled) return;
     setPhotoBusyId(service.id);

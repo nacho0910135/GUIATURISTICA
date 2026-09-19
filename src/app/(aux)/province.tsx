@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
@@ -16,7 +16,7 @@ import { getAppOptions } from '@/lib/app-options';
 import { openExternalUrl } from '@/lib/external-url';
 import { ferryRoutes, getFerryRoutes, getWeather, openNavigation, type FerryRoute, WEATHER_STALE_TIME } from '@/lib/logistics';
 import { getMarineConditions, isBeachPlace, MARINE_WEATHER_STALE_TIME, OPEN_METEO_MARINE_URL, type MarineConditions } from '@/lib/marine-weather';
-import { addDestinationPhoto, addDestinationReview, getCommunitySuggestionVerification, getDestinationFreshness, getDestinationReviews, getMyCommunitySuggestionVerification, getMyDestinationFreshness, getPlaceById, getPlacesForCategory, getPlacesForProvince, getPlacesForTargets, matchesSearchTargets, setCommunitySuggestionVerification, setDestinationFreshnessVote, type CommunityPhoto, type CommunitySuggestionAccessDifficulty, type CommunitySuggestionVerification, type DestinationFreshnessCheck, type MapPlace, type MyCommunitySuggestionVerification, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
+import { addDestinationPhoto, addDestinationReview, getCatalogIndex, getCatalogPlaces, getCommunitySuggestionVerification, getDestinationFreshness, getDestinationReviews, getMyCommunitySuggestionVerification, getMyDestinationFreshness, getPlaceById, getPlacesForCategory, getPlacesForProvince, getPlacesForTargets, matchesPrimaryCategory, matchesSearchTargets, setCommunitySuggestionVerification, setDestinationFreshnessVote, type CatalogPlace, type CommunityPhoto, type CommunitySuggestionAccessDifficulty, type CommunitySuggestionVerification, type DestinationFreshnessCheck, type MapPlace, type MyCommunitySuggestionVerification, type ValidationAuthority, toggleDestinationLike, toggleDestinationPhotoLike } from '@/lib/places';
 import { provinces } from '@/lib/provinces';
 import { useApp } from '@/providers/app-provider';
 import { useAppTheme } from '@/theme/theme-provider';
@@ -26,6 +26,7 @@ import { getRoadRoute, routeWindow, type RoadRoute } from '@/lib/road-routing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FrogLoader } from '@/components/frog-loader';
+import { AerialButton, AerialMapModal, type AerialPlace } from '@/components/explore/aerial-map-modal';
 const destinationPlaceholder = { blurhash: 'L9C6cY00M{~q%MxuRjof00ofxuWB' };
 const weatherIcons = { '01': 'weather-sunny', '02': 'weather-partly-cloudy', '03': 'weather-cloudy', '04': 'weather-cloudy', '09': 'weather-pouring', '10': 'weather-rainy', '11': 'weather-lightning-rainy', '13': 'weather-snowy', '50': 'weather-fog' } as const;
 
@@ -47,7 +48,7 @@ function DestinationCarousel({ autoplay = true, height, place }: { autoplay?: bo
     return () => clearTimeout(timeout);
   }, [autoplay, availablePhotos, isFocused, photoIndex]);
   const source = availablePhotos[photoIndex % availablePhotos.length];
-  return source ? <Image cachePolicy="memory-disk" contentFit="cover" onError={() => setFailedPhotos((failed) => failed.includes(source) ? failed : [...failed, source])} placeholder={destinationPlaceholder} placeholderContentFit="cover" priority={autoplay ? 'high' : 'normal'} source={{ uri: source }} style={{ height, width: '100%' }} transition={160} /> : <View className="items-center justify-center bg-ui-primary-soft dark:bg-ui-dark-primary-soft" style={{ height }}><MaterialCommunityIcons name="image-off-outline" size={42} color="#087443" /></View>;
+  return source ? <Image cachePolicy="memory-disk" contentFit="cover" onError={() => setFailedPhotos((failed) => failed.includes(source) ? failed : [...failed, source])} placeholder={destinationPlaceholder} placeholderContentFit="cover" priority={autoplay ? 'high' : 'low'} source={{ uri: source }} style={{ height, width: '100%' }} transition={160} /> : <View className="items-center justify-center bg-ui-primary-soft dark:bg-ui-dark-primary-soft" style={{ height }}><MaterialCommunityIcons name="image-off-outline" size={42} color="#087443" /></View>;
 }
 
 function usesVerifiedCover(place: MapPlace) {
@@ -77,7 +78,7 @@ function tourismRegion(place: MapPlace) {
 }
 
 
-const CATALOG_BATCH_SIZE = 4;
+const CATALOG_BATCH_SIZE = 10;
 const IMMERSIVE_PREFETCH_RADIUS = 3;
 const DESTINATION_CARD_HEIGHT = 346;
 const DESTINATION_INFO_HEIGHT = 170;
@@ -103,6 +104,7 @@ export default function ProvinceCatalogScreen() {
   const routeWindowGeneration = useRef(0);
   const catalogMounted = useRef(true);
   const [immersiveOpen, setImmersiveOpen] = useState(false);
+  const [aerialPlace, setAerialPlace] = useState<AerialPlace>();
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 });
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<MapPlace>[] }) => {
     const visible = viewableItems.filter((item) => item.isViewable);
@@ -135,6 +137,9 @@ export default function ProvinceCatalogScreen() {
   const province = provinces.find((item) => item.name === rawProvince) ?? provinces[0];
   const scopeTitle = categoryName ?? (categoryId ? (language === 'es' ? 'Cargando catálogo…' : 'Loading catalog…') : province.name);
   const scopeKey = categoryName ? `category-${categoryId ?? categoryName}` : `province-${province.code}`;
+  const categoryReady = !categoryId || Boolean(categoryOption);
+  const legacyCatalog = Boolean(destinationId);
+  const includeSanctuaries = Boolean(/santuario|sanctuary/i.test(categoryName ?? '') || categoryOption?.allowed_targets?.some((target) => /santuario|sanctuary/i.test(target)));
   const places = useQuery({
     queryKey: ['places', 'v3', scopeKey, categoryOption?.allowed_targets?.join('|') ?? null, destinationId ?? null, isCommunitySubmission, session?.user.id],
     queryFn: async () => {
@@ -145,9 +150,20 @@ export default function ProvinceCatalogScreen() {
       return categoryOption ? getPlacesForTargets(categoryOption.allowed_targets ?? [], session?.user.id) : categoryName ? getPlacesForCategory(categoryName, session?.user.id) : getPlacesForProvince(province.name, session?.user.id);
     },
     networkMode: 'always',
-    enabled: !categoryId || Boolean(categoryOption),
+    enabled: legacyCatalog && categoryReady,
     staleTime: 60 * 1000,
   });
+  const catalogIndex = useQuery({ queryKey: ['catalog-index', 'v2', includeSanctuaries], queryFn: () => getCatalogIndex(includeSanctuaries), enabled: !legacyCatalog, staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 });
+  const catalogEntries = useMemo(() => {
+    if (legacyCatalog) return places.data ?? [];
+    if (!categoryReady) return [];
+    const targets = categoryOption?.allowed_targets ?? [];
+    return (catalogIndex.data ?? []).filter((place) => categoryOption
+      ? matchesSearchTargets(place.category, targets)
+      : categoryName === 'Pozas / Lagos' ? /poza|lago|laguna/i.test(place.category)
+      : categoryName ? place.category.toLowerCase().includes(categoryName.toLowerCase())
+      : !place.isSanctuary && place.province === province.name);
+  }, [catalogIndex.data, categoryOption, categoryName, categoryReady, legacyCatalog, places.data, province.name]);
   useEffect(() => {
     if (!destinationId || !places.data) return;
     const match = places.data.find((place) => place.id === destinationId);
@@ -155,23 +171,45 @@ export default function ProvinceCatalogScreen() {
   }, [destinationId, places.data]);
   useEffect(() => { setActiveSubcategoryId(undefined); }, [categoryId]);
   useEffect(() => { if (!routeOrigin && userLocation) setRouteOrigin(userLocation); }, [routeOrigin, userLocation]);
-  const sortedPlaces = useMemo(() => [...(places.data ?? [])].sort((a, b) => routeOrigin ? distanceKm(routeOrigin, a) - distanceKm(routeOrigin, b) : 0), [places.data, routeOrigin]);
+  const categoryTargets = useMemo(() => categoryOption?.allowed_targets?.length ? categoryOption.allowed_targets : categoryName ? [categoryName] : [], [categoryOption, categoryName]);
+  const isSecondaryMatch = useCallback((place: CatalogPlace) => Boolean(categoryName && !matchesPrimaryCategory(place.category, categoryTargets)), [categoryName, categoryTargets]);
+  const sortedEntries = useMemo(() => [...catalogEntries].sort((a, b) => Number(isSecondaryMatch(a)) - Number(isSecondaryMatch(b)) || (routeOrigin ? distanceKm(routeOrigin, a) - distanceKm(routeOrigin, b) : 0)), [catalogEntries, routeOrigin, isSecondaryMatch]);
   const visibleCategorySubcategories = useMemo(
-    () => categorySubcategories.filter((subcategory) => sortedPlaces.some((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, subcategory.allowed_targets ?? []))),
-    [categorySubcategories, sortedPlaces],
+    () => categorySubcategories.filter((subcategory) => sortedEntries.some((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, subcategory.allowed_targets ?? []))),
+    [categorySubcategories, sortedEntries],
   );
   const activeSubcategory = useMemo(() => visibleCategorySubcategories.find((option) => option.id === activeSubcategoryId) ?? null, [activeSubcategoryId, visibleCategorySubcategories]);
-  const subcategoryPlaces = useMemo(() => !activeSubcategory ? sortedPlaces : sortedPlaces.filter((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, activeSubcategory.allowed_targets ?? [])), [activeSubcategory, sortedPlaces]);
-  const displayedPlaces = subcategoryPlaces;
-  const visiblePlaces = useMemo(() => displayedPlaces.slice(0, visiblePlaceCount), [displayedPlaces, visiblePlaceCount]);
+  const filteredEntries = useMemo(() => !activeSubcategory ? sortedEntries : sortedEntries.filter((place) => matchesSearchTargets(`${place.name} ${place.category} ${place.description ?? ''} ${place.difficulty ?? ''}`, activeSubcategory.allowed_targets ?? [])), [activeSubcategory, sortedEntries]);
+  const catalogPages = useInfiniteQuery({
+    queryKey: ['places', 'catalog-pages', 'v1', scopeKey, activeSubcategoryId, categoryOption?.allowed_targets?.join('|'), routeOrigin?.latitude, routeOrigin?.longitude, session?.user.id, catalogIndex.dataUpdatedAt],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => {
+      const page = filteredEntries.slice(pageParam, pageParam + CATALOG_BATCH_SIZE);
+      return getCatalogPlaces(page.map((place) => place.id), session?.user.id, page.filter((place) => 'isSanctuary' in place && place.isSanctuary).map((place) => place.id));
+    },
+    getNextPageParam: (_lastPage, pages) => pages.length * CATALOG_BATCH_SIZE < filteredEntries.length ? pages.length * CATALOG_BATCH_SIZE : undefined,
+    enabled: !legacyCatalog && categoryReady && Boolean(catalogIndex.data),
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = catalogPages;
+  const hydratedPlaces = useMemo(() => new Map(catalogPages.data?.pages.flat().map((place) => [place.id, place])), [catalogPages.data]);
+  const displayedPlaces = useMemo(() => legacyCatalog ? filteredEntries as MapPlace[] : filteredEntries.map((place) => hydratedPlaces.get(place.id)).filter((place): place is MapPlace => Boolean(place)), [legacyCatalog, filteredEntries, hydratedPlaces]);
+  const visiblePlaces = useMemo(() => legacyCatalog ? displayedPlaces.slice(0, visiblePlaceCount) : displayedPlaces, [legacyCatalog, displayedPlaces, visiblePlaceCount]);
   const routeTargetIds = useMemo(() => new Set(routeWindow(displayedPlaces, firstVisibleIndex).map((place) => place.id)), [displayedPlaces, firstVisibleIndex]);
   const loadNextPlaces = useCallback(() => {
-    setVisiblePlaceCount((current) => Math.min(current + CATALOG_BATCH_SIZE, displayedPlaces.length));
-  }, [displayedPlaces.length]);
+    if (legacyCatalog) setVisiblePlaceCount((current) => Math.min(current + CATALOG_BATCH_SIZE, displayedPlaces.length));
+    else if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  }, [legacyCatalog, displayedPlaces.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
   useEffect(() => {
     setVisiblePlaceCount(CATALOG_BATCH_SIZE);
     setFirstVisibleIndex(0);
   }, [activeSubcategoryId, scopeKey]);
+  useEffect(() => {
+    if (!legacyCatalog && firstVisibleIndex > 0 && displayedPlaces.length - firstVisibleIndex <= CATALOG_BATCH_SIZE && hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  }, [legacyCatalog, firstVisibleIndex, displayedPlaces.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
   useEffect(() => () => { catalogMounted.current = false; }, []);
   useEffect(() => {
     if (!routeOrigin) return;
@@ -201,6 +239,9 @@ export default function ProvinceCatalogScreen() {
     }
   };
 
+  const catalogError = Boolean(categoryId && categoryOptions.isError) || (legacyCatalog ? places.isError : catalogIndex.isError || catalogPages.isError);
+  const catalogPending = !catalogError && (legacyCatalog ? places.isPending : catalogIndex.isPending || catalogPages.isPending);
+
   if (directDestination && !selected) {
     if (places.isPending || places.data?.some((place) => place.id === destinationId)) {
       return <View accessibilityLabel={language === 'es' ? 'Cargando ficha del sitio' : 'Loading place details'} accessibilityRole="progressbar" className="flex-1 items-center justify-center bg-ui-background dark:bg-ui-dark-background"><FrogLoader color="#00c98d" size="large" /></View>;
@@ -229,27 +270,30 @@ export default function ProvinceCatalogScreen() {
         extraData={visiblePlaceIds}
         initialNumToRender={CATALOG_BATCH_SIZE}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={places.isPending ? <FrogLoader branded color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{places.isError ? (language === 'es' ? 'No se pudieron cargar los sitios.' : 'Places could not be loaded.') : isBeach ? (language === 'es' ? 'Aún no hay playas publicadas.' : 'There are no beaches published yet.') : (language === 'es' ? 'Aún no hay sitios publicados aquí.' : 'There are no published places here yet.')}</Text>}
+        ListEmptyComponent={catalogPending ? <FrogLoader branded color="#00c98d" size="large" /> : <Text className="py-16 text-center font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{catalogError ? (language === 'es' ? 'No se pudieron cargar los sitios.' : 'Places could not be loaded.') : isBeach ? (language === 'es' ? 'Aún no hay playas publicadas.' : 'There are no beaches published yet.') : (language === 'es' ? 'Aún no hay sitios publicados aquí.' : 'There are no published places here yet.')}</Text>}
+        ListFooterComponent={!legacyCatalog && catalogPages.isFetchNextPageError ? <Pressable accessibilityRole="button" className="self-center rounded-xl bg-ui-primary px-5 py-3" onPress={() => void catalogPages.fetchNextPage()}><Text className="font-bold text-white">{language === 'es' ? 'Reintentar carga' : 'Retry loading'}</Text></Pressable> : null}
         maxToRenderPerBatch={CATALOG_BATCH_SIZE}
-        onEndReached={visiblePlaces.length < displayedPlaces.length ? loadNextPlaces : undefined}
+        onEndReached={(legacyCatalog ? visiblePlaces.length < displayedPlaces.length : catalogPages.hasNextPage) ? loadNextPlaces : undefined}
         onEndReachedThreshold={0.35}
         onViewableItemsChanged={onViewableItemsChanged.current}
-        renderItem={({ item }) => <DestinationPreviewCard autoplay={!selected && visiblePlaceIds.has(item.id)} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} route={roadRoutes.get(item.id) ?? null} routeLoading={Boolean(routeOrigin && routeTargetIds.has(item.id) && !finishedRoutes.has(item.id))} visitorType={visitorType} />}
+        renderItem={({ index, item }) => <DestinationPreviewCard autoplay={!selected && (index === 0 || visiblePlaceIds.has(item.id))} formatPrice={formatPrice} item={item} language={language} onPress={() => setSelected(item)} onAerial={() => setAerialPlace(item)} route={roadRoutes.get(item.id) ?? null} routeLoading={Boolean(routeOrigin && routeTargetIds.has(item.id) && !finishedRoutes.has(item.id))} secondary={isSecondaryMatch(item)} visitorType={visitorType} />}
         viewabilityConfig={viewabilityConfig.current}
       />
       <DestinationModal key={selected?.id ?? 'closed'} language={language} onClose={closeDestination} onLike={like} place={selected} route={selected ? roadRoutes.get(selected.id) ?? null : null} />
-      <ImmersiveCatalog formatPrice={formatPrice} language={language} onClose={() => setImmersiveOpen(false)} onOpenDetails={(place) => { setImmersiveOpen(false); setSelected(place); }} places={displayedPlaces} visible={immersiveOpen} visitorType={visitorType} />
+      <ImmersiveCatalog formatPrice={formatPrice} language={language} onClose={() => setImmersiveOpen(false)} onLoadMore={loadNextPlaces} onOpenDetails={(place) => { setImmersiveOpen(false); setSelected(place); }} onAerial={setAerialPlace} places={displayedPlaces} totalPlaces={filteredEntries.length} visible={immersiveOpen} visitorType={visitorType} />
+      <AerialMapModal language={language} onClose={() => setAerialPlace(undefined)} place={aerialPlace} />
     </View>
   );
 }
 
-function ImmersiveCatalog({ formatPrice, language, onClose, onOpenDetails, places, visible, visitorType }: { formatPrice: (value: number) => string; language: 'es' | 'en'; onClose: () => void; onOpenDetails: (place: MapPlace) => void; places: MapPlace[]; visible: boolean; visitorType: 'tico' | 'foreigner' }) {
+function ImmersiveCatalog({ formatPrice, language, onClose, onLoadMore, onOpenDetails, onAerial, places, totalPlaces, visible, visitorType }: { formatPrice: (value: number) => string; language: 'es' | 'en'; onClose: () => void; onLoadMore: () => void; onOpenDetails: (place: MapPlace) => void; onAerial: (place: MapPlace) => void; places: MapPlace[]; totalPlaces: number; visible: boolean; visitorType: 'tico' | 'foreigner' }) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const list = useRef<FlatList<MapPlace>>(null);
   const [siteIndex, setSiteIndex] = useState(0);
   const screenHeight = height;
   useEffect(() => { if (visible) setSiteIndex(0); }, [visible]);
+  useEffect(() => { if (visible && siteIndex > 0 && places.length - siteIndex <= CATALOG_BATCH_SIZE && places.length < totalPlaces) onLoadMore(); }, [visible, siteIndex, places.length, totalPlaces, onLoadMore]);
   useEffect(() => {
     if (!visible || !places[siteIndex]) return;
     const nearbyCovers = places
@@ -270,16 +314,18 @@ function ImmersiveCatalog({ formatPrice, language, onClose, onOpenDetails, place
           data={places}
           decelerationRate="fast"
           keyExtractor={(item) => item.id}
+          onEndReached={places.length < totalPlaces ? onLoadMore : undefined}
+          onEndReachedThreshold={0.35}
           onMomentumScrollEnd={(event) => setSiteIndex(Math.round(event.nativeEvent.contentOffset.y / screenHeight))}
           pagingEnabled
           ref={list}
-          renderItem={({ index, item }) => <ImmersivePlacePage active={visible && index === siteIndex} bottomInset={insets.bottom} formatPrice={formatPrice} language={language} onOpenDetails={() => onOpenDetails(item)} place={item} screenHeight={screenHeight} screenWidth={width} visitorType={visitorType} />}
+          renderItem={({ index, item }) => <ImmersivePlacePage active={visible && index === siteIndex} bottomInset={insets.bottom} formatPrice={formatPrice} language={language} onOpenDetails={() => onOpenDetails(item)} onAerial={() => onAerial(item)} place={item} screenHeight={screenHeight} screenWidth={width} visitorType={visitorType} />}
           extraData={siteIndex}
           showsVerticalScrollIndicator={false}
         />
         <View className="absolute left-4 right-4 flex-row items-center justify-between" style={{ top: insets.top + 16 }}>
           <Pressable accessibilityLabel={language === 'es' ? 'Cerrar pantalla completa' : 'Close full screen'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/65" onPress={onClose}><MaterialCommunityIcons name="close" size={25} color="white" /></Pressable>
-          <Text className="rounded-full bg-black/65 px-3 py-2 text-xs font-black text-white">{siteIndex + 1} / {places.length}</Text>
+          <Text className="rounded-full bg-black/65 px-3 py-2 text-xs font-black text-white">{siteIndex + 1} / {totalPlaces}</Text>
         </View>
         <View className="absolute right-4 top-1/2 gap-2">
           <Pressable accessibilityLabel={language === 'es' ? 'Sitio anterior' : 'Previous place'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/65 disabled:opacity-30" disabled={siteIndex === 0} onPress={() => goToSite(siteIndex - 1)}><MaterialCommunityIcons name="chevron-up" size={27} color="white" /></Pressable>
@@ -290,7 +336,7 @@ function ImmersiveCatalog({ formatPrice, language, onClose, onOpenDetails, place
   );
 }
 
-function ImmersivePlacePage({ active, bottomInset, formatPrice, language, onOpenDetails, place, screenHeight, screenWidth, visitorType }: { active: boolean; bottomInset: number; formatPrice: (value: number) => string; language: 'es' | 'en'; onOpenDetails: () => void; place: MapPlace; screenHeight: number; screenWidth: number; visitorType: 'tico' | 'foreigner' }) {
+function ImmersivePlacePage({ active, bottomInset, formatPrice, language, onOpenDetails, onAerial, place, screenHeight, screenWidth, visitorType }: { active: boolean; bottomInset: number; formatPrice: (value: number) => string; language: 'es' | 'en'; onOpenDetails: () => void; onAerial: () => void; place: MapPlace; screenHeight: number; screenWidth: number; visitorType: 'tico' | 'foreigner' }) {
   const weather = useQuery({ queryKey: ['weather', 'destination', place.id, language], queryFn: () => getWeather(place, language), enabled: active, staleTime: WEATHER_STALE_TIME });
   const weatherIcon = weather.data ? weatherIcons[weather.data.icon.slice(0, 2) as keyof typeof weatherIcons] ?? 'weather-cloudy' : null;
   const price = visitorType === 'tico'
@@ -321,7 +367,7 @@ function ImmersivePlacePage({ active, bottomInset, formatPrice, language, onOpen
             {weather.data && weatherIcon ? <View className="flex-row items-center rounded-full bg-black/55 px-3 py-2"><MaterialCommunityIcons accessibilityElementsHidden name={weatherIcon} size={17} color="white" /><Text className="ml-1.5 text-xs font-black capitalize text-white">{weather.data.temperature}°{weather.data.temperatureUnit} · {weather.data.description}</Text></View> : null}
             <View className="rounded-full bg-black/55 px-3 py-2"><Text className="text-xs font-black text-white">{price}</Text></View>
           </View>
-          <Pressable accessibilityRole="button" className="mt-4 min-h-11 self-end justify-center rounded-full bg-white/90 px-5" onPress={onOpenDetails}><Text className="font-black text-ui-text">{language === 'es' ? 'Ver sitio' : 'View place'}</Text></Pressable>
+          <View className="mt-4 flex-row items-center justify-end gap-2"><AerialButton language={language} onPress={onAerial} small /><Pressable accessibilityRole="button" className="min-h-11 self-end justify-center rounded-full bg-white/90 px-5" onPress={onOpenDetails}><Text className="font-black text-ui-text">{language === 'es' ? 'Ver sitio' : 'View place'}</Text></Pressable></View>
         </View>
         {availablePhotos.length > 1 ? <View className="absolute left-5 top-16 flex-row items-center gap-1"><Pressable accessibilityLabel={language === 'es' ? 'Foto anterior' : 'Previous photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex === 0} onPress={() => goToPhoto(photoIndex - 1)}><MaterialCommunityIcons name="chevron-left" size={25} color="white" /></Pressable><Pressable accessibilityLabel={language === 'es' ? 'Foto siguiente' : 'Next photo'} accessibilityRole="button" className="h-11 w-11 items-center justify-center rounded-full bg-black/55 disabled:opacity-30" disabled={photoIndex >= availablePhotos.length - 1} onPress={() => goToPhoto(photoIndex + 1)}><MaterialCommunityIcons name="chevron-right" size={25} color="white" /></Pressable><Text className="ml-1 text-xs font-black text-white">{photoIndex + 1}/{availablePhotos.length}</Text></View> : null}
       </View>
@@ -337,7 +383,7 @@ function FullscreenDestinationImage({ active, language, onError, screenHeight, s
   </View>;
 }
 
-function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, route, routeLoading, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; route: RoadRoute | null; routeLoading: boolean; visitorType: 'tico' | 'foreigner' }) {
+function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress, onAerial, route, routeLoading, secondary, visitorType }: { autoplay: boolean; formatPrice: (value: number) => string; item: MapPlace; language: 'es' | 'en'; onPress: () => void; onAerial: () => void; route: RoadRoute | null; routeLoading: boolean; secondary: boolean; visitorType: 'tico' | 'foreigner' }) {
   const weather = useQuery({ queryKey: ['weather', 'destination', item.id, language], queryFn: () => getWeather(item, language), enabled: autoplay, staleTime: WEATHER_STALE_TIME });
   const weatherIcon = weather.data ? weatherIcons[weather.data.icon.slice(0, 2) as keyof typeof weatherIcons] ?? 'weather-cloudy' : null;
   const price = visitorType === 'tico'
@@ -347,14 +393,16 @@ function DestinationPreviewCard({ autoplay, formatPrice, item, language, onPress
   const reservationUrl = destinationReservationUrl(item);
 
   return (
-    <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}`} accessibilityRole="button" className="overflow-hidden rounded-[30px] border border-white/20 bg-ui-primary active:opacity-90" onPress={onPress}>
+    <Pressable accessibilityLabel={`${language === 'es' ? 'Abrir' : 'Open'} ${item.name}${secondary ? ', resultado por coincidencia secundaria' : ''}`} accessibilityRole="button" className={`overflow-hidden rounded-[30px] border bg-ui-primary active:opacity-90 ${secondary ? 'border-2 border-red-600' : 'border-white/20'}`} onPress={onPress}>
       <View className="relative" style={{ height: DESTINATION_CARD_HEIGHT }}>
         <View style={StyleSheet.absoluteFill}>
           <DestinationCarousel autoplay={autoplay} height={DESTINATION_CARD_HEIGHT} place={item} />
         </View>
         <View className="absolute inset-0 bg-black/15" pointerEvents="none" />
         <View className="absolute left-5 top-5 rounded-full bg-black/60 px-4 py-2"><Text className="font-black text-white">{item.province}</Text></View>
+        {secondary ? <View className="absolute left-5 top-16 max-w-[85%] rounded-full bg-red-700 px-3 py-1.5"><Text className="text-xs font-black text-white">{language === 'es' ? 'Resultado por coincidencia secundaria' : 'Secondary category match'}</Text></View> : null}
         {usesVerifiedCover(item) && item.image_attribution ? <View className="absolute right-4 top-4 max-w-[55%] rounded-lg bg-black/65 px-3 py-2"><Text className="text-right text-[10px] font-bold text-white" numberOfLines={1}>{language === 'es' ? 'Foto' : 'Photo'}: {item.image_attribution}</Text></View> : null}
+        <View className="absolute left-5 top-16"><AerialButton language={language} onPress={onAerial} small /></View>
         <View className="absolute left-5 rounded-full bg-[#3B4231]/90 px-3 py-1.5" style={{ bottom: DESTINATION_FLOATING_LABEL_BOTTOM }}><Text className="text-sm font-black text-white">{tourismRegion(item)}</Text></View>
         <View className="absolute right-5 rounded-full bg-black/65 px-3 py-1.5" style={{ bottom: DESTINATION_FLOATING_LABEL_BOTTOM }}><Text className="text-sm font-black text-white">{difficultyLabel(item.difficulty, language)}</Text></View>
         <LinearGradient
@@ -450,6 +498,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
   const [sending, setSending] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [aerialOpen, setAerialOpen] = useState(false);
   const [communityVerificationBusy, setCommunityVerificationBusy] = useState(false);
   const ferryAccess = place ? ferryAccessFor(place) : undefined;
   const ferryQuery = useQuery({ queryKey: ['ferry-routes'], queryFn: getFerryRoutes, enabled: Boolean(ferryAccess), staleTime: 30 * 60 * 1000 });
@@ -475,7 +524,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
 
   const pickPhoto = async () => {
     if (!requireAuth(language === 'es' ? 'Adjuntar una foto' : 'Attach a photo')) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.9 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.85 });
     if (!result.canceled) setPhoto(result.assets[0]);
   };
   const sendReview = async () => {
@@ -490,7 +539,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
   };
   const addPhoto = async () => {
     if (uploadingPhoto || !requireAuth(language === 'es' ? 'Subir una foto del sitio' : 'Upload a site photo') || !session) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.9, exif: false });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.85, exif: false });
     if (result.canceled) return;
     setUploadingPhoto(true);
     try {
@@ -550,6 +599,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
               <View className="flex-row rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted py-5"><Stat label={language === 'es' ? 'Entrada Tico' : 'Foreigner entry'} value={visitPrice} /><Stat label={language === 'es' ? 'Dificultad' : 'Difficulty'} value={difficultyLabel(place.difficulty, language)} /><Stat label={language === 'es' ? 'Comunidad' : 'Community'} value={`♥ ${place.likes_count}`} /></View>
               {weather.data ? <View className="flex-row items-center rounded-3xl border border-ui-border dark:border-ui-dark-border bg-ui-muted dark:bg-ui-dark-muted p-5"><MaterialCommunityIcons name={weather.data.icon.startsWith('10') ? 'weather-rainy' : 'weather-partly-cloudy'} size={34} color="#23b9f2" /><View className="ml-4 flex-1"><Text className="font-black capitalize text-ui-text dark:text-ui-dark-text">{weather.data.description}</Text><Text className="mt-1 text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Humedad' : 'Humidity'} {weather.data.humidity}%</Text></View><Text className="text-3xl font-black text-ui-text dark:text-ui-dark-text">{weather.data.temperature}°{weather.data.temperatureUnit}</Text></View> : null}
               <VisitQuickFacts closedDay={place.closed_day} language={language} price={visitPrice} schedule={place.schedule} onNavigate={() => void openNavigation(place.latitude, place.longitude)} />
+              <AerialButton language={language} onPress={() => setAerialOpen(true)} />
               {marine.data ? <MarineWeatherPanel conditions={marine.data} language={language} /> : marine.isError ? <Text accessibilityRole="alert" className="text-sm font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'No se pudieron cargar las condiciones marinas.' : 'Marine conditions could not be loaded.'}</Text> : null}
               <View><Text className="text-lg font-black uppercase tracking-wider text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Información para tu visita' : 'Visitor information'}</Text><Text className="mt-3 text-base leading-7 text-ui-text dark:text-ui-dark-text">{destinationDescription(place, language)}</Text>{aiConfig.data?.ai_destination_assistant_enabled ? <DestinationAIAssistant canUse={access.data?.hasAccess === true} context={`${place.name}\nProvincia: ${place.province}\nCategoría: ${categoryLabel(place.category, language)}\nDescripción: ${destinationDescription(place, language)}\nDificultad: ${difficultyLabel(place.difficulty, language)}\nHorario: ${place.schedule || 'sin dato'}\nCierre: ${place.closed_day || 'sin dato'}\nPrecio mostrado: ${visitPrice}\nNotas: ${place.notes || 'sin dato'}\nFuente: ${place.source_url || 'sin fuente'}`} key={place.id} language={language} name={place.name} onSubscribe={() => { onClose(); router.push('/subscriptions'); }} /> : null}</View>
               <DestinationVisitInfoPanel language={language} place={place} />
@@ -584,6 +634,7 @@ function DestinationModal({ language, onClose, onLike, place, route }: { languag
         </View>
       </Modal>
       <InformationReportModal open={reportOpen} targetType="destination" targetId={place.id} targetLabel={place.name} language={language} onClose={() => setReportOpen(false)} />
+      <AerialMapModal language={language} onClose={() => setAerialOpen(false)} place={aerialOpen ? place : undefined} />
     </>
   );
 }

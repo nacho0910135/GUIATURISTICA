@@ -73,7 +73,7 @@ export default function PrivateMessagesScreen() {
     if (!active) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) throw new Error(text('Permití el acceso a fotos para enviar una imagen.', 'Allow photo access to send an image.'));
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.9, exif: false });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.85, exif: false });
     if (result.canceled) return;
     await sendTravelerMessage(userId, active.partner_id, reply, { uri: result.assets[0].uri, width: result.assets[0].width, type: 'image' });
     setReply('');

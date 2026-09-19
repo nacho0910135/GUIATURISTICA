@@ -271,13 +271,13 @@ export default function SpeciesScreen() {
           ? await ImagePicker.launchCameraAsync({
               mediaTypes: ["images"],
               allowsEditing: true,
-              quality: 1,
+              quality: 0.85,
               exif: false,
             })
           : await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ["images"],
               allowsEditing: true,
-              quality: 1,
+              quality: 0.85,
               exif: false,
             });
       if (result.canceled || !result.assets[0]) return;

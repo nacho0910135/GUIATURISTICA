@@ -17,7 +17,7 @@ import { haptic } from '@/lib/haptics';
 import { openNavigation } from '@/lib/logistics';
 import { getExplorePlaces, type ExplorePlace } from '@/lib/places';
 import { submitInformationReport } from '@/lib/reports';
-import { addTravelerReply, createTravelerPost, getTravelerWall, setTravelerReaction, setTravelerReplyReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
+import { addTravelerReply, createTravelerPost, getTravelerPostTopic, getTravelerWall, setTravelerReaction, setTravelerReplyReaction, toggleTravelerFollow, type ReactionType, type TravelerPost, type TravelerTopic } from '@/lib/travelers';
 import { useApp } from '@/providers/app-provider';
 
 import { useScreenActive } from '@/hooks/use-screen-active';
@@ -152,12 +152,15 @@ export default function FriendsScreen() {
   const [reactionPickerPostId, setReactionPickerPostId] = useState<string>();
   const [reactionPickerReplyId, setReactionPickerReplyId] = useState<string>();
   const postOffsets = useRef<Record<string, number>>({});
+  const feedOffset = useRef(0);
   const replySectionOffsets = useRef<Record<string, number>>({});
   const commentOffsets = useRef<Record<string, number>>({});
   const [topic, setTopic] = useState<TravelerTopic>('general');
   const longPressedPostId = useRef<string | undefined>(undefined);
+  const handledPostId = useRef<string | undefined>(undefined);
   const topicOptions = useQuery({ queryKey: ['app-options', 'traveler_topic'], queryFn: () => getAppOptions('traveler_topic'), staleTime: Infinity });
   const reactionOptions = useQuery({ queryKey: ['app-options', 'traveler_reaction'], queryFn: () => getAppOptions('traveler_reaction'), staleTime: Infinity });
+  const linkedPostTopic = useQuery({ queryKey: ['traveler-post-topic', params.postId], queryFn: () => getTravelerPostTopic(params.postId!), enabled: isActive && Boolean(params.postId), staleTime: Infinity });
   const wallQuery = useInfiniteQuery({
     queryKey: ['traveler-wall', userId, topic],
     queryFn: ({ pageParam }) => getTravelerWall(userId, topic, pageParam),
@@ -190,10 +193,27 @@ export default function FriendsScreen() {
     : [], [explorePlaces.data, normalizedPlaceSearch]);
 
   const refetchWall = wallQuery.refetch;
+  const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } = wallQuery;
   const load = useCallback(async () => { await refetchWall(); }, [refetchWall]);
+  const loadAhead = useCallback((scrollY: number) => {
+    if (!wall?.posts.length || !hasNextPage || isFetchingNextPage || isFetchNextPageError) return;
+    const visibleIndex = wall.posts.findLastIndex((post) => (postOffsets.current[post.id] ?? Infinity) + feedOffset.current <= scrollY);
+    if (visibleIndex > 0 && wall.posts.length - visibleIndex <= 10) void fetchNextPage();
+  }, [wall, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
 
   useEffect(() => {
-    if (!wall || !params.postId) return;
+    if (params.postId && linkedPostTopic.data && handledPostId.current !== params.postId) {
+      handledPostId.current = params.postId;
+      setTopic(linkedPostTopic.data);
+    }
+  }, [params.postId, linkedPostTopic.data]);
+
+  useEffect(() => {
+    if (params.postId && linkedPostTopic.data === topic && wall && !wall.posts.some((post) => post.id === params.postId) && hasNextPage && !isFetchingNextPage && !isFetchNextPageError) void fetchNextPage();
+  }, [params.postId, linkedPostTopic.data, topic, wall, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
+
+  useEffect(() => {
+    if (!wall || !params.postId || !wall.posts.some((post) => post.id === params.postId)) return;
     setReplying(params.postId);
     const timeout = setTimeout(() => {
       const postOffset = postOffsets.current[params.postId!] ?? 0;
@@ -220,7 +240,7 @@ export default function FriendsScreen() {
     }
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return Alert.alert('Comunidad Viajera', language === 'es' ? 'Necesitamos permiso para elegir una foto.' : 'Photo permission is required.');
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 5 - assets.length, quality: 0.9 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: true, selectionLimit: 5 - assets.length, quality: 0.85 });
     if (!result.canceled) {
       setAssets((current) => [...current, ...result.assets.filter((asset) => !current.some((selected) => selected.uri === asset.uri))].slice(0, 5));
       setPublishError(undefined);
@@ -322,7 +342,7 @@ export default function FriendsScreen() {
   };
 
   return (
-    <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollRef} className="flex-1 bg-ui-background dark:bg-ui-dark-background" contentContainerStyle={{ alignItems: 'center', paddingBottom: 48 }} onScroll={(event) => loadAhead(event.nativeEvent.contentOffset.y + event.nativeEvent.layoutMeasurement.height / 2)} scrollEventThrottle={100} showsVerticalScrollIndicator={false}>
       <View className="w-full border-b border-ui-border bg-ui-surface px-5 py-3 dark:border-ui-dark-border dark:bg-ui-dark-surface">
         <View className="mx-auto w-full max-w-3xl flex-row items-center">
           <View className="h-10 w-10 items-center justify-center rounded-xl bg-caribbean-50 dark:bg-caribbean-900"><Text accessibilityLabel={language === 'es' ? 'Dos amigos' : 'Two friends'} className="text-xl">🧑‍🤝‍🧑</Text></View>
@@ -347,7 +367,7 @@ export default function FriendsScreen() {
         </ScrollView>
       </View>
 
-      <View className="w-full max-w-3xl px-4 pt-5">
+      <View className="w-full max-w-3xl px-4 pt-5" onLayout={(event) => { feedOffset.current = event.nativeEvent.layout.y; }}>
         <GroupRides canWrite={!writeLocked} language={language} topic={topic} userId={userId} requireAuth={requireAuth} />
         {!writeLocked ? <View className="rounded-card border border-ui-border bg-ui-surface p-4 shadow-card dark:border-ui-dark-border dark:bg-ui-dark-surface" style={communityDepth}>
           <View className="flex-row items-center">
@@ -445,7 +465,7 @@ export default function FriendsScreen() {
             })}{parentReplyId ? <View className="mb-2 flex-row items-center"><Text className="flex-1 text-xs font-bold text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Respondiendo a un comentario' : 'Replying to a comment'}</Text><Pressable onPress={() => setParentReplyId(undefined)}><Text className="font-black text-ui-danger dark:text-ui-dark-danger">×</Text></Pressable></View> : null}<View className="flex-row items-end"><TextInput className="mr-2 flex-1 rounded-control bg-ui-surface px-4 py-3 text-ui-text dark:bg-ui-dark-surface dark:text-ui-dark-text" maxLength={1000} multiline onChangeText={setReply} placeholder={language === 'es' ? 'Escribí una respuesta…' : 'Write a reply…'} placeholderTextColor="#68737A" value={reply} /><Pressable className="h-11 w-11 items-center justify-center rounded-full bg-ui-primary shadow-card disabled:opacity-40 dark:bg-ui-dark-primary" style={communityDepth} disabled={busy || !reply.trim()} onPress={() => void respond(post.id)}><MaterialCommunityIcons name="send" size={20} color="white" /></Pressable></View></View> : null}
           </View>;
         })}
-        {wallQuery.hasNextPage ? <Pressable accessibilityRole="button" className="mx-auto mt-5 min-h-11 items-center justify-center rounded-control bg-ui-primary px-6 disabled:opacity-50 dark:bg-ui-dark-primary" disabled={wallQuery.isFetchingNextPage} onPress={() => void wallQuery.fetchNextPage()}><Text className="font-black text-white">{wallQuery.isFetchingNextPage ? (language === 'es' ? 'Cargando…' : 'Loading…') : (language === 'es' ? 'Cargar más' : 'Load more')}</Text></Pressable> : null}
+        {wallQuery.isFetchNextPageError ? <Pressable accessibilityRole="button" className="mx-auto mt-5 min-h-11 items-center justify-center rounded-control bg-ui-primary px-6 dark:bg-ui-dark-primary" onPress={() => void wallQuery.fetchNextPage()}><Text className="font-black text-white">{language === 'es' ? 'Reintentar carga' : 'Retry loading'}</Text></Pressable> : null}
       </View>
     </ScrollView>
   );
