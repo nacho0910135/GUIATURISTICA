@@ -109,7 +109,7 @@ export async function getFaunaSpecies(id: string) {
   return data as FaunaSpecies;
 }
 
-export async function addFaunaSpecies(input: { commonName: string; scientificName: string; category: string; description: string; habitat: string; province: string; userId: string; image?: ImagePickerAsset }) {
+export async function addFaunaSpecies(input: { commonName: string; scientificName: string; category: string; description: string; descriptionEn: string; habitat: string; province: string; userId: string; image?: ImagePickerAsset }) {
   let uploadedPath: string | undefined;
   let imageUrl: string | null = null;
   if (input.image) {
@@ -130,7 +130,7 @@ export async function addFaunaSpecies(input: { commonName: string; scientificNam
     scientific_name: input.scientificName.trim(),
     category: input.category.trim(),
     description: input.description.trim() || null,
-    description_en: input.description.trim() || null,
+    description_en: input.descriptionEn.trim() || null,
     habitat: input.habitat.trim() || null,
     habitat_en: input.habitat.trim() || null,
     province: input.province.trim() || null,

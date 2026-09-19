@@ -18,6 +18,7 @@ import { InformationReportModal } from '@/components/information-report-modal';
 import { AnimatedShine, MotionPressable, Skeleton } from '@/components/motion';
 import { ThemedAlert as Alert } from '@/components/themed-alert';
 import { getAppOptions, type AppOption } from '@/lib/app-options';
+import { translateDescriptionToEnglish } from '@/lib/destination-ai';
 import { getMySubscriptions, hasActiveBusinessPlan } from '@/lib/billing';
 import { haptic } from '@/lib/haptics';
 import { getPreciseCurrentLocation } from '@/lib/current-location';
@@ -574,6 +575,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
   const [manualPickerOpen, setManualPickerOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const selectCurrentLocation = async () => {
     try {
       setLocating(true);
@@ -621,6 +623,9 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
     if (!manualLocation) return Alert.alert('Descubriendo CR', language === 'es' ? 'Ubicá el sitio en el mapa antes de publicarlo.' : 'Place the site on the map before publishing it.');
     setSending(true);
     try {
+      setTranslating(true);
+      const description_en = await translateDescriptionToEnglish(description);
+      setTranslating(false);
       const location = manualLocation;
       await publishCommunityPlace({
         user_id: session.user.id,
@@ -631,6 +636,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
           .join(' / '),
         district: district.trim() || undefined,
         description: description.trim(),
+        description_en,
         difficulty,
         price_national_crc: Math.max(0, Number(price.replace(',', '.')) || 0),
         latitude: location.latitude,
@@ -649,6 +655,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
       Alert.alert('Descubriendo CR', reason instanceof Error ? reason.message : language === 'es' ? 'No se pudo publicar.' : 'Could not publish.');
     } finally {
       setSending(false);
+      setTranslating(false);
     }
   };
   return (
@@ -693,7 +700,7 @@ function ProposalModal({ language, onClose, onPublished, open, session }: { lang
               <Text className="text-sm font-bold leading-5 text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Se guardará el punto que seleccionaste en el mapa y aparecerá como aporte de la comunidad.' : 'The point you selected on the map will be saved as a community contribution.'}</Text>
             </View>
             <MotionPressable accessibilityRole="button" className="items-center rounded-control bg-ui-primary p-4 dark:bg-ui-dark-primary" disabled={sending} onPress={() => void submit()}>
-              {sending ? <FrogLoader color="white" /> : <Text className="font-black text-white">{language === 'es' ? 'Publicar ahora' : 'Publish now'}</Text>}
+              {sending ? <><FrogLoader color="white" />{translating ? <Text className="font-black text-white">{language === 'es' ? 'Traduciendo descripción a inglés…' : 'Translating description to English…'}</Text> : null}</> : <Text className="font-black text-white">{language === 'es' ? 'Publicar ahora' : 'Publish now'}</Text>}
             </MotionPressable>
           </ScrollView>
         </View>
@@ -755,7 +762,7 @@ function CategoryChoiceField({ language, onChange, options, value }: { language:
   return (
     <View>
       <Text className="font-black text-ui-text dark:text-ui-dark-text">{language === 'es' ? 'Categorías' : 'Categories'}</Text>
-      <Text className="mb-2 mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Elegí hasta tres.' : 'Choose up to three.'}</Text>
+      <Text className="mb-2 mt-1 text-sm text-ui-text-muted dark:text-ui-dark-text-muted">{language === 'es' ? 'Elegí hasta tres. La primera será la categoría principal.' : 'Choose up to three. The first will be the primary category.'}</Text>
       <ScrollView horizontal contentContainerStyle={{ gap: 8 }} showsHorizontalScrollIndicator={false}>
         {options.map((option) => {
           const selected = value.includes(option.id);

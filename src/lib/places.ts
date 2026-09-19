@@ -290,11 +290,11 @@ function toMapSanctuary(row: VerifiedSanctuaryRow): MapPlace | null {
 export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   const [official, communityWithPhotos, sanctuaries] = await Promise.all([
     supabase.from('destinations').select('id,name,province,category,description,description_en,difficulty,price_national_crc,latitude,longitude,cover_image_url,validated_by,verification_evidence_url,verification_checked_at,destination_photos(image_url,sort_order)').eq('status', 'Activo').limit(1000),
-    supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,photos,community_verified_at').eq('status', 'published').order('created_at', { ascending: false }).limit(500),
+    supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,description_en,difficulty,price_national_crc,latitude,longitude,photos,community_verified_at').eq('status', 'published').order('created_at', { ascending: false }).limit(500),
     supabase.from('fauna_sanctuaries').select('id,name,province,cover_image_url,location_name,description_es,description_en,verified').eq('verified', true).order('name').limit(500),
   ]);
   const community = communityWithPhotos.error
-    ? await supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,community_verified_at').eq('status', 'published').order('created_at', { ascending: false }).limit(500)
+    ? await supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,description_en,difficulty,price_national_crc,latitude,longitude,community_verified_at').eq('status', 'published').order('created_at', { ascending: false }).limit(500)
     : communityWithPhotos;
   const error = official.error ?? community.error;
   if (error) throw error;
@@ -318,7 +318,7 @@ export async function getExplorePlaces(): Promise<ExplorePlace[]> {
   return [...officialPlaces, ...sanctuaryPlaces];
 }
 
-export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'cover_image_url' | 'photos' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at' | 'description_en'> & { user_id: string; district?: string; photo_assets: ImagePickerAsset[] }) {
+export async function publishCommunityPlace(input: Omit<ExplorePlace, 'id' | 'community' | 'contributor_id' | 'contributor_name' | 'cover_image_url' | 'photos' | 'validated_by' | 'verification_evidence_url' | 'verification_checked_at'> & { user_id: string; district?: string; photo_assets: ImagePickerAsset[] }) {
   if (input.photo_assets.length < 1 || input.photo_assets.length > 10) throw new Error('Seleccioná entre 1 y 10 imágenes.');
   const uploadedPaths: string[] = [];
   try {
@@ -404,12 +404,12 @@ export async function getPlaceById(id: string, userId?: string, community = fals
 async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPlace | null> {
   const withPhotos = await supabase
     .from('destination_suggestions')
-    .select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,status,source_url,photos,community_verified_at')
+    .select('id,user_id,name,province,category,description,description_en,difficulty,price_national_crc,latitude,longitude,status,source_url,photos,community_verified_at')
     .eq('id', id)
     .eq('status', 'published')
     .maybeSingle();
   const { data: suggestion, error } = withPhotos.error
-    ? await supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,difficulty,price_national_crc,latitude,longitude,status,source_url,community_verified_at').eq('id', id).eq('status', 'published').maybeSingle()
+    ? await supabase.from('destination_suggestions').select('id,user_id,name,province,category,description,description_en,difficulty,price_national_crc,latitude,longitude,status,source_url,community_verified_at').eq('id', id).eq('status', 'published').maybeSingle()
     : withPhotos;
   if (error) throw error;
   if (!suggestion || !Number.isFinite(Number(suggestion.latitude)) || !Number.isFinite(Number(suggestion.longitude))) return null;
@@ -435,7 +435,7 @@ async function getCommunityPlaceById(id: string, userId?: string): Promise<MapPl
     status: suggestion.status,
     region: null,
     description: suggestion.description,
-    description_en: null,
+    description_en: suggestion.description_en ?? null,
     difficulty: suggestion.difficulty,
     price_national_crc: suggestion.price_national_crc == null ? null : Number(suggestion.price_national_crc),
     price_foreigner_usd: null,
